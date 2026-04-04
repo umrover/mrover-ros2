@@ -1,7 +1,7 @@
 <template>
   <div
     class="list-item"
-    :class="{ 'kbd-highlighted': highlighted }"
+    :class="{ 'kbd-highlighted': highlighted, 'kbd-visual-selected': visualSelected }"
     data-testid="pw-waypoint-store-item"
   >
     <template v-if="editing">
@@ -41,7 +41,10 @@
 
     <template v-else>
       <div class="flex justify-between items-center mb-1">
-        <h5 class="list-item-title" data-testid="pw-waypoint-name">{{ waypoint.name }}</h5>
+        <div class="flex items-center gap-2">
+          <i class="bi bi-grip-vertical drag-handle"></i>
+          <h5 class="list-item-title" data-testid="pw-waypoint-name">{{ waypoint.name }}</h5>
+        </div>
         <div v-if="waypoint.tag_id != null" class="flex items-center gap-2">
           <span class="data-label">Tag ID: {{ waypoint.tag_id }}</span>
         </div>
@@ -104,6 +107,7 @@ const props = defineProps<{
   waypoint: AutonWaypoint
   index: number
   highlighted?: boolean
+  visualSelected?: boolean
   editing?: boolean
 }>()
 
@@ -216,5 +220,14 @@ function saveModalEdit() {
   height: 1.75rem;
   padding: 0;
   font-size: 0.75rem;
+}
+
+.drag-handle {
+  cursor: grab;
+  opacity: 0.4;
+}
+
+.drag-handle:hover {
+  opacity: 1;
 }
 </style>

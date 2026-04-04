@@ -75,19 +75,6 @@ export const waypointsAPI = {
     return apiFetch('/waypoints/auton/store/clear/all/', { method: 'DELETE' })
   },
 
-  // --- Staging: planned route queue ---
-
-  getStaging(): Promise<CurrentCourseResponse> {
-    return apiFetch('/waypoints/auton/staging/')
-  },
-
-  saveStaging(course: AutonWaypoint[]): Promise<CurrentCourseResponse> {
-    return apiFetch('/waypoints/auton/staging/save/', {
-      method: 'POST',
-      body: JSON.stringify({ waypoints: course })
-    })
-  },
-
   // --- Execution: active navigation batch ---
 
   getExecution(): Promise<CurrentCourseResponse> {

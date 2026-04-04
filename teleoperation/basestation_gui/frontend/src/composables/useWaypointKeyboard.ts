@@ -2,8 +2,8 @@ import { ref, computed, watch } from 'vue'
 import { useAutonomyStore } from '@/stores/autonomy'
 import type { AutonWaypoint } from '@/types/waypoints'
 
-export type Column = 'store' | 'staging' | 'execution'
-export type KeyboardMode = 'NORMAL' | 'INSERT'
+export type Column = 'store' | 'execution'
+export type KeyboardMode = 'NORMAL' | 'INSERT' | 'VISUAL'
 
 export function useWaypointKeyboard() {
   const autonomyStore = useAutonomyStore()
@@ -11,19 +11,36 @@ export function useWaypointKeyboard() {
   const mode = ref<KeyboardMode>('NORMAL')
   const focusedColumn = ref<Column>('store')
   const storeIndex = ref(0)
-  const stagingIndex = ref(0)
   const executionIndex = ref(0)
   const showCheatSheet = ref(false)
   const editingStoreIndex = ref(-1)
 
+  const visualAnchor = ref(-1)
+
   let pendingKey = ''
   let pendingTimeout: ReturnType<typeof setTimeout> | null = null
+
+  const selectedRange = computed<{ start: number; end: number } | null>(() => {
+    if (mode.value !== 'VISUAL' || visualAnchor.value < 0) return null
+    const a = visualAnchor.value
+    const b = storeIndex.value
+    return { start: Math.min(a, b), end: Math.max(a, b) }
+  })
+
+  const selectedIndices = computed<Set<number>>(() => {
+    const range = selectedRange.value
+    if (!range) return new Set()
+    const indices = new Set<number>()
+    for (let i = range.start; i <= range.end; i++) {
+      indices.add(i)
+    }
+    return indices
+  })
 
   function getColumnList(column?: Column): AutonWaypoint[] {
     const col = column ?? focusedColumn.value
     switch (col) {
       case 'store': return autonomyStore.store
-      case 'staging': return autonomyStore.staging
       case 'execution': return autonomyStore.execution
     }
   }
@@ -32,7 +49,6 @@ export function useWaypointKeyboard() {
     const col = column ?? focusedColumn.value
     switch (col) {
       case 'store': return storeIndex
-      case 'staging': return stagingIndex
       case 'execution': return executionIndex
     }
   }
@@ -49,7 +65,6 @@ export function useWaypointKeyboard() {
   }
 
   watch(() => autonomyStore.store.length, () => clampIndex('store'))
-  watch(() => autonomyStore.staging.length, () => clampIndex('staging'))
   watch(() => autonomyStore.execution.length, () => clampIndex('execution'))
 
   function moveDown() {
@@ -73,25 +88,36 @@ export function useWaypointKeyboard() {
   }
 
   function moveLeft() {
-    const columns: Column[] = ['store', 'staging', 'execution']
-    const i = columns.indexOf(focusedColumn.value)
-    if (i > 0) {
-      focusedColumn.value = columns[i - 1]
+    if (mode.value === 'VISUAL') return
+    if (focusedColumn.value === 'execution') {
+      focusedColumn.value = 'store'
       clampIndex()
     }
   }
 
   function moveRight() {
-    const columns: Column[] = ['store', 'staging', 'execution']
-    const i = columns.indexOf(focusedColumn.value)
-    if (i < columns.length - 1) {
-      focusedColumn.value = columns[i + 1]
+    if (mode.value === 'VISUAL') return
+    if (focusedColumn.value === 'store') {
+      focusedColumn.value = 'execution'
       clampIndex()
     }
   }
 
+  function enterVisualMode() {
+    if (focusedColumn.value !== 'store') return
+    if (autonomyStore.store.length === 0) return
+    mode.value = 'VISUAL'
+    visualAnchor.value = storeIndex.value
+  }
+
+  function exitVisualMode() {
+    mode.value = 'NORMAL'
+    visualAnchor.value = -1
+  }
+
   function enterInsertMode() {
     if (focusedColumn.value !== 'store') return
+    if (mode.value === 'VISUAL') return
     const list = getColumnList()
     if (list.length === 0) return
     mode.value = 'INSERT'
@@ -104,41 +130,40 @@ export function useWaypointKeyboard() {
   }
 
   async function performStage() {
-    const list = getColumnList()
-    const idx = getColumnIndexRef()
-    const wp = list[idx.value]
-    if (!wp) return
+    if (focusedColumn.value !== 'store') return
 
-    if (focusedColumn.value === 'store') {
-      await autonomyStore.addToStaging(wp)
-    } else if (focusedColumn.value === 'staging') {
-      await autonomyStore.stageToExecution(wp)
+    if (mode.value === 'VISUAL') {
+      const range = selectedRange.value
+      if (!range) return
+      const waypoints = autonomyStore.store.slice(range.start, range.end + 1)
+      await autonomyStore.addManyToExecution(waypoints)
+      exitVisualMode()
+      return
     }
-    clampIndex()
-  }
 
-  async function performUnstage() {
-    const list = getColumnList()
-    const idx = getColumnIndexRef()
-    const wp = list[idx.value]
-    if (!wp) return
-
-    if (focusedColumn.value === 'execution') {
-      await autonomyStore.unstageOne(wp)
-      clampIndex()
+    const wp = autonomyStore.store[storeIndex.value]
+    if (wp) {
+      await autonomyStore.addToExecution(wp)
     }
   }
 
   async function performDelete() {
+    if (mode.value === 'VISUAL' && focusedColumn.value === 'store') {
+      const range = selectedRange.value
+      if (!range) return
+      const indices = Array.from(selectedIndices.value)
+      await autonomyStore.removeMultipleFromStore(indices)
+      exitVisualMode()
+      clampIndex()
+      return
+    }
+
     const list = getColumnList()
     const idx = getColumnIndexRef()
     if (list.length === 0) return
 
     if (focusedColumn.value === 'store') {
       await autonomyStore.removeFromStore(idx.value)
-    } else if (focusedColumn.value === 'staging') {
-      const wp = list[idx.value]
-      if (wp) await autonomyStore.removeFromStaging(wp)
     } else if (focusedColumn.value === 'execution') {
       const wp = list[idx.value]
       if (wp) await autonomyStore.removeFromExecution(wp)
@@ -147,25 +172,21 @@ export function useWaypointKeyboard() {
   }
 
   function reorderUp() {
-    if (focusedColumn.value !== 'staging') return
-    if (stagingIndex.value <= 0) return
-    const next = [...autonomyStore.staging]
-    const i = stagingIndex.value
-    ;[next[i - 1], next[i]] = [next[i], next[i - 1]]
-    autonomyStore.staging = next
-    stagingIndex.value--
-    autonomyStore.saveStaging()
+    if (mode.value !== 'NORMAL') return
+    if (focusedColumn.value === 'store') {
+      if (storeIndex.value <= 0) return
+      autonomyStore.reorderStore(storeIndex.value, storeIndex.value - 1)
+      storeIndex.value--
+    }
   }
 
   function reorderDown() {
-    if (focusedColumn.value !== 'staging') return
-    if (stagingIndex.value >= autonomyStore.staging.length - 1) return
-    const next = [...autonomyStore.staging]
-    const i = stagingIndex.value
-    ;[next[i], next[i + 1]] = [next[i + 1], next[i]]
-    autonomyStore.staging = next
-    stagingIndex.value++
-    autonomyStore.saveStaging()
+    if (mode.value !== 'NORMAL') return
+    if (focusedColumn.value === 'store') {
+      if (storeIndex.value >= autonomyStore.store.length - 1) return
+      autonomyStore.reorderStore(storeIndex.value, storeIndex.value + 1)
+      storeIndex.value++
+    }
   }
 
   const scrollKey = computed(() =>
@@ -196,6 +217,11 @@ export function useWaypointKeyboard() {
     }
 
     if (e.key === 'Escape') {
+      if (mode.value === 'VISUAL') {
+        e.preventDefault()
+        exitVisualMode()
+        return
+      }
       if (showCheatSheet.value) {
         showCheatSheet.value = false
         e.preventDefault()
@@ -277,13 +303,17 @@ export function useWaypointKeyboard() {
         e.preventDefault()
         enterInsertMode()
         break
+      case 'v':
+        e.preventDefault()
+        if (mode.value === 'VISUAL') {
+          exitVisualMode()
+        } else {
+          enterVisualMode()
+        }
+        break
       case 's':
         e.preventDefault()
         performStage()
-        break
-      case 'u':
-        e.preventDefault()
-        performUnstage()
         break
     }
   }
@@ -292,12 +322,15 @@ export function useWaypointKeyboard() {
     mode,
     focusedColumn,
     storeIndex,
-    stagingIndex,
     executionIndex,
     editingStoreIndex,
     showCheatSheet,
     scrollKey,
+    visualAnchor,
+    selectedRange,
+    selectedIndices,
     handleKeydown,
     exitInsertMode,
+    exitVisualMode,
   }
 }

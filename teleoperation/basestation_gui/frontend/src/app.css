@@ -722,6 +722,10 @@ html {
   outline-offset: -2px;
 }
 
+.kbd-visual-selected {
+  background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
 .kbd-cheatsheet {
   position: absolute;
   inset: 0;

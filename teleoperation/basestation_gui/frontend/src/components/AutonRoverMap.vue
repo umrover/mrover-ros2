@@ -37,11 +37,6 @@
         color="red"
         dash-array="5, 5"
       />
-      <l-polyline
-        :lat-lngs="stagingPath"
-        color="gray"
-        dash-array="5, 5"
-      />
       <l-polyline :lat-lngs="odomPath" :color="'blue'" :dash-array="'5, 5'" />
       <l-polyline :lat-lngs="dronePath" :color="'green'" />
     </l-map>
@@ -101,7 +96,7 @@ import { useWebsocketStore } from '@/stores/websocket'
 import type { BasestationPositionMessage } from '@/types/coordinates'
 
 const autonomyStore = useAutonomyStore()
-const { stagingForMap, executionForMap, storeForMap } = storeToRefs(autonomyStore)
+const { executionForMap, storeForMap } = storeToRefs(autonomyStore)
 
 const {
   center,
@@ -158,14 +153,6 @@ const executionPath = computed(() => {
   )
 })
 
-const stagingPath = computed(() => {
-  const lastExecution = executionForMap.value.at(-1)
-  const start = lastExecution ? lastExecution.latLng : odomLatLng.value
-  return [start].concat(
-    stagingForMap.value.map((wp) => wp.latLng),
-  )
-})
-
 const handleMapReady = () => {
   onMapReady()
 }
@@ -189,7 +176,3 @@ websocketStore.onMessage<BasestationPositionMessage>('nav', 'basestation_positio
   basestation_longitude_deg.value = msg.longitude
 })
 </script>
-<<<<<<< HEAD
-
-=======
->>>>>>> km/teleop-threejs
