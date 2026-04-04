@@ -1,21 +1,21 @@
 <template>
   <div
     class="wrapper flex m-0 p-0 h-full w-full gap-2 relative outline-none"
-    tabindex="0"
+    :tabindex="vimEnabled ? 0 : -1"
     @keydown="handleKeydown"
     @focus="editorFocused = true"
     @blur="handleBlur"
     ref="editorRef"
   >
-    <div class="editor-column" :class="{ 'column-focused': editorFocused && keyboard.focusedColumn.value === 'store' }">
+    <div class="editor-column" :class="{ 'column-focused': vimEnabled && editorFocused && keyboard.focusedColumn.value === 'store' }">
       <div class="waypoint-header p-2 mb-2 flex justify-between items-center border-b">
         <div class="flex items-center gap-2">
           <h4 class="component-header">Waypoint Store</h4>
           <button
-            class="btn btn-sm vim-btn"
-            :class="focusLocked ? 'vim-btn--active' : 'vim-btn--inactive'"
-            title="GET VIMMING"
-            @click="toggleFocusLock"
+            class="vim-toggle"
+            :class="vimEnabled ? 'vim-toggle--on' : 'vim-toggle--off'"
+            title="Toggle Vim keybindings"
+            @click="toggleVim"
           >
             <img src="/vim-logo.svg" alt="Vim" class="vim-logo" />
           </button>
@@ -53,9 +53,9 @@
           :key="waypoint.db_id || index"
           :waypoint="waypoint"
           :index="index"
-          :highlighted="editorFocused && keyboard.focusedColumn.value === 'store' && keyboard.storeIndex.value === index"
-          :visual-selected="keyboard.selectedIndices.value.has(index)"
-          :editing="keyboard.editingStoreIndex.value === index"
+          :highlighted="vimEnabled && editorFocused && keyboard.focusedColumn.value === 'store' && keyboard.storeIndex.value === index"
+          :visual-selected="vimEnabled && keyboard.storeSelectedIndices.value.has(index)"
+          :editing="vimEnabled && keyboard.editingStoreIndex.value === index"
           @add="autonomyStore.addToExecution"
           @delete="autonomyStore.removeFromStore"
           @update="handleStoreUpdate"
@@ -63,12 +63,12 @@
           @save-edit="handleInlineEdit"
         />
       </VueDraggable>
-      <div v-if="keyboard.mode.value === 'VISUAL'" class="visual-mode-bar">
-        -- VISUAL -- ({{ keyboard.selectedIndices.value.size }} selected)
+      <div v-if="vimEnabled && keyboard.storeSelectedIndices.value.size > 0" class="visual-mode-bar">
+        -- VISUAL -- ({{ keyboard.storeSelectedIndices.value.size }} selected)
       </div>
     </div>
 
-    <div class="editor-column" :class="{ 'column-focused': editorFocused && keyboard.focusedColumn.value === 'execution' }">
+    <div class="editor-column" :class="{ 'column-focused': vimEnabled && editorFocused && keyboard.focusedColumn.value === 'execution' }">
       <div class="waypoint-header p-2 mb-2 flex justify-between items-center border-b">
         <h4 class="component-header">Execution</h4>
         <div class="flex gap-1">
@@ -98,7 +98,10 @@
           v-for="(wp, index) in autonomyStore.execution"
           :key="wp.db_id ?? index"
           class="list-item"
-          :class="{ 'kbd-highlighted': editorFocused && keyboard.focusedColumn.value === 'execution' && keyboard.executionIndex.value === index }"
+          :class="{
+            'kbd-highlighted': vimEnabled && editorFocused && keyboard.focusedColumn.value === 'execution' && keyboard.executionIndex.value === index,
+            'kbd-visual-selected': vimEnabled && keyboard.executionSelectedIndices.value.has(index),
+          }"
         >
           <div class="flex justify-between items-center mb-1">
             <h5 class="list-item-title">{{ wp.name }}</h5>
@@ -116,9 +119,12 @@
           </div>
         </div>
       </VueDraggable>
+      <div v-if="vimEnabled && keyboard.executionSelectedIndices.value.size > 0" class="visual-mode-bar">
+        -- VISUAL -- ({{ keyboard.executionSelectedIndices.value.size }} selected)
+      </div>
     </div>
 
-    <div v-if="keyboard.showCheatSheet.value" class="kbd-cheatsheet" @click="keyboard.showCheatSheet.value = false">
+    <div v-if="vimEnabled && keyboard.showCheatSheet.value" class="kbd-cheatsheet" @click="keyboard.showCheatSheet.value = false">
       <div class="kbd-cheatsheet-content" @click.stop>
         <div class="flex justify-between items-center mb-3">
           <h5 class="font-bold">Keyboard Shortcuts</h5>
@@ -191,14 +197,15 @@ const keyboard = useWaypointKeyboard()
 
 const editorRef = ref<HTMLElement | null>(null)
 const editorFocused = ref(false)
-const LS_FOCUS_LOCK = 'autonEditor.focusLocked'
-const focusLocked = ref(localStorage.getItem(LS_FOCUS_LOCK) === 'true')
 const addModal = ref<InstanceType<typeof AutonAddWaypointModal> | null>(null)
 const resetModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 
+const LS_VIM = 'autonEditor.vimEnabled'
+const vimEnabled = ref(localStorage.getItem(LS_VIM) === 'true')
+
 onMounted(() => {
   autonomyStore.fetchAll()
-  if (focusLocked.value) {
+  if (vimEnabled.value) {
     editorRef.value?.focus()
   }
 })
@@ -213,26 +220,30 @@ function scrollToHighlighted() {
 }
 
 watch(() => keyboard.scrollKey.value, () => {
-  if (!editorFocused.value) return
+  if (!vimEnabled.value || !editorFocused.value) return
   scrollToHighlighted()
 })
 
 watch(() => keyboard.editingStoreIndex.value, (idx) => {
-  if (idx >= 0) scrollToHighlighted()
+  if (vimEnabled.value && idx >= 0) scrollToHighlighted()
 })
 
-function toggleFocusLock() {
-  focusLocked.value = !focusLocked.value
-  localStorage.setItem(LS_FOCUS_LOCK, String(focusLocked.value))
-  if (focusLocked.value) {
+function toggleVim() {
+  vimEnabled.value = !vimEnabled.value
+  localStorage.setItem(LS_VIM, String(vimEnabled.value))
+  if (vimEnabled.value) {
     editorRef.value?.focus()
   } else {
+    keyboard.exitVisualMode()
+    keyboard.exitInsertMode()
     editorRef.value?.blur()
+    editorFocused.value = false
   }
 }
 
 function handleKeydown(e: KeyboardEvent) {
-  if (focusLocked.value && e.key === 'Tab' && keyboard.mode.value === 'NORMAL') {
+  if (!vimEnabled.value) return
+  if (e.key === 'Tab' && keyboard.mode.value === 'NORMAL') {
     e.preventDefault()
     return
   }
@@ -253,19 +264,21 @@ function handleStoreUpdate(waypoint: AutonWaypoint, index: number) {
 }
 
 function handleBlur(e: FocusEvent) {
+  if (!vimEnabled.value) {
+    editorFocused.value = false
+    return
+  }
   const wrapper = editorRef.value
   if (wrapper && e.relatedTarget instanceof Node && wrapper.contains(e.relatedTarget)) {
     return
   }
-  if (focusLocked.value) {
-    nextTick(() => wrapper?.focus())
-    return
-  }
-  editorFocused.value = false
+  nextTick(() => wrapper?.focus())
 }
 
 function refocusEditor() {
-  editorRef.value?.focus()
+  if (vimEnabled.value) {
+    editorRef.value?.focus()
+  }
 }
 
 function handleInlineEdit(waypoint: AutonWaypoint, index: number) {
@@ -284,7 +297,6 @@ function handleStoreDragEnd() {
 }
 
 function handleExecutionDragAdd(evt: { newIndex: number }) {
-  // Clone from store landed in execution -- deduplicate
   const wp = autonomyStore.execution[evt.newIndex]
   if (!wp) return
   const isDuplicate = autonomyStore.execution.some(
@@ -316,7 +328,7 @@ function handleExecutionDragEnd() {
 }
 
 .column-focused {
-  border-color: var(--color-primary);
+  border-color: var(--status-ok);
 }
 
 .waypoint-wrapper {
@@ -328,7 +340,7 @@ function handleExecutionDragEnd() {
   padding: 0.25rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--status-ok);
   text-align: center;
   letter-spacing: 0.05em;
   background-color: var(--view-bg);
@@ -355,31 +367,33 @@ function handleExecutionDragEnd() {
   font-size: 0.75rem;
 }
 
-.vim-btn {
+.vim-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  padding: 2px;
+  width: 2rem;
+  height: 2rem;
+  padding: 3px;
   border-radius: var(--radius-sm);
-  border: 2px solid transparent;
   cursor: pointer;
   transition: all 0.15s;
 }
 
-.vim-btn--active {
-  border-color: var(--color-primary);
-  background-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
+.vim-toggle--on {
+  border: 2px solid var(--status-ok);
+  background-color: rgba(var(--status-ok-rgb), 0.15);
+  box-shadow: 0 0 6px rgba(var(--status-ok-rgb), 0.3);
 }
 
-.vim-btn--inactive {
-  opacity: 0.4;
+.vim-toggle--off {
+  border: 2px solid var(--panel-border);
   background-color: transparent;
+  opacity: 0.35;
 }
 
-.vim-btn--inactive:hover {
-  opacity: 0.8;
+.vim-toggle--off:hover {
+  opacity: 0.7;
+  border-color: var(--text-muted);
 }
 
 .vim-logo {
@@ -387,4 +401,5 @@ function handleExecutionDragEnd() {
   height: 100%;
   object-fit: contain;
 }
+
 </style>

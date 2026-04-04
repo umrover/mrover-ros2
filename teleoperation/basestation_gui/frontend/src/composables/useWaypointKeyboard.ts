@@ -5,6 +5,14 @@ import type { AutonWaypoint } from '@/types/waypoints'
 export type Column = 'store' | 'execution'
 export type KeyboardMode = 'NORMAL' | 'INSERT' | 'VISUAL'
 
+function rangeToSet(anchor: number, cursor: number): Set<number> {
+  const start = Math.min(anchor, cursor)
+  const end = Math.max(anchor, cursor)
+  const indices = new Set<number>()
+  for (let i = start; i <= end; i++) indices.add(i)
+  return indices
+}
+
 export function useWaypointKeyboard() {
   const autonomyStore = useAutonomyStore()
 
@@ -15,42 +23,30 @@ export function useWaypointKeyboard() {
   const showCheatSheet = ref(false)
   const editingStoreIndex = ref(-1)
 
-  const visualAnchor = ref(-1)
+  const storeVisualAnchor = ref(-1)
+  const executionVisualAnchor = ref(-1)
 
   let pendingKey = ''
   let pendingTimeout: ReturnType<typeof setTimeout> | null = null
 
-  const selectedRange = computed<{ start: number; end: number } | null>(() => {
-    if (mode.value !== 'VISUAL' || visualAnchor.value < 0) return null
-    const a = visualAnchor.value
-    const b = storeIndex.value
-    return { start: Math.min(a, b), end: Math.max(a, b) }
+  const storeSelectedIndices = computed<Set<number>>(() => {
+    if (mode.value !== 'VISUAL' || storeVisualAnchor.value < 0) return new Set()
+    return rangeToSet(storeVisualAnchor.value, storeIndex.value)
   })
 
-  const selectedIndices = computed<Set<number>>(() => {
-    const range = selectedRange.value
-    if (!range) return new Set()
-    const indices = new Set<number>()
-    for (let i = range.start; i <= range.end; i++) {
-      indices.add(i)
-    }
-    return indices
+  const executionSelectedIndices = computed<Set<number>>(() => {
+    if (mode.value !== 'VISUAL' || executionVisualAnchor.value < 0) return new Set()
+    return rangeToSet(executionVisualAnchor.value, executionIndex.value)
   })
 
   function getColumnList(column?: Column): AutonWaypoint[] {
     const col = column ?? focusedColumn.value
-    switch (col) {
-      case 'store': return autonomyStore.store
-      case 'execution': return autonomyStore.execution
-    }
+    return col === 'store' ? autonomyStore.store : autonomyStore.execution
   }
 
   function getColumnIndexRef(column?: Column) {
     const col = column ?? focusedColumn.value
-    switch (col) {
-      case 'store': return storeIndex
-      case 'execution': return executionIndex
-    }
+    return col === 'store' ? storeIndex : executionIndex
   }
 
   function clampIndex(column?: Column) {
@@ -103,16 +99,28 @@ export function useWaypointKeyboard() {
     }
   }
 
+  function getVisualAnchorRef(column?: Column) {
+    const col = column ?? focusedColumn.value
+    return col === 'store' ? storeVisualAnchor : executionVisualAnchor
+  }
+
+  function getSelectedIndices(column?: Column) {
+    const col = column ?? focusedColumn.value
+    return col === 'store' ? storeSelectedIndices : executionSelectedIndices
+  }
+
   function enterVisualMode() {
-    if (focusedColumn.value !== 'store') return
-    if (autonomyStore.store.length === 0) return
+    const list = getColumnList()
+    if (list.length === 0) return
+    if (focusedColumn.value === 'execution' && autonomyStore.isNavigating) return
     mode.value = 'VISUAL'
-    visualAnchor.value = storeIndex.value
+    getVisualAnchorRef().value = getColumnIndexRef().value
   }
 
   function exitVisualMode() {
     mode.value = 'NORMAL'
-    visualAnchor.value = -1
+    storeVisualAnchor.value = -1
+    executionVisualAnchor.value = -1
   }
 
   function enterInsertMode() {
@@ -132,10 +140,12 @@ export function useWaypointKeyboard() {
   async function performStage() {
     if (focusedColumn.value !== 'store') return
 
-    if (mode.value === 'VISUAL') {
-      const range = selectedRange.value
-      if (!range) return
-      const waypoints = autonomyStore.store.slice(range.start, range.end + 1)
+    if (mode.value === 'VISUAL' && storeVisualAnchor.value >= 0) {
+      const indices = storeSelectedIndices.value
+      if (indices.size === 0) return
+      const start = Math.min(...indices)
+      const end = Math.max(...indices)
+      const waypoints = autonomyStore.store.slice(start, end + 1)
       await autonomyStore.addManyToExecution(waypoints)
       exitVisualMode()
       return
@@ -148,11 +158,21 @@ export function useWaypointKeyboard() {
   }
 
   async function performDelete() {
-    if (mode.value === 'VISUAL' && focusedColumn.value === 'store') {
-      const range = selectedRange.value
-      if (!range) return
-      const indices = Array.from(selectedIndices.value)
-      await autonomyStore.removeMultipleFromStore(indices)
+    if (mode.value === 'VISUAL') {
+      const selected = getSelectedIndices()
+      const indices = Array.from(selected.value)
+      if (indices.length === 0) return
+
+      if (focusedColumn.value === 'store') {
+        await autonomyStore.removeMultipleFromStore(indices)
+      } else {
+        const waypoints = indices
+          .map(i => autonomyStore.execution[i])
+          .filter((wp): wp is AutonWaypoint => wp != null)
+        for (const wp of waypoints.reverse()) {
+          await autonomyStore.removeFromExecution(wp)
+        }
+      }
       exitVisualMode()
       clampIndex()
       return
@@ -164,7 +184,7 @@ export function useWaypointKeyboard() {
 
     if (focusedColumn.value === 'store') {
       await autonomyStore.removeFromStore(idx.value)
-    } else if (focusedColumn.value === 'execution') {
+    } else {
       const wp = list[idx.value]
       if (wp) await autonomyStore.removeFromExecution(wp)
     }
@@ -326,9 +346,8 @@ export function useWaypointKeyboard() {
     editingStoreIndex,
     showCheatSheet,
     scrollKey,
-    visualAnchor,
-    selectedRange,
-    selectedIndices,
+    storeSelectedIndices,
+    executionSelectedIndices,
     handleKeydown,
     exitInsertMode,
     exitVisualMode,

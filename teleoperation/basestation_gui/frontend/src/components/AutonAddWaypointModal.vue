@@ -1,6 +1,6 @@
 <template>
   <Teleport to="body">
-    <div v-if="isOpen" class="modal-backdrop" @click.self="close" data-testid="pw-waypoint-modal">
+    <div v-if="isOpen" class="modal-backdrop" @click.self="close" @keydown.escape="close" @keydown.enter.prevent="submit" data-testid="pw-waypoint-modal">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">

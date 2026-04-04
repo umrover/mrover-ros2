@@ -718,12 +718,12 @@ html {
 /* ===== Keyboard navigation ===== */
 
 .kbd-highlighted {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--status-ok);
   outline-offset: -2px;
 }
 
 .kbd-visual-selected {
-  background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+  background-color: rgba(var(--status-ok-rgb), 0.15);
 }
 
 .kbd-cheatsheet {
