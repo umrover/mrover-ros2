@@ -3,6 +3,7 @@
 #include <parameter.hpp>
 #include <rclcpp/logging.hpp>
 #include <string>
+#include <utility>
 
 #include "u2d2.hpp"
 
@@ -25,15 +26,16 @@ namespace mrover {
         static constexpr int32_t SERVO_TICKS = 4096;
         static constexpr uint8_t SERVO_POSITION_DEAD_ZONE = 5;
 
-        static constexpr int getUpper(int const val) { return val == 0 ? 4096 : val; }
+        [[nodiscard]] constexpr auto getUpper(int64_t const val) const -> auto { return val == 0 ? static_cast<int64_t>(mTicksPerRevolution) : val; }
 
         ServoID mServoID;
         std::string mServoName;
-        int mLimitAdjustment;
-        int mAdjustedForwardLimit;
-        int mAdjustedReverseLimit;
-        uint32_t mGoalPosition;
-        float mPositionMultiplier;
+        int64_t mLimitAdjustment;
+        int64_t mAdjustedForwardLimit;
+        int64_t mAdjustedReverseLimit;
+        int64_t mGoalPosition;
+        uint32_t mPositionOffsetTicks;
+        int64_t mTicksPerRevolution;
 
         bool mAtLimit = false;
 
@@ -59,7 +61,7 @@ namespace mrover {
         };
 
         Servo(rclcpp::Node::SharedPtr node, std::string servoName) : mServoName{std::move(servoName)}, mLimitAdjustment{0}, mAdjustedForwardLimit{0},
-                                                                     mAdjustedReverseLimit{0}, mGoalPosition{0}, mPositionMultiplier{0}, mNode{std::move(node)} {
+                                                                     mAdjustedReverseLimit{0}, mGoalPosition{0}, mPositionOffsetTicks{0}, mTicksPerRevolution{SERVO_TICKS}, mNode{std::move(node)} {
 
             int id;
             std::vector<ParameterWrapper> parameters = {
@@ -82,89 +84,86 @@ namespace mrover {
 
 
         auto setPosition(ServoPosition const position, ServoMode const mode) -> U2D2::Status {
-            // Convert degrees to ticks (0.0 - 360.0) to (0 to 4096)
-            auto const targetPosition = static_cast<uint16_t>((position / 360.0f) * 4096.0f) % 4096;
+            // Convert degrees to ticks (0.0 - 360.0) to (0 to mTicksPerRevolution)
+            mGoalPosition = static_cast<int64_t>((position / 360.0f) * static_cast<double>(mTicksPerRevolution));
 
-            uint8_t hardwareStatus;
+            RCLCPP_INFO_STREAM(mNode->get_logger(), "Setting goal position: " << mGoalPosition);
 
-            uint32_t presentPosition;
-            U2D2::getInstance()->read4Byte(ADDR_PRESENT_POSITION, presentPosition, mServoID, &hardwareStatus);
-            presentPosition = static_cast<uint32_t>(static_cast<double>(presentPosition) / mPositionMultiplier);
+            auto currentPositionAndStatus = getCurrentServoPosition();
 
-            // Get current position (make sure its positive)
-            auto const currentPosition = static_cast<uint16_t>((presentPosition + SERVO_TICKS) % SERVO_TICKS);
+            if(currentPositionAndStatus.second != U2D2::Status::Success){
+                return currentPositionAndStatus.second;
+            }
 
             // Calculate the signed difference (accounting for overflow)
-            int normalizedDifference = static_cast<int>(targetPosition - currentPosition);
+            auto normalizedDifference = static_cast<int64_t>(mGoalPosition - currentPositionAndStatus.first);
 
             mAtLimit = false;
 
             switch (mode) {
                 case ServoMode::Optimal:
-                    if (normalizedDifference > (SERVO_TICKS / 2)) {
-                        normalizedDifference -= SERVO_TICKS; // Go the other (shorter) way around
-                    } else if (normalizedDifference < -(SERVO_TICKS / 2)) {
-                        normalizedDifference += SERVO_TICKS; // Go the other (shorter) way around
+                    if (normalizedDifference > (mTicksPerRevolution / 2)) {
+                        mGoalPosition -= mTicksPerRevolution; // Go the other (shorter) way around
+                    } else if (normalizedDifference < -(mTicksPerRevolution / 2)) {
+                        mGoalPosition += mTicksPerRevolution; // Go the other (shorter) way around
                     }
                     break;
                 case ServoMode::Clockwise: // clockwise
                     if (normalizedDifference < 0) {
-                        normalizedDifference += SERVO_TICKS;
+                        mGoalPosition += mTicksPerRevolution;
                     }
                     break;
                 case ServoMode::CounterClockwise: // counter clockwise
                     if (normalizedDifference > 0) {
-                        normalizedDifference -= SERVO_TICKS;
+                        mGoalPosition -= mTicksPerRevolution;
                     }
                     break;
                 case ServoMode::Limited: {
 
                     // Adjust target and current position
-                    int const adjustedCurrentPosition = (currentPosition - mLimitAdjustment + SERVO_TICKS) % SERVO_TICKS;
-                    int const adjustedTargetPosition = (targetPosition - mLimitAdjustment + SERVO_TICKS) % SERVO_TICKS;
+                    int64_t const adjustedCurrentPosition = (currentPositionAndStatus.first - mLimitAdjustment + mTicksPerRevolution) % mTicksPerRevolution;
+                    int64_t const adjustedTargetPosition = (mGoalPosition - mLimitAdjustment + mTicksPerRevolution) % mTicksPerRevolution;
 
                     // If the current path to the final position goes over the middle limit, go the other way
                     if (0 > adjustedCurrentPosition && 0 < adjustedTargetPosition) {
 
                         if (normalizedDifference > 0)
-                            normalizedDifference -= SERVO_TICKS;
+                            mGoalPosition -= mTicksPerRevolution;
                         else if (normalizedDifference < 0)
-                            normalizedDifference += SERVO_TICKS;
+                            mGoalPosition += mTicksPerRevolution;
                     }
 
                     mAtLimit = false;
 
                     // Limit destination if between mForwardLimit and middleLimit
                     if (getUpper(adjustedTargetPosition) > mAdjustedForwardLimit) {
-                        normalizedDifference = (mAdjustedForwardLimit - adjustedCurrentPosition) % SERVO_TICKS;
-                        if (normalizedDifference < 0 && !(getUpper(adjustedCurrentPosition) > mAdjustedForwardLimit && adjustedCurrentPosition < SERVO_TICKS)) normalizedDifference += SERVO_TICKS;
+                        mGoalPosition = (mAdjustedForwardLimit - adjustedCurrentPosition) % mTicksPerRevolution;
+                        if (normalizedDifference < 0 && !(getUpper(adjustedCurrentPosition) > mAdjustedForwardLimit && adjustedCurrentPosition < mTicksPerRevolution)) mGoalPosition += mTicksPerRevolution;
                         mAtLimit = true;
                     }
 
                     // Limit destination if between mReverseLimit and middleLimit
                     else if (adjustedTargetPosition < getUpper(mAdjustedReverseLimit)) {
 
-                        normalizedDifference = (mAdjustedReverseLimit - adjustedCurrentPosition) % SERVO_TICKS;
-                        if (normalizedDifference > 0 && !(getUpper(adjustedCurrentPosition) > 0 && adjustedCurrentPosition < getUpper(mAdjustedReverseLimit))) normalizedDifference -= SERVO_TICKS;
+                        mGoalPosition = (mAdjustedReverseLimit - adjustedCurrentPosition) % mTicksPerRevolution;
+                        if (normalizedDifference > 0 && !(getUpper(adjustedCurrentPosition) > 0 && adjustedCurrentPosition < getUpper(mAdjustedReverseLimit))) mGoalPosition -= mTicksPerRevolution;
                         mAtLimit = true;
                     }
                 }
             }
 
-            // Calculate final goal position
-            mGoalPosition = currentPosition + normalizedDifference;
             // Write goal position
-            return U2D2::getInstance()->write4Byte(ADDR_GOAL_POSITION, static_cast<uint32_t>(static_cast<float>(mGoalPosition) * mPositionMultiplier), mServoID, &hardwareStatus);
+            uint8_t hardwareStatus;
+            uint32_t rawGoal = offsetToRaw(mGoalPosition);
+            RCLCPP_INFO_STREAM(mNode->get_logger(), "Setting raw position: " << rawGoal);
+            return U2D2::getInstance()->write4Byte(ADDR_GOAL_POSITION, rawGoal, mServoID, &hardwareStatus);
         }
 
 
         auto getPosition(ServoPosition& position) const -> U2D2::Status {
-            uint8_t hardwareStatus;
-            uint32_t positionInt;
-            U2D2::Status const status = U2D2::getInstance()->read4Byte(ADDR_PRESENT_POSITION, positionInt, mServoID, &hardwareStatus);
-            positionInt = static_cast<uint32_t>(static_cast<double>(positionInt) / mPositionMultiplier);
-            position = (static_cast<float>(positionInt % 4096) / 4096.0f) * 360.0f;
-            return status;
+            auto const positionTicks = getCurrentServoPosition();
+            position = (static_cast<double>(positionTicks.first) / static_cast<double>(mTicksPerRevolution)) * 360.0;
+            return positionTicks.second;
         }
 
         auto getVelocity(ServoVelocity& velocity) const -> U2D2::Status {
@@ -183,15 +182,6 @@ namespace mrover {
             return status;
         }
 
-        auto getPositionAbsolute(ServoPosition& position) const -> U2D2::Status {
-            uint8_t hardwareStatus;
-            uint32_t positionInt;
-            U2D2::Status const status = U2D2::getInstance()->read4Byte(ADDR_PRESENT_POSITION, positionInt, mServoID, &hardwareStatus);
-            positionInt = static_cast<uint32_t>(static_cast<double>(positionInt) / mPositionMultiplier);
-            position = (static_cast<double>(positionInt) / 4096.0f) * 360.0f;
-            return status;
-        }
-
         [[nodiscard]] auto setProperty(ServoProperty prop, uint16_t const value) const -> U2D2::Status {
             uint8_t hardwareStatus;
             if (prop == ServoProperty::ProfileVelocity || prop == ServoProperty::ProfileAcceleration) {
@@ -201,19 +191,12 @@ namespace mrover {
         }
 
         [[nodiscard]] auto getTargetStatus() const -> U2D2::Status {
-            uint8_t hardwareStatus;
-            uint32_t presentPosition;
+            auto const currentPositionAndStatus = getCurrentServoPosition();
 
-            U2D2::Status const status = U2D2::getInstance()->read4Byte(ADDR_PRESENT_POSITION, presentPosition, mServoID, &hardwareStatus);
-            presentPosition = presentPosition / static_cast<uint32_t>(mPositionMultiplier);
-            if (status != U2D2::Status::Success) return status;
+            if (currentPositionAndStatus.second != U2D2::Status::Success) return currentPositionAndStatus.second;
 
-            if (uint32_t const mGoalPositionMod = mGoalPosition % SERVO_TICKS; presentPosition > mGoalPositionMod - SERVO_POSITION_DEAD_ZONE && presentPosition < mGoalPositionMod + SERVO_POSITION_DEAD_ZONE) {
+            if (std::abs(currentPositionAndStatus.first - mGoalPosition) < SERVO_POSITION_DEAD_ZONE) {
                 return U2D2::Status::Success;
-            }
-
-            if (hardwareStatus != 0) {
-                return U2D2::Status::HardwareFailure;
             }
 
             return U2D2::Status::Active;
@@ -237,12 +220,12 @@ namespace mrover {
             double velocityPGain;
             double velocityIGain;
             double currentLimit;
-            double positionMultiplier;
             double profileAcceleration;
             double profileVelocity;
+            int    ticksPerRevolution;
 
             std::vector<ParameterWrapper> parameters = {
-                    {std::format("{}.position_multiplier", mServoName), positionMultiplier, 340.0},
+                    {std::format("{}.ticks_per_revolution", mServoName), ticksPerRevolution, SERVO_TICKS},
                     {std::format("{}.reverse_limit", mServoName), reverseLimit, 0.0},
                     {std::format("{}.forward_limit", mServoName), forwardLimit, 340.0},
                     {std::format("{}.position_p", mServoName), positionPGain, 400.0},
@@ -267,20 +250,78 @@ namespace mrover {
 
             ParameterWrapper::declareParameters(mNode.get(), parameters);
 
-            mPositionMultiplier = static_cast<float>(positionMultiplier);
+            mTicksPerRevolution = ticksPerRevolution;
 
-            int const reverseLimitTicks = static_cast<int>((reverseLimit / 360.0f) * 4096.0f);
-            int const forwardLimitTicks = static_cast<int>((forwardLimit / 360.0f) * 4096.0f);
+            int const reverseLimitTicks = static_cast<int>((reverseLimit / 360.0f) * static_cast<double>(mTicksPerRevolution));
+            int const forwardLimitTicks = static_cast<int>((forwardLimit / 360.0f) * static_cast<double>(mTicksPerRevolution));
 
             mLimitAdjustment = (forwardLimitTicks + reverseLimitTicks) / 2;
 
             if (forwardLimitTicks > reverseLimitTicks) {
-                mLimitAdjustment = (forwardLimitTicks + reverseLimitTicks + SERVO_TICKS) / 2;
+                mLimitAdjustment = (forwardLimitTicks + reverseLimitTicks + mTicksPerRevolution) / 2;
             }
-            mLimitAdjustment %= SERVO_TICKS;
+            mLimitAdjustment %= mTicksPerRevolution;
 
-            mAdjustedReverseLimit = (static_cast<int>((reverseLimit / 360.0f) * 4096.0f) - mLimitAdjustment + SERVO_TICKS) % SERVO_TICKS;
-            mAdjustedForwardLimit = (static_cast<int>((forwardLimit / 360.0f) * 4096.0f) - mLimitAdjustment + SERVO_TICKS) % SERVO_TICKS;
+            mAdjustedReverseLimit = (static_cast<int64_t>((reverseLimit / 360.0f) * static_cast<double>(mTicksPerRevolution)) - mLimitAdjustment + mTicksPerRevolution) % mTicksPerRevolution;
+            mAdjustedForwardLimit = (static_cast<int>((forwardLimit / 360.0f) * static_cast<double>(mTicksPerRevolution)) - mLimitAdjustment + mTicksPerRevolution) % mTicksPerRevolution;
+
+            setOffset();
+        }
+
+        auto setOffset() -> void {
+            // Read the servos current position
+            uint8_t hardwareStatus;
+            uint32_t presentPosition;
+            U2D2::getInstance()->read4Byte(ADDR_PRESENT_POSITION, presentPosition, mServoID, &hardwareStatus);
+
+            // Update the offset of the servo
+            mPositionOffsetTicks = presentPosition;
+        }
+
+        [[nodiscard]] auto rawToOffset(uint32_t position) const -> int64_t {
+            // apply the offset to the position of the servos
+            int64_t updatedPosition = static_cast<int64_t>(position) - mPositionOffsetTicks;
+
+            // correct for an underflow
+            while(updatedPosition < 0){
+                updatedPosition += mTicksPerRevolution;
+            }
+
+            // correct for an overflow
+            while(updatedPosition > std::numeric_limits<uint32_t>::max()){
+                updatedPosition -= mTicksPerRevolution;
+            }
+
+            return updatedPosition;
+        }
+
+        [[nodiscard]] auto offsetToRaw(int64_t position) const -> uint32_t {
+            // apply the offset to the position of the servos
+            int64_t updatedPosition = position + mPositionOffsetTicks;
+
+            // correct for an underflow
+            while(updatedPosition < 0){
+                updatedPosition += mTicksPerRevolution;
+            }
+
+            // correct for an overflow
+            while(updatedPosition > std::numeric_limits<uint32_t>::max()){
+                updatedPosition -= mTicksPerRevolution;
+            }
+
+            return updatedPosition;
+        }
+
+        [[nodiscard]] auto getCurrentServoPosition() const -> std::pair<int64_t, U2D2::Status> {
+            uint8_t hardwareStatus;
+            uint32_t presentPosition;
+            U2D2::Status const status = U2D2::getInstance()->read4Byte(ADDR_PRESENT_POSITION, presentPosition, mServoID, &hardwareStatus);
+
+            int64_t offsetPosition = rawToOffset(presentPosition);
+
+            RCLCPP_INFO_STREAM(mNode->get_logger(), "Current raw servo position " << presentPosition << " offset " << mPositionOffsetTicks << " offset position " << offsetPosition << " offset target " << mGoalPosition << " raw target position " << offsetToRaw(mGoalPosition));
+
+            return std::make_pair(offsetPosition, status);
         }
     };
 } // namespace mrover
