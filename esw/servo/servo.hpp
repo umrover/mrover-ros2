@@ -91,7 +91,7 @@ namespace mrover {
 
             auto currentPositionAndStatus = getCurrentServoPosition();
 
-            if(currentPositionAndStatus.second != U2D2::Status::Success){
+            if (currentPositionAndStatus.second != U2D2::Status::Success) {
                 return currentPositionAndStatus.second;
             }
 
@@ -222,7 +222,7 @@ namespace mrover {
             double currentLimit;
             double profileAcceleration;
             double profileVelocity;
-            int    ticksPerRevolution;
+            int ticksPerRevolution;
 
             std::vector<ParameterWrapper> parameters = {
                     {std::format("{}.ticks_per_revolution", mServoName), ticksPerRevolution, SERVO_TICKS},
@@ -283,12 +283,12 @@ namespace mrover {
             int64_t updatedPosition = static_cast<int64_t>(position) - mPositionOffsetTicks;
 
             // correct for an underflow
-            while(updatedPosition < 0){
+            while (updatedPosition < 0) {
                 updatedPosition += mTicksPerRevolution;
             }
 
             // correct for an overflow
-            while(updatedPosition > std::numeric_limits<uint32_t>::max()){
+            while (updatedPosition > std::numeric_limits<uint32_t>::max()) {
                 updatedPosition -= mTicksPerRevolution;
             }
 
@@ -300,12 +300,12 @@ namespace mrover {
             int64_t updatedPosition = position + mPositionOffsetTicks;
 
             // correct for an underflow
-            while(updatedPosition < 0){
+            while (updatedPosition < 0) {
                 updatedPosition += mTicksPerRevolution;
             }
 
             // correct for an overflow
-            while(updatedPosition > std::numeric_limits<uint32_t>::max()){
+            while (updatedPosition > std::numeric_limits<uint32_t>::max()) {
                 updatedPosition -= mTicksPerRevolution;
             }
 
