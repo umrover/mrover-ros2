@@ -5,7 +5,7 @@ mast_gimbal_hw_bridge:
       id: 3
       ticks_per_revolution: 4096
       forward_limit: 0.0
-      reverse_limit: 270.0
+      reverse_limit: 1.57
       position_p: 5000.0
       position_i: 0.0
       position_d: 0.0
@@ -17,8 +17,8 @@ mast_gimbal_hw_bridge:
     gimbal_yaw:
       id: 4
       ticks_per_revolution: 25600
-      forward_limit: 350.0
-      reverse_limit: 10.0
+      forward_limit: 6.108
+      reverse_limit: 0.174
       position_p: 4000.0
       position_i: 0.0
       position_d: 0.0

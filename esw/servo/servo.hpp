@@ -26,6 +26,8 @@ namespace mrover {
         static constexpr int32_t SERVO_TICKS = 4096;
         static constexpr uint8_t SERVO_POSITION_DEAD_ZONE = 5;
 
+        static constexpr double TAU = 2 * M_PI;
+
         [[nodiscard]] constexpr auto getUpper(int64_t const val) const -> auto { return val == 0 ? static_cast<int64_t>(mTicksPerRevolution) : val; }
 
         ServoID mServoID;
@@ -85,7 +87,7 @@ namespace mrover {
 
         auto setPosition(ServoPosition const position, ServoMode const mode) -> U2D2::Status {
             // Convert degrees to ticks (0.0 - 360.0) to (0 to mTicksPerRevolution)
-            mGoalPosition = static_cast<int64_t>((position / 360.0f) * static_cast<double>(mTicksPerRevolution));
+            mGoalPosition = static_cast<int64_t>((position / TAU) * static_cast<double>(mTicksPerRevolution));
 
 
             auto currentPositionAndStatus = getCurrentServoPosition();
@@ -160,7 +162,7 @@ namespace mrover {
 
         auto getPosition(ServoPosition& position) const -> U2D2::Status {
             auto const positionTicks = getCurrentServoPosition();
-            position = (static_cast<double>(positionTicks.first) / static_cast<double>(mTicksPerRevolution)) * 360.0;
+            position = (static_cast<double>(positionTicks.first) / static_cast<double>(mTicksPerRevolution)) * TAU;
             return positionTicks.second;
         }
 
@@ -250,8 +252,8 @@ namespace mrover {
 
             mTicksPerRevolution = ticksPerRevolution;
 
-            int const reverseLimitTicks = static_cast<int>((reverseLimit / 360.0f) * static_cast<double>(mTicksPerRevolution));
-            int const forwardLimitTicks = static_cast<int>((forwardLimit / 360.0f) * static_cast<double>(mTicksPerRevolution));
+            int const reverseLimitTicks = static_cast<int>((reverseLimit / TAU) * static_cast<double>(mTicksPerRevolution));
+            int const forwardLimitTicks = static_cast<int>((forwardLimit / TAU) * static_cast<double>(mTicksPerRevolution));
 
             mLimitAdjustment = (forwardLimitTicks + reverseLimitTicks) / 2;
 
@@ -260,8 +262,8 @@ namespace mrover {
             }
             mLimitAdjustment %= mTicksPerRevolution;
 
-            mAdjustedReverseLimit = (static_cast<int64_t>((reverseLimit / 360.0f) * static_cast<double>(mTicksPerRevolution)) - mLimitAdjustment + mTicksPerRevolution) % mTicksPerRevolution;
-            mAdjustedForwardLimit = (static_cast<int>((forwardLimit / 360.0f) * static_cast<double>(mTicksPerRevolution)) - mLimitAdjustment + mTicksPerRevolution) % mTicksPerRevolution;
+            mAdjustedReverseLimit = (static_cast<int64_t>((reverseLimit / TAU) * static_cast<double>(mTicksPerRevolution)) - mLimitAdjustment + mTicksPerRevolution) % mTicksPerRevolution;
+            mAdjustedForwardLimit = (static_cast<int>((forwardLimit / TAU) * static_cast<double>(mTicksPerRevolution)) - mLimitAdjustment + mTicksPerRevolution) % mTicksPerRevolution;
 
             setOffset();
         }
