@@ -22,10 +22,13 @@ namespace mrover {
             last_position = *position;
             position_window.push_back(*position);
             // keep a small, recent window; drive_forward_callback further prunes by timestamp
+            RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "%s", std::format("Position Window Size: {}", position_window.size()).c_str());
             if (position_window.size() > 50) {
                 position_window.pop_front();
+                RCLCPP_INFO(get_logger(), "Position window size after pop: %zu", position_window.size());
             }
         });
+
         rtk_heading_sub.subscribe(this, "/heading/fix");
         rtk_heading_status_sub.subscribe(this, "/heading_fix_status");
         imu_sub.subscribe(this, "/zed_imu/data_raw");
@@ -256,7 +259,9 @@ namespace mrover {
 
         // prune old position samples
         while (!position_window.empty()) {
+            const rclcpp::Time now = get_clock()->now();
             const rclcpp::Time t(position_window.front().header.stamp);
+            RCLCPP_INFO(get_logger(), "Difference between now and last pos: %f", (now - t).seconds());
             if (t < start) position_window.pop_front();
             else break;
         }
