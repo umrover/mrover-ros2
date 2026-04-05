@@ -27,20 +27,20 @@ def generate_launch_description():
         ],
     )
 
-    ee1_streamer_node = Node(
+    sp1_streamer_node = Node(
         package="mrover",
         executable="gst_camera_server",
-        name="ee1_streamer",
+        name="sp1_streamer",
         output="screen",
         parameters=[
             Path(get_package_share_directory("mrover"), "config", "cameras.yaml"),
         ],
     )
 
-    ee2_streamer_node = Node(
+    sp2_streamer_node = Node(
         package="mrover",
         executable="gst_camera_server",
-        name="ee2_streamer",
+        name="sp2_streamer",
         output="screen",
         parameters=[
             Path(get_package_share_directory("mrover"), "config", "cameras.yaml"),
@@ -49,4 +49,4 @@ def generate_launch_description():
 
     panorama_node = Node(package="mrover", executable="panorama.py", name="panorama", respawn=True)
 
-    return LaunchDescription([launch_include_jetson_base, science_hw_bridge_node, panorama_node, ee1_streamer_node, ee2_streamer_node])
+    return LaunchDescription([launch_include_jetson_base, science_hw_bridge_node, panorama_node, sp1_streamer_node, sp2_streamer_node])
