@@ -39,5 +39,19 @@ export const autonAPI = {
       method: 'POST',
       body: JSON.stringify({ enabled })
     })
+  },
+
+  toggleStereoDetector(enabled: boolean): Promise<TeleopEnableResponse> {
+    return apiFetch('/toggle_stereo_detector/', {
+      method: 'POST',
+      body: JSON.stringify({enabled})
+    })
+  },
+
+  toggleImageDetector(enabled: boolean): Promise<TeleopEnableResponse> {
+    return apiFetch('/toggle_image_detector/', {
+      method: 'POST',
+      body: JSON.stringify({enabled})
+    })
   }
 }

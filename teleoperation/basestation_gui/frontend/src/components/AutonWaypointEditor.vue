@@ -5,19 +5,23 @@
         <h4 class="component-header">Waypoint Store</h4>
         <div class="flex gap-2 items-center">
           <button
-            class="cmd-btn cmd-btn-danger cmd-btn-sm cmd-btn-icon-sm"
+            class="btn btn-danger btn-sm btn-icon-sm"
             data-testid="pw-reset-waypoints-btn"
             @click="resetModal?.open()"
             title="Reset waypoints"
           >
             <i class="bi bi-arrow-clockwise"></i>
           </button>
-          <button class="cmd-btn cmd-btn-sm cmd-btn-success" data-testid="pw-add-from-map" @click="addModal?.open()">
+          <button class="btn btn-sm btn-success" data-testid="pw-add-from-map" @click="addModal?.open()">
             Add from Map
           </button>
         </div>
       </div>
-      <div class="waypoint-wrapper p-2 rounded grow overflow-auto" data-testid="pw-waypoint-store-list">
+      <div class="waypoint-wrapper p-2 rounded grow overflow-auto relative" data-testid="pw-waypoint-store-list">
+        <div v-if="autonomyStore.waypoints.length === 0" class="course-empty-state">
+          <i class="bi bi-geo-alt"></i>
+          <span>No waypoints in store</span>
+        </div>
         <WaypointStore
           v-for="(waypoint, index) in autonomyStore.waypoints"
           :key="waypoint.db_id || index"
@@ -34,30 +38,33 @@
       <div class="waypoint-header p-2 mb-2 flex justify-between items-center border-b">
         <h4 class="component-header">Current Course</h4>
         <button
-          class="cmd-btn cmd-btn-sm"
-          :class="autonomyStore.allCostmapToggle ? 'cmd-btn-success' : 'cmd-btn-danger'"
+          class="btn btn-sm"
+          :class="autonomyStore.allCostmapToggle ? 'btn-success' : 'btn-danger'"
           data-testid="pw-costmap-toggle-all"
           @click="autonomyStore.toggleAllCostmaps()"
         >
           All Costmaps
         </button>
       </div>
-      <draggable
+      <VueDraggable
         v-model="autonomyStore.route"
-        item-key="tag_id"
         handle=".drag-handle"
         ghost-class="drag-ghost"
-        class="waypoint-wrapper p-2 rounded flex flex-col gap-1 grow overflow-auto"
+        class="waypoint-wrapper p-2 rounded flex flex-col gap-1 grow overflow-auto relative"
         @end="autonomyStore.saveRoute()"
       >
-        <template #item="{ element }">
-          <WaypointItem
-            :waypoint="element"
-            @delete="autonomyStore.removeFromRoute(element)"
-            @toggleCostmap="autonomyStore.toggleRouteCostmap"
-          />
-        </template>
-      </draggable>
+        <div v-if="autonomyStore.route.length === 0" class="course-empty-state">
+          <i class="bi bi-signpost-split"></i>
+          <span>No waypoints in course</span>
+        </div>
+        <WaypointItem
+          v-for="element in autonomyStore.route"
+          :key="element.tag_id"
+          :waypoint="element"
+          @delete="autonomyStore.removeFromRoute(element)"
+          @toggleCostmap="autonomyStore.toggleRouteCostmap"
+        />
+      </VueDraggable>
     </div>
   </div>
 
@@ -81,7 +88,7 @@ import WaypointItem from './AutonWaypointItem.vue'
 import WaypointStore from './AutonWaypointStore.vue'
 import AutonAddWaypointModal from './AutonAddWaypointModal.vue'
 import ConfirmModal from './ConfirmModal.vue'
-import draggable from 'vuedraggable'
+import { VueDraggable } from 'vue-draggable-plus'
 import type { AutonWaypoint } from '@/types/waypoints'
 import { useAutonomyStore } from '@/stores/autonomy'
 
@@ -119,11 +126,5 @@ function handleStoreUpdate(waypoint: AutonWaypoint, index: number) {
 .waypoint-wrapper {
   scrollbar-gutter: stable;
   background-color: var(--view-bg);
-}
-
-.drag-ghost {
-  background-color: var(--control-primary);
-  border-style: dashed !important;
-  opacity: 0.4;
 }
 </style>

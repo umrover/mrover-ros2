@@ -7,20 +7,20 @@
         </div>
         <div class="flex flex-col gap-2">
           <div class="flex items-center gap-2">
-            <label for="waypointname" class="cmd-data-label m-0">Name:</label>
-            <input class="cmd-form-control cmd-input grow" id="waypointname" data-testid="pw-basic-wp-name" v-model="name" />
+            <label for="waypointname" class="data-label m-0">Name:</label>
+            <input class="form-control input grow" id="waypointname" data-testid="pw-basic-wp-name" v-model="name" />
           </div>
           <div class="flex gap-2">
-            <div class="flex-1 cmd-input-group cmd-input-group-sm">
-              <input class="cmd-form-control cmd-input" id="deg1" v-model.number="input.lat.d" />
-              <span class="cmd-input-group-text">N</span>
+            <div class="flex-1 input-group input-group-sm">
+              <input class="form-control input" id="deg1" v-model.number="input.lat.d" />
+              <span class="input-group-text">N</span>
             </div>
-            <div class="flex-1 cmd-input-group cmd-input-group-sm">
-              <input class="cmd-form-control cmd-input" id="deg2" v-model.number="input.lon.d" />
-              <span class="cmd-input-group-text">W</span>
+            <div class="flex-1 input-group input-group-sm">
+              <input class="form-control input" id="deg2" v-model.number="input.lon.d" />
+              <span class="input-group-text">W</span>
             </div>
           </div>
-          <button class="cmd-btn cmd-btn-success cmd-btn-sm" data-testid="pw-basic-wp-add-btn" @click="handleAddWaypoint(input, false)">
+          <button class="btn btn-success btn-sm" data-testid="pw-basic-wp-add-btn" @click="handleAddWaypoint(input, false)">
             Add Waypoint
           </button>
         </div>
@@ -31,21 +31,21 @@
           <h4 class="component-header">Rover</h4>
           <button
             v-if="!isRecordingRover"
-            class="cmd-btn cmd-btn-success cmd-btn-sm"
+            class="btn btn-success btn-sm"
             @click="startRecording(false)"
           >
             Start Recording
           </button>
           <button
             v-if="isRecordingRover"
-            class="cmd-btn cmd-btn-danger cmd-btn-sm"
+            class="btn btn-danger btn-sm"
             @click="stopRecording"
           >
             Stop Recording
           </button>
         </div>
         <button
-          class="cmd-btn cmd-btn-success cmd-btn-sm w-full"
+          class="btn btn-success btn-sm w-full"
           @click="handleAddWaypoint(formatted_odom, false)"
         >
           Drop Waypoint at Rover
@@ -57,33 +57,33 @@
           <h4 class="component-header">Drone</h4>
           <button
             v-if="!isRecordingDrone"
-            class="cmd-btn cmd-btn-success cmd-btn-sm"
+            class="btn btn-success btn-sm"
             @click="startRecording(true)"
           >
             Start Recording
           </button>
           <button
             v-if="isRecordingDrone"
-            class="cmd-btn cmd-btn-danger cmd-btn-sm"
+            class="btn btn-danger btn-sm"
             @click="stopRecording"
           >
             Stop Recording
           </button>
         </div>
-        <button class="cmd-btn cmd-btn-info cmd-btn-sm w-full" @click="handleAddWaypoint(input, true)">
+        <button class="btn btn-info btn-sm w-full" @click="handleAddWaypoint(input, true)">
           Add Drone Position
         </button>
       </div>
 
       <div class="py-2">
-        <button class="cmd-btn cmd-btn-success cmd-btn-sm w-full mb-2" data-testid="pw-basic-wp-recordings-btn" @click="showRecordingsModal = true">
+        <button class="btn btn-success btn-sm w-full mb-2" data-testid="pw-basic-wp-recordings-btn" @click="showRecordingsModal = true">
           View Recordings
         </button>
         <div class="flex gap-2 w-full">
-          <button class="cmd-btn cmd-btn-danger cmd-btn-sm" data-testid="pw-basic-wp-clear-btn" @click="clearWaypointsModal?.open()">
+          <button class="btn btn-danger btn-sm" data-testid="pw-basic-wp-clear-btn" @click="clearWaypointsModal?.open()">
             Clear Waypoints
           </button>
-          <button class="cmd-btn cmd-btn-danger cmd-btn-sm" @click="clearRecordingsModal?.open()">
+          <button class="btn btn-danger btn-sm" @click="clearRecordingsModal?.open()">
             Clear Recordings
           </button>
         </div>
@@ -93,9 +93,19 @@
     <div class="flex flex-col w-full">
       <div class="p-1 mb-2 border-b-2 flex justify-between items-center">
         <h4 class="component-header">Current Course</h4>
-        <button class="cmd-btn cmd-btn-danger cmd-btn-sm" @click="handleClearList">Clear</button>
+        <button class="btn btn-danger btn-sm" @click="handleClearList">Clear</button>
       </div>
-      <div class="bg-theme-view p-2 rounded overflow-y-auto flex flex-col gap-2 grow" data-testid="pw-basic-wp-list">
+      <VueDraggable
+        v-model="erdStore.waypoints"
+        handle=".drag-handle"
+        ghost-class="drag-ghost"
+        class="bg-theme-view p-2 rounded overflow-y-auto flex flex-col gap-2 grow relative"
+        data-testid="pw-basic-wp-list"
+      >
+        <div v-if="erdStore.waypoints.length === 0" class="course-empty-state">
+          <i class="bi bi-signpost-split"></i>
+          <span>No waypoints in course</span>
+        </div>
         <WaypointItem
           v-for="(waypoint, i) in erdStore.waypoints"
           :key="waypoint.db_id || i"
@@ -105,7 +115,7 @@
           @find="erdStore.setHighlighted($event.index)"
           @search="erdStore.setSearch($event.index)"
         />
-      </div>
+      </VueDraggable>
     </div>
 
     <RecordingsModal
@@ -135,6 +145,7 @@
 
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { VueDraggable } from 'vue-draggable-plus'
 import WaypointItem from './BasicWaypointItem.vue'
 import RecordingsModal from './RecordingsModal.vue'
 import ConfirmModal from './ConfirmModal.vue'
@@ -142,7 +153,7 @@ import { useErdStore } from '@/stores/erd'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import { recordingAPI } from '@/utils/api'
-import type { NavMessage } from '@/types/coordinates'
+import type { GpsFixMessage } from '@/types/coordinates'
 
 defineProps({
   enableDrone: {
@@ -155,7 +166,6 @@ const erdStore = useErdStore()
 const { clickPoint } = storeToRefs(erdStore)
 
 const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
 
 const rover_latitude_deg = ref(0)
 const rover_longitude_deg = ref(0)
@@ -179,15 +189,9 @@ const formatted_odom = computed(() => ({
   lon: { d: rover_longitude_deg.value },
 }))
 
-const navMessage = computed(() => messages.value['nav'])
-
-watch(navMessage, (msg) => {
-  if (!msg) return
-  const navMsg = msg as NavMessage
-  if (navMsg.type === 'gps_fix') {
-    rover_latitude_deg.value = navMsg.latitude
-    rover_longitude_deg.value = navMsg.longitude
-  }
+websocketStore.onMessage<GpsFixMessage>('nav', 'gps_fix', (msg) => {
+  rover_latitude_deg.value = msg.latitude
+  rover_longitude_deg.value = msg.longitude
 })
 
 watch(clickPoint, (pt) => {
@@ -270,7 +274,7 @@ async function stopRecording() {
 </script>
 
 <style scoped>
-.cmd-input-group-text {
+.input-group-text {
   justify-content: center;
   min-width: 40px;
   font-size: 0.75rem;

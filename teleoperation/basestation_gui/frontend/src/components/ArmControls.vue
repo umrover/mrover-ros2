@@ -10,11 +10,11 @@
       <IndicatorDot :is-active="connected" class="mr-2" />
     </div>
     <div class="flex w-full" role="group" aria-label="Arm mode selection" data-testid="pw-arm-mode-buttons">
-      <div class="cmd-btn-group-connected w-full">
+      <div class="btn-group-connected w-full">
         <button
           type="button"
-          class="cmd-btn cmd-btn-sm flex-1"
-          :class="mode === 'disabled' ? 'cmd-btn-danger' : 'cmd-btn-outline-danger'"
+          class="btn btn-sm flex-1"
+          :class="mode === 'disabled' ? 'btn-danger' : 'btn-outline-danger'"
           data-testid="pw-arm-mode-disabled"
           @click="newRAMode('disabled')"
           >
@@ -22,8 +22,9 @@
         </button>
         <button
           type="button"
-          class="cmd-btn cmd-btn-sm flex-1"
-          :class="isStowing ? 'cmd-btn-warning' : 'cmd-btn-outline-warning'"
+          class="btn btn-sm flex-1"
+          :class="isStowing ? 'btn-warning' : 'btn-outline-warning'"
+          data-testid="pw-arm-mode-stow"
           :disabled="isStowing"
           @click="stowArm"
         >
@@ -31,8 +32,8 @@
         </button>
         <button
           type="button"
-          class="cmd-btn cmd-btn-sm flex-1"
-          :class="mode === 'throttle' ? 'cmd-btn-success' : 'cmd-btn-outline-success'"
+          class="btn btn-sm flex-1"
+          :class="mode === 'throttle' ? 'btn-success' : 'btn-outline-success'"
           data-testid="pw-arm-mode-throttle"
           @click="newRAMode('throttle')"
         >
@@ -40,8 +41,8 @@
         </button>
         <button
           type="button"
-          class="cmd-btn cmd-btn-sm flex-1"
-          :class="mode === 'ik-pos' ? 'cmd-btn-success' : 'cmd-btn-outline-success'"
+          class="btn btn-sm flex-1"
+          :class="mode === 'ik-pos' ? 'btn-success' : 'btn-outline-success'"
           data-testid="pw-arm-mode-ik-pos"
           @click="newRAMode('ik-pos')"
         >
@@ -49,8 +50,8 @@
         </button>
         <button
           type="button"
-          class="cmd-btn cmd-btn-sm flex-1"
-          :class="mode === 'ik-vel' ? 'cmd-btn-success' : 'cmd-btn-outline-success'"
+          class="btn btn-sm flex-1"
+          :class="mode === 'ik-vel' ? 'btn-success' : 'btn-outline-success'"
           data-testid="pw-arm-mode-ik-vel"
           @click="newRAMode('ik-vel')"
         >

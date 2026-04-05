@@ -2,10 +2,10 @@
   <div class="flex items-center gap-2 mb-2">
     <h4 class="component-header">Sensor<br>Data</h4>
     <div class="flex flex-col gap-1">
-      <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm" data-testid="pw-sensor-view-all" @click="showModal = true">
+      <button class="btn btn-outline-control btn-sm" data-testid="pw-sensor-view-all" @click="showModal = true">
         View All
       </button>
-      <button class="cmd-btn cmd-btn-outline-secondary cmd-btn-sm" data-testid="pw-sensor-csv-btn" @click="downloadCSV">
+      <button class="btn btn-outline-secondary btn-sm" data-testid="pw-sensor-csv-btn" @click="downloadCSV">
         <i class="bi bi-download"></i> CSV
       </button>
     </div>
@@ -43,28 +43,28 @@
 
   <div class="flex flex-col gap-2 grow min-h-0">
     <div class="flex gap-2 flex-1 min-h-0">
-      <div class="cmd-panel flex flex-col flex-1 min-w-0 p-1">
-        <span class="cmd-data-label mb-1">Humidity (%)</span>
+      <div class="panel flex flex-col flex-1 min-w-0 p-1">
+        <span class="data-label mb-1">Humidity (%)</span>
         <div class="grow min-h-0">
           <canvas ref="chartRef0"></canvas>
         </div>
       </div>
-      <div class="cmd-panel flex flex-col flex-1 min-w-0 p-1">
-        <span class="cmd-data-label mb-1">UV Index</span>
+      <div class="panel flex flex-col flex-1 min-w-0 p-1">
+        <span class="data-label mb-1">UV Index</span>
         <div class="grow min-h-0">
           <canvas ref="chartRef1"></canvas>
         </div>
       </div>
     </div>
     <div class="flex gap-2 flex-1 min-h-0">
-      <div class="cmd-panel flex flex-col flex-1 min-w-0 p-1">
-        <span class="cmd-data-label mb-1">Ozone (ppb)</span>
+      <div class="panel flex flex-col flex-1 min-w-0 p-1">
+        <span class="data-label mb-1">Ozone (ppb)</span>
         <div class="grow min-h-0">
           <canvas ref="chartRef2"></canvas>
         </div>
       </div>
-      <div class="cmd-panel flex flex-col flex-1 min-w-0 p-1">
-        <span class="cmd-data-label mb-1">Pressure (Pa)</span>
+      <div class="panel flex flex-col flex-1 min-w-0 p-1">
+        <span class="data-label mb-1">Pressure (Pa)</span>
         <div class="grow min-h-0">
           <canvas ref="chartRef3"></canvas>
         </div>
@@ -82,16 +82,22 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
-import { storeToRefs } from 'pinia'
 import Chart from 'chart.js/auto'
 import type { SensorData } from '../types/sensors'
-import type { ScienceMessage } from '@/types/websocket'
+import type {
+  SPOxygenMessage,
+  SPUVMessage,
+  SPTemperatureMessage,
+  SPHumidityMessage,
+  SPOzoneMessage,
+  SPCO2Message,
+  SPPressureMessage,
+} from '@/types/websocket'
 import SensorModal from '@/components/SensorModal.vue'
 
 const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
 
 const showModal = ref(false)
 
@@ -122,43 +128,26 @@ const sensor_history = ref<number[][]>([
 ])
 const timeCounter = ref(0)
 
-const scienceMessage = computed(() => messages.value['science'])
-
-watch(scienceMessage, (msg) => {
-  if (!msg) return
-  const scienceMsg = msg as ScienceMessage;
-  switch (scienceMsg.type) {
-    case 'sp_oxygen':
-      sensor_data.value.sp_oxygen = scienceMsg.percent
-      break
-    case 'sp_uv':
-      sensor_data.value.sp_uv = scienceMsg.uv_index
-      break
-    case 'sp_temp':
-      sensor_data.value.sp_temp = scienceMsg.temperature
-      break
-    case 'sp_humidity':
-      sensor_data.value.sp_humidity = scienceMsg.relative_humidity
-      break
-    case 'sp_ozone':
-      sensor_data.value.sp_ozone = scienceMsg.ppb
-      break
-    case 'sp_co2':
-      sensor_data.value.sp_co2 = scienceMsg.percent
-      break
-    case 'sp_pressure':
-      sensor_data.value.sp_pressure = scienceMsg.pressure
-      break
-    case 'sp_sensor_state':
-      sensor_data.value.sensor_states = {
-        uv_state: scienceMsg.uv_state,
-        thp_state: scienceMsg.thp_state,
-        oxygen_state: scienceMsg.oxygen_state,
-        ozone_state: scienceMsg.ozone_state,
-        co2_state: scienceMsg.co2_state,
-      }
-      break
-  }
+websocketStore.onMessage<SPOxygenMessage>('science', 'sp_oxygen', (msg) => {
+  sensor_data.value.sp_oxygen = msg.percent
+})
+websocketStore.onMessage<SPUVMessage>('science', 'sp_uv', (msg) => {
+  sensor_data.value.sp_uv = msg.uv_index
+})
+websocketStore.onMessage<SPTemperatureMessage>('science', 'sp_temp', (msg) => {
+  sensor_data.value.sp_temp = msg.temperature
+})
+websocketStore.onMessage<SPHumidityMessage>('science', 'sp_humidity', (msg) => {
+  sensor_data.value.sp_humidity = msg.relative_humidity
+})
+websocketStore.onMessage<SPOzoneMessage>('science', 'sp_ozone', (msg) => {
+  sensor_data.value.sp_ozone = msg.ppb
+})
+websocketStore.onMessage<SPCO2Message>('science', 'sp_co2', (msg) => {
+  sensor_data.value.sp_co2 = msg.percent
+})
+websocketStore.onMessage<SPPressureMessage>('science', 'sp_pressure', (msg) => {
+  sensor_data.value.sp_pressure = msg.pressure
 })
 
 const resetHistory = () => {
@@ -311,5 +300,3 @@ onBeforeUnmount(() => {
   charts.length = 0
 })
 </script>
-
-

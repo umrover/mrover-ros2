@@ -11,14 +11,14 @@
           <h4 class="component-header">Recordings</h4>
           <button
             type="button"
-            class="cmd-btn cmd-btn-sm cmd-btn-outline-control"
+            class="btn btn-sm btn-outline-control"
             @click="$emit('close')"
           >
             <i class="bi bi-x-lg"></i>
           </button>
         </div>
         <div class="modal-body p-0">
-          <ul class="cmd-nav-tabs px-4 pt-2 gap-1 border-0">
+          <ul class="nav-tabs px-4 pt-2 gap-1 border-0">
             <li class="nav-item">
               <button
                 class="nav-link-tab"
@@ -47,7 +47,7 @@
                   v-if="isLoadingRecordings"
                   class="flex justify-center items-center p-6"
                 >
-                  <div class="cmd-spinner text-cmd-primary" role="status">
+                  <div class="spinner text-primary" role="status">
                     <span class="sr-only">Loading...</span>
                   </div>
                 </div>
@@ -61,8 +61,8 @@
                   v-else
                   v-for="recording in filteredRecordings"
                   :key="recording.id"
-                  class="cmd-list-item"
-                  :class="{ 'cmd-list-item--selected': selectedRecording?.id === recording.id }"
+                  class="list-item"
+                  :class="{ 'list-item--selected': selectedRecording?.id === recording.id }"
                 >
                   <div
                     role="button"
@@ -73,7 +73,7 @@
                     <div class="text-muted" style="font-size: 0.6875rem">{{ recording.waypoint_count }} waypoints</div>
                   </div>
                   <button
-                    class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary w-full mt-2"
+                    class="btn btn-sm btn-outline-secondary w-full mt-2"
                     @click.stop="deleteRecording(recording.id)"
                   >
                     Delete
@@ -82,7 +82,7 @@
               </div>
               <div class="flex-1 flex flex-col gap-2" style="min-width: 0">
                 <div
-                  class="border border-2 rounded flex-1 relative"
+                  class="border-2 rounded flex-1 relative"
                   style="min-height: 400px"
                 >
                   <div
@@ -90,7 +90,7 @@
                     class="flex justify-center items-center h-full"
                   >
                     <div
-                      class="cmd-spinner text-cmd-primary"
+                      class="spinner text-primary"
                       role="status"
                       style="width: 3rem; height: 3rem"
                     >
@@ -101,7 +101,7 @@
                     v-else-if="selectedRecording && waypoints.length === 0"
                     class="flex items-center justify-center h-full p-6"
                   >
-                    <div class="cmd-alert cmd-alert-warning mb-0" role="alert">
+                    <div class="alert alert-warning mb-0" role="alert">
                       <h5 class="alert-heading">No GPS Waypoints Recorded</h5>
                       <p class="mb-0">
                         This recording doesn't contain any GPS waypoints.
@@ -128,7 +128,7 @@
                     />
                     <l-polyline
                       :lat-lngs="pathLatLngs"
-                      :color="'var(--cmd-accent)'"
+                      :color="'var(--accent)'"
                       :weight="4"
                       :opacity="0.8"
                     />
@@ -148,14 +148,14 @@
                 >
                   <div class="flex items-center gap-2 mb-2">
                     <button
-                      class="cmd-btn cmd-btn-sm"
-                      :class="isPlaying ? 'cmd-btn-outline-secondary' : 'cmd-btn-outline-control'"
+                      class="btn btn-sm"
+                      :class="isPlaying ? 'btn-outline-secondary' : 'btn-outline-control'"
                       @click="togglePlayback"
                     >
                       {{ isPlaying ? 'Pause' : 'Play' }}
                     </button>
                     <button
-                      class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary"
+                      class="btn btn-sm btn-outline-secondary"
                       @click="resetPlayback"
                     >
                       Reset
@@ -164,7 +164,7 @@
                   </div>
                   <input
                     type="range"
-                    class="cmd-form-range mb-2"
+                    class="form-range mb-2"
                     :min="0"
                     :max="waypoints.length - 1"
                     v-model.number="currentWaypointIndex"
@@ -235,7 +235,7 @@ const isLoadingRecordings = ref(false)
 const isLoadingWaypoints = ref(false)
 let playbackInterval: number | null = null
 const startIcon = L.divIcon({
-  html: '<div style="background-color: var(--cmd-status-ok); width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>',
+  html: '<div class="map-marker-dot map-marker-start"></div>',
   className: 'custom-div-icon',
   iconSize: [12, 12],
   iconAnchor: [6, 6],
@@ -243,7 +243,7 @@ const startIcon = L.divIcon({
 }) as L.Icon
 
 const endIcon = L.divIcon({
-  html: '<div style="background-color: var(--cmd-status-error); width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>',
+  html: '<div class="map-marker-dot map-marker-end"></div>',
   className: 'custom-div-icon',
   iconSize: [12, 12],
   iconAnchor: [6, 6],
@@ -251,7 +251,7 @@ const endIcon = L.divIcon({
 }) as L.Icon
 
 const currentIcon = L.divIcon({
-  html: '<div style="background-color: var(--cmd-status-warn); width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+  html: '<div class="map-marker-dot map-marker-current"></div>',
   className: 'custom-div-icon',
   iconSize: [16, 16],
   iconAnchor: [8, 8],
@@ -462,7 +462,7 @@ onBeforeUnmount(() => {
   position: fixed;
   inset: 0;
   z-index: 1050;
-  background-color: var(--cmd-backdrop);
+  background-color: var(--backdrop);
 }
 
 .nav-link-tab {
@@ -476,15 +476,15 @@ onBeforeUnmount(() => {
   background: transparent;
   border: 2px solid transparent;
   border-bottom: none;
-  border-radius: var(--cmd-radius-sm) var(--cmd-radius-sm) 0 0;
-  transition: all var(--cmd-transition);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  transition: all var(--transition);
 }
 
 .nav-link-tab:hover,
 .nav-link-tab.active {
-  color: var(--cmd-accent);
+  color: var(--accent);
   background-color: var(--view-bg);
-  border-color: var(--cmd-panel-border);
+  border-color: var(--panel-border);
 }
 
 .recordings-sidebar {
@@ -493,8 +493,35 @@ onBeforeUnmount(() => {
   background-color: var(--view-bg);
 }
 
-.cmd-list-item--selected {
+.list-item--selected {
   background-color: var(--view-bg);
-  border-color: var(--cmd-accent);
+  border-color: var(--accent);
+}
+</style>
+
+<style>
+.map-marker-dot {
+  border-radius: 50%;
+  border: 2px solid var(--card-bg);
+}
+
+.map-marker-start {
+  width: 12px;
+  height: 12px;
+  background-color: var(--status-ok);
+}
+
+.map-marker-end {
+  width: 12px;
+  height: 12px;
+  background-color: var(--status-error);
+}
+
+.map-marker-current {
+  width: 16px;
+  height: 16px;
+  border-width: 3px;
+  background-color: var(--status-warn);
+  box-shadow: var(--shadow-md);
 }
 </style>

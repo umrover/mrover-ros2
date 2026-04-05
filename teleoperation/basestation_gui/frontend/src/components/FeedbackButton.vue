@@ -1,5 +1,5 @@
 <template>
-  <button :class="['cmd-btn', currentColor]" :style="customStyles" :disabled="disabled" @click="handleClick">
+  <button :class="['btn', currentColor]" :style="customStyles" :disabled="disabled" @click="handleClick">
     <span class="flex items-center w-full">
       <span>{{ displayName }}</span>
       <i v-if="mode === 'toggle'" class="ml-auto" :class="checked ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
@@ -67,12 +67,12 @@ export default defineComponent({
   computed: {
     currentColor(): string {
       if (this.mode === 'action') {
-        if (this.isComplete) return 'cmd-btn-success'
-        if (this.isWaiting) return 'cmd-btn-warning'
-        return 'cmd-btn-success'
+        if (this.isComplete) return 'btn-success'
+        if (this.isWaiting) return 'btn-warning'
+        return 'btn-success'
       }
-      if (this.isWaiting) return 'cmd-btn-warning'
-      return this.checked ? 'cmd-btn-success' : 'cmd-btn-danger'
+      if (this.isWaiting) return 'btn-warning'
+      return this.checked ? 'btn-success' : 'btn-danger'
     },
 
     displayName(): string {
