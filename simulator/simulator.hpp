@@ -269,6 +269,19 @@ namespace mrover {
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster{this};
 
+        bool mClickIk = false;
+        bool mPublishClickIk = false;
+        bool mCancelClickIk = false;
+        float mClickIkX{0};
+        float mClickIkY{0};
+        rclcpp_action::Client<action::ClickIk>::SharedPtr mActionClient;
+        bool mSampleIk = false;
+        bool mHasSampled = false;
+        bool mClearIkSample = false;
+        action::IkImageSample::Result::SharedPtr mImageSample;
+        uint8_t const IMAGE_SAMPLE_RESOLUTION = 10;
+        rclcpp_action::Client<action::IkImageSample>::SharedPtr mImageSampleClient;
+
         bool mPublishIk = true;
         bool mIkMode = true; // true = position control, false = velocity control
         Eigen::Vector3f mIkTarget{0.293, 0.0f, -0.331};

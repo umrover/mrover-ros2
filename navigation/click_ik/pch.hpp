@@ -1,0 +1,52 @@
+#pragma once
+
+#include <algorithm>
+#include <cassert>
+#include <chrono>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <execution>
+#include <functional>
+#include <future>
+#include <limits>
+#include <memory>
+#include <numeric>
+#include <optional>
+#include <string>
+#include <thread>
+#include <type_traits>
+#include <unordered_map>
+#include <vector>
+
+#include <mrover/srv/ik_sample.hpp>
+#include <rclcpp/node.hpp>
+#include <rclcpp_action/rclcpp_action.hpp>
+#include <sensor_msgs/msg/image.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/transform_listener.h>
+
+
+#include "../navigation/arm_controller/arm_controller.hpp"
+#include <geometry_msgs/msg/detail/vector3__struct.hpp>
+#include <lie.hpp>
+#include <manif/impl/se3/SE3.h>
+#include <mrover/action/click_ik.hpp>
+#include <mrover/action/ik_image_sample.hpp>
+#include <mrover/msg/ik.hpp>
+#include <mrover/srv/ik_mode.hpp>
+#include <point.hpp>
+#include <rclcpp/create_timer.hpp>
+#include <rclcpp/executors.hpp>
+#include <rclcpp/future_return_code.hpp>
+#include <rclcpp/logging.hpp>
+#include <rclcpp/publisher.hpp>
+#include <rclcpp_action/create_server.hpp>
+#include <rclcpp_action/server.hpp>
+#include <rclcpp_action/server_goal_handle.hpp>
+#include <rclcpp_action/types.hpp>
+#include <sensor_msgs/msg/detail/point_cloud2__struct.hpp>
+#include <tf2/exceptions.h>
+#include <tf2/exceptions.hpp>
+#include <tf2_ros/transform_listener.h>

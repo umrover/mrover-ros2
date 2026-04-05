@@ -1,5 +1,4 @@
 #include "simulator.hpp"
-
 namespace mrover {
 
     auto Simulator::throttlesCallback(msg::Throttle::ConstSharedPtr const& msg) -> void {
@@ -117,7 +116,7 @@ namespace mrover {
     }
 
     auto Simulator::userControls(Clock::duration dt) -> void {
-        if (mPublishIk && mIkMode) {
+        if (mPublishIk && mIkMode && !mClickIk) {
             msg::IK ik;
             ik.pos.x = mIkTarget.x();
             ik.pos.y = mIkTarget.y();
@@ -125,7 +124,44 @@ namespace mrover {
             ik.pitch = mIkPitch;
             ik.roll = mIkRoll;
             mIkTargetPub->publish(ik);
+        } else if (mClickIk && mPublishClickIk) {
+            action::ClickIk::Goal goal;
+            goal.set__point_in_image_x(static_cast<float>(mClickIkX) / static_cast<float>(mStereoCameras.front().base.resolution.x()));
+            goal.set__point_in_image_y(static_cast<float>(mClickIkY) / static_cast<float>(mStereoCameras.front().base.resolution.y()));
+            rclcpp_action::Client<action::ClickIk>::SendGoalOptions options;
+            options.result_callback = [this](rclcpp_action::ClientGoalHandle<action::ClickIk>::WrappedResult const& result) {
+                this->mPublishClickIk = false;
+                this->mCancelClickIk = false;
+                RCLCPP_INFO(this->get_logger(), "Action finished with code %d", (int) result.code);
+            };
+            mActionClient->async_send_goal(goal, options);
+        } else if (mCancelClickIk) {
+            mActionClient->async_cancel_all_goals();
+            mCancelClickIk = false;
+        } else if (mSampleIk) {
+            mHasSampled = true;
+            size_t x = mStereoCameras.front().base.resolution.x() / IMAGE_SAMPLE_RESOLUTION;
+            size_t y = mStereoCameras.front().base.resolution.y() / IMAGE_SAMPLE_RESOLUTION;
+            action::IkImageSample::Goal goal;
+            goal.set__w(x);
+            goal.set__h(y);
+            goal.set__scale(IMAGE_SAMPLE_RESOLUTION);
+            rclcpp_action::Client<action::IkImageSample>::SendGoalOptions options;
+            options.result_callback = [this](rclcpp_action::ClientGoalHandle<action::IkImageSample>::WrappedResult const& future) {
+                if (future.code == rclcpp_action::ResultCode::ABORTED)
+                    return;
+                this->mImageSample = future.result;
+                if (!mImageSample) {
+                    RCLCPP_WARN(this->get_logger(), "ClickIK Image Sample failed");
+                    return;
+                }
+                RCLCPP_INFO(this->get_logger(), "Successfully received ClickIK Image Sample");
+            };
+            mImageSampleClient->async_send_goal(goal, options);
+        } else if (mClearIkSample) {
+            mImageSample = nullptr;
         }
+
         if (!mHasFocus || mInGui) return;
 
         if (mCameraInRoverTarget)
@@ -150,6 +186,54 @@ namespace mrover {
             twist.linear.x = 0;
             twist.angular.z = 0;
         }
+
+        mIkVel.setZero();
+        mIkPitchVel = 0;
+        mIkRollVel = 0;
+        if (glfwGetKey(mWindow.get(), mArmForwardKey) == GLFW_PRESS) {
+            mIkVel.x() = 1;
+        }
+        if (glfwGetKey(mWindow.get(), mArmBackwardKey) == GLFW_PRESS) {
+            mIkVel.x() = -1;
+        }
+        if (glfwGetKey(mWindow.get(), mArmLeftKey) == GLFW_PRESS) {
+            mIkVel.y() = 1;
+        }
+        if (glfwGetKey(mWindow.get(), mArmRightKey) == GLFW_PRESS) {
+            mIkVel.y() = -1;
+        }
+        if (glfwGetKey(mWindow.get(), mArmUpKey) == GLFW_PRESS) {
+            mIkVel.z() = 1;
+        }
+        if (glfwGetKey(mWindow.get(), mArmDownKey) == GLFW_PRESS) {
+            mIkVel.z() = -1;
+        }
+        if (glfwGetKey(mWindow.get(), mArmPitchUpKey) == GLFW_PRESS) {
+            mIkPitchVel = -1;
+        }
+        if (glfwGetKey(mWindow.get(), mArmPitchDownKey) == GLFW_PRESS) {
+            mIkPitchVel = 1;
+        }
+        if (glfwGetKey(mWindow.get(), mArmRollCWKey) == GLFW_PRESS) {
+            mIkRollVel = 1;
+        }
+        if (glfwGetKey(mWindow.get(), mArmRollCCWKey) == GLFW_PRESS) {
+            mIkRollVel = -1;
+        }
+        mIkVel.normalize();
+        mIkVel *= mArmSpeed;
+        mIkPitchVel *= mArmSpeed;
+        mIkRollVel *= mArmSpeed;
+        if (mPublishIk && !mIkMode) {
+            geometry_msgs::msg::Twist vel;
+            vel.linear.x = mIkVel.x();
+            vel.linear.y = mIkVel.y();
+            vel.linear.z = mIkVel.z();
+            vel.angular.x = mIkRollVel;
+            vel.angular.y = mIkPitchVel;
+            mIkVelPub->publish(vel);
+        }
+
 
         mIkVel.setZero();
         mIkPitchVel = 0;

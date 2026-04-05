@@ -1,0 +1,8 @@
+uint32 w
+uint32 h
+float32 scale
+---
+bool[] success
+---
+uint32 completed
+uint32 total

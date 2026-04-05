@@ -38,6 +38,31 @@ namespace mrover {
 
             mIkModeClient = create_client<srv::IkMode>("ik_mode");
 
+            mActionClient = rclcpp_action::create_client<action::ClickIk>(this->get_node_base_interface(),
+                                                                          this->get_node_graph_interface(),
+                                                                          this->get_node_logging_interface(),
+                                                                          this->get_node_waitables_interface(),
+                                                                          "click_ik");
+
+            mImageSampleClient = rclcpp_action::create_client<action::IkImageSample>(this->get_node_base_interface(),
+                                                                                     this->get_node_graph_interface(),
+                                                                                     this->get_node_logging_interface(),
+                                                                                     this->get_node_waitables_interface(),
+                                                                                     "ik_image_sample");
+
+            mMotorTimeoutMs = get_parameter("motor_timeout").as_int();
+
+            mIsHeadless = get_parameter("headless").as_bool();
+            mEnablePhysics = mIsHeadless;
+            {
+                mGpsLinearizationReferencePoint = {
+                        get_parameter("ref_lat").as_double(),
+                        get_parameter("ref_lon").as_double(),
+                        get_parameter("ref_alt").as_double(),
+                };
+                mGpsLinerizationReferenceHeading = get_parameter("ref_heading").as_double();
+            }
+
             if (!mIsHeadless) initWindow();
 
             initPhysics();
@@ -71,6 +96,7 @@ namespace mrover {
                         {"joint_c", "arm_c_link"},
                         {"joint_de_pitch", "arm_d_link"},
                         {"joint_de_roll", "arm_e_link"},
+                        {"gripper", "arm_gripper_link"},
                         {"gripper", "arm_gripper_link"},
                         {"front_left", "front_left_wheel_link"},
                         {"middle_left", "center_left_wheel_link"},

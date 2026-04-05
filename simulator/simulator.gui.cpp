@@ -1,4 +1,7 @@
 #include "simulator.hpp"
+#include <cstdint>
+#include <imgui.h>
+#include <webgpu.hpp>
 
 namespace mrover {
 
@@ -87,11 +90,23 @@ namespace mrover {
                     mIkModeClient->async_send_request(req);
                 }
                 if (mIkMode) {
-                    ImGui::SliderFloat("IK X Position", &mIkTarget.x(), 0, 1.5);
-                    ImGui::SliderFloat("IK Y Position", &mIkTarget.y(), 0, .45);
-                    ImGui::SliderFloat("IK Z Position", &mIkTarget.z(), -1.0, 1.0);
-                    ImGui::SliderFloat("IK Pitch", &mIkPitch, -3.14f, 3.14f);
-                    ImGui::SliderFloat("IK Roll", &mIkRoll, -3.14f, 3.14f);
+                    ImGui::Checkbox("Click Ik Control", &mClickIk);
+                    if (mClickIk) {
+                        ImGui::SliderFloat("Click IK X", &mClickIkX, 0, mStereoCameras[0].base.resolution.x());
+                        ImGui::SliderFloat("Click IK Y", &mClickIkY, 0, mStereoCameras[0].base.resolution.x());
+                        mPublishClickIk = ImGui::Button("Send Action");
+                        ImGui::SameLine();
+                        mCancelClickIk = ImGui::Button("Cancel Action");
+                        mSampleIk = ImGui::Button("Sample Valid Points");
+                        ImGui::SameLine();
+                        mClearIkSample = ImGui::Button("Clear Sample");
+                    } else {
+                        ImGui::SliderFloat("IK X Position", &mIkTarget.x(), 0, 1.5);
+                        ImGui::SliderFloat("IK Y Position", &mIkTarget.y(), 0, .45);
+                        ImGui::SliderFloat("IK Z Position", &mIkTarget.z(), -1.0, 1.0);
+                        ImGui::SliderFloat("IK Pitch", &mIkPitch, -3.14f, 3.14f);
+                        ImGui::SliderFloat("IK Roll", &mIkRoll, -3.14f, 3.14f);
+                    }
                 } else
                     ImGui::SliderFloat("Arm Speed", &mArmSpeed, 0, 1);
             }
@@ -177,6 +192,43 @@ namespace mrover {
             for (StereoCamera const& stereoCamera: mStereoCameras) {
                 float aspect = static_cast<float>(stereoCamera.base.resolution.x()) / static_cast<float>(stereoCamera.base.resolution.y());
                 ImGui::Image(stereoCamera.base.colorTextureView, {320, 320 / aspect}, {0, 0}, {1, 1});
+                if (mClickIk) {
+                    ImVec2 p0 = ImGui::GetItemRectMin();
+                    ImVec2 p1 = ImGui::GetItemRectMax();
+
+                    // Map pixel -> UI coords
+                    float u = (mClickIkX + 0.5f) / static_cast<float>(stereoCamera.base.resolution.x());
+                    float v = (mClickIkY + 0.5f) / static_cast<float>(stereoCamera.base.resolution.y());
+
+                    ImVec2 pos = {p0.x + u * (p1.x - p0.x),
+                                  p0.y + v * (p1.y - p0.y)};
+
+                    float cell_w = (p1.x - p0.x) * (static_cast<float>(IMAGE_SAMPLE_RESOLUTION) / static_cast<float>(stereoCamera.base.resolution.x()));
+                    float cell_h = (p1.y - p0.y) * (static_cast<float>(IMAGE_SAMPLE_RESOLUTION) / static_cast<float>((float) stereoCamera.base.resolution.y()));
+                    float r_x = cell_w * 0.5f;
+                    float r_y = cell_h * 0.5f;
+                    // Draw a small 3x3 square so it's visible
+                    ImU32 pink = IM_COL32(255, 0, 255, 255);
+
+                    if (mImageSample) {
+                        ImU32 green = IM_COL32(0, 255, 0, 80);
+                        ImU32 red = IM_COL32(255, 0, 0, 80);
+                        for (int y = 0; y < stereoCamera.base.resolution.y() / IMAGE_SAMPLE_RESOLUTION; y += 1) {
+                            for (int x = 0; x < stereoCamera.base.resolution.x() / IMAGE_SAMPLE_RESOLUTION; x += 1) {
+                                float py = static_cast<float>(y + 0.5f) * static_cast<float>(cell_h);
+                                float px = static_cast<float>(x + 0.5f) * static_cast<float>(cell_w);
+                                ImGui::GetWindowDrawList()->AddRectFilled(
+                                        {p0.x + px - r_x, p0.y + py - r_y},
+                                        {p0.x + px + r_x, p0.y + py + r_y},
+                                        mImageSample->success[static_cast<float>((static_cast<float>(y) * (static_cast<float>(stereoCamera.base.resolution.x()) / static_cast<float>(IMAGE_SAMPLE_RESOLUTION))) + static_cast<float>(x))] ? green : red);
+                            }
+                        }
+                    }
+                    ImGui::GetWindowDrawList()->AddRectFilled(
+                            {pos.x - 2, pos.y - 2},
+                            {pos.x + 2, pos.y + 2},
+                            pink);
+                }
             }
 
             ImGui::End();

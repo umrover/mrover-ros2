@@ -51,6 +51,7 @@ endif ()
 
 find_package(rclpy REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
@@ -119,7 +120,7 @@ endif()
 find_package(PkgConfig REQUIRED)
 pkg_search_module(NetLink libnl-3.0 IMPORTED_TARGET QUIET)
 pkg_search_module(NetLinkRoute libnl-route-3.0 IMPORTED_TARGET QUIET)
-pkg_search_module(Gst gstreamer-1.0 IMPORTED_TARGET QUIET)
+pkg_search_module(Gst gstreamer-1.0 IMPORTED_TARGET QUIET) # if this is failing try: `sudo apt install libunwind-dev`
 pkg_search_module(GstApp gstreamer-app-1.0 IMPORTED_TARGET QUIET)
 pkg_search_module(LibUdev libudev IMPORTED_TARGET QUIET)
 
@@ -351,6 +352,16 @@ mrover_add_node(arm_controller navigation/arm_controller/arm_controller.cpp navi
 target_link_libraries(arm_controller lie)
 ament_target_dependencies(arm_controller rclcpp)
 
+# Click IK
+mrover_add_component(click_ik navigation/click_ik/*.cpp navigation/click_ik/pch.hpp ClickIK)
+mrover_ament_component(click_ik rclcpp rclcpp_components tf2 tf2_ros)
+mrover_link_component(click_ik lie parameter_utils)
+
+mrover_executable_from_component(click_ik navigation/click_ik/main.cpp click_ik_component)
+
+mrover_add_node(led esw/led.cpp)
+ament_target_dependencies(led rclcpp std_srvs)
+
 if (Gst_FOUND AND GstApp_FOUND)
     mrover_add_node(usb_camera esw/usb_camera/*.cpp esw/usb_camera/pch.hpp)
     target_link_libraries(usb_camera PkgConfig::Gst PkgConfig::GstApp opencv_core opencv_imgcodecs parameter_utils)
@@ -372,12 +383,12 @@ if (NetLink_FOUND AND NetLinkRoute_FOUND)
 endif ()
 
 # Teleop Qt5 Camera Client
-find_package(Qt5 5.15 REQUIRED COMPONENTS Widgets Multimedia MultimediaWidgets)
+find_package(Qt5 5.15 REQUIRED COMPONENTS Widgets)
 
 mrover_add_node(camera_client teleoperation/camera_client/*.*pp teleoperation/camera_client/include/pch.hpp)
 target_include_directories(camera_client PRIVATE teleoperation/camera_client/include)
-target_link_libraries(camera_client gst_utils Qt::Widgets Qt::Multimedia Qt::MultimediaWidgets opencv_core opencv_imgcodecs)
-ament_target_dependencies(camera_client rclcpp std_srvs sensor_msgs)
+target_link_libraries(camera_client gst_utils Qt::Widgets PkgConfig::Gst X11 opencv_core opencv_imgcodecs)
+ament_target_dependencies(camera_client rclcpp rclcpp_action std_srvs sensor_msgs)
 set_target_properties(camera_client PROPERTIES
     AUTOMOC ON
     AUTORCC ON

@@ -90,3 +90,10 @@
 #include <mrover/msg/throttle.hpp>
 #include <mrover/msg/velocity.hpp>
 #include <mrover/srv/ik_mode.hpp>
+
+#include <mrover/action/detail/click_ik__struct.hpp>
+#include <mrover/action/detail/ik_image_sample__struct.hpp>
+#include <rclcpp/client.hpp>
+#include <rclcpp/service.hpp>
+#include <rclcpp_action/client.hpp>
+#include <rclcpp_action/create_client.hpp>
