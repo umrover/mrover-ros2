@@ -21,11 +21,8 @@ namespace mrover {
         linearized_position_sub = this->create_subscription<geometry_msgs::msg::Vector3Stamped>("/linearized_position", 1, [&](const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr &position) {
             last_position = *position;
             position_window.push_back(*position);
-            // keep a small, recent window; drive_forward_callback further prunes by timestamp
-            RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "%s", std::format("Position Window Size: {}", position_window.size()).c_str());
-            if (position_window.size() > 50) {
+            while (position_window.size() > DRIVE_FORWARD_CAP) {
                 position_window.pop_front();
-                RCLCPP_INFO(get_logger(), "Position window size after pop: %zu", position_window.size());
             }
         });
 
@@ -49,10 +46,8 @@ namespace mrover {
         });
 
         // drive forward correction timer
-        constexpr double STEP_S = 0.5;
-        constexpr double WINDOW_S = STEP_S * 2.5;
         drive_forward_timer = this->create_wall_timer(
-            std::chrono::milliseconds(static_cast<int64_t>(WINDOW_S * 1000.0)),
+            std::chrono::milliseconds(static_cast<int64_t>(DRIVE_FORWARD_TIMER_S * 1000.0)),
             [this]() -> void { drive_forward_callback(); }
         );
 
@@ -251,22 +246,7 @@ namespace mrover {
             return;
         }
 
-        constexpr double STEP_S = 0.5;
-        constexpr double WINDOW_S = STEP_S * 2.5;
-        const rclcpp::Duration window = rclcpp::Duration::from_seconds(WINDOW_S);
-        const rclcpp::Time end = get_clock()->now();
-        const rclcpp::Time start = end - window;
-
-        // prune old position samples
-        while (!position_window.empty()) {
-            const rclcpp::Time now = get_clock()->now();
-            const rclcpp::Time t(position_window.front().header.stamp);
-            RCLCPP_INFO(get_logger(), "Difference between now and last pos: %f", (now - t).seconds());
-            if (t < start) position_window.pop_front();
-            else break;
-        }
-
-        if (position_window.size() < 3) {
+        if (position_window.size() < 2) {
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Insufficient position history for drive-forward correction");
             return;
         }
@@ -281,12 +261,13 @@ namespace mrover {
         };
 
         auto prev_heading_opt = std::optional<double>{};
+        rclcpp::Clocktype const clock_type = get_clock()->get_clock_type();
         for (std::size_t i = 1; i < position_window.size(); ++i) {
             const auto& p0 = position_window[i - 1];
             const auto& p1 = position_window[i];
 
-            const rclcpp::Time t0(p0.header.stamp);
-            const rclcpp::Time t1(p1.header.stamp);
+            const rclcpp::Time t0(p0.header.stamp, clock_type);
+            const rclcpp::Time t1(p1.header.stamp, clock_type);
             const double dt = (t1 - t0).seconds();
             if (!(dt > 1e-3) || !std::isfinite(dt)) continue;
 
@@ -301,7 +282,7 @@ namespace mrover {
             ++readings;
         }
 
-        if (readings < 2) {
+        if (readings < 1) {
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Not enough valid velocity readings for drive-forward correction");
             return;
         }

@@ -48,7 +48,9 @@ namespace mrover {
         std::optional<geometry_msgs::msg::Vector3Stamped> last_position;
         std::vector<geometry_msgs::msg::Twist> twists;
         std::deque<geometry_msgs::msg::Vector3Stamped> position_window;    
-        bool use_mag;    
+        bool use_mag;
+        static constexpr std::size_t DRIVE_FORWARD_CAP = 3;
+        static constexpr double DRIVE_FORWARD_TIMER_S = 1.25;    
     
     public:
 
