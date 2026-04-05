@@ -1,23 +1,24 @@
 #pragma once
 
+#include "mrover/action/detail/typing_position__struct.hpp"
 #include "pch.hpp"
 
 // #include "constants.h"
 namespace mrover{
     class KeyboardTypingNode : public rclcpp::Node{
         private:
-        // TypingDeltas action client - this communicates with Nav
-        using TypingDeltas = mrover::action::TypingDeltas;
-        using GoalHandleTypingDeltas = rclcpp_action::ClientGoalHandle<TypingDeltas>;
+        // TypingPosition action client - this communicates with Nav
+        using TypingPosition = mrover::action::TypingPosition;
+        using GoalHandleTypingPosition = rclcpp_action::ClientGoalHandle<action::TypingPosition>;
 
         using PusherSrv = srv::Pusher;
 
-        rclcpp_action::Client<TypingDeltas>::SharedPtr mTypingClient;
+        rclcpp_action::Client<action::TypingPosition>::SharedPtr mTypingClient;
 
         // Ik mode client
         rclcpp::Client<srv::IkMode>::SharedPtr mIkModeClient;
 
-        void feedback_callback(GoalHandleTypingDeltas::SharedPtr, const std::shared_ptr<const TypingDeltas::Feedback> feedback);
+        void feedback_callback(GoalHandleTypingPosition::SharedPtr, const std::shared_ptr<const TypingPosition::Feedback> feedback);
 
         auto send_goal(float x_delta, float y_delta) -> bool;
 
@@ -54,7 +55,7 @@ namespace mrover{
         tf2_ros::TransformBroadcaster tf_broadcaster{this};
 
         // transform from camera to end effector
-        SE3d gripper_to_cam;
+        SE3d cam_to_gripper;
 
         // Define a board
         cv::Ptr<cv::aruco::Board> rover_board;
@@ -67,7 +68,7 @@ namespace mrover{
         LoopProfiler mLoopProfiler;
 
         // Can pub to any topic just make the name make sense
-        rclcpp::Publisher<msg::KeyboardYaw>::SharedPtr mCostMapPub;
+        rclcpp::Publisher<msg::KeyboardYaw>::SharedPtr mYawPub;
         rclcpp::Publisher<msg::IK>::SharedPtr mIKPub;
         rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr mIKVelPub;
 
@@ -93,7 +94,7 @@ namespace mrover{
         auto createRoverBoard() -> void;
 
         rclcpp::Time last_prediction_time_;
-        bool filter_initialized_ = false;
+        bool filter_i0nitialized_ = false;
 
         // Change the function signature to accept vectors
         auto updateKalmanFilter(cv::Vec3d &tvec, cv::Vec3d &rvec) -> geometry_msgs::msg::Pose;
@@ -110,8 +111,6 @@ namespace mrover{
         auto estimatePose(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> std::optional<pose_output>;
 
         auto align_arm() -> void;
-
-        auto rotateGripper(float radians) -> void;
 
         auto align_to_z() -> void;
 

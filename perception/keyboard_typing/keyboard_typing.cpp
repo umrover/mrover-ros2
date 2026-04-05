@@ -1,6 +1,7 @@
 #include "keyboard_typing.hpp"
 #include "keyboard_typing/pch.hpp"
 #include "lie.hpp"
+#include "mrover/action/detail/typing_position__struct.hpp"
 #include "mrover/srv/detail/ik_mode__struct.hpp"
 #include "mrover/srv/detail/pusher__struct.hpp"
 #include <Eigen/src/Core/Matrix.h>
@@ -12,6 +13,7 @@
 #include <Eigen/Eigenvalues>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/core/matx.hpp>
+#include <rclcpp/logging.hpp>
 
 
 namespace mrover{
@@ -57,7 +59,7 @@ namespace mrover{
         }
         
         // Set up action server
-        mTypingClient = rclcpp_action::create_client<TypingDeltas>(this, "typing_ik");
+        mTypingClient = rclcpp_action::create_client<action::TypingPosition>(this, "typing_ik");
 
         mTypingServer = rclcpp_action::create_server<TypingCode>(
             this,
@@ -67,7 +69,7 @@ namespace mrover{
             std::bind(&KeyboardTypingNode::handle_accepted, this, std::placeholders::_1));
 
         // subscribe to image stream
-        mImageSub = create_subscription<sensor_msgs::msg::Image>("/finger_camera/image", rclcpp::QoS(1), [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+        mImageSub = create_subscription<sensor_msgs::msg::Image>("/video4/image", rclcpp::QoS(1), [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
             yawCallback(msg);
         });
 
@@ -75,7 +77,7 @@ namespace mrover{
         // wait until the transformation is acquired
         while (true) {
             try {
-                gripper_to_cam = SE3Conversions::fromTfTree(tf_buffer, "finger_camera_frame", "arm_fk");
+                cam_to_gripper = SE3Conversions::fromTfTree(tf_buffer, "finger_camera_frame", "arm_fk");
                 break;
             } catch (tf2::TransformException const& e) {
                 RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
@@ -87,39 +89,10 @@ namespace mrover{
 
         current_key = "";
 
-        // Initialize Kalman filter
-        // State vector: [x, y, z, vx, vy, vz, roll, pitch, yaw, vroll, vpitch, vyaw]
-        // Measurement vector: [x, y, z, roll, pitch, yaw]
-        kf = cv::KalmanFilter(12, 6, 0, CV_32F);
-
-        // Measurement matrix (maps state to measurements)
-        kf.measurementMatrix = (cv::Mat_<float>(6, 12) <<
-            1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0
-        );
-
-        // Process noise covariance (model uncertainty)
-        cv::setIdentity(kf.processNoiseCov, cv::Scalar(1e-4));
-        
-        // Measurement noise covariance (sensor uncertainty)
-        cv::setIdentity(kf.measurementNoiseCov, cv::Scalar(1e-2));
-        
-        // Initial state covariance
-        cv::setIdentity(kf.errorCovPost, cv::Scalar(1));
-
-        // Initialize state to zeros
-        kf.statePost = cv::Mat::zeros(12, 1, CV_32F);
-
         // create publisher
-        mCostMapPub = this->create_publisher<msg::KeyboardYaw>("/keypose/yaw", rclcpp::QoS(1));
+        mYawPub = this->create_publisher<msg::KeyboardYaw>("/Keyboard/Yaw", rclcpp::QoS(1));
 
         mIKPub = this->create_publisher<msg::IK>("ik_pos_cmd",rclcpp::QoS(1));
-
-        // createRoverBoard();
     }
 
     auto KeyboardTypingNode::yawCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
@@ -134,7 +107,7 @@ namespace mrover{
         if (output.has_value()) {
             mrover::msg::KeyboardYaw msg;
             msg.yaw = output->yaw;
-            mCostMapPub->publish(msg);
+            mYawPub->publish(msg);
 
             // Output debug
             // RCLCPP_INFO_STREAM(get_logger(), "X: " << output->pose.position.x);
@@ -176,42 +149,15 @@ namespace mrover{
             SE3d arm_fk_to_tag{arm_fk_pos, transformed_rotation};
 
             // Publish to tf tree
-            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_fk", gripper_to_cam*arm_fk_to_tag, get_clock()->now());
+            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_fk", cam_to_gripper*arm_fk_to_tag, get_clock()->now());
 
-            // Initialize transforms for every key, temporarily here for now
+            // camera_to_tag
+            // camera_to_gripper * camera_to_tag
+
+            // // Initialize transforms for every key, temporarily here for now
             SE3d z_to_tag{mZKeyTransform, Eigen::Quaterniond::Identity()};
             SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_z", "keyboard_tag", z_to_tag, get_clock()->now());
         }
-    }
-
-    auto KeyboardTypingNode::createRoverBoard() -> void {
-        // 1. Define the physical corners of the tags in the "Board Frame"
-        //    (The Board Frame origin will be your Bottom-Left tag)
-        std::vector<std::vector<cv::Point3f>> all_obj_points;
-        std::vector<int> all_ids;
-
-        // Loop through your defined IDs to build the board structure
-        for(auto const& [id, offset] : layout) {
-            std::vector<cv::Point3f> corners;
-            double x = offset[0];
-            double y = offset[1];
-            double z = offset[2];
-
-            // Define the 4 corners for THIS specific tag relative to the Anchor
-            // Order: TL, TR, BR, BL
-            // Note: We center the tag on the offset coordinate
-            corners.push_back(cv::Point3f(x, y, z)); // Top Left
-            corners.push_back(cv::Point3f(x, y, z)); // Top Right
-            corners.push_back(cv::Point3f(x, y, z)); // Bottom Right
-            corners.push_back(cv::Point3f(x, y, z)); // Bottom Left
-
-            all_obj_points.push_back(corners);
-            all_ids.push_back(id);
-        }
-
-        // Create the Board object
-        // "dictionary" must be the same one used for detection
-        rover_board = cv::aruco::Board::create(all_obj_points, dictionary, all_ids);
     }
 
     auto KeyboardTypingNode::estimatePose(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> std::optional<pose_output>  {
@@ -228,6 +174,12 @@ namespace mrover{
         // Optional: enhance contrast
         // cv::equalizeHist(grayImage, grayImage);
 
+        cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
+        clahe->setClipLimit(2.0); 
+        clahe->setTilesGridSize(cv::Size(8, 8));
+
+        clahe->apply(grayImage, grayImage);
+
         // Optional: apply Gaussian blur to reduce noise
         // cv::GaussianBlur(grayImage, grayImage, cv::Size(5,5), 0);
 
@@ -239,30 +191,30 @@ namespace mrover{
 
         // Could potentially run a mild gaussian blur plus sharpening kernel if instability is encountered
 
-        detectorParams->adaptiveThreshWinSizeMin = 3;
-        detectorParams->adaptiveThreshWinSizeMax = 23;
-        detectorParams->adaptiveThreshWinSizeStep = 2;
+        // detectorParams->adaptiveThreshWinSizeMin = 3;
+        // detectorParams->adaptiveThreshWinSizeMax = 23;
+        // detectorParams->adaptiveThreshWinSizeStep = 2;
 
-        detectorParams->adaptiveThreshConstant = 7;
+        // detectorParams->adaptiveThreshConstant = 7;
 
-        detectorParams->perspectiveRemovePixelPerCell = 3;
+        // detectorParams->perspectiveRemovePixelPerCell = 3;
 
-        detectorParams->minDistanceToBorder = 1;   // default is 3
-        detectorParams->minMarkerPerimeterRate = 0.05;   // default ~0.03
+        // detectorParams->minDistanceToBorder = 1;   // default is 3
+        // detectorParams->minMarkerPerimeterRate = 0.05;   // default ~0.03
 
         detectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
 
-        detectorParams->polygonalApproxAccuracyRate = 0.05;
+        // detectorParams->polygonalApproxAccuracyRate = 0.05;
 
-        detectorParams->cornerRefinementWinSize = 3;
+        // detectorParams->cornerRefinementWinSize = 3;
 
-        detectorParams->cornerRefinementMaxIterations = 20;
+        // detectorParams->cornerRefinementMaxIterations = 20;
 
-        detectorParams->errorCorrectionRate = 0.8;
+        // detectorParams->errorCorrectionRate = 0.8;
 
-        detectorParams->maxErroneousBitsInBorderRate = 0.5;
+        // detectorParams->maxErroneousBitsInBorderRate = 0.5;
 
-        detectorParams->minCornerDistanceRate = 0.05;
+        // detectorParams->minCornerDistanceRate = 0.05;
 
         // Define coordinate system
         float markerLength = 0.019;  // meters
@@ -313,77 +265,6 @@ namespace mrover{
                 }
                 cv::solvePnP(all_objPoints, all_imgPoints, mCameraMatrix, mDistCoeffs, combined_rvec, combined_tvec, false, cv::SOLVEPNP_ITERATIVE);
             }
-
-            // Convert to quarternion, sum, and then divide
-
-            // if (validcnt > 2) {
-            //     cv::aruco::estimatePoseBoard(markerCorners, ids, rover_board, camMatrix, distCoeffs, combined_rvec, combined_tvec);
-            // } else if (validcnt > 0) {
-            //     cv::Vec3d sum_tvec(0,0,0);
-
-            //     Eigen::Matrix4d A = Eigen::Matrix4d::Zero();
-
-            //     for (int idx : valid_indices) {
-            //         int id = ids[idx];
-
-            //         // Solve PnP for this specific tag
-            //         cv::Vec3d rvec_single, tvec_single;
-            //         cv::solvePnP(objPoints, markerCorners.at(idx), camMatrix, distCoeffs, rvec_single, tvec_single, false, cv::SOLVEPNP_IPPE_SQUARE);
-
-            //         // Debug output
-            //         RCLCPP_INFO_STREAM(get_logger(), "X: " << tvec_single[0]);
-            //         RCLCPP_INFO_STREAM(get_logger(), "Y: " << tvec_single[1]);
-            //         RCLCPP_INFO_STREAM(get_logger(), "Z: " << tvec_single[2]);
-
-
-            //         // 2. Shift to Anchor (Origin)
-            //         // Retrieve offset
-            //         cv::Vec3d offset_wall = layout[id]; 
-
-            //         // Rotate offset
-            //         cv::Mat R_cv;
-            //         cv::Rodrigues(rvec_single, R_cv);
-            //         Eigen::Matrix3d R_eigen;
-            //         cv::cv2eigen(R_cv, R_eigen);
-
-            //         Eigen::Vector3d p_offset_wall(offset_wall[0], offset_wall[1], offset_wall[2]);
-            //         Eigen::Vector3d p_offset_cam = R_eigen * p_offset_wall;
-
-            //         // Calculate Anchor Position according to THIS tag
-            //         Eigen::Vector3d t_tag_eigen(tvec_single[0], tvec_single[1], tvec_single[2]);
-            //         Eigen::Vector3d t_anchor = t_tag_eigen - p_offset_cam;
-
-            //         // Accumulate
-            //         sum_tvec += cv::Vec3d(t_anchor.x(), t_anchor.y(), t_anchor.z());
-
-            //         // Convert to quaternion
-            //         Eigen::Quaterniond q(R_eigen);
-            //         q.normalize();
-
-            //         // Accumulate outer product
-            //         Eigen::Vector4d v(q.w(), q.x(), q.y(), q.z());
-            //         A += v * v.transpose();
-
-            //     }
-
-            //     // Average the results
-            //     Eigen::SelfAdjointEigenSolver<Eigen::Matrix4d> eig(A);
-            //     int index;
-            //     eig.eigenvalues().maxCoeff(&index);
-
-            //     Eigen::Vector4d avg = eig.eigenvectors().col(index);
-
-            //     Eigen::Quaterniond q_avg(avg(0), avg(1), avg(2), avg(3));
-            //     q_avg.normalize();
-
-            //     Eigen::Matrix3d R_avg = q_avg.toRotationMatrix();
-
-            //     cv::Mat R_cv;
-            //     cv::eigen2cv(R_avg, R_cv);
-
-            //     cv::Rodrigues(R_cv, combined_rvec);
-
-            //     combined_tvec = sum_tvec / (double)validcnt;
         }
 
 
@@ -407,7 +288,13 @@ namespace mrover{
         if (!tvecs.empty()) {
             // Pass all vectors and the current ROS time
             // Returns the filtered pose
-            geometry_msgs::msg::Pose finalestimation; ///updateKalmanFilter(combined_tvec, combined_rvec);
+            geometry_msgs::msg::Pose finalestimation;
+
+            std::tie(combined_tvec, combined_rvec) = vectorMedianFilter(combined_tvec, combined_rvec);
+
+            RCLCPP_INFO_STREAM(get_logger(), "X: " << combined_tvec[0]);
+            RCLCPP_INFO_STREAM(get_logger(), "Y: " << combined_tvec[1]);
+            RCLCPP_INFO_STREAM(get_logger(), "Z: " << combined_tvec[2]);
 
             Eigen::Vector3d rvec(
                 combined_rvec[0],
@@ -461,7 +348,8 @@ namespace mrover{
 
             // Draw axes for debugging
             // cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, final_rvec, final_tvec, markerLength * 1.5f, 2);
-            cv::imshow("out", bgrImage);
+            cv::imshow("out1", bgrImage);
+            // cv::imshow("out", grayImage);
             int key = cv::waitKey(1) & 0xFF;
             if(key == 'r'){
                 // logPose = !logPose;
@@ -472,9 +360,6 @@ namespace mrover{
             if(key == 't'){
                 align_to_z();
             }
-            // if(key == 'g'){
-            //     rotateGripper(-M_PI/2);
-            // }
             if(key == 'h'){
                 SE3d transform = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_gripper_link");
                 RCLCPP_INFO_STREAM(get_logger(), "y: " << transform.translation().y());
@@ -485,11 +370,8 @@ namespace mrover{
             // }
 
             return pose_output{finalestimation, yaw_deg};
-
-            // outputToCSV(tvecs[0], rvecs[0]);
-            // return updateKalmanFilter(tvecs, rvecs);
         } else {
-            cv::imshow("out", bgrImage);
+            cv::imshow("out1", bgraImage);
             cv::waitKey(1);
             return std::nullopt;
         }
@@ -506,18 +388,8 @@ namespace mrover{
         cv::Vec3d medianTvec = tvec_window.back();
         double min_sum = std::numeric_limits<double>::max();
 
-        // for(size_t i = 0; i < tvec_window.size(); i++) {
-        //     double currentTvecSum = 0;
-        //     for(size_t j = 0; j < tvec_window.size(); j++) {
-        //         if(i != j) {
-        //             currentTvecSum += cv::norm(tvec_window[i] - tvec_window[j]);
-        //         }
-        //     }
-        // }
-
         // Take the median
         int filtered_idx = 0;
-
 
         // Find median rvec
         for (size_t i = 0; i < rvec_window.size(); ++i) {
@@ -569,7 +441,7 @@ namespace mrover{
 
             RCLCPP_INFO_STREAM(this->get_logger(), "pitch = " << pitch_rad);
 
-            sendIKCommand(armbase_to_armfk.translation().x(), gripper_to_tag.translation().y(), gripper_to_tag.translation().z(), pitch_rad, 0);
+            sendIKCommand(armbase_to_armfk.translation().x(), gripper_to_tag.translation().y(), gripper_to_tag.translation().z(), 0, 0);
 
         } catch (tf2::TransformException const& e) {
             RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
@@ -603,21 +475,6 @@ namespace mrover{
 
         current_key = 'z';
     }
-
-    // auto KeyboardTypingNode::rotateGripper(float radians) -> void {
-    //     SE3d armbase_to_armfk;
-
-    //     try{
-    //         armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
-    //         // grab current pitch
-    //         // Get the forward pointing vector of the gripper (usually the X-axis of the arm_fk frame)
-    //         double current_pitch = std::atan2(-armbase_to_armfk.rotation()(2, 0), std::hypot(armbase_to_armfk.rotation()(0, 0), armbase_to_armfk.rotation()(1, 0)));
-
-    //         sendIKCommand(armbase_to_armfk.translation().x(), armbase_to_armfk.translation().y(), armbase_to_armfk.translation().z(), current_pitch, radians);
-    //     } catch (tf2::TransformException const& e) {
-    //         RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
-    //     }
-    // }
 
     auto KeyboardTypingNode::sendIKCommand(float x, float y, float z, float pitch, float roll) -> void {
         if(!mIKPub){
@@ -701,31 +558,32 @@ namespace mrover{
 
         RCLCPP_INFO_STREAM(this->get_logger(), "Sending Goal");
 
-        auto goal_msg = TypingDeltas::Goal();
-        goal_msg.x_delta = x_delta;
-        goal_msg.y_delta = y_delta;
+        auto goal_msg = action::TypingPosition::Goal();
+        goal_msg.x = x_delta;
+        goal_msg.y = y_delta;
 
-        auto send_goal_options = rclcpp_action::Client<TypingDeltas>::SendGoalOptions();
+        auto send_goal_options = rclcpp_action::Client<TypingPosition>::SendGoalOptions();
         // send_goal_options.goal_response_callback = std::bind(&KeyboardTypingNode::goal_response_callback, this, std::placeholders::_1);
         send_goal_options.feedback_callback = std::bind(&KeyboardTypingNode::feedback_callback, this, std::placeholders::_1, std::placeholders::_2);
         // send_goal_options.result_callback = std::bind(&KeyboardTypingNode::result_callback, this, std::placeholders::_1);
 
-        std::shared_future<GoalHandleTypingDeltas::SharedPtr> future_goal_handle = mTypingClient->async_send_goal(goal_msg, send_goal_options);
+        std::shared_future<GoalHandleTypingPosition::SharedPtr> future_goal_handle = mTypingClient->async_send_goal(goal_msg, send_goal_options);
+        RCLCPP_INFO_STREAM(this->get_logger(), "Sent first goal, waiting for response");
         future_goal_handle.wait();
 
         if (future_goal_handle.get() == nullptr)
             return false;
 
-        std::shared_future<GoalHandleTypingDeltas::WrappedResult> future_result = mTypingClient->async_get_result(future_goal_handle.get());
+        std::shared_future<GoalHandleTypingPosition::WrappedResult> future_result = mTypingClient->async_get_result(future_goal_handle.get());
         future_result.wait();
         return (future_result.get().code == rclcpp_action::ResultCode::SUCCEEDED);
     }
 
-    void KeyboardTypingNode::feedback_callback(GoalHandleTypingDeltas::SharedPtr, const std::shared_ptr<const TypingDeltas::Feedback> feedback) {
+    void KeyboardTypingNode::feedback_callback(GoalHandleTypingPosition::SharedPtr, const std::shared_ptr<const TypingPosition::Feedback> feedback) {
         // RCLCPP_INFO_STREAM(get_logger(), std::format("Feedback: {}", feedback->dist_remaining));
     }
 
-    // void KeyboardTypingNode::result_callback(const GoalHandleTypingDeltas::WrappedResult & result) {
+    // void KeyboardTypingNode::result_callback(const GoalHandleTypingPosition::WrappedResult & result) {
     //     mGoalReached = (result.code == rclcpp_action::ResultCode::SUCCEEDED);
     // }
 
@@ -782,11 +640,11 @@ namespace mrover{
             std::transform(launchCode.begin(), launchCode.end(), launchCode.begin(), ::toupper);
 
             // Align arm over z key
-            RCLCPP_INFO_STREAM(this->get_logger(), "Aligning to z key");
+            // RCLCPP_INFO_STREAM(this->get_logger(), "Aligning to z key");
             align_to_z();
 
             // rotate gripper 90 degrees
-            RCLCPP_INFO_STREAM(this->get_logger(), "Rotating gripper 90 degrees");
+            // RCLCPP_INFO_STREAM(this->get_logger(), "Rotating gripper 90 degrees");
             // rotateGripper(-1.5708);
 
             // Activate typing mode
