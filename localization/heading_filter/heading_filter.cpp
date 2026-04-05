@@ -261,7 +261,7 @@ namespace mrover {
         };
 
         auto prev_heading_opt = std::optional<double>{};
-        rclcpp::Clock const clock_type = get_clock()->get_clock_type();
+        rclcpp::ClockType const clock_type = get_clock()->get_clock_type();
         for (std::size_t i = 1; i < position_window.size(); ++i) {
             const auto& p0 = position_window[i - 1];
             const auto& p1 = position_window[i];
