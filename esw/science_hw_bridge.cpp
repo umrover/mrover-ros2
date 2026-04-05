@@ -41,7 +41,7 @@ namespace mrover {
             mScienceBoard = std::make_shared<ScienceBoard>(shared_from_this(), "jetson", "science");
             mAuger = std::make_shared<BrushedController<Radians>>(shared_from_this(), "jetson", "auger");
             mLinearActuator = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "linear_actuator");
-            mFunnelServo = std::make_shared<Servo>(shared_from_this(), "funnel_servo");
+            mFunnelServo = std::make_shared<Servo>(shared_from_this(), "funnel");
 
             mServiceGroup = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
@@ -49,7 +49,7 @@ namespace mrover {
             subOptions.callback_group = mServiceGroup;
 
             mFunnelPositionService = this->create_service<srv::ServoPosition>(
-                    "funnel_servo",
+                    "sp_funnel_servo",
                     [this](srv::ServoPosition::Request::SharedPtr const& req, srv::ServoPosition::Response::SharedPtr const& res) {
                         servoPositionCallback(req, res);
                     },
@@ -80,7 +80,7 @@ namespace mrover {
         }
 
     private:
-        std::vector<std::string> const mActuatorNames{"auger", "linear_actuator", "funnel_servo"};
+        std::vector<std::string> const mActuatorNames{"auger", "linear_actuator", "funnel"};
 
         std::shared_ptr<ScienceBoard> mScienceBoard;
         std::shared_ptr<BrushedController<Radians>> mAuger;
@@ -120,7 +120,7 @@ namespace mrover {
         }
 
         auto servoPositionCallback(srv::ServoPosition::Request::SharedPtr const& req, srv::ServoPosition::Response::SharedPtr const& res) const -> void {
-            if (req->names.size() != 1 || req->names.at(0) != "funnel_servo") return;
+            if (req->names.size() != 1 || req->names.at(0) != "funnel") return;
 
             mFunnelServo->setPosition(req->positions[0], Servo::ServoMode::Optimal);
             res->at_tgts.resize(1);
