@@ -44,7 +44,7 @@ def generate_launch_description():
     mob_left_streamer_node = Node(
             package="mrover",
             executable="gst_camera_server",
-            name="mob_left_streamer",
+            name="mob_streamer",
             output="screen",
             parameters=[
                 Path(get_package_share_directory("mrover"), "config", "cameras.yaml"),
