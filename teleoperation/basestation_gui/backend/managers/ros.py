@@ -1,8 +1,11 @@
+import logging
 import rclpy
 import threading
 import atexit
 from rclpy.node import Node
 from rclpy.executors import SingleThreadedExecutor
+
+logger = logging.getLogger(__name__)
 
 lock = threading.Lock()
 initialized = threading.Event()
@@ -28,9 +31,13 @@ def get_logger():
 
 def get_service_client(srv_type, srv_name):
     with service_clients_lock:
-        if srv_name not in service_clients:
-            n = get_node()
-            service_clients[srv_name] = n.create_client(srv_type, srv_name)
+        if srv_name in service_clients:
+            client = service_clients[srv_name]
+            if client.service_is_ready():
+                return client
+            client.destroy()
+        n = get_node()
+        service_clients[srv_name] = n.create_client(srv_type, srv_name)
         return service_clients[srv_name]
 
 
@@ -54,7 +61,7 @@ def ros_spin():
 def init_ros():
     global context, node, ros_thread
 
-    print("Initializing ROS Manager...")
+    logger.info("Initializing ROS Manager...")
     context = rclpy.Context()
     rclpy.init(context=context)
 
@@ -64,13 +71,13 @@ def init_ros():
     ros_thread = threading.Thread(target=ros_spin, daemon=True)
     ros_thread.start()
 
-    print("ROS Manager started in a background thread.")
+    logger.info("ROS Manager started in a background thread.")
     initialized.set()
 
 
 def shutdown_ros():
     global context, node
-    print("Shutting down ROS Manager...")
+    logger.info("Shutting down ROS Manager...")
     if context and rclpy.ok(context=context):
         if node:
             node.destroy_node()

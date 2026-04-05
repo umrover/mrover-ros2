@@ -10,7 +10,7 @@ arm_hw_bridge:
       limit_switch_0_enabled: true
       limit_switch_0_limits_forward: true
       limit_switch_0_active_high: false
-      limit_switch_0_used_for_readjustment: true
+      limit_switch_0_used_for_readjustment: false
       limit_switch_0_readjust_position: 0.4
       limit_switch_0_aux_number: 1
       limit_switch_0_aux_pin: 0
@@ -25,23 +25,24 @@ arm_hw_bridge:
     joint_b_segment_length: 0.434
     joint_b_actuator_length: 0.324
     joint_b_mount_length: 0.157
-    joint_b_offset: -0.07754990  # rad
-    joint_b_mount_theta: 1.25499645 # 71.906deg
-    joint_b_segment_offset_theta: 0.09384635 # 5.377deg
+    joint_b_offset: -0.07754990  # radians
+    joint_b_mount_theta: 1.25499645 # radians
+    joint_b_segment_offset_theta: 0.09384635 # radians
+    joint_c_offset_theta: 1.2273 # radians
     joint_c:
       min_velocity: -0.377
       max_velocity: 0.377
       min_position: -1.04719755 # -60deg
       max_position: 3.05432619 # 175deg
       max_torque: 200.0
-    # Offsets are substracted from the absolute encoder readings for pitch and roll
+    # Offsets are subtracted from the absolute encoder readings for pitch and roll
     # In order to zero, move the joint to the zero position and read the unadjusted positions. These should be the set to the offsets
-    joint_de_pitch_offset: 0.06 # radians
-    joint_de_roll_offset: -3.44 # radians
-    joint_de_pitch_max_position: 1.0 # radians
-    joint_de_pitch_min_position: -0.85 # radians
-    joint_de_roll_max_position: 1.57 # radians
-    joint_de_roll_min_position: -1.57 # radians
+    joint_de_pitch_offset: 0.130767 # radians
+    joint_de_roll_offset: 0.4271226 # radians
+    joint_de_pitch_max_position: 1.39 # radians
+    joint_de_pitch_min_position: -1.00 # radians
+    joint_de_roll_max_position: 2.00 # radians
+    joint_de_roll_min_position: -2.00 # radians
     joint_de_0:
       min_velocity: -5.0
       max_velocity: 5.0
@@ -54,7 +55,7 @@ arm_hw_bridge:
       min_position: -10000.0
       max_position: 10000.0
       max_torque: 20.0
-    pusher_throttle: 0.8
+    pusher_throttle: 1.0
     pusher_wait_duration: 5.0
     # TODO(eric): configure and enable DE limits
 #      limit_switch_0_present: true
