@@ -8,7 +8,7 @@ from sensor_msgs.msg import PointCloud2, Image
 from std_msgs.msg import Header
 from sensor_msgs.msg import Imu
 from mrover.srv import PanoramaStart, PanoramaEnd, ServoPosition
-from mrover.msg import Heading
+from mrover.msg import Heading, ControllerState
 
 import cv2
 import time
@@ -89,22 +89,22 @@ class Panorama(Node):
         self.pc_sub = message_filters.Subscriber(self, PointCloud2, f"/{self.zed_version}/left/points")
         self.imu_sub = message_filters.Subscriber(self, Imu, f"/{self.zed_version}_imu/data_raw")
         self.img_sub = message_filters.Subscriber(self, Image, f"/{self.zed_version}/left/image")
+        self.sync = message_filters.ApproximateTimeSynchronizer([self.pc_sub, self.imu_sub, self.img_sub], 10, 1)
+        self.sync.registerCallback(self.synced_gps_pc_callback)
+
         self.pc_publisher = self.create_publisher(PointCloud2, "/stitched_pc", 10)
         self.pano_img_debug_publisher = self.create_publisher(Image, "/debug_pano", 10)
         self.pc_rate = PanoRate(2, self)
-
         self.stitched_pc = np.empty((0, 8), dtype=np.float32)
-        self.sync = message_filters.ApproximateTimeSynchronizer([self.pc_sub, self.imu_sub, self.img_sub], 10, 1)
-        self.sync.registerCallback(self.synced_gps_pc_callback)
+
+        # self.gimbal_sub = message_filters.Subscriber(self, ControllerState, "/gimbal_controller_state")
+        # self.img_sync = message_filters.ApproximateTimeSynchronizer([self.gimbal_sub, self.img_sub])
+        # self.img_sync.registerCallback(self.synced_img_gimbal_callback)
         self.img_list = [] # list of images
         self.img_dirs = [] # list of imu values per image
+        self.headings = []
         self.pixels_per_deg = self.zed_image_width_pixels / self.zed_fov_deg
-
-        # # Image Stitching Variables
-        # self.img_sub = self.create_subscription(Image, f"/{self.zed_version}/left/image", self.image_callback, 1)
-        # self.img_list = []
-        # self.stitcher = cv2.Stitcher_create(cv2.Stitcher_PANORAMA)
-        # self.img_rate = PanoRate(2, self)
+        self.img_rate = PanoRate(2, self)
 
         if not os.path.isdir("data/raw-pano-images"):
             os.mkdir("data/raw-pano-images")
@@ -144,11 +144,13 @@ class Panorama(Node):
                 [2*x*y + 2*z*w, 1 - 2*x**2 - 2*z**2, 2*y*z - 2*x*w, 0],
                 [2*x*z - 2*y*w, 2*y*z + 2*x*w, 1 - 2*x**2 - 2*y**2, 0],
                 [0, 0, 0, 1]
-            ]) 
+            ])
+
+            # self.get_logger().info(f"Angle: {(np.mod(np.arctan2(rotation[1][0], rotation[0][0]), (2 * np.pi))) * (180/np.pi)}")
+            # pass
 
             rotated_pc = self.rotate_pc(rotation, self.arr_pc)
             self.stitched_pc = np.vstack((self.stitched_pc, rotated_pc))
-            self.pc_rate.sleep()
 
             # Record Image
             self.current_img = cv2.cvtColor(
@@ -157,20 +159,28 @@ class Panorama(Node):
 
             if self.current_img is not None:
                 self.img_list.append(copy.deepcopy(self.current_img))
-                self.img_dirs.append(np.arctan(rotation[0][0] / rotation[0][1]))
+                self.img_dirs.append(np.mod(np.arctan2(rotation[1][0], rotation[0][0]), (2 * np.pi)))
 
-    # def image_callback(self, msg: Image):
-    #     if self.record_image:
-    #         self.current_img = cv2.cvtColor(
-    #             np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, 4), cv2.COLOR_RGBA2RGB
-    #         )
+            self.pc_rate.sleep()
 
-    #         if self.current_img is not None:
-    #             self.img_list.append(copy.deepcopy(self.current_img))
+    def synced_img_gimbal_callback(self, img: Image, gimbal: ControllerState):
+        if self.record_image:
+            self.current_img = cv2.cvtColor(
+                np.frombuffer(img.data, dtype=np.uint8).reshape(img.height, img.width, 4), cv2.COLOR_RGBA2RGB
+            )
+
+            idx = gimbal.names.index("yaw")
+            pos = gimbal.positions[idx]
+
+            if self.current_img is not None:
+                self.img_list.append(copy.deepcopy(self.current_img))
+                self.img_dirs.append(pos)
+                self.headings.append((self.cur_heading + pos) % (2 * np.pi))
+                self.img_rate.sleep()
 
     def heading_callback(self, heading: Heading):
         self.get_logger().info("Heading is {heading.heading}")
-        self.cur_heading = int(heading.heading)
+        self.cur_heading = heading.heading
 
     def label_pano(self, order: np.ndarray[int], pano: np.ndarray, dir_diffs: np.ndarray):
         # label hard coded NESW as a test
@@ -180,11 +190,9 @@ class Panorama(Node):
         thickness = 5
         lineType = cv2.LINE_AA
 
-        # make array of approx heading for each image
-        heading_step = 340 / len(self.img_list)
-        approx_heading = np.array([])
-        approx_heading = np.cumsum(dir_diffs)
-        approx_heading = (approx_heading + self.cur_heading).astype(int)
+        # approx_heading = np.array([])
+        # approx_heading = np.cumsum(dir_diffs)
+        # approx_heading = (approx_heading + self.cur_heading).astype(int)
         
         # For each cardinal dir, find which image has closest heading to that direction
         # Then find the image closest to that one in number from the order list
@@ -194,13 +202,13 @@ class Panorama(Node):
         img_mid = pano.shape[1] / (2*len(order))
         for i, dir in enumerate(self.pano_dirs):
             head = i * 90
-            diffs = np.abs(approx_heading - head)
+            diffs = np.abs(self.headings - head)
             closest = diffs.argmin()
 
             diffs = np.abs(order - int(closest))
             pos = diffs.argmin()
 
-            if abs(approx_heading[int(pos)] - approx_heading[int(closest)]) > 20:
+            if abs(self.headings[int(pos)] - self.headings[int(closest)]) > 20:
                 continue
             x_org = int(pos * (pano.shape[1] / len(order)) + img_mid)
 
@@ -224,6 +232,10 @@ class Panorama(Node):
             self.img_sub = message_filters.Subscriber(self, Image, f"/{self.zed_version}/left/image")
             self.sync = message_filters.ApproximateTimeSynchronizer([self.pc_sub, self.imu_sub, self.img_sub], 10, 1)
             self.sync.registerCallback(self.synced_gps_pc_callback)
+
+            # self.gimbal_sub = message_filters.Subscriber(self, ControllerState, "/gimbal_controller_state")
+            # self.img_sync = message_filters.ApproximateTimeSynchronizer([self.gimbal_sub, self.img_sub])
+            # self.img_sync.registerCallback(self.synced_img_gimbal_callback)
 
         if self.heading_sub is not None:
             self.destroy_subscription(self.heading_sub)
@@ -255,10 +267,13 @@ class Panorama(Node):
             self.destroy_subscription(self.pc_sub.sub)
             self.destroy_subscription(self.imu_sub.sub)
             self.destroy_subscription(self.img_sub.sub)
+            # self.destroy_subscription(self.gimbal_sub.sub)
             self.pc_sub = None
             self.imu_sub = None
             self.img_sub = None
+            # self.gimbal_sub = None
             self.sync = None
+            # self.img_sync = None
 
         # construct pc from stitched
         try:
@@ -295,7 +310,7 @@ class Panorama(Node):
         self.get_logger().info(f"Stitching {len(self.img_list)} images...")            
 
         # Calculate shifts
-        dirs = np.abs(np.array(self.img_dirs).astype(float) * (180 / np.pi))
+        dirs = np.abs(np.array(self.img_dirs).astype(float)) * (180 / np.pi)
         diffs = np.abs(np.diff(dirs))
         shift = diffs * self.pixels_per_deg
         shift = shift.astype(int)

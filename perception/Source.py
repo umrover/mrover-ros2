@@ -2,9 +2,7 @@
 
 import numpy as np
 import cv2
-import imageio
 from PIL import Image as PilImage
-# import matplotlib.pyplot as plt
 import time
 import glob
 
@@ -98,7 +96,7 @@ def colorCorrection(images_temp, shift, bestIndex=0, gamma=2.2):
 def calcPanorama(images_dir, shift):
     start = time.time()
     # read panorama source images
-    files = glob.glob(images_dir + "*.jpg")
+    files = glob.glob(images_dir + "*.png")
     files = sorted(files)
     print(len(files))
     
@@ -108,7 +106,7 @@ def calcPanorama(images_dir, shift):
     images_temp = [ image_files[i].astype('float64') for i in range(len(image_files))]
     
     if image_files[0].ndim == 2 or image_files[0].shape[2] == 1:
-        images_temp = [ cv2.resize(cv2.cvtColor(image_files[i], cv2.COLOR_GRAY2RGB), (1280,720)).astype('float64') for i in range(len(image_files))]
+        images_temp = [ cv2.resize(cv2.cvtColor(image_files[i], cv2.COLOR_GRAY2RGB), np.shape(image_files[0])).astype('float64') for i in range(len(image_files))]
             
     # Perform color correction based on first image
     images_temp = colorCorrection(images_temp, shift)
@@ -127,10 +125,10 @@ def calcPanorama(images_dir, shift):
         panorama = stitchImage(panorama, curr_img, path, overlap)
         print("The time taken for merging " + str(i+1) + " images: " + str(time.time() - start))
 
-    imageio.imwrite(images_dir+'output.png', np.array(255*panorama/np.max(panorama)).astype('uint8'))
+    # imageio.imwrite(images_dir+'output.png', np.array(255*panorama/np.max(panorama)).astype('uint8'))
     return panorama
 
-calcPanorama('/home/khush/ros2_ws/src/mrover/data/3/', [55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 0])
+# calcPanorama('/home/khush/ros2_ws/src/mrover/data/3/', [55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 0])
 
 # calcPanorama('./results/2/', [109]*6)
 
