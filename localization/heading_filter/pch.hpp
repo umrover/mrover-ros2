@@ -8,6 +8,7 @@
 #include <rclcpp/node.hpp>
 #include <rclcpp/executors.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <rcl/time.h>
 
 #include <message_filters/subscriber.h>
 #include <message_filters//synchronizer.h>
