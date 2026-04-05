@@ -5,7 +5,7 @@ namespace mrover {
     HeadingFilter::HeadingFilter() : Node("heading_filter") {
 
         declare_parameter("world_frame", rclcpp::ParameterType::PARAMETER_STRING);
-        declare_parameter("rover_frame", rclcpp::ParameterType::PARAMETER_STRING);
+        declare_parameter("gps_frame", rclcpp::ParameterType::PARAMETER_STRING);
         declare_parameter("imu_watchdog_timeout", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("mag_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
         declare_parameter("rtk_heading_noise", rclcpp::ParameterType::PARAMETER_DOUBLE);
@@ -63,9 +63,9 @@ namespace mrover {
     void HeadingFilter::correct(double heading_correction_delta_meas, double heading_correction_delta_noise) {
 
         double K = (P) / (P + heading_correction_delta_noise);
-        X = X + (heading_correction_delta_meas - X) * K;
+        double innovation = heading_correction_delta_meas - X;
+        X = fmod((X + K * (innovation) + 3 * M_PI), 2 * M_PI) - M_PI;
         P = (1 - K) * P;
-
     }
 
     void HeadingFilter::sync_rtk_heading_callback(const mrover::msg::Heading::ConstSharedPtr &heading, const mrover::msg::FixStatus::ConstSharedPtr &heading_status) {
@@ -76,18 +76,34 @@ namespace mrover {
             return;
         }
 
-        Eigen::Quaterniond uncorrected_orientation(last_imu->orientation.w, last_imu->orientation.x, last_imu->orientation.y, last_imu->orientation.z);
+        auto const& qmsg2 = last_imu->orientation;
+        if (!std::isfinite(qmsg2.w) || !std::isfinite(qmsg2.x) || !std::isfinite(qmsg2.y) || !std::isfinite(qmsg2.z)) {
+            RCLCPP_WARN(get_logger(), "IMU quaternion as a non-finite component, skipping orientation");
+            return;
+        }
+        Eigen::Quaterniond uncorrected_orientation(qmsg2.w, qmsg2.x, qmsg2.y, qmsg2.z);
+        double const norm2 = uncorrected_orientation.squaredNorm();
+        if (!std::isfinite(norm2) || norm2 < 1e-12) {
+            RCLCPP_WARN(get_logger(), "IMU quaternion has an invalid/near-zero norm, skipping normalization");
+            return;
+        }
+        uncorrected_orientation.normalize();
         R2d uncorrected_forward = uncorrected_orientation.toRotationMatrix().col(0).head(2);
-        double uncorrected_heading = std::atan2(uncorrected_forward.y(), uncorrected_forward.x());
-
-        // correct with rtk heading only when heading is fixed
+        if (!uncorrected_forward.array().isFinite().all()) {
+            RCLCPP_WARN(get_logger(), "Forward vector not finite, skipping heading correction");
+            return;
+        }
+        double uncorrected_heading = atan2(uncorrected_forward.y(), uncorrected_forward.x());
+        if (!std::isfinite(uncorrected_heading)) {
+            RCLCPP_WARN(get_logger(), "Computed heading not finite, skipping heading correction");
+            return;
+        }
         if (heading_status->fix_type.fix == mrover::msg::FixType::FIXED) {
-            double measured_heading = fmod(heading->heading + 90, 360);
-            measured_heading = 90 - measured_heading;
-            if (measured_heading < -180) {
-                measured_heading = 360 + measured_heading;
-            }
-            measured_heading = measured_heading * (M_PI / 180);
+            double const rover_map_deg = fmod(heading->heading + 90. + 360., 360.);
+            double measured_heading_deg = 90. - rover_map_deg;
+            if (measured_heading_deg <= -180.) { measured_heading_deg += 360.; }
+            else if (measured_heading_deg > 180.) { measured_heading_deg -= 360.; }
+            double const measured_heading = measured_heading_deg * (M_PI / 180.);
 
             double heading_correction_delta = measured_heading - uncorrected_heading;
             heading_correction_delta = fmod((heading_correction_delta + 3 * M_PI), 2 * M_PI) - M_PI;
@@ -111,30 +127,61 @@ namespace mrover {
         R3d position_in_map(last_position->vector.x, last_position->vector.y, last_position->vector.z);
         SE3d pose_in_map(position_in_map, SO3d::Identity());
 
-        // correct with mag heading
-        Eigen::Quaterniond uncorrected_orientation(last_imu->orientation.w, last_imu->orientation.x, last_imu->orientation.y, last_imu->orientation.z);
-        SO3d uncorrected_orientation_rotm = uncorrected_orientation;
-        R2d uncorrected_forward = uncorrected_orientation.toRotationMatrix().col(0).head(2);
-        double uncorrected_heading = std::atan2(uncorrected_forward.y(), uncorrected_forward.x());
-
-        double measured_heading = 90 - mag_heading->heading;
-        if (measured_heading < -180) {
-            measured_heading = 360 + measured_heading;
+        auto const& qmsg = imu->orientation;
+        if (!std::isfinite(qmsg.w) || !std::isfinite(qmsg.x) || !std::isfinite(qmsg.y) || !std::isfinite(qmsg.z)) {
+            RCLCPP_WARN(get_logger(), "IMU quaternion has a non-finite component, skipping normalization");
+            return;
         }
-        measured_heading = measured_heading * (M_PI / 180);
+        Eigen::Quaterniond uncorrected_orientation(qmsg.w, qmsg.x, qmsg.y, qmsg.z);
+        double const norm2 = uncorrected_orientation.squaredNorm();
+        if (!std::isfinite(norm2) || norm2 < 1e-12) {
+            RCLCPP_WARN(get_logger(), "IMU quaternion has invalid/near-zero norm; skipping orientation update");
+            return;
+        }
+        uncorrected_orientation.normalize();
+        SO3d uncorrected_orientation_rotm = uncorrected_orientation;
+        R2d uncorrected_forward = uncorrected_orientation_rotm.rotation().col(0).head(2);
+        if (!uncorrected_forward.array().isFinite().all()) {
+            RCLCPP_WARN(get_logger(), "Forward Vector not finite, skipping heading correction");
+            return;
+        }
+        double uncorrected_heading = std::atan2(uncorrected_forward.y(), uncorrected_forward.x());
+        if (!std::isfinite(uncorrected_heading)) {
+            RCLCPP_WARN(get_logger(), "Computed heading is not finite, skipping heading correction");
+            return;
+        }
+
+        double measured_heading_deg = 90. - mag_heading->heading;
+        if (measured_heading_deg <= -180.) { measured_heading_deg += 360.; }
+        else if (measured_heading_deg > 180.) { measured_heading_deg -= 360.; }
+        double const measured_heading = measured_heading_deg * (M_PI / 180.);
 
         double heading_correction_delta = measured_heading - uncorrected_heading;
         heading_correction_delta = fmod((heading_correction_delta + 3 * M_PI), 2 * M_PI) - M_PI;
+
+        auto previousX = X;
+
         predict(get_parameter("process_noise").as_double());
         correct(heading_correction_delta, get_parameter("mag_heading_noise").as_double());
 
-        // apply correction and publish
+        if (!std::isfinite(X)) {
+            RCLCPP_WARN(get_logger(), "Kalman state X is not finite, skipping TF publish");
+            return;
+        }
+        
+        auto correctionDelta = (X - previousX);
         SO3d curr_heading_correction = Eigen::AngleAxisd(X, R3d::UnitZ());
-        RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "%s", std::format("Heading corrected by: {}", curr_heading_correction.z()).c_str());
+        RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "%s", std::format("Heading corrected by: {} rad", correctionDelta).c_str());
         SO3d corrected_orientation = curr_heading_correction * uncorrected_orientation_rotm;
-        pose_in_map.asSO3() = corrected_orientation;
+        Eigen::Quaterniond q = corrected_orientation.quat();
+        q.normalize();
+        if (!q.coeffs().array().isFinite().all() || q.squaredNorm() < 1e-12) {
+            RCLCPP_WARN(get_logger(), "Corrected orientation quaternion invalid after normalize, skipping TF publish");
+            return;
+        }
+        pose_in_map.asSO3() = SO3d(q);
 
-        SE3Conversions::pushToTfTree(tf_broadcaster, get_parameter("rover_frame").as_string(), get_parameter("world_frame").as_string(), pose_in_map, get_clock()->now());
+        SE3Conversions::pushToTfTree(tf_broadcaster, get_parameter("gps_frame").as_string(), get_parameter("world_frame").as_string(), pose_in_map, get_clock()->now());
     }
 
 }

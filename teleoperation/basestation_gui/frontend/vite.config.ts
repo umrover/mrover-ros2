@@ -1,11 +1,13 @@
 import { fileURLToPath, URL } from 'node:url'
 
 import { defineConfig } from 'vite'
+import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
+    tailwindcss(),
     vue(),
   ],
   publicDir: "public",
@@ -22,10 +24,6 @@ export default defineConfig({
         target: 'http://0.0.0.0:8000',
         changeOrigin: true,
       },
-      '/ws': {
-        target: 'http://0.0.0.0:8000',
-        ws: true,
-      },
     },
     watch: {
       usePolling: true,
@@ -40,10 +38,6 @@ export default defineConfig({
       '/api': {
         target: 'http://0.0.0.0:8000',
         changeOrigin: true,
-      },
-      '/ws': {
-        target: 'http://0.0.0.0:8000',
-        ws: true,
       },
     },
   }

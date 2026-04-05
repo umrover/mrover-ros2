@@ -1,54 +1,57 @@
 <template>
-  <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('default')">
-      Default
-  </button>
-  <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('follow')">
-      Follow
-  </button>
-  <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('arm')">
-      Arm
-  </button>
-   <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('full arm')">
-      Full Arm
-  </button>
-  <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('side arm')">
-      Side Arm
-  </button>
-  <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('top')">
-      Top Down
-  </button>
-  <button 
-    type="button"
-    class="btn flex-fill"
-    @click = "set_camera_type('bottom')">
-      Bottom Up
-  </button>
-  <button
-    type="button"
-    class="btn flex-fill"
-    @click = "updateCostMapGrid()">
-      Test Button
-  </button>
-
-  <canvas class="webgl p-0 h-100 w-100"></canvas>
+  <div class="flex flex-col w-full h-full">
+    <div class="flex flex-wrap gap-1 mb-2 shrink-0">
+      <button
+        type="button"
+        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
+        @click="set_camera_type('default')">
+        Default
+      </button>
+      <button
+        type="button"
+        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
+        @click="set_camera_type('follow')">
+        Follow
+      </button>
+      <button
+        type="button"
+        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
+        @click="set_camera_type('arm')">
+        Arm
+      </button>
+      <button
+        type="button"
+        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
+        @click="set_camera_type('full arm')">
+        Full Arm
+      </button>
+      <button
+        type="button"
+        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
+        @click="set_camera_type('side arm')">
+        Side Arm
+      </button>
+      <button
+        type="button"
+        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
+        @click="set_camera_type('top')">
+        Top Down
+      </button>
+      <button
+        type="button"
+        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
+        @click="set_camera_type('bottom')">
+        Bottom Up
+      </button>
+      <button
+        type="button"
+        class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary grow"
+        @click="updateCostMapGrid()">
+        Test
+      </button>
+    </div>
+    <canvas class="webgl grow min-h-0 w-full"></canvas>
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -82,7 +85,7 @@ const jointNameMap: Record<string, string> = {
   joint_c: 'arm_b_to_arm_c',
   joint_de_pitch: 'arm_c_to_arm_d',
   joint_de_roll: 'arm_d_to_arm_e',
-  gripper: 'gripper_link', // not implemented lol
+  gripper: 'gripper_link',
 }
 
 onMounted(() => {
@@ -103,12 +106,13 @@ watch(armMessage, (msg: unknown) => {
 
   if ('type' in msg && msg.type === 'arm_state') {
     const typedMsg = msg as ControllerStateMessage
+    if (!Array.isArray(typedMsg.names)) return
     const joints = typedMsg.names.map((name: string, index: number) => {
       const urdfName = jointNameMap[name] || name
       let position = typedMsg.positions[index] ?? 0
 
       if (urdfName === 'chassis_to_arm_a') {
-        position = position * -100 + 40 // scale from m to cm
+        position = position * -100 + 40
       }
 
       return {
@@ -135,7 +139,7 @@ watch(contextMessage, (msg: unknown) => {
   if (typeof msg == 'object' && msg !== null && 'type' in msg) {
     const typedMsg = msg as { type: string; state?: string }
     if (typedMsg.type === 'costmap') {
-      console.log("hi")
+      updateCostMapGrid()
     }
   }
 })

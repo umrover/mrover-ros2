@@ -127,6 +127,7 @@
       - ros-humble-xacro
       - ros-humble-magic-enum
       - ros-humble-rtcm-msgs
+      - ros-humble-dynamixel-sdk
       # TODO (ali): why does this need to be installed manually
       - libboost-dev
       - qtbase5-dev
