@@ -28,7 +28,7 @@ namespace mrover {
 
         static constexpr double TAU = 2 * M_PI;
 
-        [[nodiscard]] constexpr auto getUpper(int64_t const val) const -> auto { return val == 0 ? static_cast<int64_t>(mTicksPerRevolution) : val; }
+        [[nodiscard]] constexpr auto getUpper(int64_t const val) const -> auto { return val == 0 ? SERVO_TICKS : val; }
 
         ServoID mServoID;
         std::string mServoName;
@@ -37,7 +37,7 @@ namespace mrover {
         int64_t mAdjustedReverseLimit;
         int64_t mGoalPosition;
         uint32_t mPositionOffsetTicks;
-        int64_t mTicksPerRevolution;
+        double mPositionMultiplier;
 
         bool mAtLimit = false;
 
@@ -63,7 +63,7 @@ namespace mrover {
         };
 
         Servo(rclcpp::Node::SharedPtr node, std::string servoName) : mServoName{std::move(servoName)}, mLimitAdjustment{0}, mAdjustedForwardLimit{0},
-                                                                     mAdjustedReverseLimit{0}, mGoalPosition{0}, mPositionOffsetTicks{0}, mTicksPerRevolution{SERVO_TICKS}, mNode{std::move(node)} {
+                                                                     mAdjustedReverseLimit{0}, mGoalPosition{0}, mPositionOffsetTicks{0}, mPositionMultiplier{1}, mNode{std::move(node)} {
 
             int id;
             std::vector<ParameterWrapper> parameters = {
@@ -86,8 +86,8 @@ namespace mrover {
 
 
         auto setPosition(ServoPosition const position, ServoMode const mode) -> U2D2::Status {
-            // Convert degrees to ticks (0.0 - 360.0) to (0 to mTicksPerRevolution)
-            mGoalPosition = static_cast<int64_t>((position / TAU) * static_cast<double>(mTicksPerRevolution));
+            // Convert degrees to ticks (0.0 - 360.0) to (0 to SERVO_TICKS)
+            mGoalPosition = static_cast<int64_t>((position / TAU) * static_cast<double>(SERVO_TICKS));
 
 
             auto currentPositionAndStatus = getCurrentServoPosition();
@@ -103,51 +103,51 @@ namespace mrover {
 
             switch (mode) {
                 case ServoMode::Optimal:
-                    if (normalizedDifference > (mTicksPerRevolution / 2)) {
-                        mGoalPosition -= mTicksPerRevolution; // Go the other (shorter) way around
-                    } else if (normalizedDifference < -(mTicksPerRevolution / 2)) {
-                        mGoalPosition += mTicksPerRevolution; // Go the other (shorter) way around
+                    if (normalizedDifference > (SERVO_TICKS / 2)) {
+                        mGoalPosition -= SERVO_TICKS; // Go the other (shorter) way around
+                    } else if (normalizedDifference < -(SERVO_TICKS / 2)) {
+                        mGoalPosition += SERVO_TICKS; // Go the other (shorter) way around
                     }
                     break;
                 case ServoMode::Clockwise: // clockwise
                     if (normalizedDifference < 0) {
-                        mGoalPosition += mTicksPerRevolution;
+                        mGoalPosition += SERVO_TICKS;
                     }
                     break;
                 case ServoMode::CounterClockwise: // counter clockwise
                     if (normalizedDifference > 0) {
-                        mGoalPosition -= mTicksPerRevolution;
+                        mGoalPosition -= SERVO_TICKS;
                     }
                     break;
                 case ServoMode::Limited: {
 
                     // Adjust target and current position
-                    int64_t const adjustedCurrentPosition = (currentPositionAndStatus.first - mLimitAdjustment + mTicksPerRevolution) % mTicksPerRevolution;
-                    int64_t const adjustedTargetPosition = (mGoalPosition - mLimitAdjustment + mTicksPerRevolution) % mTicksPerRevolution;
+                    int64_t const adjustedCurrentPosition = (currentPositionAndStatus.first - mLimitAdjustment + SERVO_TICKS) % SERVO_TICKS;
+                    int64_t const adjustedTargetPosition = (mGoalPosition - mLimitAdjustment + SERVO_TICKS) % SERVO_TICKS;
 
                     // If the current path to the final position goes over the middle limit, go the other way
                     if (0 > adjustedCurrentPosition && 0 < adjustedTargetPosition) {
 
                         if (normalizedDifference > 0)
-                            mGoalPosition -= mTicksPerRevolution;
+                            mGoalPosition -= SERVO_TICKS;
                         else if (normalizedDifference < 0)
-                            mGoalPosition += mTicksPerRevolution;
+                            mGoalPosition += SERVO_TICKS;
                     }
 
                     mAtLimit = false;
 
                     // Limit destination if between mForwardLimit and middleLimit
                     if (getUpper(adjustedTargetPosition) > mAdjustedForwardLimit) {
-                        mGoalPosition = (mAdjustedForwardLimit - adjustedCurrentPosition) % mTicksPerRevolution;
-                        if (normalizedDifference < 0 && !(getUpper(adjustedCurrentPosition) > mAdjustedForwardLimit && adjustedCurrentPosition < mTicksPerRevolution)) mGoalPosition += mTicksPerRevolution;
+                        mGoalPosition = (mAdjustedForwardLimit - adjustedCurrentPosition) % SERVO_TICKS;
+                        if (normalizedDifference < 0 && !(getUpper(adjustedCurrentPosition) > mAdjustedForwardLimit && adjustedCurrentPosition < SERVO_TICKS)) mGoalPosition += SERVO_TICKS;
                         mAtLimit = true;
                     }
 
                     // Limit destination if between mReverseLimit and middleLimit
                     else if (adjustedTargetPosition < getUpper(mAdjustedReverseLimit)) {
 
-                        mGoalPosition = (mAdjustedReverseLimit - adjustedCurrentPosition) % mTicksPerRevolution;
-                        if (normalizedDifference > 0 && !(getUpper(adjustedCurrentPosition) > 0 && adjustedCurrentPosition < getUpper(mAdjustedReverseLimit))) mGoalPosition -= mTicksPerRevolution;
+                        mGoalPosition = (mAdjustedReverseLimit - adjustedCurrentPosition) % SERVO_TICKS;
+                        if (normalizedDifference > 0 && !(getUpper(adjustedCurrentPosition) > 0 && adjustedCurrentPosition < getUpper(mAdjustedReverseLimit))) mGoalPosition -= SERVO_TICKS;
                         mAtLimit = true;
                     }
                 }
@@ -162,7 +162,7 @@ namespace mrover {
 
         auto getPosition(ServoPosition& position) const -> U2D2::Status {
             auto const positionTicks = getCurrentServoPosition();
-            position = (static_cast<double>(positionTicks.first) / static_cast<double>(mTicksPerRevolution)) * TAU;
+            position = (static_cast<double>(positionTicks.first) / static_cast<double>(SERVO_TICKS)) * TAU;
             return positionTicks.second;
         }
 
@@ -222,10 +222,9 @@ namespace mrover {
             double currentLimit;
             double profileAcceleration;
             double profileVelocity;
-            int ticksPerRevolution;
 
             std::vector<ParameterWrapper> parameters = {
-                    {std::format("{}.ticks_per_revolution", mServoName), ticksPerRevolution, SERVO_TICKS},
+                    {std::format("{}.position_multiplier", mServoName), mPositionMultiplier, 1.0},
                     {std::format("{}.reverse_limit", mServoName), reverseLimit, 0.0},
                     {std::format("{}.forward_limit", mServoName), forwardLimit, 340.0},
                     {std::format("{}.position_p", mServoName), positionPGain, 400.0},
@@ -250,20 +249,18 @@ namespace mrover {
 
             ParameterWrapper::declareParameters(mNode.get(), parameters);
 
-            mTicksPerRevolution = ticksPerRevolution;
-
-            int const reverseLimitTicks = static_cast<int>((reverseLimit / TAU) * static_cast<double>(mTicksPerRevolution));
-            int const forwardLimitTicks = static_cast<int>((forwardLimit / TAU) * static_cast<double>(mTicksPerRevolution));
+            int const reverseLimitTicks = static_cast<int>((reverseLimit / TAU) * SERVO_TICKS);
+            int const forwardLimitTicks = static_cast<int>((forwardLimit / TAU) * SERVO_TICKS);
 
             mLimitAdjustment = (forwardLimitTicks + reverseLimitTicks) / 2;
 
             if (forwardLimitTicks > reverseLimitTicks) {
-                mLimitAdjustment = (forwardLimitTicks + reverseLimitTicks + mTicksPerRevolution) / 2;
+                mLimitAdjustment = (forwardLimitTicks + reverseLimitTicks + SERVO_TICKS) / 2;
             }
-            mLimitAdjustment %= mTicksPerRevolution;
+            mLimitAdjustment %= SERVO_TICKS;
 
-            mAdjustedReverseLimit = (static_cast<int64_t>((reverseLimit / TAU) * static_cast<double>(mTicksPerRevolution)) - mLimitAdjustment + mTicksPerRevolution) % mTicksPerRevolution;
-            mAdjustedForwardLimit = (static_cast<int>((forwardLimit / TAU) * static_cast<double>(mTicksPerRevolution)) - mLimitAdjustment + mTicksPerRevolution) % mTicksPerRevolution;
+            mAdjustedReverseLimit = (static_cast<int64_t>((reverseLimit / TAU) * SERVO_TICKS) - mLimitAdjustment + SERVO_TICKS) % SERVO_TICKS;
+            mAdjustedForwardLimit = (static_cast<int>((forwardLimit / TAU) * static_cast<double>(SERVO_TICKS)) - mLimitAdjustment + SERVO_TICKS) % SERVO_TICKS;
 
             setOffset();
         }
@@ -280,16 +277,16 @@ namespace mrover {
 
         [[nodiscard]] auto rawToOffset(uint32_t position) const -> int64_t {
             // apply the offset to the position of the servos
-            int64_t updatedPosition = static_cast<int64_t>(position) - mPositionOffsetTicks;
+            int64_t updatedPosition = static_cast<int64_t>(position / mPositionMultiplier) - mPositionOffsetTicks;
 
             // correct for an underflow
             while (updatedPosition < 0) {
-                updatedPosition += mTicksPerRevolution;
+                updatedPosition += SERVO_TICKS;
             }
 
             // correct for an overflow
             while (updatedPosition > std::numeric_limits<uint32_t>::max()) {
-                updatedPosition -= mTicksPerRevolution;
+                updatedPosition -= SERVO_TICKS;
             }
 
             return updatedPosition;
@@ -297,16 +294,16 @@ namespace mrover {
 
         [[nodiscard]] auto offsetToRaw(int64_t position) const -> uint32_t {
             // apply the offset to the position of the servos
-            int64_t updatedPosition = position + mPositionOffsetTicks;
+            int64_t updatedPosition = static_cast<int64_t>(static_cast<double>(position) * mPositionMultiplier) + mPositionOffsetTicks;
 
             // correct for an underflow
             while (updatedPosition < 0) {
-                updatedPosition += mTicksPerRevolution;
+                updatedPosition += SERVO_TICKS;
             }
 
             // correct for an overflow
             while (updatedPosition > std::numeric_limits<uint32_t>::max()) {
-                updatedPosition -= mTicksPerRevolution;
+                updatedPosition -= SERVO_TICKS;
             }
 
             return updatedPosition;
