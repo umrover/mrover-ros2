@@ -31,7 +31,7 @@ class DebugTyping(Node):
         self.typing_future = None
 
         self.ik_mode_client = self.create_client(IkMode, "ik_mode")
-        self.typing_client = ActionClient(self, TypingPosition, "typing_ik")
+        self.typing_client = ActionClient(self, TypingPosition, "typing_pos")
 
         entry_label = tk.Label(root, text="Typing Coordinates [x, y]")
         entry_label.pack()

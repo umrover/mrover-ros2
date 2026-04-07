@@ -26,7 +26,7 @@ namespace mrover {
 
         mTypingServer = rclcpp_action::create_server<action::TypingPosition>(
             this,
-            "typing_ik",
+            "typing_pos",
             [this](auto & uuid, auto typingGoal) { return handleTypingGoal(uuid, typingGoal); },
             [this](auto typingGoalHandle) { return handleTypingCancel(typingGoalHandle); },
             [this](auto typingGoalHandle) { return handleTypingAccepted(typingGoalHandle); }
