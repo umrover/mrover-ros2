@@ -1,0 +1,16 @@
+science_hw_bridge:
+  ros__parameters:
+    u2d2_device: "/dev/u2d2"
+    funnel: # TODO(eric) validate
+      id: 5
+      position_multiplier: 5.859375
+      forward_limit: 6.28
+      reverse_limit: 0.0
+      position_p: 5000.0
+      position_i: 0.0
+      position_d: 0.0
+      velocity_p: 0.0
+      velocity_i: 0.0
+      current_limit: 1750.0
+      profile_acceleration: 60.0
+      profile_velocity: 500.0
