@@ -67,12 +67,12 @@ import { useAutonomyStore } from '@/stores/autonomy'
 import { storeToRefs } from 'pinia'
 
 const defaultLayout = [
-  { x: 0, y: 0, w: 6, h: 2, i: 'odometry' },
-  { x: 0, y: 2, w: 6, h: 4, i: 'nav-status' },
-  { x: 3, y: 7, w: 3, h: 6, i: 'controls' },
-  { x: 0, y: 11, w: 3, h: 6, i: 'drive-data' },
-  { x: 6, y: 0, w: 6, h: 6, i: 'map' },
-  { x: 6, y: 6, w: 6, h: 6, i: 'waypoints' },
+  { x: 0, y: 0, w: 5, h: 2, i: 'odometry' },
+  { x: 0, y: 2, w: 5, h: 5, i: 'nav-status' },
+  { x: 3, y: 7, w: 3, h: 5, i: 'controls' },
+  { x: 0, y: 7, w: 3, h: 5, i: 'drive-data' },
+  { x: 5, y: 0, w: 7, h: 7, i: 'map' },
+  { x: 6, y: 7, w: 6, h: 5, i: 'waypoints' },
 ]
 
 const autonomyStore = useAutonomyStore()

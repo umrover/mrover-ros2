@@ -1,11 +1,5 @@
 <template>
-  <div class="flex flex-col gap-2 flex-1">
-    <div class="panel status-panel px-4 py-2" data-testid="pw-status-panel" :class="stuckStatus ? 'status-panel--error' : 'status-panel--ok'">
-      <div class="flex items-center gap-2">
-        <span class="status-dot rounded-full"></span>
-        <span class="status-label">{{ stuckStatus ? 'Obstruction Detected' : 'Nominal Conditions' }}</span>
-      </div>
-    </div>
+  <div class="flex-1 flex">
     <div class="panel nav-state-panel flex-1 flex items-center justify-center" data-testid="pw-nav-state-panel" :class="ledColorClass">
       <div class="flex flex-col items-center gap-1">
         <span class="data-label">Nav State</span>
@@ -16,7 +10,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { useAutonomyStore } from '@/stores/autonomy'
 import { storeToRefs } from 'pinia'
@@ -26,8 +20,6 @@ const websocketStore = useWebsocketStore()
 
 const autonomyStore = useAutonomyStore()
 const { teleopEnabled, navState } = storeToRefs(autonomyStore)
-
-const stuckStatus = ref(false)
 
 const ledColorClass = computed(() => {
   if (teleopEnabled.value) return 'nav-state--info'
@@ -41,35 +33,6 @@ websocketStore.onMessage<NavStateMessage>('nav', 'nav_state', (msg) => {
 </script>
 
 <style scoped>
-.status-dot {
-  flex-shrink: 0;
-  width: clamp(8px, 0.6vw, 12px);
-  height: clamp(8px, 0.6vw, 12px);
-}
-
-.status-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.status-panel--ok {
-  background-color: var(--status-ok);
-  border-color: var(--status-ok);
-}
-
-.status-panel--ok .status-dot { background-color: var(--text-on-status); }
-.status-panel--ok .status-label { color: var(--text-on-status); }
-
-.status-panel--error {
-  background-color: var(--status-error);
-  border-color: var(--status-error);
-}
-
-.status-panel--error .status-dot { background-color: var(--text-on-status); }
-.status-panel--error .status-label { color: var(--text-on-status); }
-
 .nav-state-panel {
   min-height: clamp(70px, 5vw, 100px);
   transition: all var(--transition);
