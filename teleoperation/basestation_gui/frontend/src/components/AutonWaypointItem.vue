@@ -10,8 +10,7 @@
           <h5 class="list-item-title" data-testid="pw-waypoint-name">{{ waypoint.name }}</h5>
         </div>
         <div class="flex items-center gap-2">
-          <span v-if="waypoint.type > 0" class="data-label">{{ typeLabel }}</span>
-          <span v-if="waypoint.type === 1 && waypoint.tag_id != null" class="data-label">#{{ waypoint.tag_id }}</span>
+          <span v-if="waypoint.type === 1 && waypoint.tag_id != null" class="data-label">Tag ID: {{ waypoint.tag_id }}</span>
         </div>
       </div>
       <div class="flex justify-between items-center">

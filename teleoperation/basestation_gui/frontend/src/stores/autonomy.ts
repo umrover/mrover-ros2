@@ -187,9 +187,7 @@ export const useAutonomyStore = defineStore('autonomy', () => {
   }
 
   async function resetAll() {
-    await waypointsAPI.clearStore()
-    execution.value = []
-    await saveExecution()
+    await waypointsAPI.resetStore()
     await fetchAll()
   }
 

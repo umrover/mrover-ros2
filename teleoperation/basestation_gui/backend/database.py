@@ -1,16 +1,14 @@
 import logging
 import sqlite3
-import os
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../..')
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BASE_DIR.mkdir(parents=True, exist_ok=True)
 
-# Ensure base directory exists
-os.makedirs(BASE_DIR, exist_ok=True)
-
-WAYPOINTS_DB = os.path.join(BASE_DIR, 'waypoints.db')
-RECORDINGS_DB = os.path.join(BASE_DIR, 'recordings.db')
+WAYPOINTS_DB = BASE_DIR / 'waypoints.db'
+RECORDINGS_DB = BASE_DIR / 'recordings.db'
 
 def init_waypoints_db():
     try:
@@ -30,19 +28,6 @@ def init_waypoints_db():
                 latitude REAL DEFAULT 0.0,
                 longitude REAL DEFAULT 0.0,
                 deletable BOOLEAN DEFAULT 1
-            )
-        ''')
-
-        # Staging Auton Course Table
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS staging_auton_course (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                tag_id INTEGER DEFAULT NULL,
-                type INTEGER DEFAULT 0,
-                latitude REAL DEFAULT 0.0,
-                longitude REAL DEFAULT 0.0,
-                sequence_order INTEGER NOT NULL
             )
         ''')
 
@@ -76,9 +61,9 @@ def init_waypoints_db():
             defaults = [
                 ("No Search 1", None, 0, 0.0, 0.0, 0),
                 ("No Search 2", None, 0, 0.0, 0.0, 0),
-                ("Post 1", 0, 1, 0.0, 0.0, 0),
-                ("Post 2", 1, 1, 0.0, 0.0, 0),
-                ("Post 3", 2, 1, 0.0, 0.0, 0),
+                ("Post 1", 1, 1, 0.0, 0.0, 0),
+                ("Post 2", 2, 1, 0.0, 0.0, 0),
+                ("Post 3", 3, 1, 0.0, 0.0, 0),
                 ("Mallet", None, 2, 0.0, 0.0, 0),
                 ("Water Bottle", None, 3, 0.0, 0.0, 0),
                 ("Rock Pick", None, 4, 0.0, 0.0, 0),

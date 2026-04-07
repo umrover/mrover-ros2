@@ -144,7 +144,7 @@ def delete_basic_waypoint(waypoint_id: int):
             conn.close()
 
 
-# --- Shared helpers for course tables (staging + execution) ---
+# --- Shared helpers for course tables ---
 
 def _fetch_course(conn, table: str) -> list[dict]:
     course = conn.execute(f'SELECT * FROM {table} ORDER BY sequence_order ASC').fetchall()
@@ -283,57 +283,20 @@ def remove_from_store(waypoint_id: int):
             conn.close()
 
 
-@router.delete("/auton/store/clear/")
-def clear_store():
+@router.delete("/auton/store/")
+def reset_store():
+    from backend.database import init_waypoints_db
     conn = None
     try:
         conn = get_db_connection()
-        conn.execute('DELETE FROM auton_waypoints WHERE deletable = 1')
-        conn.execute('DELETE FROM staging_auton_course')
-        conn.execute('DELETE FROM current_auton_course')
+        conn.execute('DROP TABLE IF EXISTS auton_waypoints')
+        conn.execute('DROP TABLE IF EXISTS current_auton_course')
+        conn.execute("DELETE FROM sqlite_sequence WHERE name IN ('auton_waypoints', 'current_auton_course')")
         conn.commit()
-        return {'status': 'success', 'message': 'User waypoints, staging, and execution cleared'}
-    finally:
-        if conn:
-            conn.close()
-
-
-@router.delete("/auton/store/clear/all/")
-def clear_store_all():
-    conn = None
-    try:
-        conn = get_db_connection()
-        conn.execute('DELETE FROM auton_waypoints')
-        conn.execute('DELETE FROM staging_auton_course')
-        conn.execute('DELETE FROM current_auton_course')
-        conn.execute('DELETE FROM sqlite_sequence WHERE name = "auton_waypoints"')
-        conn.commit()
-        return {'status': 'success', 'message': 'All waypoints cleared'}
-    finally:
-        if conn:
-            conn.close()
-
-
-# --- Staging: planned route queue ---
-
-@router.get("/auton/staging/")
-def get_staging():
-    conn = None
-    try:
-        conn = get_db_connection()
-        return {'status': 'success', 'course': _fetch_course(conn, 'staging_auton_course')}
-    finally:
-        if conn:
-            conn.close()
-
-
-@router.post("/auton/staging/save/")
-def save_staging(data: AutonWaypointList):
-    conn = None
-    try:
-        conn = get_db_connection()
-        _save_course(conn, 'staging_auton_course', data.waypoints)
-        return {'status': 'success'}
+        conn.close()
+        conn = None
+        init_waypoints_db()
+        return {'status': 'success', 'message': 'Tables recreated with defaults'}
     finally:
         if conn:
             conn.close()

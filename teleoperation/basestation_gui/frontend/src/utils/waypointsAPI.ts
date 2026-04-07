@@ -67,12 +67,8 @@ export const waypointsAPI = {
     })
   },
 
-  clearStore(): Promise<DeleteWaypointResponse> {
-    return apiFetch('/waypoints/auton/store/clear/', { method: 'DELETE' })
-  },
-
-  clearStoreAll(): Promise<DeleteWaypointResponse> {
-    return apiFetch('/waypoints/auton/store/clear/all/', { method: 'DELETE' })
+  resetStore(): Promise<DeleteWaypointResponse> {
+    return apiFetch('/waypoints/auton/store/', { method: 'DELETE' })
   },
 
   // --- Execution: active navigation batch ---

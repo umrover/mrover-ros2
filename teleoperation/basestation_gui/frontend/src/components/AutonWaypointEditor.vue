@@ -1,21 +1,21 @@
 <template>
   <div
     class="wrapper flex m-0 p-0 h-full w-full gap-2 relative outline-none"
-    :tabindex="vimEnabled ? 0 : -1"
-    @keydown="handleKeydown"
-    @focus="editorFocused = true"
-    @blur="handleBlur"
+    :tabindex="vim.vimEnabled.value ? 0 : -1"
+    @keydown="vim.handleKeydown"
+    @focus="vim.editorFocused.value = true"
+    @blur="vim.handleBlur"
     ref="editorRef"
   >
-    <div class="editor-column" :class="{ 'column-focused': vimEnabled && editorFocused && keyboard.focusedColumn.value === 'store' }">
+    <div class="editor-column" :class="{ 'column-focused': vim.vimEnabled.value && vim.editorFocused.value && vim.keyboard.focusedColumn.value === 'store' }">
       <div class="waypoint-header p-2 mb-2 flex justify-between items-center border-b">
         <div class="flex items-center gap-2">
-          <h4 class="component-header">Waypoint Store</h4>
+          <h4 class="component-header">Waypoint Items</h4>
           <button
             class="vim-toggle"
-            :class="vimEnabled ? 'vim-toggle--on' : 'vim-toggle--off'"
+            :class="vim.vimEnabled.value ? 'vim-toggle--on' : 'vim-toggle--off'"
             title="Toggle Vim keybindings"
-            @click="toggleVim"
+            @click="vim.toggleVim"
           >
             <img src="/vim-logo.svg" alt="Vim" class="vim-logo" />
           </button>
@@ -42,20 +42,19 @@
         ghost-class="drag-ghost"
         class="waypoint-wrapper p-2 rounded grow overflow-auto relative"
         data-testid="pw-waypoint-store-list"
-        @end="handleStoreDragEnd"
       >
         <div v-if="autonomyStore.store.length === 0" class="course-empty-state">
           <i class="bi bi-geo-alt"></i>
           <span>No waypoints in store</span>
         </div>
-        <WaypointStore
+        <WaypointItem
           v-for="(waypoint, index) in autonomyStore.store"
           :key="waypoint.db_id || index"
           :ref="(el: any) => { if (el) storeItemRefs[index] = el }"
           :waypoint="waypoint"
           :index="index"
-          :highlighted="vimEnabled && editorFocused && keyboard.focusedColumn.value === 'store' && keyboard.storeIndex.value === index"
-          :visual-selected="vimEnabled && keyboard.storeSelectedIndices.value.has(index)"
+          :highlighted="vim.vimEnabled.value && vim.editorFocused.value && vim.keyboard.focusedColumn.value === 'store' && vim.keyboard.storeIndex.value === index"
+          :visual-selected="vim.vimEnabled.value && vim.keyboard.storeSelectedIndices.value.has(index)"
           :on-colon="() => commandBar?.open()"
           @add="autonomyStore.addToExecution"
           @delete="autonomyStore.removeFromStore"
@@ -64,7 +63,7 @@
       </VueDraggable>
     </div>
 
-    <div class="editor-column" :class="{ 'column-focused': vimEnabled && editorFocused && keyboard.focusedColumn.value === 'execution' }">
+    <div class="editor-column" :class="{ 'column-focused': vim.vimEnabled.value && vim.editorFocused.value && vim.keyboard.focusedColumn.value === 'execution' }">
       <div class="waypoint-header p-2 mb-2 flex justify-between items-center border-b">
         <h4 class="component-header">Execution</h4>
         <div class="flex gap-1">
@@ -95,8 +94,8 @@
           :key="wp.db_id ?? index"
           class="list-item"
           :class="{
-            'kbd-highlighted': vimEnabled && editorFocused && keyboard.focusedColumn.value === 'execution' && keyboard.executionIndex.value === index,
-            'kbd-visual-selected': vimEnabled && keyboard.executionSelectedIndices.value.has(index),
+            'kbd-highlighted': vim.vimEnabled.value && vim.editorFocused.value && vim.keyboard.focusedColumn.value === 'execution' && vim.keyboard.executionIndex.value === index,
+            'kbd-visual-selected': vim.vimEnabled.value && vim.keyboard.executionSelectedIndices.value.has(index),
           }"
         >
           <div class="flex justify-between items-center mb-1">
@@ -117,11 +116,11 @@
       </VueDraggable>
     </div>
 
-    <div v-if="vimEnabled && keyboard.showCheatSheet.value" class="kbd-cheatsheet" @click="keyboard.showCheatSheet.value = false">
+    <div v-if="vim.vimEnabled.value && vim.keyboard.showCheatSheet.value" class="kbd-cheatsheet" @click="vim.keyboard.showCheatSheet.value = false">
       <div class="kbd-cheatsheet-content" @click.stop>
         <div class="flex justify-between items-center mb-3">
           <h5 class="font-bold">Keyboard Shortcuts</h5>
-          <button class="btn-close" @click="keyboard.showCheatSheet.value = false"><i class="bi bi-x-lg"></i></button>
+          <button class="btn-close" @click="vim.keyboard.showCheatSheet.value = false"><i class="bi bi-x-lg"></i></button>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
@@ -156,14 +155,14 @@
   </div>
 
   <Teleport to="body">
-    <div v-if="vimEnabled && visualSelectedCount > 0" class="visual-mode-bar">
-      -- VISUAL -- ({{ visualSelectedCount }} selected)
+    <div v-if="vim.vimEnabled.value && vim.visualSelectedCount.value > 0" class="visual-mode-bar">
+      -- VISUAL -- ({{ vim.visualSelectedCount.value }} selected)
     </div>
   </Teleport>
 
-  <VimBar v-if="vimEnabled" ref="commandBar" @execute="handleVimCommand" @close="restoreFocus" />
+  <VimBar v-if="vim.vimEnabled.value" ref="commandBar" @execute="vim.handleVimCommand" @close="vim.restoreFocus" />
 
-  <AutonAddWaypointModal ref="addModal" />
+  <AutonWaypointModal ref="addModal" />
 
   <ConfirmModal
     ref="resetModal"
@@ -172,142 +171,35 @@
     confirm-text="Reset"
     @confirm="autonomyStore.resetAll()"
   >
-    <p>This will clear all user-added waypoints and execution.</p>
-    <p class="text-muted mb-0">Default waypoints will be preserved.</p>
+    <p>THIS WILL DROP AND RECREATE DB TABLES</p>
+    <p>THIS WILL REMOVE ALL USER-ADDED WAYPOINTS</p>
   </ConfirmModal>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
-import WaypointStore from './AutonWaypointStore.vue'
-import AutonAddWaypointModal from './AutonAddWaypointModal.vue'
+import { ref, onMounted } from 'vue'
+import WaypointItem from './AutonWaypointItem.vue'
+import AutonWaypointModal from './AutonWaypointModal.vue'
 import ConfirmModal from './ConfirmModal.vue'
 import VimBar from './VimBar.vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import type { AutonWaypoint } from '@/types/waypoints'
 import { useAutonomyStore } from '@/stores/autonomy'
-import { useWaypointKeyboard } from '@/composables/useWaypointKeyboard'
+import { useVim } from '@/composables/useVim'
 
 const autonomyStore = useAutonomyStore()
-const keyboard = useWaypointKeyboard()
 
 const editorRef = ref<HTMLElement | null>(null)
-const editorFocused = ref(false)
-const addModal = ref<InstanceType<typeof AutonAddWaypointModal> | null>(null)
+const addModal = ref<InstanceType<typeof AutonWaypointModal> | null>(null)
 const resetModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
-const storeItemRefs: Record<number, InstanceType<typeof WaypointStore>> = {}
+const storeItemRefs: Record<number, InstanceType<typeof WaypointItem>> = {}
 const commandBar = ref<InstanceType<typeof VimBar> | null>(null)
 
-function openStoreEditModal() {
-  if (keyboard.focusedColumn.value !== 'store') return
-  const item = storeItemRefs[keyboard.storeIndex.value]
-  if (!item) return
-  item.openEditModal()
-  modalOpen.value = true
-  const unwatch = watch(() => item.isOpen, (open) => {
-    if (!open) {
-      modalOpen.value = false
-      unwatch()
-      nextTick(() => editorRef.value?.focus())
-    }
-  })
-}
-
-keyboard.setOnEnter(openStoreEditModal)
-
-const visualSelectedCount = computed(() => {
-  const store = keyboard.storeSelectedIndices.value.size
-  const exec = keyboard.executionSelectedIndices.value.size
-  return store + exec
-})
-
-const LS_VIM = 'autonEditor.vimEnabled'
-const vimEnabled = ref(localStorage.getItem(LS_VIM) === 'true')
+const vim = useVim({ editorRef, storeItemRefs, commandBar })
 
 onMounted(() => {
   autonomyStore.fetchAll()
-  if (vimEnabled.value) {
-    editorRef.value?.focus()
-  }
 })
-
-function scrollToHighlighted() {
-  nextTick(() => {
-    const el = editorRef.value?.querySelector('.kbd-highlighted')
-    if (el) {
-      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-    }
-  })
-}
-
-watch(() => keyboard.scrollKey.value, () => {
-  if (!vimEnabled.value || !editorFocused.value) return
-  scrollToHighlighted()
-})
-
-function toggleVim() {
-  vimEnabled.value = !vimEnabled.value
-  localStorage.setItem(LS_VIM, String(vimEnabled.value))
-  if (vimEnabled.value) {
-    editorRef.value?.focus()
-  } else {
-    keyboard.exitVisualMode()
-    editorRef.value?.blur()
-    editorFocused.value = false
-  }
-}
-
-function handleKeydown(e: KeyboardEvent) {
-  if (!vimEnabled.value) return
-  if (commandBar.value?.active) return
-  if (e.key === 'Tab') {
-    e.preventDefault()
-    return
-  }
-  if (e.key === ':') {
-    e.preventDefault()
-    commandBar.value?.open()
-    return
-  }
-  keyboard.handleKeydown(e)
-}
-
-function getActiveStoreItem(): InstanceType<typeof WaypointStore> | null {
-  return storeItemRefs[keyboard.storeIndex.value] ?? null
-}
-
-function handleVimCommand(cmd: string) {
-  const item = getActiveStoreItem()
-  const isModalOpen = item?.isOpen
-
-  switch (cmd) {
-    case 'w':
-      if (isModalOpen) item?.saveEdit()
-      break
-    case 'q':
-      if (isModalOpen) item?.closeEditModal()
-      break
-    case 'wq':
-    case 'x':
-      if (isModalOpen) item?.saveAndClose()
-      break
-  }
-
-  nextTick(() => {
-    if (!modalOpen.value) editorRef.value?.focus()
-  })
-}
-
-function restoreFocus() {
-  nextTick(() => {
-    if (modalOpen.value) {
-      const backdrop = document.querySelector('.modal-backdrop') as HTMLElement | null
-      backdrop?.focus()
-    } else {
-      editorRef.value?.focus()
-    }
-  })
-}
 
 function handleStoreUpdate(waypoint: AutonWaypoint, index: number) {
   const existing = autonomyStore.store[index]
@@ -324,26 +216,8 @@ function handleStoreUpdate(waypoint: AutonWaypoint, index: number) {
   }
 }
 
-const modalOpen = ref(false)
-
-function handleBlur(e: FocusEvent) {
-  if (!vimEnabled.value) {
-    editorFocused.value = false
-    return
-  }
-  if (modalOpen.value || commandBar.value?.active) return
-  const wrapper = editorRef.value
-  if (wrapper && e.relatedTarget instanceof Node && wrapper.contains(e.relatedTarget)) {
-    return
-  }
-  nextTick(() => wrapper?.focus())
-}
-
-function handleStoreDragEnd() {
-  // Store reorder happened via VueDraggable v-model binding
-}
-
-function handleExecutionDragAdd(evt: { newIndex: number }) {
+function handleExecutionDragAdd(evt: { newIndex?: number }) {
+  if (evt.newIndex == null) return
   const wp = autonomyStore.execution[evt.newIndex]
   if (!wp) return
   const isDuplicate = autonomyStore.execution.some(
