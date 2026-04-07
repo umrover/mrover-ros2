@@ -6,6 +6,10 @@ source /opt/ros/humble/setup.zsh
 export ROS_DOMAIN_ID=5
 export COLCON_TRACE=0
 
+remove_ros2_ws_from_path(){
+    export ${1}="$(echo ${${1}} | tr ':' '\n' | grep -v "ros2_ws" | paste -s -d ':')"
+}
+
 source_mrover_overlay(){
     build_profiles=("RelWithDebInfo" "Release" "Debug")
 
@@ -22,6 +26,13 @@ source_mrover_overlay(){
             fi
         fi
     done
+
+    # clean up current ROS environment
+    remove_ros2_ws_from_path LD_LIBRARY_PATH
+    remove_ros2_ws_from_path AMENT_PREFIX_PATH
+    remove_ros2_ws_from_path PYTHONPATH
+    remove_ros2_ws_from_path COLCON_PREFIX_PATH
+    remove_ros2_ws_from_path CMAKE_PREFIX_PATH
 
     if [ -f "${target_file}" ]; then
         source "${target_file}" >> /dev/null
