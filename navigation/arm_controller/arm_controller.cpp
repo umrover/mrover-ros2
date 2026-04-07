@@ -289,7 +289,7 @@ namespace mrover {
                     auto pusherFuture = mPusherCli->async_send_request(pusherReq);
 
                     if(pusherFuture.wait_for(std::chrono::seconds(5)) == std::future_status::ready) {
-                        RCLCPP_INFO(get_logger(), "Pusher service succeeded.");
+                            RCLCPP_INFO(get_logger(), "Pusher service succeeded.");
                             std::this_thread::sleep_for(pauseTime);
                             result->success = true;
                         } else {
