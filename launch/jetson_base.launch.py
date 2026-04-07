@@ -31,7 +31,7 @@ def generate_launch_description():
         name="u2d2_bridge",
         parameters=[
             Path(get_package_share_directory("mrover"), "config", "esw.yaml"),
-            Path(get_package_share_directory("mrover"), "config", "u2d2.yaml")
+            Path(get_package_share_directory("mrover"), "config", "u2d2.yaml"),
         ],
     )
 

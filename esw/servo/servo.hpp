@@ -1,8 +1,8 @@
 #pragma once
 
 #include <atomic>
-#include <cstdint>
 #include <cmath>
+#include <cstdint>
 #include <parameter.hpp>
 #include <rclcpp/logging.hpp>
 #include <rclcpp/publisher.hpp>
@@ -71,7 +71,7 @@ namespace mrover {
             ProfileAcceleration = 108,
         };
 
-        enum class ServoMode { 
+        enum class ServoMode {
             Optimal,
             Clockwise,
             CounterClockwise,
@@ -254,14 +254,14 @@ namespace mrover {
 
             mServoID = static_cast<uint8_t>(servoID);
 
-            (void)setProperty(ServoProperty::PositionPGain, static_cast<uint16_t>(positionPGain));
-            (void)setProperty(ServoProperty::PositionIGain, static_cast<uint16_t>(positionIGain));
-            (void)setProperty(ServoProperty::PositionDGain, static_cast<uint16_t>(positionDGain));
-            (void)setProperty(ServoProperty::VelocityPGain, static_cast<uint16_t>(velocityPGain));
-            (void)setProperty(ServoProperty::VelocityIGain, static_cast<uint16_t>(velocityIGain));
-            (void)setProperty(ServoProperty::CurrentLimit, static_cast<uint16_t>(currentLimit));
-            (void)setProperty(ServoProperty::ProfileAcceleration, static_cast<uint16_t>(profileAcceleration));
-            (void)setProperty(ServoProperty::ProfileVelocity, static_cast<uint16_t>(profileVelocity));
+            (void) setProperty(ServoProperty::PositionPGain, static_cast<uint16_t>(positionPGain));
+            (void) setProperty(ServoProperty::PositionIGain, static_cast<uint16_t>(positionIGain));
+            (void) setProperty(ServoProperty::PositionDGain, static_cast<uint16_t>(positionDGain));
+            (void) setProperty(ServoProperty::VelocityPGain, static_cast<uint16_t>(velocityPGain));
+            (void) setProperty(ServoProperty::VelocityIGain, static_cast<uint16_t>(velocityIGain));
+            (void) setProperty(ServoProperty::CurrentLimit, static_cast<uint16_t>(currentLimit));
+            (void) setProperty(ServoProperty::ProfileAcceleration, static_cast<uint16_t>(profileAcceleration));
+            (void) setProperty(ServoProperty::ProfileVelocity, static_cast<uint16_t>(profileVelocity));
 
             int const reverseLimitTicks = static_cast<int>((reverseLimit / TAU) * SERVO_TICKS);
             int const forwardLimitTicks = static_cast<int>((forwardLimit / TAU) * SERVO_TICKS);

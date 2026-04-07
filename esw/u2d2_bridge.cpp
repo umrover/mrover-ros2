@@ -8,6 +8,7 @@
 #include <mrover/msg/servo_configure.hpp>
 #include <mrover/msg/servo_in.hpp>
 #include <mrover/msg/servo_out.hpp>
+#include <parameter.hpp>
 #include <u2d2.hpp>
 
 namespace mrover {
@@ -20,19 +21,22 @@ namespace mrover {
 
     public:
         U2D2Bridge() : Node("u2d2_bridge") {
-            this->declare_parameter("u2d2_device", "/dev/u2d2");
+            std::string u2d2Device;
+            std::vector<ParameterWrapper> parameters = {
+                    {"u2d2_device", u2d2Device, "/dev/u2d2"}};
 
-            std::string const u2d2Device = this->get_parameter("u2d2_device").as_string();
+            ParameterWrapper::declareParameters(this, parameters);
+
             mU2D2 = U2D2::getSharedInstance();
 
             if (mU2D2->init(u2d2Device) != U2D2::Status::Success) {
-                RCLCPP_FATAL(this->get_logger(), "Failed to initialize U2D2 on %s", u2d2Device.c_str());
+                RCLCPP_FATAL(this->get_logger(), "failed to initialize U2D2 on %s", u2d2Device.c_str());
                 rclcpp::shutdown();
             }
 
             mConfigSub = this->create_subscription<msg::ServoConfigure>(
                     "/u2d2/configure", rclcpp::QoS(10).transient_local(),
-                    [this](msg::ServoConfigure::ConstSharedPtr const& msg) {
+                    [this](msg::ServoConfigure::ConstSharedPtr const& msg) -> void {
                         uint8_t const id = msg->id;
                         std::string const& name = msg->name;
 
@@ -46,7 +50,7 @@ namespace mrover {
 
                         mSubs.push_back(this->create_subscription<msg::ServoIn>(
                                 "/u2d2/" + name + "/in", 10,
-                                [this, id](msg::ServoIn::ConstSharedPtr const& inMsg) {
+                                [this, id](msg::ServoIn::ConstSharedPtr const& inMsg) -> void {
                                     uint8_t hwStatus;
                                     if (inMsg->length == 1)
                                         mU2D2->write1Byte(inMsg->addr, inMsg->value, id, &hwStatus);
@@ -59,7 +63,7 @@ namespace mrover {
                         RCLCPP_INFO(get_logger(), "registered servo %s (ID %d)", name.c_str(), id);
                     });
 
-            mPublishTimer = this->create_wall_timer(std::chrono::milliseconds(20), [this]() {
+            mPublishTimer = this->create_wall_timer(std::chrono::milliseconds(20), [this]() -> void {
                 for (uint8_t const id: mServoIDs) {
                     msg::ServoOut outMsg;
                     uint8_t hwStatus;
