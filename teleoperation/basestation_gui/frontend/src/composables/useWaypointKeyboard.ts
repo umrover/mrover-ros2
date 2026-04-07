@@ -3,7 +3,7 @@ import { useAutonomyStore } from '@/stores/autonomy'
 import type { AutonWaypoint } from '@/types/waypoints'
 
 export type Column = 'store' | 'execution'
-export type KeyboardMode = 'NORMAL' | 'INSERT' | 'VISUAL'
+export type KeyboardMode = 'NORMAL' | 'VISUAL'
 
 function rangeToSet(anchor: number, cursor: number): Set<number> {
   const start = Math.min(anchor, cursor)
@@ -21,7 +21,8 @@ export function useWaypointKeyboard() {
   const storeIndex = ref(0)
   const executionIndex = ref(0)
   const showCheatSheet = ref(false)
-  const editingStoreIndex = ref(-1)
+
+  let onEnterCallback: (() => void) | null = null
 
   const storeVisualAnchor = ref(-1)
   const executionVisualAnchor = ref(-1)
@@ -123,18 +124,8 @@ export function useWaypointKeyboard() {
     executionVisualAnchor.value = -1
   }
 
-  function enterInsertMode() {
-    if (focusedColumn.value !== 'store') return
-    if (mode.value === 'VISUAL') return
-    const list = getColumnList()
-    if (list.length === 0) return
-    mode.value = 'INSERT'
-    editingStoreIndex.value = storeIndex.value
-  }
-
-  function exitInsertMode() {
-    mode.value = 'NORMAL'
-    editingStoreIndex.value = -1
+  function setOnEnter(cb: (() => void) | null) {
+    onEnterCallback = cb
   }
 
   async function performStage() {
@@ -222,14 +213,6 @@ export function useWaypointKeyboard() {
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (mode.value === 'INSERT') {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        exitInsertMode()
-      }
-      return
-    }
-
     if (e.key === '?') {
       e.preventDefault()
       showCheatSheet.value = !showCheatSheet.value
@@ -272,6 +255,11 @@ export function useWaypointKeyboard() {
       return
     }
     if (e.key === 'd' && !e.shiftKey) {
+      if (mode.value === 'VISUAL') {
+        e.preventDefault()
+        performDelete()
+        return
+      }
       pendingKey = 'd'
       pendingTimeout = setTimeout(clearPending, 500)
       e.preventDefault()
@@ -320,8 +308,9 @@ export function useWaypointKeyboard() {
         reorderUp()
         break
       case 'Enter':
+      case 'e':
         e.preventDefault()
-        enterInsertMode()
+        if (onEnterCallback) onEnterCallback()
         break
       case 'v':
         e.preventDefault()
@@ -343,13 +332,12 @@ export function useWaypointKeyboard() {
     focusedColumn,
     storeIndex,
     executionIndex,
-    editingStoreIndex,
     showCheatSheet,
     scrollKey,
     storeSelectedIndices,
     executionSelectedIndices,
     handleKeydown,
-    exitInsertMode,
+    setOnEnter,
     exitVisualMode,
   }
 }

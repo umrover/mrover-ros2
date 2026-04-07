@@ -235,6 +235,14 @@ def update_store(waypoint_id: int, data: UpdateAutonWaypoint):
         if not fields:
             raise HTTPException(status_code=400, detail="No fields to update")
 
+        if not wp['deletable']:
+            immutable = {'name', 'type'} & fields.keys()
+            if immutable:
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Cannot modify {', '.join(immutable)} on permanent waypoints"
+                )
+
         col_map = {'lat': 'latitude', 'lon': 'longitude'}
         allowed_cols = {'name', 'tag_id', 'type', 'latitude', 'longitude'}
         set_clauses = []

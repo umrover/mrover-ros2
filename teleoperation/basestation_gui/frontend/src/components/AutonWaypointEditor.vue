@@ -51,21 +51,17 @@
         <WaypointStore
           v-for="(waypoint, index) in autonomyStore.store"
           :key="waypoint.db_id || index"
+          :ref="(el: any) => { if (el) storeItemRefs[index] = el }"
           :waypoint="waypoint"
           :index="index"
           :highlighted="vimEnabled && editorFocused && keyboard.focusedColumn.value === 'store' && keyboard.storeIndex.value === index"
           :visual-selected="vimEnabled && keyboard.storeSelectedIndices.value.has(index)"
-          :editing="vimEnabled && keyboard.editingStoreIndex.value === index"
+          :on-colon="() => commandBar?.open()"
           @add="autonomyStore.addToExecution"
           @delete="autonomyStore.removeFromStore"
           @update="handleStoreUpdate"
-          @cancel-edit="handleCancelEdit"
-          @save-edit="handleInlineEdit"
         />
       </VueDraggable>
-      <div v-if="vimEnabled && keyboard.storeSelectedIndices.value.size > 0" class="visual-mode-bar">
-        -- VISUAL -- ({{ keyboard.storeSelectedIndices.value.size }} selected)
-      </div>
     </div>
 
     <div class="editor-column" :class="{ 'column-focused': vimEnabled && editorFocused && keyboard.focusedColumn.value === 'execution' }">
@@ -105,7 +101,7 @@
         >
           <div class="flex justify-between items-center mb-1">
             <h5 class="list-item-title">{{ wp.name }}</h5>
-            <span v-if="wp.tag_id != null" class="data-label">#{{ wp.tag_id }}</span>
+            <span v-if="wp.type === 1 && wp.tag_id != null" class="data-label">#{{ wp.tag_id }}</span>
           </div>
           <div class="flex justify-between items-center">
             <small class="text-muted">{{ wp.lat.toFixed(6) }}N, {{ wp.lon.toFixed(6) }}W</small>
@@ -115,13 +111,10 @@
               @click="autonomyStore.removeFromExecution(wp)"
             >
               <i class="bi bi-trash-fill" />
-            </button>
+            </button> 
           </div>
         </div>
       </VueDraggable>
-      <div v-if="vimEnabled && keyboard.executionSelectedIndices.value.size > 0" class="visual-mode-bar">
-        -- VISUAL -- ({{ keyboard.executionSelectedIndices.value.size }} selected)
-      </div>
     </div>
 
     <div v-if="vimEnabled && keyboard.showCheatSheet.value" class="kbd-cheatsheet" @click="keyboard.showCheatSheet.value = false">
@@ -140,7 +133,7 @@
           </div>
           <div>
             <h6 class="font-semibold mb-1">Actions</h6>
-            <div class="kbd-row"><kbd>Enter</kbd> Edit waypoint (store)</div>
+            <div class="kbd-row"><kbd>Enter</kbd> / <kbd>e</kbd> Edit waypoint (store)</div>
             <div class="kbd-row"><kbd>s</kbd> Stage to execution</div>
             <div class="kbd-row"><kbd>d</kbd><kbd>d</kbd> Delete</div>
             <div class="kbd-row"><kbd>J</kbd><kbd>K</kbd> Reorder (store)</div>
@@ -154,12 +147,6 @@
             <div class="kbd-row"><kbd>Escape</kbd> Cancel selection</div>
           </div>
           <div>
-            <h6 class="font-semibold mb-1">Insert Mode</h6>
-            <div class="kbd-row"><kbd>Tab</kbd> / <kbd>Shift+Tab</kbd> Cycle fields</div>
-            <div class="kbd-row"><kbd>Enter</kbd> Save</div>
-            <div class="kbd-row"><kbd>Escape</kbd> Cancel</div>
-          </div>
-          <div>
             <h6 class="font-semibold mb-1">Other</h6>
             <div class="kbd-row"><kbd>?</kbd> Toggle this sheet</div>
           </div>
@@ -167,6 +154,14 @@
       </div>
     </div>
   </div>
+
+  <Teleport to="body">
+    <div v-if="vimEnabled && visualSelectedCount > 0" class="visual-mode-bar">
+      -- VISUAL -- ({{ visualSelectedCount }} selected)
+    </div>
+  </Teleport>
+
+  <VimBar v-if="vimEnabled" ref="commandBar" @execute="handleVimCommand" @close="restoreFocus" />
 
   <AutonAddWaypointModal ref="addModal" />
 
@@ -183,10 +178,11 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, nextTick, watch, onMounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import WaypointStore from './AutonWaypointStore.vue'
 import AutonAddWaypointModal from './AutonAddWaypointModal.vue'
 import ConfirmModal from './ConfirmModal.vue'
+import VimBar from './VimBar.vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import type { AutonWaypoint } from '@/types/waypoints'
 import { useAutonomyStore } from '@/stores/autonomy'
@@ -199,6 +195,31 @@ const editorRef = ref<HTMLElement | null>(null)
 const editorFocused = ref(false)
 const addModal = ref<InstanceType<typeof AutonAddWaypointModal> | null>(null)
 const resetModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
+const storeItemRefs: Record<number, InstanceType<typeof WaypointStore>> = {}
+const commandBar = ref<InstanceType<typeof VimBar> | null>(null)
+
+function openStoreEditModal() {
+  if (keyboard.focusedColumn.value !== 'store') return
+  const item = storeItemRefs[keyboard.storeIndex.value]
+  if (!item) return
+  item.openEditModal()
+  modalOpen.value = true
+  const unwatch = watch(() => item.isOpen, (open) => {
+    if (!open) {
+      modalOpen.value = false
+      unwatch()
+      nextTick(() => editorRef.value?.focus())
+    }
+  })
+}
+
+keyboard.setOnEnter(openStoreEditModal)
+
+const visualSelectedCount = computed(() => {
+  const store = keyboard.storeSelectedIndices.value.size
+  const exec = keyboard.executionSelectedIndices.value.size
+  return store + exec
+})
 
 const LS_VIM = 'autonEditor.vimEnabled'
 const vimEnabled = ref(localStorage.getItem(LS_VIM) === 'true')
@@ -224,10 +245,6 @@ watch(() => keyboard.scrollKey.value, () => {
   scrollToHighlighted()
 })
 
-watch(() => keyboard.editingStoreIndex.value, (idx) => {
-  if (vimEnabled.value && idx >= 0) scrollToHighlighted()
-})
-
 function toggleVim() {
   vimEnabled.value = !vimEnabled.value
   localStorage.setItem(LS_VIM, String(vimEnabled.value))
@@ -235,7 +252,6 @@ function toggleVim() {
     editorRef.value?.focus()
   } else {
     keyboard.exitVisualMode()
-    keyboard.exitInsertMode()
     editorRef.value?.blur()
     editorFocused.value = false
   }
@@ -243,11 +259,54 @@ function toggleVim() {
 
 function handleKeydown(e: KeyboardEvent) {
   if (!vimEnabled.value) return
-  if (e.key === 'Tab' && keyboard.mode.value === 'NORMAL') {
+  if (commandBar.value?.active) return
+  if (e.key === 'Tab') {
     e.preventDefault()
     return
   }
+  if (e.key === ':') {
+    e.preventDefault()
+    commandBar.value?.open()
+    return
+  }
   keyboard.handleKeydown(e)
+}
+
+function getActiveStoreItem(): InstanceType<typeof WaypointStore> | null {
+  return storeItemRefs[keyboard.storeIndex.value] ?? null
+}
+
+function handleVimCommand(cmd: string) {
+  const item = getActiveStoreItem()
+  const isModalOpen = item?.isOpen
+
+  switch (cmd) {
+    case 'w':
+      if (isModalOpen) item?.saveEdit()
+      break
+    case 'q':
+      if (isModalOpen) item?.closeEditModal()
+      break
+    case 'wq':
+    case 'x':
+      if (isModalOpen) item?.saveAndClose()
+      break
+  }
+
+  nextTick(() => {
+    if (!modalOpen.value) editorRef.value?.focus()
+  })
+}
+
+function restoreFocus() {
+  nextTick(() => {
+    if (modalOpen.value) {
+      const backdrop = document.querySelector('.modal-backdrop') as HTMLElement | null
+      backdrop?.focus()
+    } else {
+      editorRef.value?.focus()
+    }
+  })
 }
 
 function handleStoreUpdate(waypoint: AutonWaypoint, index: number) {
@@ -256,6 +315,8 @@ function handleStoreUpdate(waypoint: AutonWaypoint, index: number) {
 
   const fields: Partial<AutonWaypoint> = {}
   if (waypoint.name !== existing.name) fields.name = waypoint.name
+  if (waypoint.type !== existing.type) fields.type = waypoint.type
+  if (waypoint.tag_id !== existing.tag_id) fields.tag_id = waypoint.tag_id
   if (waypoint.lat !== existing.lat) fields.lat = waypoint.lat
   if (waypoint.lon !== existing.lon) fields.lon = waypoint.lon
   if (Object.keys(fields).length > 0) {
@@ -263,33 +324,19 @@ function handleStoreUpdate(waypoint: AutonWaypoint, index: number) {
   }
 }
 
+const modalOpen = ref(false)
+
 function handleBlur(e: FocusEvent) {
   if (!vimEnabled.value) {
     editorFocused.value = false
     return
   }
+  if (modalOpen.value || commandBar.value?.active) return
   const wrapper = editorRef.value
   if (wrapper && e.relatedTarget instanceof Node && wrapper.contains(e.relatedTarget)) {
     return
   }
   nextTick(() => wrapper?.focus())
-}
-
-function refocusEditor() {
-  if (vimEnabled.value) {
-    editorRef.value?.focus()
-  }
-}
-
-function handleInlineEdit(waypoint: AutonWaypoint, index: number) {
-  handleStoreUpdate(waypoint, index)
-  keyboard.exitInsertMode()
-  refocusEditor()
-}
-
-function handleCancelEdit() {
-  keyboard.exitInsertMode()
-  refocusEditor()
 }
 
 function handleStoreDragEnd() {
@@ -334,17 +381,6 @@ function handleExecutionDragEnd() {
 .waypoint-wrapper {
   scrollbar-gutter: stable;
   background-color: var(--view-bg);
-}
-
-.visual-mode-bar {
-  padding: 0.25rem 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--status-ok);
-  text-align: center;
-  letter-spacing: 0.05em;
-  background-color: var(--view-bg);
-  border-top: 2px solid var(--panel-border);
 }
 
 .list-item-title {
@@ -402,4 +438,22 @@ function handleExecutionDragEnd() {
   object-fit: contain;
 }
 
+</style>
+
+<style>
+.visual-mode-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+  letter-spacing: 0.05em;
+  background-color: var(--status-ok);
+  border-top: 2px solid var(--status-ok);
+  z-index: 1000;
+}
 </style>

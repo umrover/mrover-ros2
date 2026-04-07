@@ -4,49 +4,14 @@
     :class="{ 'kbd-highlighted': highlighted, 'kbd-visual-selected': visualSelected }"
     data-testid="pw-waypoint-store-item"
   >
-    <template v-if="editing">
-      <div class="flex flex-col gap-2">
-        <input
-          ref="nameInputRef"
-          class="form-control form-control-sm"
-          v-model="editData.name"
-          placeholder="Name"
-          @keydown="handleEditKeydown"
-        />
-        <div class="grid grid-cols-2 gap-2">
-          <input
-            ref="latInputRef"
-            class="form-control form-control-sm"
-            v-model.number="editData.lat"
-            type="number"
-            step="0.000001"
-            placeholder="Latitude"
-            @keydown="handleEditKeydown"
-          />
-          <input
-            ref="lonInputRef"
-            class="form-control form-control-sm"
-            v-model.number="editData.lon"
-            type="number"
-            step="0.000001"
-            placeholder="Longitude"
-            @keydown="handleEditKeydown"
-          />
-        </div>
-        <div class="flex justify-end gap-1">
-          <small class="text-muted self-center mr-auto">Tab: next field, Enter: save, Esc: cancel</small>
-        </div>
-      </div>
-    </template>
-
-    <template v-else>
-      <div class="flex justify-between items-center mb-1">
+    <div class="flex justify-between items-center mb-1">
         <div class="flex items-center gap-2">
           <i class="bi bi-grip-vertical drag-handle"></i>
           <h5 class="list-item-title" data-testid="pw-waypoint-name">{{ waypoint.name }}</h5>
         </div>
-        <div v-if="waypoint.tag_id != null" class="flex items-center gap-2">
-          <span class="data-label">Tag ID: {{ waypoint.tag_id }}</span>
+        <div class="flex items-center gap-2">
+          <span v-if="waypoint.type > 0" class="data-label">{{ typeLabel }}</span>
+          <span v-if="waypoint.type === 1 && waypoint.tag_id != null" class="data-label">#{{ waypoint.tag_id }}</span>
         </div>
       </div>
       <div class="flex justify-between items-center">
@@ -61,25 +26,49 @@
           ><i class="bi bi-trash-fill" /></button>
         </div>
       </div>
-    </template>
 
     <Teleport to="body">
-      <div v-if="isOpen" class="modal-backdrop" @click.self="closeEditModal">
+      <div v-if="isOpen" class="modal-backdrop" tabindex="-1" @click.self="closeEditModal" @keydown="handleModalKeydown" @keydown.tab.prevent="trapFocus">
         <div class="modal-dialog">
-          <div class="modal-content">
+          <div ref="modalContentRef" class="modal-content">
             <div class="modal-header">
               <h5 class="modal-title">Edit Waypoint</h5>
-              <button type="button" class="btn-close" @click="closeEditModal"><i class="bi bi-x-lg" /></button>
+              <button type="button" class="btn-close" tabindex="-1" @click="closeEditModal"><i class="bi bi-x-lg" /></button>
             </div>
             <div class="modal-body">
               <div class="mb-4">
                 <label class="form-label">Name:</label>
-                <input class="form-control" v-model="modalData.name" />
+                <input ref="modalNameRef" class="form-control" v-model="modalData.name" :disabled="waypoint.deletable === false" />
+              </div>
+              <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label class="form-label">Type:</label>
+                  <select class="form-select" v-model.number="modalData.type" :disabled="waypoint.deletable === false">
+                    <option :value="0">No Search</option>
+                    <option :value="1">Post</option>
+                    <option :value="2">Mallet</option>
+                    <option :value="3">Water Bottle</option>
+                    <option :value="4">Rock Pick</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label">Tag ID:</label>
+                  <input
+                    v-if="modalData.type === 1"
+                    class="form-control"
+                    v-model.number="modalData.tag_id"
+                    type="number"
+                    min="0"
+                    max="249"
+                    step="1"
+                  />
+                  <input v-else class="form-control" type="number" placeholder="N/A" disabled />
+                </div>
               </div>
               <div class="grid grid-cols-2 gap-4 mb-4">
                 <div>
                   <label class="form-label">Latitude:</label>
-                  <input class="form-control" v-model.number="modalData.lat" type="number" step="0.000001" />
+                  <input ref="modalLatRef" class="form-control" v-model.number="modalData.lat" type="number" step="0.000001" />
                 </div>
                 <div>
                   <label class="form-label">Longitude:</label>
@@ -88,8 +77,8 @@
               </div>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" @click="closeEditModal">Cancel</button>
-              <button type="button" class="btn btn-primary" @click="saveModalEdit">Save</button>
+              <button type="button" class="btn btn-danger" tabindex="-1" @click="closeEditModal">Cancel</button>
+              <button type="button" class="btn btn-success" tabindex="-1" @click="saveAndClose">Save</button>
             </div>
           </div>
         </div>
@@ -99,7 +88,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, nextTick } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import type { AutonWaypoint } from '@/types/waypoints'
 import { useModal } from '@/composables/useModal'
 
@@ -108,97 +97,99 @@ const props = defineProps<{
   index: number
   highlighted?: boolean
   visualSelected?: boolean
-  editing?: boolean
+  onColon?: () => void
 }>()
+
+const TYPE_LABELS: Record<number, string> = {
+  0: 'No Search',
+  1: 'Post',
+  2: 'Mallet',
+  3: 'Water Bottle',
+  4: 'Rock Pick',
+}
+
+const typeLabel = computed(() => TYPE_LABELS[props.waypoint.type] ?? `Type ${props.waypoint.type}`)
 
 const emit = defineEmits<{
   add: [waypoint: AutonWaypoint]
   delete: [index: number]
   update: [waypoint: AutonWaypoint, index: number]
-  'save-edit': [waypoint: AutonWaypoint, index: number]
-  'cancel-edit': []
 }>()
 
-const editData = ref({ name: '', lat: 0, lon: 0 })
-const nameInputRef = ref<HTMLInputElement | null>(null)
-const latInputRef = ref<HTMLInputElement | null>(null)
-const lonInputRef = ref<HTMLInputElement | null>(null)
+const { isOpen, show, hide } = useModal()
+const modalData = ref({ name: '', type: 0, tag_id: null as number | null, lat: 0, lon: 0 })
+const modalContentRef = ref<HTMLElement | null>(null)
+const modalNameRef = ref<HTMLInputElement | null>(null)
+const modalLatRef = ref<HTMLInputElement | null>(null)
 
-watch(() => props.editing, (isEditing) => {
-  if (isEditing) {
-    editData.value = {
-      name: props.waypoint.name,
-      lat: props.waypoint.lat,
-      lon: props.waypoint.lon,
-    }
-    nextTick(() => {
-      nameInputRef.value?.focus()
-      nameInputRef.value?.select()
-    })
-  }
-})
-
-function getEditInputs(): HTMLInputElement[] {
-  return [nameInputRef.value, latInputRef.value, lonInputRef.value].filter(
-    (el): el is HTMLInputElement => el != null
+function trapFocus(e: KeyboardEvent) {
+  const container = modalContentRef.value
+  if (!container) return
+  const focusable = Array.from(
+    container.querySelectorAll<HTMLElement>('input:not(:disabled), select:not(:disabled)')
   )
+  if (focusable.length === 0) return
+  const current = focusable.indexOf(document.activeElement as HTMLElement)
+  const direction = e.shiftKey ? -1 : 1
+  const next = (current + direction + focusable.length) % focusable.length
+  focusable[next]?.focus()
 }
 
-function handleEditKeydown(e: KeyboardEvent) {
-  if (e.key === 'Enter') {
+function handleModalKeydown(e: KeyboardEvent) {
+  if (e.key === ':') {
     e.preventDefault()
-    emit('save-edit', {
-      ...props.waypoint,
-      name: editData.value.name,
-      lat: editData.value.lat,
-      lon: editData.value.lon,
-    }, props.index)
+    if (props.onColon) props.onColon()
     return
   }
-
   if (e.key === 'Escape') {
     e.preventDefault()
-    emit('cancel-edit')
+    closeEditModal()
     return
   }
-
-  if (e.key === 'Tab') {
+  if (e.key === 'Enter') {
     e.preventDefault()
-    const inputs = getEditInputs()
-    const current = inputs.indexOf(e.target as HTMLInputElement)
-    if (current === -1) return
-    const direction = e.shiftKey ? -1 : 1
-    const nextIndex = (current + direction + inputs.length) % inputs.length
-    inputs[nextIndex]?.focus()
-    inputs[nextIndex]?.select()
+    saveAndClose()
+    return
   }
 }
-
-const { isOpen, show, hide } = useModal()
-const modalData = ref({ name: '', lat: 0, lon: 0 })
 
 function openEditModal() {
   modalData.value = {
     name: props.waypoint.name,
+    type: props.waypoint.type,
+    tag_id: props.waypoint.tag_id,
     lat: props.waypoint.lat,
     lon: props.waypoint.lon,
   }
   show()
+  nextTick(() => {
+    const target = props.waypoint.deletable === false ? modalLatRef.value : modalNameRef.value
+    target?.focus()
+    target?.select()
+  })
+}
+
+function saveEdit() {
+  emit('update', {
+    ...props.waypoint,
+    name: modalData.value.name,
+    type: modalData.value.type,
+    tag_id: modalData.value.type === 1 ? modalData.value.tag_id : null,
+    lat: modalData.value.lat,
+    lon: modalData.value.lon,
+  }, props.index)
 }
 
 function closeEditModal() {
   hide()
 }
 
-function saveModalEdit() {
-  emit('update', {
-    ...props.waypoint,
-    name: modalData.value.name,
-    lat: modalData.value.lat,
-    lon: modalData.value.lon,
-  }, props.index)
+function saveAndClose() {
+  saveEdit()
   closeEditModal()
 }
+
+defineExpose({ openEditModal, closeEditModal, saveEdit, saveAndClose, isOpen })
 </script>
 
 <style scoped>
@@ -230,4 +221,5 @@ function saveModalEdit() {
 .drag-handle:hover {
   opacity: 1;
 }
+
 </style>
