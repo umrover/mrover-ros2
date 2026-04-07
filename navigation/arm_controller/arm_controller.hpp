@@ -64,10 +64,10 @@ namespace mrover {
             }},
         };
 
-        [[maybe_unused]] rclcpp::Subscription<msg::IK>::SharedPtr mIkSub;
-        [[maybe_unused]] rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr mVelSub;
-        [[maybe_unused]] rclcpp::Subscription<msg::ControllerState>::SharedPtr mJointSub;
-        [[maybe_unused]] rclcpp::Client<srv::Pusher>::SharedPtr mPusherCli;
+        rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr mVelSub;
+        rclcpp::Subscription<msg::ControllerState>::SharedPtr mJointSub;
+        rclcpp::Subscription<msg::IK>::SharedPtr mIkSub;
+        rclcpp::Client<srv::Pusher>::SharedPtr mPusherCli;
 
         rclcpp_action::Server<action::TypingPosition>::SharedPtr mTypingServer;
         auto handleTypingGoal(const rclcpp_action::GoalUUID & uuid, const std::shared_ptr<const action::TypingPosition_Goal> &typingGoal) -> rclcpp_action::GoalResponse;
