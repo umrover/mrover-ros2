@@ -459,40 +459,17 @@ namespace mrover {
 
             if (velocities &&
                 !(
-                        velocities->velocities[0] == 0 &&
-                        velocities->velocities[1] == 0 &&
-                        velocities->velocities[2] == 0 &&
-                        velocities->velocities[3] == 0 &&
-                        velocities->velocities[4] == 0)) {
-
-                        /*if (velocities->velocities[1] < 0.030 && velocities->velocities[1] > -0.030) {
-                            velocities->velocities[1] = 0;
-                        }
-                        if (velocities->velocities[1] < 0) { velocities->velocities[1] = -0.05;}
-                        else velocities->velocities[1] = 0.05;*/
-
-                        mVelPub->publish(velocities.value());
-        
+                    velocities->velocities[0] == 0 &&
+                    velocities->velocities[1] == 0 &&
+                    velocities->velocities[2] == 0 &&
+                    velocities->velocities[3] == 0 &&
+                    velocities->velocities[4] == 0
+                )
+            ) {
+                mVelPub->publish(velocities.value());
             } else {
-                if (!velocities) {
-                    RCLCPP_WARN_THROTTLE(
-                            get_logger(),
-                            *get_clock(),
-                            1000,
-                            "Velocity IK failed!");
-                    mCarrotPos = mArmPos;
-                    mCheckCarrotPos = mArmPos;
-                    carrot_initialized = false;
-                    mPIDx.reset();
-                    mPIDy.reset();
-                    mPIDz.reset();
-                    mPIDroll.reset();
-                    mPIDpitch.reset();
-                }
+                if(!velocities) RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
             }
-
-            visualize_carrot_ee();
-
         } else { // typing mode
             msg::Position positions;
             positions.names = {"joint_a", "gripper"};
