@@ -341,8 +341,6 @@ namespace mrover {
 
         if (get_clock()->now() - mLastUpdate > TIMEOUT) {
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "IK Timed Out");
-            if(!mPosFallback) mPosFallback = mCurrPos;
-            mPosPub->publish(mPosFallback.value());
             return;
         }
 
@@ -351,11 +349,8 @@ namespace mrover {
             SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", mPosTarget.toSE3(), get_clock()->now());
             if (positions) {
                 mPosPub->publish(positions.value());
-                mPosFallback = std::nullopt;
             } else {
                 RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Position IK failed!");
-                if(!mPosFallback) mPosFallback = mCurrPos;
-                mPosPub->publish(mPosFallback.value());
             }
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
             // TODO: Determine joint velocities that cancels out arm sag
@@ -370,11 +365,8 @@ namespace mrover {
                 )
             ) {
                 mVelPub->publish(velocities.value());
-                mPosFallback = std::nullopt;
             } else {
                 if(!velocities) RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
-                if(!mPosFallback) mPosFallback = mCurrPos;
-                mPosPub->publish(mPosFallback.value());
             }
         } else { // typing mode
             if(mTypingGoalID) {
