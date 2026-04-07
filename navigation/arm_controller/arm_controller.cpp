@@ -192,22 +192,32 @@ namespace mrover {
         }
 
         double y = joint_state->positions[0]; // joint a position
+        SE3d armTf = SE3d{{0, y, 0}, SO3d{0, 0, 0}};
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk_a_b", "arm_base_link", armTf, get_clock()->now());
+    
         // joint b position
         double angle = -joint_state->positions[1];
         double x = LINK_BC * std::cos(angle);
         double z = LINK_BC * std::sin(angle);
+        armTf = SE3d{{x, 0, z}, SO3d{0, 0, 0}};
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk_b_c", "arm_fk_a_b", armTf, get_clock()->now());
+        
         // joint c position
         angle -= joint_state->positions[2] - JOINT_C_OFFSET;
         x += LINK_CD * std::cos(angle);
         z += LINK_CD * std::sin(angle);
+        armTf = SE3d{{x, 0, z}, SO3d{0, 0, 0}};
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk_c_de", "arm_fk_b_c", armTf, get_clock()->now());
+
         // joint de position
         angle -= joint_state->positions[3] + JOINT_C_OFFSET;
         x += END_EFFECTOR_LENGTH * std::cos(angle);
         z += END_EFFECTOR_LENGTH * std::sin(angle);
-        mArmPos = {x, y, z, -angle, joint_state->positions[4], std::max(joint_state->positions[5], 0.0f)};
+        armTf = SE3d{{x, 0, z}, SO3d{0, 0, 0}};
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk_de_ee", "arm_fk_c_de", armTf, get_clock()->now());
 
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk", "arm_base_link", mArmPos.toSE3(), get_clock()->now());
-    }
+        mArmPos = {x, y, z, -angle, joint_state->positions[4], std::max(joint_state->positions[5], 0.0f)};
+    }    
 
     void ArmController::posCallback(msg::IK::ConstSharedPtr const& ik_target) {
         mPosTarget = *ik_target;
