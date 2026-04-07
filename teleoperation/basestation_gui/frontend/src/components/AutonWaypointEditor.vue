@@ -142,11 +142,16 @@
             <div class="kbd-row"><kbd>v</kbd> Enter/exit visual mode</div>
             <div class="kbd-row"><kbd>j</kbd><kbd>k</kbd> Extend selection</div>
             <div class="kbd-row"><kbd>s</kbd> Stage all selected</div>
-            <div class="kbd-row"><kbd>d</kbd><kbd>d</kbd> Delete all selected</div>
+            <div class="kbd-row"><kbd>d</kbd> Delete all selected</div>
             <div class="kbd-row"><kbd>Escape</kbd> Cancel selection</div>
           </div>
           <div>
-            <h6 class="font-semibold mb-1">Other</h6>
+            <h6 class="font-semibold mb-1">Command Mode</h6>
+            <div class="kbd-row"><kbd>:</kbd> Open command bar</div>
+            <div class="kbd-row"><kbd>:e</kbd> Edit waypoint</div>
+            <div class="kbd-row"><kbd>:w</kbd> Save edit</div>
+            <div class="kbd-row"><kbd>:q</kbd> Close edit</div>
+            <div class="kbd-row"><kbd>:wq</kbd> / <kbd>:x</kbd> Save and close</div>
             <div class="kbd-row"><kbd>?</kbd> Toggle this sheet</div>
           </div>
         </div>
