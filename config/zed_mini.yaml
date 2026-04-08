@@ -6,8 +6,9 @@
 
 /zed_mini_wrapper:
   ros__parameters:
+    device_name: "zed_mini"
     depth_confidence: 70
-    serial_number: 12046231
+    serial_number: 13793874
     grab_target_fps: 60
     texture_confidence: 100
     image_width: 1280
