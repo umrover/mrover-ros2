@@ -75,12 +75,12 @@ import { ref } from 'vue'
 import { scienceAPI } from '@/utils/api'
 
 const site_to_radians: Record<number, number> = {
-  0: 0.0,
-  1: Math.PI / 3,
-  2: (2 * Math.PI) / 3,
-  3: Math.PI,
-  4: (4 * Math.PI) / 3,
-  5: (5 * Math.PI) / 3,
+  0: 4.2586,  // GRIESS B
+  1: 3.1415,  // SAMPLE
+  2: 2.0071,  // BURET A
+  3: 5.1138,  // BURET B
+  4: 0.0,     // TRASH
+  5: 1.1693,  // GRIESS A
 }
 
 const currentSite = ref(0)
