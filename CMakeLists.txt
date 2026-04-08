@@ -232,7 +232,7 @@ target_link_libraries(rover_gps_driver parameter_utils)
 
 mrover_add_node(heading_filter localization/heading_filter.cpp)
 ament_target_dependencies(heading_filter rclcpp rcutils sensor_msgs builtin_interfaces message_filters)
-target_link_libraries(heading_filter lie)
+target_link_libraries(heading_filter lie parameter_utils)
 
 mrover_add_node(pose_filter localization/pose_filter/*.cpp)
 ament_target_dependencies(pose_filter rclcpp tf2 tf2_ros geometry_msgs sensor_msgs)
