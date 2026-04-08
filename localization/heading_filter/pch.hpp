@@ -36,6 +36,6 @@
 #include <mrover/msg/fix_status.hpp>
 
 // 7. MRover-specific local headers
-#include "parameter.hpp"
+#include <parameter.hpp>
 
 
