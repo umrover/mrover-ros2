@@ -129,10 +129,15 @@ namespace mrover {
             else if (measured_heading_deg > 180.) { measured_heading_deg -= 360.; }
             double const measured_heading = measured_heading_deg * (M_PI / 180.);
 
+            auto const previousX = X;
+
             double heading_correction_delta = measured_heading - uncorrected_heading;
             heading_correction_delta = fmod((heading_correction_delta + 3 * M_PI), 2 * M_PI) - M_PI;
             predict(get_parameter("process_noise").as_double());
             correct(heading_correction_delta, get_parameter("rtk_heading_noise").as_double());
+
+            auto const correctionDelta = (X - previousX);
+            RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "%s", std::format("RTK heading correction delta on X: {} rad", correctionDelta).c_str());
         }
 
         
@@ -326,11 +331,16 @@ namespace mrover {
             return;
         }
 
+        auto const previousX = X;
+
         double heading_correction_delta = drive_forward_heading - uncorrected_heading;
         heading_correction_delta = wrapped_delta(heading_correction_delta);
 
         predict(get_parameter("process_noise").as_double());
         correct(heading_correction_delta, get_parameter("drive_forward_heading_noise").as_double());
+
+        auto const correctionDelta = (X - previousX);
+        RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "%s", std::format("Drive forward correction delta on X: {} rad", correctionDelta).c_str());
     }
 
 }
