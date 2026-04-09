@@ -19,7 +19,7 @@ from navigation.coordinate_utils import is_high_cost_point, d_calc, segment_path
 class ApproachTargetState(State):
     UPDATE_DELAY: float
     USE_COSTMAP: bool
-    SPIN_ROVER: bool
+    SPIN_ROVER: bool | None
     DISTANCE_THRESHOLD: float
     LOOK_DISTANCE_THRESHOLD: float
     STOP_ANGLE_THRESHOLD: float
@@ -415,7 +415,7 @@ class ApproachTargetState(State):
                 points=np.array([self.target_position]), color=[1.0, 1.0, 0.0], ns=str(type(self))
             )
 
-    def spin_rover_drive(self, context: Context, phase_1: np.ndarray, phase_2: np.ndarray = None):
+    def spin_rover_drive(self, context: Context, phase_1: np.ndarray, phase_2: np.ndarray | None = None):
         cmd_vel, arrived = context.drive.get_drive_command(
             phase_2 if phase_2 is not None else phase_1,
             context.rover.get_pose_in_map(),
