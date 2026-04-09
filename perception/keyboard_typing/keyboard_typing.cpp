@@ -69,7 +69,10 @@ namespace mrover{
             std::bind(&KeyboardTypingNode::handle_accepted, this, std::placeholders::_1));
 
         // subscribe to image stream
-        mImageSub = create_subscription<sensor_msgs::msg::Image>("/video4/image", rclcpp::QoS(1), [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+        // mImageSub = create_subscription<sensor_msgs::msg::Image>("/video4/image", rclcpp::QoS(1), [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+        //     yawCallback(msg);
+        // });
+        mImageSub = create_subscription<sensor_msgs::msg::Image>("/finger_camera/image", rclcpp::QoS(1), [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
             yawCallback(msg);
         });
 
@@ -77,7 +80,7 @@ namespace mrover{
         // wait until the transformation is acquired
         while (true) {
             try {
-                cam_to_gripper = SE3Conversions::fromTfTree(tf_buffer, "finger_camera_frame", "arm_fk_c_de");
+                cam_to_gripper = SE3Conversions::fromTfTree(tf_buffer, "finger_camera_frame", "arm_d_link");
                 break;
             } catch (tf2::TransformException const& e) {
                 RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
@@ -148,13 +151,12 @@ namespace mrover{
 
             SE3d arm_fk_to_tag{arm_fk_pos, transformed_rotation};
 
-            // Publish to tf tree
-            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_fk_c_de", cam_to_gripper*arm_fk_to_tag, get_clock()->now());
+            // tag_to_gripper
+            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_d_link", cam_to_gripper*arm_fk_to_tag, get_clock()->now());
 
             // camera_to_tag
             // camera_to_gripper * camera_to_tag
 
-            // // Initialize transforms for every key, temporarily here for now
             SE3d z_to_tag{mZKeyTransform, Eigen::Quaterniond::Identity()};
             SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_z", "keyboard_tag", z_to_tag, get_clock()->now());
         }
@@ -292,9 +294,9 @@ namespace mrover{
 
             std::tie(combined_tvec, combined_rvec) = vectorMedianFilter(combined_tvec, combined_rvec);
 
-            RCLCPP_INFO_STREAM(get_logger(), "X: " << combined_tvec[0]);
-            RCLCPP_INFO_STREAM(get_logger(), "Y: " << combined_tvec[1]);
-            RCLCPP_INFO_STREAM(get_logger(), "Z: " << combined_tvec[2]);
+            // RCLCPP_INFO_STREAM(get_logger(), "X: " << combined_tvec[0]);
+            // RCLCPP_INFO_STREAM(get_logger(), "Y: " << combined_tvec[1]);
+            // RCLCPP_INFO_STREAM(get_logger(), "Z: " << combined_tvec[2]);
 
             Eigen::Vector3d rvec(
                 combined_rvec[0],
@@ -359,11 +361,6 @@ namespace mrover{
             }
             if(key == 't'){
                 align_to_z();
-            }
-            if(key == 'h'){
-                SE3d transform = SE3Conversions::fromTfTree(tf_buffer, "arm_fk_c_de", "arm_gripper_link");
-                RCLCPP_INFO_STREAM(get_logger(), "y: " << transform.translation().y());
-                RCLCPP_INFO_STREAM(get_logger(), "z: " << transform.translation().z());
             }
             // if(logPose){
             //     outputToCSV(combined_tvec, combined_rvec);
@@ -430,7 +427,7 @@ namespace mrover{
 
         try {
             gripper_to_tag = SE3Conversions::fromTfTree(tf_buffer, "keyboard_tag", "arm_base_link");
-            armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "arm_fk_c_de", "arm_base_link");
+            armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "arm_d_link", "arm_base_link");
 
             // Grab pitch from tag transform
             double r00 = gripper_to_tag.transform()(0,0);
@@ -441,7 +438,7 @@ namespace mrover{
 
             RCLCPP_INFO_STREAM(this->get_logger(), "pitch = " << pitch_rad);
 
-            sendIKCommand(armbase_to_armfk.translation().x(), gripper_to_tag.translation().y(), gripper_to_tag.translation().z(), 0, 0);
+            sendIKCommand(armbase_to_armfk.translation().x(), gripper_to_tag.translation().y(), gripper_to_tag.translation().z(), 0, -1.5708);
 
         } catch (tf2::TransformException const& e) {
             RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
@@ -455,7 +452,7 @@ namespace mrover{
 
         try {
             armbase_to_z = SE3Conversions::fromTfTree(tf_buffer, "keyboard_z", "arm_base_link");
-            armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "arm_fk_c_de", "arm_base_link");
+            armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "arm_d_link", "arm_base_link");
 
             // Grab pitch from tag transform
             double r00 = armbase_to_z.transform()(0,0);
@@ -464,8 +461,7 @@ namespace mrover{
 
             double pitch_rad = -std::atan2(-r20, std::hypot(r00, r10));
 
-            sendIKCommand(armbase_to_armfk.translation().x(),
-            armbase_to_z.translation().y(), armbase_to_z.translation().z(), 0, -1.5708);
+            sendIKCommand(armbase_to_armfk.translation().x(), armbase_to_z.translation().y(), armbase_to_z.translation().z(), 0, -1.5708);
 
             RCLCPP_INFO_STREAM(get_logger(), "y_delta = " << (armbase_to_armfk.translation().y() - armbase_to_z.translation().y()));
                             
@@ -481,17 +477,17 @@ namespace mrover{
             RCLCPP_ERROR(get_logger(), "IK publisher not initialized");
         }
         // shift over to arm_gripper_link
-        float y_offset_local = -0.0062535;
+        // float y_offset_local = -0.0062535;
 
-        float dx = y_offset_local * (std::sin(pitch) * std::sin(roll));
-        float dy = y_offset_local * std::cos(roll);
-        float dz = y_offset_local * (std::cos(pitch) * std::sin(roll));
+        // float dx = y_offset_local * (std::sin(pitch) * std::sin(roll));
+        // float dy = y_offset_local * std::cos(roll);
+        // float dz = y_offset_local * (std::cos(pitch) * std::sin(roll));
 
         msg::IK message;
 
-        message.pos.x = x + dx;
-        message.pos.y = y + dy;
-        message.pos.z = z + dz;
+        message.pos.x = x + 0.212; // + dx;
+        message.pos.y = y; // + dy;
+        message.pos.z = z; // + dz;
 
         message.pitch = pitch;
         message.roll = roll;
@@ -500,17 +496,17 @@ namespace mrover{
         auto start = clock::now();
         auto duration = std::chrono::duration<double>(10);
 
-        SE3d curarmpos = SE3Conversions::fromTfTree(tf_buffer, "arm_fk_c_de", "arm_base_link");
+        SE3d curarmpos = SE3Conversions::fromTfTree(tf_buffer, "arm_d_link", "arm_base_link");
 
-        double dist =  pow(curarmpos.translation().x()-x, 2) + pow(curarmpos.translation().y()-y,2);
-        while (clock::now() - start < duration || dist > 0.007) {
+        double dist =  pow(curarmpos.translation().x()-x + 0.212, 2) + pow(curarmpos.translation().y()-y,2);
+        while (clock::now() - start < duration && dist > 0.007) {
             mIKPub->publish(message);
-            curarmpos = SE3Conversions::fromTfTree(tf_buffer, "arm_fk_c_de", "arm_base_link");
-            dist =  pow(curarmpos.translation().x()-x, 2) + pow(curarmpos.translation().y()-y,2);
+            curarmpos = SE3Conversions::fromTfTree(tf_buffer, "arm_d_link", "arm_base_link");
+            dist =  pow(curarmpos.translation().x()-x + 0.212, 2) + pow(curarmpos.translation().y()-y,2);
             RCLCPP_INFO_STREAM(get_logger(), "remaining distance = " << dist);
         }
 
-        RCLCPP_INFO(get_logger(), "Published IK Command {x=%.3f, y=%.3f, z=%.3f, p=%.3f, r=%.3f}", x, y, z, pitch, roll);
+        RCLCPP_INFO(get_logger(), "Published IK Command {x=%.3f, y=%.3f, z=%.3f, p=%.3f, r=%.3f}", x, message.pos.y, message.pos.z, message.pitch, message.roll);
     }
 
     auto KeyboardTypingNode::outputToCSV(cv::Vec3d &tvec, cv::Vec3d &rvec) -> void {
