@@ -124,6 +124,6 @@ def generate_launch_description():
             zed_container,
             base_link_to_right_gps,
             base_link_to_zed,
-            launch_localization
+            launch_localization,
         ]
     )
