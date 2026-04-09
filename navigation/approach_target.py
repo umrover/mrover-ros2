@@ -22,7 +22,7 @@ class ApproachTargetState(State):
     SPIN_ROVER: bool
     DISTANCE_THRESHOLD: float
     LOOK_DISTANCE_THRESHOLD: float
-    STOP_ANGLE_THRESHOLD:float
+    STOP_ANGLE_THRESHOLD: float
     time_begin: Time
     astar_traj: Trajectory
     target_traj: Trajectory
@@ -66,7 +66,7 @@ class ApproachTargetState(State):
         self.time_last_updated = context.node.get_clock().now()
         self.time_begin = context.node.get_clock().now()
         self.object_type = current_waypoint.type.val
-        self.no_look_ahead_dict = {'NO_SEARCH': 0, 'POST': 1}
+        self.no_look_ahead_dict = {"NO_SEARCH": 0, "POST": 1}
 
         self.marker_timer = context.node.create_timer(
             context.node.get_parameter("pub_path_rate").value, lambda: self.display_markers(context=context)
@@ -176,16 +176,18 @@ class ApproachTargetState(State):
                 self.fixed_position = rover_pose.translation() - rover_pose.rotation()[:, 0] + np.array([1e-8, 0, 0])
             if self.SPIN_ROVER is not None:
                 cmd_vel_func, arrived_func = self.spin_rover_drive(context, self.fixed_position)
-                if(arrived_func):
+                if arrived_func:
                     self.SPIN_ROVER = None
                 else:
                     context.rover.send_drive_command(cmd_vel_func)
             else:
-                cmd_vel_func, arrived_func = self.spin_rover_drive(context, rover_pose.translation(),self.target_position)
+                cmd_vel_func, arrived_func = self.spin_rover_drive(
+                    context, rover_pose.translation(), self.target_position
+                )
                 if self.self_in_distance_threshold(context, self.object_type):
                     context.node.get_logger().info("Exited through distance threshold")
                     return self.next_state(context=context, is_finished=True)
-                if(arrived_func):
+                if arrived_func:
                     context.node.get_logger().info("Exited without distance threshold")
                     return self.next_state(context, True)
                 else:
@@ -205,7 +207,7 @@ class ApproachTargetState(State):
             context=context, point=self.target_traj.get_current_point()
         ):
             context.node.get_logger().info(f"Skipped high cost point")
-            if(self.target_traj.increment_point()):
+            if self.target_traj.increment_point():
                 break
 
         if not self.target_traj.done():
@@ -246,12 +248,12 @@ class ApproachTargetState(State):
                     else:
                         context.node.get_logger().info("Found low-cost point")
                         return self
-                    
+
         # If we are within the distance threshold of the target we have finished
         if self.self_in_distance_threshold(context, self.object_type):
             context.node.get_logger().info("Exited through distance threshold")
             return self.next_state(context=context, is_finished=True)
-        
+
         arrived = False
         cmd_vel = Twist()
         if not self.astar_traj.done():
@@ -262,7 +264,6 @@ class ApproachTargetState(State):
                 context.node.get_parameter("single_tag.stop_threshold").value,
                 context.node.get_parameter("waypoint.drive_forward_threshold").value,
             )
-        
 
         # If we have arrived increment the a-star trajectory
         if arrived:
@@ -292,7 +293,7 @@ class ApproachTargetState(State):
                                 self.SPIN_ROVER = True
                             else:
                                 return self.next_state(context, is_finished=True)
-                            #return self.next_state(context=context, is_finished=True)
+                            # return self.next_state(context=context, is_finished=True)
                         return self
 
         else:
@@ -413,18 +414,24 @@ class ApproachTargetState(State):
             context.publish_path_marker(
                 points=np.array([self.target_position]), color=[1.0, 1.0, 0.0], ns=str(type(self))
             )
+
     def spin_rover_drive(self, context: Context, phase_1: np.ndarray, phase_2: np.ndarray = None):
         cmd_vel, arrived = context.drive.get_drive_command(
-                phase_2 if phase_2 is not None else phase_1,
-                context.rover.get_pose_in_map(),
-                context.node.get_parameter("single_tag.stop_threshold").value 
-                if phase_2 is not None else context.node.get_parameter("single_tag.stop_threshold").value / 10, 
-                context.node.get_parameter("waypoint.drive_forward_threshold").value 
-                if phase_2 is not None else context.node.get_parameter("backup.drive_forward_threshold").value,
-                False if phase_2 is not None else True
-            )
+            phase_2 if phase_2 is not None else phase_1,
+            context.rover.get_pose_in_map(),
+            (
+                context.node.get_parameter("single_tag.stop_threshold").value
+                if phase_2 is not None
+                else context.node.get_parameter("single_tag.stop_threshold").value / 10
+            ),
+            (
+                context.node.get_parameter("waypoint.drive_forward_threshold").value
+                if phase_2 is not None
+                else context.node.get_parameter("backup.drive_forward_threshold").value
+            ),
+            False if phase_2 is not None else True,
+        )
         return cmd_vel, arrived
-
 
     def self_in_distance_threshold(self, context: Context, object_type: int):
         rover_SE3 = context.rover.get_pose_in_map()
@@ -439,10 +446,14 @@ class ApproachTargetState(State):
             return False
         rover_translation = rover_SE3.translation()[0:2]
         distance_to_target = d_calc(rover_translation, tuple(target_pos))
-        if(object_type in self.no_look_ahead_dict.values()):
+        if object_type in self.no_look_ahead_dict.values():
             return distance_to_target < self.DISTANCE_THRESHOLD
         else:
-            return distance_to_target < self.LOOK_DISTANCE_THRESHOLD and time_diff < Duration(nanoseconds=30000000) and self.target_in_frame(context, rover_SE3, target_pos)
+            return (
+                distance_to_target < self.LOOK_DISTANCE_THRESHOLD
+                and time_diff < Duration(nanoseconds=30000000)
+                and self.target_in_frame(context, rover_SE3, target_pos)
+            )
 
     def target_in_frame(self, context: Context, rover_SE3, target_pos: np.ndarray):
         rover_to_model = target_pos - rover_SE3.translation()
@@ -453,7 +464,7 @@ class ApproachTargetState(State):
         angle_to_model = np.arccos(rover_dot_model)
         angle_to_model = math.copysign(angle_to_model, np.cross(rover_forward, rover_to_model)[2])
         return angle_to_model < self.STOP_ANGLE_THRESHOLD and angle_to_model > -1 * self.STOP_ANGLE_THRESHOLD
-    
+
     def point_in_distance_threshold(self, context: Context, point):
         if point is None:
             return False

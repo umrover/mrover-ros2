@@ -32,7 +32,7 @@ class Trajectory:
         """
         Adds point to end of trajectory, returns index of end point added
         """
-        if(len(self.coordinates)) == 0:
+        if (len(self.coordinates)) == 0:
             self.coordinates = np.atleast_2d(position)
         else:
             self.coordinates = np.vstack((self.coordinates, position))
