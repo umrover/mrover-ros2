@@ -2,7 +2,7 @@
   <BaseGridView
     layout-key="autonView_gridLayout"
     :default-layout="defaultLayout"
-    :topics="['drive', 'nav', 'science', 'chassis']"
+    :topics="['arm', 'drive', 'nav', 'science', 'chassis']"
   >
     <template #odometry>
       <div class="island p-2 rounded h-full">
@@ -13,6 +13,12 @@
     <template #nav-status>
       <div class="island p-2 rounded h-full flex flex-col">
         <NavigationStatus />
+      </div>
+    </template>
+
+    <template #rover-3d>
+      <div class="island rounded overflow-hidden h-full">
+        <Rover3D class="w-full h-full" />
       </div>
     </template>
 
@@ -35,9 +41,8 @@
     </template>
 
     <template #drive-data>
-      <div class="island p-2 rounded h-full flex flex-col">
-        <h4 class="component-header">Drive Status</h4>
-        <DriveDataTable />
+      <div class="island p-2 rounded h-full">
+        <DriveStatusIndicator />
       </div>
     </template>
   </BaseGridView>
@@ -62,15 +67,17 @@ import OdometryReading from '@/components/OdometryReading.vue'
 import NavigationStatus from '@/components/NavigationStatus.vue'
 import DriveControls from '@/components/DriveControls.vue'
 import GimbalControls from '@/components/GimbalControls.vue'
-import DriveDataTable from '@/components/ControllerDataTable/DriveDataTable.vue'
+import DriveStatusIndicator from '@/components/DriveStatusIndicator.vue'
+import Rover3D from '@/components/Rover3D.vue'
 import { useAutonomyStore } from '@/stores/autonomy'
 import { storeToRefs } from 'pinia'
 
 const defaultLayout = [
   { x: 0, y: 0, w: 5, h: 2, i: 'odometry' },
-  { x: 0, y: 2, w: 5, h: 5, i: 'nav-status' },
+  { x: 0, y: 2, w: 5, h: 5, i: 'rover-3d' },
   { x: 3, y: 7, w: 3, h: 5, i: 'controls' },
-  { x: 0, y: 7, w: 3, h: 5, i: 'drive-data' },
+  { x: 0, y: 7, w: 3, h: 4, i: 'nav-status' },
+  { x: 0, y: 11, w: 3, h: 1, i: 'drive-data' },
   { x: 5, y: 0, w: 7, h: 7, i: 'map' },
   { x: 6, y: 7, w: 6, h: 5, i: 'waypoints' },
 ]
