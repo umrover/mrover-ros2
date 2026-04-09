@@ -187,7 +187,7 @@ class ApproachTargetState(State):
                     return self.next_state(context=context, is_finished=True)
                 if(arrived_func):
                     context.node.get_logger().info("Exited without distance threshold")
-                    self.next_state(context, True)
+                    return self.next_state(context, True)
                 else:
                     context.rover.send_drive_command(cmd_vel_func)
             return self
@@ -414,8 +414,6 @@ class ApproachTargetState(State):
                 points=np.array([self.target_position]), color=[1.0, 1.0, 0.0], ns=str(type(self))
             )
     def spin_rover_drive(self, context: Context, phase_1: np.ndarray, phase_2: np.ndarray = None):
-        context.node.get_logger().info("rover_dir" + str(context.rover.get_pose_in_map().rotation()[:, 0][:2] * -1))
-        context.node.get_logger().info("target_dir" + str((phase_1 - context.rover.get_pose_in_map().translation())[:2]))
         cmd_vel, arrived = context.drive.get_drive_command(
                 phase_2 if phase_2 is not None else phase_1,
                 context.rover.get_pose_in_map(),
@@ -452,10 +450,8 @@ class ApproachTargetState(State):
         rover_to_model /= rover_norm_model
         rover_forward = rover_SE3.rotation()[:, 0]
         rover_dot_model = np.dot(rover_to_model, rover_forward)
-        context.node.get_logger().info("Rover to model: " + str(rover_to_model) + ", rover_forward: " + str(rover_forward))
         angle_to_model = np.arccos(rover_dot_model)
         angle_to_model = math.copysign(angle_to_model, np.cross(rover_forward, rover_to_model)[2])
-        context.node.get_logger().info("Angle to model" + str(angle_to_model))
         return angle_to_model < self.STOP_ANGLE_THRESHOLD and angle_to_model > -1 * self.STOP_ANGLE_THRESHOLD
     
     def point_in_distance_threshold(self, context: Context, point):
