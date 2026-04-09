@@ -22,39 +22,36 @@ namespace mrover {
 
     using namespace std::chrono_literals;
 
-    class MotorTestBridge final : public rclcpp::Node {
+    class DriveHWBridge final : public rclcpp::Node {
     public:
-        MotorTestBridge() : Node{"drive_hw_bridge"} {
+        DriveHWBridge() : Node{"drive_hw_bridge"} {
             // all initialization is done in the init() function to allow for the usage of shared_from_this()
         }
 
         auto init() -> void {
             // publishers and subscribers for left and right motor groups
-            for (std::string const& group: mMotorGroups) {
-                mVelocitySub = create_subscription<msg::Velocity>(std::format("drive_velocity_cmd", group), 1, [this](msg::Velocity::ConstSharedPtr const& msg) {
-                    processVelocityCmd(msg);
-                });
+            mVelocitySub = create_subscription<msg::Velocity>("drive_velocity_cmd", 1, [this](msg::Velocity::ConstSharedPtr const& msg) {
+                processVelocityCmd(msg);
+            });
 
-                // emplace controller names
-                for (std::string const& motor: mMotors) {
-                    std::string name = std::format("{}_{}", motor, group);
-                    mControllers.try_emplace(name, shared_from_this(), "jetson", name);
-                    mControllerState.names.push_back(name);
-                }
-
-                // initialize outbound message
-                mControllerState.header.stamp = now();
-                mControllerState.header.frame_id = "";
-                mControllerState.names.resize(mControllers.size());
-                mControllerState.states.resize(mControllers.size());
-                mControllerState.errors.resize(mControllers.size());
-                mControllerState.positions.resize(mControllers.size());
-                mControllerState.velocities.resize(mControllers.size());
-                mControllerState.currents.resize(mControllers.size());
-                mControllerState.limits_hit.resize(mControllers.size());
-
-                mControllerStatePubs.emplace_back(create_publisher<msg::ControllerState>(std::format("{}_controller_state", group), 1));
+            // emplace controller names
+            for (std::string const& motor: mMotors) {
+                mControllers.try_emplace(motor, shared_from_this(), "jetson", motor);
+                mControllerState.names.push_back(motor);
             }
+
+            // initialize outbound message
+            mControllerState.header.stamp = now();
+            mControllerState.header.frame_id = "";
+            mControllerState.names.resize(mControllers.size());
+            mControllerState.states.resize(mControllers.size());
+            mControllerState.errors.resize(mControllers.size());
+            mControllerState.positions.resize(mControllers.size());
+            mControllerState.velocities.resize(mControllers.size());
+            mControllerState.currents.resize(mControllers.size());
+            mControllerState.limits_hit.resize(mControllers.size());
+
+            mControllerStatePubs.emplace_back(create_publisher<msg::ControllerState>("drive_controller_state", 1));
 
             // periodic timer for published motor states
             mPublishStateTimer = create_wall_timer(std::chrono::milliseconds(100), [this]() { publishStateCallback(); });
@@ -133,8 +130,7 @@ namespace mrover {
         }
 
     private:
-        std::vector<std::string> mMotorGroups = {"left", "right"};
-        std::vector<std::string> mMotors = {"front", "middle", "back"};
+        std::vector<std::string> mMotors = {"front_right", "middle_right", "back_right", "front_left", "middle_left", "back_left"};
         std::unordered_map<std::string, BrushlessController<Revolutions>> mControllers;
 
         rclcpp::Subscription<msg::Velocity>::SharedPtr mVelocitySub;
@@ -151,7 +147,7 @@ namespace mrover {
 
 auto main(int const argc, char** argv) -> int {
     rclcpp::init(argc, argv);
-    auto const drive_bridge = std::make_shared<mrover::MotorTestBridge>();
+    auto const drive_bridge = std::make_shared<mrover::DriveHWBridge>();
     drive_bridge->init();
     rclcpp::spin(drive_bridge);
     rclcpp::shutdown();

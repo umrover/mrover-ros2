@@ -59,12 +59,14 @@ find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rtcm_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
+find_package(action_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(urdf REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(magic_enum REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
+find_package(dynamixel_sdk REQUIRED)
 
 find_package(Assimp NAMES Assimp assimp REQUIRED)
 find_package(Bullet REQUIRED)
@@ -117,7 +119,7 @@ endif()
 find_package(PkgConfig REQUIRED)
 pkg_search_module(NetLink libnl-3.0 IMPORTED_TARGET QUIET)
 pkg_search_module(NetLinkRoute libnl-route-3.0 IMPORTED_TARGET QUIET)
-pkg_search_module(Gst gstreamer-1.0 IMPORTED_TARGET QUIET)
+pkg_search_module(Gst gstreamer-1.0 IMPORTED_TARGET QUIET) # if this is failing try: `sudo apt install libunwind-dev`
 pkg_search_module(GstApp gstreamer-app-1.0 IMPORTED_TARGET QUIET)
 pkg_search_module(LibUdev libudev IMPORTED_TARGET QUIET)
 
@@ -151,6 +153,9 @@ message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
 file(GLOB_RECURSE MROVER_SERVICE_FILE_PATHS RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS srv/*.srv)
 message(STATUS "Found service files: ${MROVER_SERVICE_FILE_PATHS}")
 
+file(GLOB_RECURSE MROVER_ACTION_FILE_PATHS RELATIVE ${CMAKE_CURRENT_LIST_DIR} CONFIGURE_DEPENDS action/*.action)
+message(STATUS "Found action files: ${MROVER_ACTION_FILE_PATHS}")
+
 # Starter Project
 message(STATUS "PROJ NAME: ${PROJECT_NAME}")
 
@@ -167,7 +172,8 @@ message(STATUS "Found message files: ${MROVER_MESSAGE_FILE_PATHS}")
 rosidl_generate_interfaces(${PROJECT_NAME}
     ${MROVER_MESSAGE_FILE_PATHS}
     ${MROVER_SERVICE_FILE_PATHS}
-    DEPENDENCIES nav_msgs sensor_msgs geometry_msgs
+    ${MROVER_ACTION_FILE_PATHS}
+    DEPENDENCIES nav_msgs sensor_msgs geometry_msgs action_msgs
 )
 
 # Starter project 
@@ -318,18 +324,23 @@ if (EXISTS ${MROVER_EMBEDDED_ROOT_DIR} AND NOT APPLE)
     mrover_add_header_only_library(motor esw/motor)
     target_link_libraries(motor INTERFACE can_device units parameter_utils)
 
+    mrover_add_header_only_library(servo esw/servo)
+    target_link_libraries(servo INTERFACE units parameter_utils)
+
     mrover_add_header_only_library(science esw/science)
     target_link_libraries(science INTERFACE can_device units)
 
     macro(mrover_add_esw_bridge_node name sources)
         mrover_add_node(${name} ${sources})
-        ament_target_dependencies(${name} rclcpp std_srvs)
-        target_link_libraries(${name} can_device units motor science)
+        ament_target_dependencies(${name} rclcpp std_srvs dynamixel_sdk)
+        target_link_libraries(${name} can_device units motor science servo)
     endmacro()
 
+    # esw hardware bridge nodes
     mrover_add_esw_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
     mrover_add_esw_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
     mrover_add_esw_bridge_node(science_hw_bridge esw/science_hw_bridge.cpp)
+    mrover_add_esw_bridge_node(mast_gimbal_hw_bridge esw/mast_gimbal_hw_bridge.cpp)
 endif()
 
 mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
@@ -339,9 +350,6 @@ target_link_libraries(differential_drive_controller units)
 mrover_add_node(arm_controller navigation/arm_controller/arm_controller.cpp navigation/arm_controller/pch.hpp)
 target_link_libraries(arm_controller lie)
 ament_target_dependencies(arm_controller rclcpp)
-
-mrover_add_node(led esw/led.cpp)
-ament_target_dependencies(led rclcpp std_srvs)
 
 if (Gst_FOUND AND GstApp_FOUND)
     mrover_add_node(usb_camera esw/usb_camera/*.cpp esw/usb_camera/pch.hpp)

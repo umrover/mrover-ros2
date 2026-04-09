@@ -74,11 +74,57 @@ namespace mrover {
             auto subOptions = rclcpp::SubscriptionOptions();
             subOptions.callback_group = mCbGroup;
 
+            std::vector<ParameterWrapper> parameters = {
+                    {"joint_b_segment_length", mJointBSegmentLength.rep, 0.0},
+                    {"joint_b_actuator_length", mJointBActuatorLength.rep, 0.0},
+                    {"joint_b_mount_length", mJointBMountLength.rep, 0.0},
+                    {"joint_b_offset", mJointBOffset.rep, 0.0},
+                    {"joint_b_mount_theta", mJointBMountTheta.rep, 0.0},
+                    {"joint_b_segment_offset_theta", mJointBSegmentOffsetTheta.rep, 0.0},
+                    {"joint_c_offset_theta", mJointCOffsetTheta.rep, 0.0},
+                    {"joint_de_pitch_offset", mJointDEPitchOffset.rep, 0.0},
+                    {"joint_de_roll_offset", mJointDERollOffset.rep, 0.0},
+                    {"joint_de_pitch_max_position", mJointDEPitchMaxPosition.rep, std::numeric_limits<float>::infinity()},
+                    {"joint_de_pitch_min_position", mJointDEPitchMinPosition.rep, -std::numeric_limits<float>::infinity()},
+                    {"joint_de_roll_max_position", mJointDERollMaxPosition.rep, std::numeric_limits<float>::infinity()},
+                    {"joint_de_roll_min_position", mJointDeRollMinPosition.rep, -std::numeric_limits<float>::infinity()},
+                    {"pusher_throttle", mPusherThrottle.rep, 0.0},
+                    {"pusher_wait_duration", mPusherWaitDuration, 0.0},
+            };
+            ParameterWrapper::declareParameters(this, parameters);
+
+            BrushlessController<Radians>::Options jointDE0Opts{
+                    .query_abs_position = true,
+                    .use_abs_position = true,
+                    .abs_position_offset = mJointDERollOffset.get(),
+                    .query_abs_velocity = true,
+                    .use_abs_velocity = true,
+                    .abs_units_multiplier = 2.0 * M_PI // output encoder is raw/cpr, scale to rads
+            };
+
+            BrushlessController<Radians>::Options jointDE1Opts{
+                    .query_abs_position = true,
+                    .use_abs_position = true,
+                    .abs_position_offset = mJointDEPitchOffset.get(),
+                    .query_abs_velocity = true,
+                    .use_abs_velocity = true,
+                    .abs_units_multiplier = 2.0 * M_PI // output encoder is raw/cpr, scale to rads
+            };
+
+            BrushlessController<Radians>::Options jointCOpts{
+                    .query_abs_position = true,
+                    .use_abs_position = true,
+                    .abs_position_offset = mJointCOffsetTheta.get(),
+                    .query_abs_velocity = true,
+                    .use_abs_velocity = false,
+                    .abs_units_multiplier = 2.0 * M_PI // output encoder is raw/cpr, scale to rads
+            };
+
             mJointA = std::make_shared<BrushlessController<Meters>>(shared_from_this(), "jetson", "joint_a");
             mJointB = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "joint_b");
-            mJointC = std::make_shared<BrushlessController<Radians>>(shared_from_this(), "jetson", "joint_c");
-            mJointDE0 = std::make_shared<BrushlessController<Revolutions>>(shared_from_this(), "jetson", "joint_de_0");
-            mJointDE1 = std::make_shared<BrushlessController<Revolutions>>(shared_from_this(), "jetson", "joint_de_1");
+            mJointC = std::make_shared<BrushlessController<Radians>>(shared_from_this(), "jetson", "joint_c", jointCOpts);
+            mJointDE0 = std::make_shared<BrushlessController<Radians>>(shared_from_this(), "jetson", "joint_de_0", jointDE0Opts);
+            mJointDE1 = std::make_shared<BrushlessController<Radians>>(shared_from_this(), "jetson", "joint_de_1", jointDE1Opts);
             mGripper = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "gripper");
             mPusher = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "pusher");
 
@@ -93,24 +139,6 @@ namespace mrover {
                     },
                     rmw_qos_profile_services_default,
                     mCbGroup);
-
-            std::vector<ParameterWrapper> parameters = {
-                    {"joint_b_segment_length", mJointBSegmentLength.rep, 0.0},
-                    {"joint_b_actuator_length", mJointBActuatorLength.rep, 0.0},
-                    {"joint_b_mount_length", mJointBMountLength.rep, 0.0},
-                    {"joint_b_offset", mJointBOffset.rep, 0.0},
-                    {"joint_b_mount_theta", mJointBMountTheta.rep, 0.0},
-                    {"joint_b_segment_offset_theta", mJointBSegmentOffsetTheta.rep, 0.0},
-                    {"joint_de_pitch_offset", mJointDePitchOffset.rep, 0.0},
-                    {"joint_de_roll_offset", mJointDeRollOffset.rep, 0.0},
-                    {"joint_de_pitch_max_position", mJointDePitchMaxPosition.rep, std::numeric_limits<float>::infinity()},
-                    {"joint_de_pitch_min_position", mJointDePitchMinPosition.rep, -std::numeric_limits<float>::infinity()},
-                    {"joint_de_roll_max_position", mJointDeRollMaxPosition.rep, std::numeric_limits<float>::infinity()},
-                    {"joint_de_roll_min_position", mJointDeRollMinPosition.rep, -std::numeric_limits<float>::infinity()},
-                    {"pusher_throttle", mPusherThrottle.rep, 0.0},
-                    {"pusher_wait_duration", mPusherWaitDuration, 0.0},
-            };
-            ParameterWrapper::declareParameters(this, parameters);
 
             // sanity check joint b geometry
             if ((mJointBSegmentLength + mJointBActuatorLength <= mJointBMountLength) ||
@@ -131,6 +159,8 @@ namespace mrover {
                         probeIfBrushless(mJointDE0, "joint_de_0");
                         probeIfBrushless(mJointDE1, "joint_de_1");
                     });
+
+            mAbsOffsetTimer = create_wall_timer(std::chrono::milliseconds(500), [this]() { updateAbsoluteOffsets(); });
 
             mPublishDataTimer = create_wall_timer(
                     std::chrono::milliseconds(100),
@@ -163,8 +193,8 @@ namespace mrover {
         std::shared_ptr<BrushlessController<Meters>> mJointA;
         std::shared_ptr<BrushedController<Meters>> mJointB;
         std::shared_ptr<BrushlessController<Radians>> mJointC;
-        std::shared_ptr<BrushlessController<Revolutions>> mJointDE0;
-        std::shared_ptr<BrushlessController<Revolutions>> mJointDE1;
+        std::shared_ptr<BrushlessController<Radians>> mJointDE0;
+        std::shared_ptr<BrushlessController<Radians>> mJointDE1;
         std::shared_ptr<BrushedController<Meters>> mGripper;
         std::shared_ptr<BrushedController<Meters>> mPusher;
 
@@ -178,16 +208,16 @@ namespace mrover {
         rclcpp::Service<srv::Pusher>::SharedPtr mPusherService;
 
         Meters mJointBSegmentLength, mJointBActuatorLength, mJointBMountLength;
-        Radians mJointBMountTheta, mJointBSegmentOffsetTheta, mJointBOffset;
+        Radians mJointBMountTheta, mJointBSegmentOffsetTheta, mJointBOffset, mJointCOffsetTheta;
 
         Percent mPusherThrottle;
         float mPusherWaitDuration, mPusherWaitCycles;
 
-        Radians mJointDePitchOffset, mJointDeRollOffset;
-        std::optional<Vector2<Radians>> mJointDePitchRoll; // position after offset is applied (raw - offset)
+        Radians mJointDEPitchOffset, mJointDERollOffset;
+        std::optional<Vector2<Radians>> mJointDEPitchRoll; // position after offset is applied (raw - offset)
 
-        Radians mJointDePitchMaxPosition, mJointDePitchMinPosition;
-        Radians mJointDeRollMaxPosition, mJointDeRollMinPosition;
+        Radians mJointDEPitchMaxPosition, mJointDEPitchMinPosition;
+        Radians mJointDERollMaxPosition, mJointDeRollMinPosition;
 
         std::unordered_map<std::string_view, rclcpp::Time> mLastCommandTime;
         std::chrono::milliseconds const mProbeInterval{100};
@@ -196,6 +226,7 @@ namespace mrover {
         rclcpp::TimerBase::SharedPtr mProbeTimer;
         rclcpp::TimerBase::SharedPtr mPublishDataTimer;
         rclcpp::TimerBase::SharedPtr mPusherControlTimer;
+        rclcpp::TimerBase::SharedPtr mAbsOffsetTimer;
         rclcpp::Publisher<msg::ControllerState>::SharedPtr mControllerStatePub;
         msg::ControllerState mControllerState;
 
@@ -343,14 +374,14 @@ namespace mrover {
                     jointDeRollThrottle = Dimensionless{0};
                 }
 
-                if (mJointDePitchRoll.has_value()) {
-                    if ((*jointDePitchThrottle > Dimensionless{0} && (*mJointDePitchRoll)[0] >= mJointDePitchMaxPosition) ||
-                        (*jointDePitchThrottle < Dimensionless{0} && (*mJointDePitchRoll)[0] <= mJointDePitchMinPosition)) {
+                if (mJointDEPitchRoll.has_value()) {
+                    if ((*jointDePitchThrottle > Dimensionless{0} && (*mJointDEPitchRoll)[0] >= mJointDEPitchMaxPosition) ||
+                        (*jointDePitchThrottle < Dimensionless{0} && (*mJointDEPitchRoll)[0] <= mJointDEPitchMinPosition)) {
                         RCLCPP_INFO(get_logger(), "Joint DE Pitch limit hit!");
                         jointDePitchThrottle = Dimensionless{0};
                     }
-                    if ((*jointDeRollThrottle > Dimensionless{0} && (*mJointDePitchRoll)[1] >= mJointDeRollMaxPosition) ||
-                        (*jointDeRollThrottle < Dimensionless{0} && (*mJointDePitchRoll)[1] <= mJointDeRollMinPosition)) {
+                    if ((*jointDeRollThrottle > Dimensionless{0} && (*mJointDEPitchRoll)[1] >= mJointDERollMaxPosition) ||
+                        (*jointDeRollThrottle < Dimensionless{0} && (*mJointDEPitchRoll)[1] <= mJointDeRollMinPosition)) {
                         RCLCPP_INFO(get_logger(), "Joint DE Roll limit hit!");
                         jointDeRollThrottle = Dimensionless{0};
                     }
@@ -413,14 +444,14 @@ namespace mrover {
                     jointDeRollVelocity = RadiansPerSecond{0};
                 }
 
-                if (mJointDePitchRoll.has_value()) {
-                    if ((*jointDePitchVelocity > RadiansPerSecond{0} && (*mJointDePitchRoll)[0] >= mJointDePitchMaxPosition) ||
-                        (*jointDePitchVelocity < RadiansPerSecond{0} && (*mJointDePitchRoll)[0] <= mJointDePitchMinPosition)) {
+                if (mJointDEPitchRoll.has_value()) {
+                    if ((*jointDePitchVelocity > RadiansPerSecond{0} && (*mJointDEPitchRoll)[0] >= mJointDEPitchMaxPosition) ||
+                        (*jointDePitchVelocity < RadiansPerSecond{0} && (*mJointDEPitchRoll)[0] <= mJointDEPitchMinPosition)) {
                         RCLCPP_INFO(get_logger(), "Joint DE Pitch limit hit!");
                         jointDePitchVelocity = RadiansPerSecond{0};
                     }
-                    if ((*jointDeRollVelocity > RadiansPerSecond{0} && (*mJointDePitchRoll)[1] >= mJointDeRollMaxPosition) ||
-                        (*jointDeRollVelocity < RadiansPerSecond{0} && (*mJointDePitchRoll)[1] <= mJointDeRollMinPosition)) {
+                    if ((*jointDeRollVelocity > RadiansPerSecond{0} && (*mJointDEPitchRoll)[1] >= mJointDERollMaxPosition) ||
+                        (*jointDeRollVelocity < RadiansPerSecond{0} && (*mJointDEPitchRoll)[1] <= mJointDeRollMinPosition)) {
                         RCLCPP_INFO(get_logger(), "Joint DE Roll limit hit!");
                         jointDeRollVelocity = RadiansPerSecond{0};
                     }
@@ -442,7 +473,7 @@ namespace mrover {
                 return;
             }
 
-            std::optional<Radians> jointDePitchPosition, jointDeRollPosition;
+            std::optional<Radians> jointDEPitchPosition, jointDERollPosition;
 
             for (std::size_t i = 0; i < msg->names.size(); ++i) {
                 std::string const& name = msg->names[i];
@@ -452,10 +483,10 @@ namespace mrover {
                 // Silly little thing to save some speed. Could easily just do the straight up string comparision
                 switch (name.front() + name.back()) {
                     case 'j' + 'h':
-                        jointDePitchPosition = Radians{position};
+                        jointDEPitchPosition = Radians{position};
                         break;
                     case 'j' + 'l':
-                        jointDeRollPosition = Radians{position};
+                        jointDERollPosition = Radians{position};
                         break;
                     case 'j' + 'a':
                         mJointA->setDesiredPosition(Meters{position});
@@ -473,37 +504,47 @@ namespace mrover {
                         break;
                 }
             }
-
-            if (jointDePitchPosition.has_value() || jointDeRollPosition.has_value()) {
-                if (!mJointDePitchRoll.has_value()) {
-                    RCLCPP_WARN(get_logger(), "Commanding Joint DE position with no position readings! Not commanding position");
-                    return;
-                }
-
-                if (!jointDePitchPosition.has_value()) {
-                    jointDePitchPosition = (*mJointDePitchRoll)[0];
-                } else if (!jointDeRollPosition.has_value()) {
-                    jointDeRollPosition = (*mJointDePitchRoll)[1];
-                }
-
-                if ((*jointDePitchPosition >= mJointDePitchMaxPosition) || (*jointDePitchPosition <= mJointDePitchMinPosition)) {
-                    RCLCPP_INFO(get_logger(), "Joint DE Pitch limit hit!");
-                    jointDePitchPosition = (*mJointDePitchRoll)[0];
-                }
-                if ((*jointDeRollPosition >= mJointDeRollMaxPosition) || (*jointDeRollPosition <= mJointDeRollMinPosition)) {
-                    RCLCPP_INFO(get_logger(), "Joint DE Roll limit hit!");
-                    jointDeRollPosition = (*mJointDePitchRoll)[1];
-                }
-
-                Vector2<Radians> const pitchRollPositions{jointDePitchPosition.value(), jointDeRollPosition.value()};
-                Vector2<Radians> motorPositions = PITCH_ROLL_TO_01_SCALE * PITCH_ROLL_TO_0_1 * pitchRollPositions;
-
-                mJointDE0->setDesiredPosition(motorPositions[0]);
-                mJointDE1->setDesiredPosition(motorPositions[1]);
-            }
+            // TODO(eric) something is off here
+            // if (jointDEPitchPosition.has_value() || jointDERollPosition.has_value()) {
+            //     if (!mJointDEPitchRoll.has_value()) {
+            //         RCLCPP_WARN(get_logger(), "Commanding Joint DE position with no position readings! Not commanding position");
+            //         return;
+            //     }
+            //
+            //     if (!jointDEPitchPosition.has_value()) {
+            //         jointDEPitchPosition = (*mJointDEPitchRoll)[0];
+            //     } else if (!jointDERollPosition.has_value()) {
+            //         jointDERollPosition = (*mJointDEPitchRoll)[1];
+            //     }
+            //
+            //     if ((*jointDEPitchPosition >= mJointDePitchMaxPosition) || (*jointDEPitchPosition <= mJointDePitchMinPosition)) {
+            //         RCLCPP_INFO(get_logger(), "Joint DE Pitch limit hit!");
+            //         jointDEPitchPosition = (*mJointDEPitchRoll)[0];
+            //     }
+            //     if ((*jointDERollPosition >= mJointDERollMaxPosition) || (*jointDERollPosition <= mJointDeRollMinPosition)) {
+            //         RCLCPP_INFO(get_logger(), "Joint DE Roll limit hit!");
+            //         jointDERollPosition = (*mJointDEPitchRoll)[1];
+            //     }
+            //
+            //     Vector2<Radians> const pitchRollPositions{jointDEPitchPosition.value(), jointDERollPosition.value()};
+            //     Vector2<Radians> motorPositions = PITCH_ROLL_TO_01_SCALE * PITCH_ROLL_TO_0_1 * pitchRollPositions;
+            //
+            //     mJointDE0->setDesiredPosition(motorPositions[1]);
+            //     mJointDE1->setDesiredPosition(motorPositions[0]);
+            // }
         }
 
-        void handlePusherService(srv::Pusher::Request::ConstSharedPtr const& req, srv::Pusher::Response::SharedPtr const& res) {
+        auto updateAbsoluteOffsets() const -> void {
+            mJointC->adjust(Radians{mJointC->getPosition()});
+
+            if (!mJointDEPitchRoll) return;
+
+            Vector2<Radians> motorPositions = PITCH_ROLL_TO_01_SCALE * PITCH_ROLL_TO_0_1 * mJointDEPitchRoll.value();
+            mJointDE0->adjust(motorPositions[1]); // DE0: Roll
+            mJointDE1->adjust(motorPositions[0]); // DE1: Pitch
+        }
+
+        auto handlePusherService(srv::Pusher::Request::ConstSharedPtr const& req, srv::Pusher::Response::SharedPtr const& res) -> void {
             if (!req->start) {
                 res->finished = false;
                 return;
@@ -522,7 +563,7 @@ namespace mrover {
             res->finished = future.get();
         }
 
-        void updatePusherStateMachine() {
+        auto updatePusherStateMachine() -> void {
             if (mPusherState == PusherState::IDLE) return;
 
             uint8_t const limits = mPusher->getLimitsHitBits();
@@ -531,6 +572,7 @@ namespace mrover {
             switch (mPusherState) {
                 case PusherState::DRIVING_FORWARD:
                     mPusher->setDesiredThrottle(mPusherThrottle);
+                    if (stalled) RCLCPP_INFO(get_logger(), "pusher stalled on extension");
                     if ((limits & PUSHER_FWD_MASK) || stalled) {
                         mPusher->setDesiredThrottle(Percent{0.0});
                         mPusherWaitCycles = 0;
@@ -573,9 +615,9 @@ namespace mrover {
         auto publishDataCallback() -> void {
             mControllerState.header.stamp = now();
 
-            auto const pitchWrapped = wrapAngle((Radians{mJointDE1->getPosition()} - mJointDePitchOffset).get());
-            auto const rollWrapped = wrapAngle((Radians{-1 * mJointDE0->getPosition()} - mJointDeRollOffset).get());
-            mJointDePitchRoll = {pitchWrapped, rollWrapped};
+            auto const pitchWrapped = wrapAngle(mJointDE1->getPosition());
+            auto const rollWrapped = -1 * wrapAngle(mJointDE0->getPosition());
+            mJointDEPitchRoll = {pitchWrapped, rollWrapped};
 
             for (std::size_t i = 0; i < mJointNames.size(); ++i) {
                 std::string_view const name = mJointNames[i];
