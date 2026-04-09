@@ -1,0 +1,70 @@
+/**:
+  ros__parameters:
+    zed:
+      address: "127.0.0.1"
+      port: 8087
+      image_topic: "/zed/left/image"
+      stream:
+        pixel_format: "ABGR32"
+        width: 640
+        height: 480
+        framerate: 15
+        codec: "VP8"
+        bitrate: 1000000
+      image_capture:
+        pixel_format: "ABGR32"
+        width: 640
+        height: 480
+        framerate: 15
+    long_range_cam:
+      address: "127.0.0.1"
+      port: 8085
+      image_topic: "/long_range_cam/image"
+      stream:
+        pixel_format: "ABGR32"
+        width: 640
+        height: 480
+        framerate: 30
+        codec: "VP8"
+        bitrate: 1000000
+      image_capture:
+        pixel_format: "ABGR32"
+        width: 640
+        height: 480
+        framerate: 30
+    finger_camera:
+      address: "127.0.0.1"
+      port: 8083
+      image_topic: "/finger_camera/image"
+      stream:
+        pixel_format: "ABGR32"
+        width: 640
+        height: 480
+        framerate: 15
+        codec: "VP8"
+        bitrate: 1000000
+      image_capture:
+        pixel_format: "ABGR32"
+        width: 640
+        height: 480
+        framerate: 15
+
+zed_streamer:
+  ros__parameters:
+    camera: "zed"
+
+long_range_streamer:
+  ros__parameters:
+    camera: "long_range_cam"
+
+finger_camera_streamer:
+  ros__parameters:
+    camera: "finger_camera"
+
+camera_client:
+  ros__parameters:
+    cameras:
+      - "zed"
+      - "long_range_cam"
+      - "finger_camera"
+    rtp_jitter_ms: 50
