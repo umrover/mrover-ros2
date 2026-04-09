@@ -139,13 +139,11 @@ const newRAMode = async (newMode: string) => {
 }
 
 onMessage<ControllerStateMessage>('arm', 'arm_state', (msg) => {
-  for(let i = 0; i < 6; ++i){
-    msg.limits_hit[i] = msg.limits_hit[i]
-  }
-
   forcing_limit.value = false;
   
-  // check if controller input is over limit
+  // Check if controller input is over limit
+
+  // Left joystick horizontal
   console.log(axes.value[3])
   if(axes.value[0] > 0.05 && msg.limits_hit[0] == 1){
     forcing_limit.value = true
@@ -153,25 +151,28 @@ onMessage<ControllerStateMessage>('arm', 'arm_state', (msg) => {
     forcing_limit.value = true
   }
 
+  // Left joystick vertical
   if(axes.value[1] < -0.05 && msg.limits_hit[1] == 1){
     forcing_limit.value = true
   } else if (axes.value[1] > 0.05 && msg.limits_hit[1] == 2){
     forcing_limit.value = true
   }
 
+  // Right joystick vertical
   if(axes.value[3] < -0.05 && msg.limits_hit[2] == 1){
     forcing_limit.value = true
   } else if (axes.value[3] > 0.05 && msg.limits_hit[2] == 2){
     forcing_limit.value = true
   }
 
+  // Bumpers
   if(buttons.value[4] && msg.limits_hit[4] == 1){
     forcing_limit.value = true
   } else if (buttons.value[5] && msg.limits_hit[4] == 2){
     forcing_limit.value = true
   }
 
-  // make controller respond
+  // Vibrate controller if forcing limit
   if(forcing_limit.value){
   vibrationActuator.value.playEffect('dual-rumble', {
     startDelay: 0,
