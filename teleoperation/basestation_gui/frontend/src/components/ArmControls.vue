@@ -61,32 +61,10 @@
     </div>
     <GamepadDisplay :axes="axes" :buttons="buttons" layout="horizontal" class="grow min-h-0" />
 
-    <div>
-      <form action="/submit-data" method="POST">
-        <div>
-          <label for="field1">x:</label>
-          <input type="number" id="x" name="x" placeholder="x">
-        </div>
-        
-        <div>
-          <label for="field2">y:</label>
-          <input type="number" id="y" name="y" placeholder="y">
-        </div>
-
-        <div>
-          <label for="field3">z:</label>
-          <input type="number" id="z" name="z" placeholder="z">
-        </div>
-
-        <button type="submit">Submit</button>
-      </form>
-
-    </div>
-
   </div>
 
   <div>
-    <p>Distance: {{stowDistance}}</p>
+    <p>Distance: {{ euclideanDistance }}</p>
   </div>
 </template>
 
