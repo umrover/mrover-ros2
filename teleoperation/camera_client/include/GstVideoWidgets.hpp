@@ -3,10 +3,31 @@
 #include "pch.hpp"
 
 namespace mrover {
-    class GstVideoWidget : public QVideoWidget {
+    class GstVideoWidget;
+
+    class VideoSurface : public QAbstractVideoSurface {
+        Q_OBJECT
+        GstVideoWidget* mWidget;
+
+    public:
+        explicit VideoSurface(GstVideoWidget* widget, QObject* parent = nullptr);
+
+        QList<QVideoFrame::PixelFormat> supportedPixelFormats(
+            QAbstractVideoBuffer::HandleType handleType = QAbstractVideoBuffer::NoHandle) const override;
+
+        bool present(const QVideoFrame& frame) override;
+    };
+
+    class GstVideoWidget : public QWidget {
         Q_OBJECT
 
         QMediaPlayer* mPlayer;
+        VideoSurface* mSurface;
+        QImage mLastFrame;
+
+        QColor mLastPickedColor;
+        QPoint mLastCursorPos;
+        bool mShowColorOverlay = false;
 
     public:
         explicit GstVideoWidget(QWidget* parent = nullptr);
@@ -20,6 +41,21 @@ namespace mrover {
         auto play() -> void;
         auto pause() -> void;
         auto stop() -> void;
+
+        void setShowColorOverlay(bool show) { mShowColorOverlay = show; }
+        void updateFrame(const QImage& frame);
+
+    protected:
+        void mouseMoveEvent(QMouseEvent* event) override;
+        void enterEvent(QEvent* event) override;
+        void leaveEvent(QEvent* event) override;
+        void paintEvent(QPaintEvent* event) override;
+
+    signals:
+        void colorPicked(QPoint pos, QColor color);
+
+    public:
+        QImage getLastFrame() const { return mLastFrame; }
     };
 
     class GstVideoGridWidget : public QWidget {

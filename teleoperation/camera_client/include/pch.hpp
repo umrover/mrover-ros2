@@ -27,7 +27,11 @@
 #include <QStandardPaths>
 #include <QToolBar>
 #include <QVBoxLayout>
-#include <QVideoWidget>
+#include <QPainter>
+#include <QMouseEvent>
+#include <QAbstractVideoSurface>
+#include <QVideoSurfaceFormat>
+#include <QVideoFrame>
 #include <QWidget>
 
 #include <opencv2/core.hpp>
