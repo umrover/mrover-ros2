@@ -82,6 +82,8 @@ namespace mrover {
                     {"joint_b_mount_theta", mJointBMountTheta.rep, 0.0},
                     {"joint_b_segment_offset_theta", mJointBSegmentOffsetTheta.rep, 0.0},
                     {"joint_c_offset_theta", mJointCOffsetTheta.rep, 0.0},
+                    {"joint_c_max_position", mJointCMaxPosition.rep, 0.0},
+                    {"joint_c_min_position", mJointCMinPosition.rep, 0.0},
                     {"joint_de_pitch_offset", mJointDEPitchOffset.rep, 0.0},
                     {"joint_de_roll_offset", mJointDERollOffset.rep, 0.0},
                     {"joint_de_pitch_max_position", mJointDEPitchMaxPosition.rep, std::numeric_limits<float>::infinity()},
@@ -208,7 +210,7 @@ namespace mrover {
         rclcpp::Service<srv::Pusher>::SharedPtr mPusherService;
 
         Meters mJointBSegmentLength, mJointBActuatorLength, mJointBMountLength;
-        Radians mJointBMountTheta, mJointBSegmentOffsetTheta, mJointBOffset, mJointCOffsetTheta;
+        Radians mJointBMountTheta, mJointBSegmentOffsetTheta, mJointBOffset, mJointCOffsetTheta, mJointCMaxPosition, mJointCMinPosition;
 
         Percent mPusherThrottle;
         float mPusherWaitDuration, mPusherWaitCycles;
@@ -355,9 +357,19 @@ namespace mrover {
                     case 'j' + 'b':
                         mJointB->setDesiredThrottle(throttle);
                         break;
-                    case 'j' + 'c':
-                        mJointC->setDesiredThrottle(throttle);
+                    case 'j' + 'c': {
+                        auto thr = throttle;
+                        auto const pos = Radians{mJointC->getPosition()};
+                        if (pos >= mJointCMaxPosition) {
+                            RCLCPP_INFO(get_logger(), "Joint C max position limit hit!");
+                            thr = Dimensionless{0};
+                        } else if (pos <= mJointCMinPosition) {
+                            RCLCPP_INFO(get_logger(), "Joint C min position limit hit!");
+                            thr = Dimensionless{0};
+                        }
+                        mJointC->setDesiredThrottle(thr);
                         break;
+                    }
                     case 'g' + 'r':
                         mGripper->setDesiredThrottle(throttle);
                         break;
