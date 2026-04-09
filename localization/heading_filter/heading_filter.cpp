@@ -5,16 +5,16 @@ namespace mrover {
     HeadingFilter::HeadingFilter() : Node("heading_filter") {
 
         std::vector<ParameterWrapper> params{
-            {"world_frame", worldFrame, std::string("map")},
-            {"gps_frame", gpsFrame, std::string("gps_frame")},
-            {"imu_watchdog_timeout", imuTimeout, 1.0},
-            {"mag_heading_noise", magNoise, 10.0},
-            {"rtk_heading_noise", rtkNoise, 0.01},
-            {"drive_forward_heading_noise", driveNoise, 0.1},
-            {"rover_heading_change_threshold", headingDeltaThreshold, 0.05},
-            {"minimum_linear_speed", minSpeed, 0.4},
-            {"process_noise", processNoise, 0.000001},
-            {"use_mag", useMag, false}
+            {"world_frame", world_frame, std::string("map")},
+            {"gps_frame", gps_frame, std::string("gps_frame")},
+            {"imu_watchdog_timeout", imu_timeout, 1.0},
+            {"mag_heading_noise", mag_noise, 10.0},
+            {"rtk_heading_noise", rtk_noise, 0.01},
+            {"drive_forward_heading_noise", drive_noise, 0.1},
+            {"rover_heading_change_threshold", heading_delta_threshold, 0.05},
+            {"minimum_linear_speed", min_speed, 0.4},
+            {"process_noise", process_noise, 0.000001},
+            {"use_mag", use_mag, false}
         };
 
         ParameterWrapper::declareParameters(this, params);
@@ -35,13 +35,13 @@ namespace mrover {
 
         cmd_vel_sub = this->create_subscription<geometry_msgs::msg::Twist>("/cmd_vel", 10, [&](const geometry_msgs::msg::Twist::ConstSharedPtr &twist_msg) {
             twists.push_back(*twist_msg);
-            if (twists.size() > 50) {
-                twists.erase(twists.begin(), twists.begin() + (twists.size() - 50));
+            if (twists.size() > TWISTS_CAP) {
+                twists.erase(twists.begin(), twists.begin() + (twists.size() - TWISTS_CAP));
             }
         });
 
         // imu data watchdog
-        const rclcpp::Duration IMU_AND_MAG_WATCHDOG_TIMEOUT = rclcpp::Duration::from_seconds(imuTimeout);
+        const rclcpp::Duration IMU_AND_MAG_WATCHDOG_TIMEOUT = rclcpp::Duration::from_seconds(imu_timeout);
         imu_and_mag_watchdog = this->create_wall_timer(IMU_AND_MAG_WATCHDOG_TIMEOUT.to_chrono<std::chrono::milliseconds>(), [&]() {
             RCLCPP_WARN(get_logger(), "ZED IMU data watchdog expired");
             last_imu.reset();
@@ -135,8 +135,8 @@ namespace mrover {
 
             double heading_correction_delta = measured_heading - uncorrected_heading;
             heading_correction_delta = fmod((heading_correction_delta + 3 * M_PI), 2 * M_PI) - M_PI;
-            predict(processNoise);
-            correct(heading_correction_delta, rtkNoise);
+            predict(process_noise);
+            correct(heading_correction_delta, rtk_noise);
 
             auto const correctionDelta = (X - previousX);
             RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "%s", std::format("RTK heading correction delta on X: {} rad", correctionDelta).c_str());
@@ -171,7 +171,7 @@ namespace mrover {
         uncorrected_orientation.normalize();
         SO3d uncorrected_orientation_rotm = uncorrected_orientation;
 
-        if (useMag) {
+        if (use_mag) {
             R2d uncorrected_forward = uncorrected_orientation_rotm.rotation().col(0).head(2);
             if (!uncorrected_forward.array().isFinite().all()) {
                 RCLCPP_WARN(get_logger(), "Forward Vector not finite, skipping heading correction");
@@ -193,8 +193,8 @@ namespace mrover {
 
             auto const previousX = X;
 
-            predict(processNoise);
-            correct(heading_correction_delta, magNoise);
+            predict(process_noise);
+            correct(heading_correction_delta, mag_noise);
 
             if (!std::isfinite(X)) {
                 RCLCPP_WARN(get_logger(), "Kalman state X is not finite, skipping TF publish");
@@ -220,7 +220,7 @@ namespace mrover {
         }
         pose_in_map.asSO3() = SO3d(q);
 
-        SE3Conversions::pushToTfTree(tf_broadcaster, gpsFrame, worldFrame, pose_in_map, get_clock()->now());
+        SE3Conversions::pushToTfTree(tf_broadcaster, gps_frame, world_frame, pose_in_map, get_clock()->now());
     }
 
     void HeadingFilter::drive_forward_callback() {
@@ -230,7 +230,7 @@ namespace mrover {
             return;
         }
 
-        double const min_linear_speed = minSpeed;
+        double const min_linear_speed = min_speed;
 
         // Gate on "commanded forward"
         bool const had_cmd_vel_samples = !twists.empty();
@@ -307,7 +307,7 @@ namespace mrover {
             return;
         }
 
-        if (heading_change_accum > headingDeltaThreshold) {
+        if (heading_change_accum > heading_delta_threshold) {
             return;
         }
 
@@ -338,8 +338,8 @@ namespace mrover {
         double heading_correction_delta = drive_forward_heading - uncorrected_heading;
         heading_correction_delta = wrapped_delta(heading_correction_delta);
 
-        predict(processNoise);
-        correct(heading_correction_delta, driveNoise);
+        predict(process_noise);
+        correct(heading_correction_delta, drive_noise);
 
         auto const correctionDelta = (X - previousX);
         RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "%s", std::format("Drive forward correction delta on X: {} rad", correctionDelta).c_str());

@@ -25,9 +25,9 @@ namespace mrover {
         rclcpp::Subscription<geometry_msgs::msg::Twist>::ConstSharedPtr cmd_vel_sub;
 
         // params
-        std::string worldFrame, gpsFrame;
-        double imuTimeout, magNoise, rtkNoise, driveNoise, headingDeltaThreshold, minSpeed, processNoise;
-        bool useMag;
+        std::string world_frame, gps_frame;
+        double imu_timeout, mag_noise, rtk_noise, drive_noise, heading_delta_threshold, min_speed, process_noise;
+        bool use_mag;
 
         // transform broadcaster
         tf2_ros::Buffer tf_buffer{get_clock()};
@@ -54,7 +54,8 @@ namespace mrover {
         std::vector<geometry_msgs::msg::Twist> twists;
         std::deque<geometry_msgs::msg::Vector3Stamped> position_window;    
         static constexpr std::size_t DRIVE_FORWARD_CAP = 3;
-        static constexpr double DRIVE_FORWARD_TIMER_S = 1.25;    
+        static constexpr std::size_t TWISTS_CAP = 50;
+        static constexpr double DRIVE_FORWARD_TIMER_S = 1.25; 
     
     public:
 
