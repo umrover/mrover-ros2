@@ -67,10 +67,10 @@ namespace mrover {
     public:
         ArmHWBridge() : rclcpp::Node{"arm_hw_bridge"} {
             // all initialization is done in the init() function to allow for the usage of shared_from_this()
-            mCbGroup = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
         }
 
         auto init() -> void {
+            mCbGroup = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
             auto subOptions = rclcpp::SubscriptionOptions();
             subOptions.callback_group = mCbGroup;
 
@@ -440,9 +440,19 @@ namespace mrover {
                         mJointB->setDesiredVelocity(target_vel);
                         break;
                     }
-                    case 'j' + 'c':
-                        mJointC->setDesiredVelocity(RadiansPerSecond{velocity});
+                    case 'j' + 'c': {
+                        auto vel = velocity;
+                        auto const pos = Radians{mJointC->getPosition()};
+                        if (pos >= mJointCMaxPosition) {
+                            RCLCPP_INFO(get_logger(), "Joint C max position limit hit!");
+                            vel = 0.0f;
+                        } else if (pos <= mJointCMinPosition) {
+                            RCLCPP_INFO(get_logger(), "Joint C min position limit hit!");
+                            vel = 0.0f;
+                        }
+                        mJointC->setDesiredVelocity(RadiansPerSecond{vel});
                         break;
+                    }
                     case 'g' + 'r':
                         mGripper->setDesiredVelocity(MetersPerSecond{velocity});
                         break;
@@ -508,9 +518,19 @@ namespace mrover {
                         mJointB->setDesiredPosition(target_meters);
                         break;
                     }
-                    case 'j' + 'c':
-                        mJointC->setDesiredPosition(Radians{position});
+                    case 'j' + 'c': {
+                        auto pos = position;
+                        auto const absPos = Radians{mJointC->getPosition()};
+                        if (absPos >= mJointCMaxPosition) {
+                            RCLCPP_INFO(get_logger(), "Joint C max position limit hit!");
+                            pos = 0.0f;
+                        } else if (absPos <= mJointCMinPosition) {
+                            RCLCPP_INFO(get_logger(), "Joint C min position limit hit!");
+                            pos = 0.0f;
+                        }
+                        mJointC->setDesiredPosition(Radians{pos});
                         break;
+                    }
                     case 'g' + 'r':
                         mGripper->setDesiredPosition(Meters{position});
                         break;
