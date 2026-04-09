@@ -11,6 +11,8 @@ remove_ros2_ws_from_path(){
 }
 
 source_mrover_overlay(){
+    source ~/ros2_ws/src/mrover/venv/bin/activate
+
     build_profiles=("RelWithDebInfo" "Release" "Debug")
 
     target_file=""
