@@ -1,7 +1,3 @@
-#include <QTimer>
-
-#include <rclcpp/rclcpp.hpp>
-
 #include "pch.hpp"
 
 #include <gst/gst.h>

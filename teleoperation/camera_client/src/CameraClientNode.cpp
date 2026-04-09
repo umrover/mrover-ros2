@@ -1,5 +1,7 @@
 #include "CameraClientNode.hpp"
 
+#include "GstRtpVideoCreatorWidget.hpp"
+
 namespace mrover {
 
     CameraClientNode::CameraClientNode()
