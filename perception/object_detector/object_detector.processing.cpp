@@ -175,21 +175,6 @@ namespace mrover {
         });
     }
 
-    auto StereoObjectDetector::toggleStereoDetector(std_srvs::srv::SetBool::Request::ConstSharedPtr& req, std_srvs::srv::SetBool::Response::SharedPtr& res) -> void {
-        if (!req->data && mSensorSub) {
-            mSensorSub.reset();
-        }
-
-        else if (req->data && !mSensorSub) {
-            mSensorSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
-                StereoObjectDetector::pointCloudCallback(msg);
-            });
-        }
-
-        res->success = true;
-        res->message = "";
-    }
-
     auto ImageObjectDetector::imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
         assert(msg);
         assert(msg->height > 0);
@@ -241,20 +226,4 @@ namespace mrover {
         float bearingDegrees = xRecentered * mCameraHorizontalFov;
         return bearingDegrees * std::numbers::pi_v<float> / 180.0f;
     }
-
-    auto ImageObjectDetector::toggleImageDetector(std_srvs::srv::SetBool::Request::ConstSharedPtr& req, std_srvs::srv::SetBool::Response::SharedPtr& res) -> void {
-        if (!req->data && mSensorSub) {
-            mSensorSub.reset();
-        }
-
-        else if (req->data && !mSensorSub) {
-            mSensorSub = create_subscription<sensor_msgs::msg::Image>("/long_range_cam/image", 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
-                ImageObjectDetector::imageCallback(msg);
-            });
-        }
-
-        res->success = true;
-        res->message = "";
-    }
-
 } // namespace mrover
