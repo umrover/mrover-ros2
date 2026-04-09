@@ -119,7 +119,7 @@ endif()
 find_package(PkgConfig REQUIRED)
 pkg_search_module(NetLink libnl-3.0 IMPORTED_TARGET QUIET)
 pkg_search_module(NetLinkRoute libnl-route-3.0 IMPORTED_TARGET QUIET)
-pkg_search_module(Gst gstreamer-1.0 IMPORTED_TARGET QUIET)
+pkg_search_module(Gst gstreamer-1.0 IMPORTED_TARGET QUIET) # if this is failing try: `sudo apt install libunwind-dev`
 pkg_search_module(GstApp gstreamer-app-1.0 IMPORTED_TARGET QUIET)
 pkg_search_module(LibUdev libudev IMPORTED_TARGET QUIET)
 
@@ -238,7 +238,7 @@ target_link_libraries(rover_gps_driver parameter_utils)
 
 mrover_add_node(heading_filter localization/heading_filter.cpp)
 ament_target_dependencies(heading_filter rclcpp rcutils sensor_msgs builtin_interfaces message_filters)
-target_link_libraries(heading_filter lie)
+target_link_libraries(heading_filter lie parameter_utils)
 
 mrover_add_node(pose_filter localization/pose_filter/*.cpp)
 ament_target_dependencies(pose_filter rclcpp tf2 tf2_ros geometry_msgs sensor_msgs)
