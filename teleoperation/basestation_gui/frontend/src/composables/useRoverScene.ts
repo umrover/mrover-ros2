@@ -64,10 +64,6 @@ export function useRoverScene() {
     costmap?.setVisibility(visible)
   }
 
-  function setCostMapRotation(radians: number) {
-    costmap?.setRotation(radians)
-  }
-
   function resetCamera() {
     cameraManager?.resetActive()
   }
@@ -99,7 +95,6 @@ export function useRoverScene() {
     resetCostMap,
     toggleCostMapVisibility,
     setCostMapVisibility,
-    setCostMapRotation,
     updateJoints,
     updateIKTarget,
     setRoverHeading,
