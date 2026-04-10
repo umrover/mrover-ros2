@@ -16,10 +16,13 @@ from rclpy.timer import Timer
 from rclpy.duration import Duration
 from navigation.coordinate_utils import is_high_cost_point, d_calc, segment_path, cartesian_to_ij
 
+
 class SpinRoverVal(Enum):
     NO_SPIN = 0
     BACKWARD = 1
     FORWARD = 2
+
+
 class ApproachTargetState(State):
     UPDATE_DELAY: float
     USE_COSTMAP: bool
