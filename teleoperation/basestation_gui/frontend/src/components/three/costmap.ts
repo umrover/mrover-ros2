@@ -11,7 +11,6 @@ export interface CostmapRenderer {
   reset: () => void
   toggleVisibility: () => void
   setVisibility: (visible: boolean) => void
-  setRotation: (radians: number) => void
 }
 
 export function createCostmap(scene: THREE.Scene): CostmapRenderer {
@@ -157,9 +156,5 @@ export function createCostmap(scene: THREE.Scene): CostmapRenderer {
     textPlane.visible = visible
   }
 
-  function setRotation(radians: number) {
-    anchor.rotation.y = radians
-  }
-
-  return { update, reset, toggleVisibility, setVisibility, setRotation }
+  return { update, reset, toggleVisibility, setVisibility }
 }

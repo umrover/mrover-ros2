@@ -90,7 +90,6 @@ const {
   updateCostMap,
   toggleCostMapVisibility,
   setCostMapVisibility,
-  setCostMapRotation,
   updateJoints,
   updateIKTarget,
   setRoverHeading,
@@ -165,12 +164,9 @@ function switchView(mode: ViewMode) {
     if (rotationMode.value === RotationMode.Manual) {
       manualAzimuth = 0
       setNavAzimuth(0)
-      setCostMapRotation(-Math.PI / 2)
     } else {
       applyCostmapRotation()
     }
-  } else {
-    setCostMapRotation(0)
   }
 }
 
@@ -178,7 +174,6 @@ function handleReset() {
   if (isTopMode.value && rotationMode.value === RotationMode.Manual) {
     manualAzimuth = 0
     setNavAzimuth(0)
-    setCostMapRotation(-Math.PI / 2)
   } else {
     resetCamera()
   }
@@ -280,23 +275,20 @@ function setRotationMode(mode: RotationMode) {
   if (mode === RotationMode.Manual) {
     manualAzimuth = 0
     setNavAzimuth(0)
-    setCostMapRotation(-Math.PI / 2)
   } else {
     applyCostmapRotation()
   }
 }
 
+let roverBearingRad = 0
 let roverHeadingRad = 0
 
 function applyCostmapRotation() {
   if (!isTopMode.value) return
-  const mode = rotationMode.value
-  if (mode === RotationMode.North) {
-    setCostMapRotation(-Math.PI / 2)
+  if (rotationMode.value === RotationMode.North) {
     setNavAzimuth(0)
-  } else if (mode === RotationMode.FollowHeading) {
-    setCostMapRotation(-Math.PI / 2)
-    setNavAzimuth(roverHeadingRad + Math.PI / 2)
+  } else if (rotationMode.value === RotationMode.FollowHeading) {
+    setNavAzimuth(-roverBearingRad)
   }
 }
 
@@ -332,7 +324,8 @@ onMessage<OrientationMessage>('nav', 'orientation', (msg) => {
   if (msg.position) {
     roverMapPos = { x: msg.position.x, y: msg.position.y }
   }
-  roverHeadingRad = -(Math.PI * roverBearingDeg.value / 180 + Math.PI / 2)
+  roverBearingRad = roverBearingDeg.value * Math.PI / 180
+  roverHeadingRad = -roverBearingRad + Math.PI / 2
   setRoverHeading(roverHeadingRad)
   applyCostmapRotation()
 })
