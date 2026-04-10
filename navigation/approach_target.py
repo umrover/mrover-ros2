@@ -1,5 +1,6 @@
 import numpy as np
 import math
+from enum import Enum
 from typing import Any
 from navigation.trajectory import Trajectory
 from navigation.astar import AStar, NoPath, OutOfBounds
@@ -15,11 +16,14 @@ from rclpy.timer import Timer
 from rclpy.duration import Duration
 from navigation.coordinate_utils import is_high_cost_point, d_calc, segment_path, cartesian_to_ij
 
-
+class SpinRoverVal(Enum):
+    NO_SPIN = 0
+    BACKWARD = 1
+    FORWARD = 2
 class ApproachTargetState(State):
     UPDATE_DELAY: float
     USE_COSTMAP: bool
-    SPIN_ROVER: bool | None
+    SPIN_ROVER: SpinRoverVal
     DISTANCE_THRESHOLD: float
     LOOK_DISTANCE_THRESHOLD: float
     STOP_ANGLE_THRESHOLD: float
@@ -51,8 +55,8 @@ class ApproachTargetState(State):
         if current_waypoint is None:
             return
 
+        self.SPIN_ROVER = SpinRoverVal.NO_SPIN
         self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
-        self.SPIN_ROVER = False
         self.DISTANCE_THRESHOLD = context.node.get_parameter("search.distance_threshold").value
         self.LOOK_DISTANCE_THRESHOLD = context.node.get_parameter("search.distance_look_threshold").value
         self.STOP_ANGLE_THRESHOLD = context.node.get_parameter("search.stop_angle_threshold").value
@@ -171,13 +175,13 @@ class ApproachTargetState(State):
             context.node.get_logger().warn("Rover has no pose, waiting...")
             context.rover.send_drive_command(Twist())
             return self
-        if self.SPIN_ROVER is None or self.SPIN_ROVER:
+        if self.SPIN_ROVER == SpinRoverVal.BACKWARD or self.SPIN_ROVER == SpinRoverVal.FORWARD:
             if self.fixed_position is None:
                 self.fixed_position = rover_pose.translation() - rover_pose.rotation()[:, 0] + np.array([1e-8, 0, 0])
-            if self.SPIN_ROVER is not None:
+            if self.SPIN_ROVER == SpinRoverVal.BACKWARD:
                 cmd_vel_func, arrived_func = self.spin_rover_drive(context, self.fixed_position)
                 if arrived_func:
-                    self.SPIN_ROVER = None
+                    self.SPIN_ROVER = SpinRoverVal.FORWARD
                 else:
                     context.rover.send_drive_command(cmd_vel_func)
             else:
@@ -289,8 +293,8 @@ class ApproachTargetState(State):
                         if not context.shrink_dilation():
                             # Fully dilated and still failed, go to next state
                             context.node.get_logger().info("Exited without distance threshold")
-                            if self.SPIN_ROVER is not None and not self.SPIN_ROVER:
-                                self.SPIN_ROVER = True
+                            if self.SPIN_ROVER != SpinRoverVal.BACKWARD and self.SPIN_ROVER != SpinRoverVal.FORWARD:
+                                self.SPIN_ROVER = SpinRoverVal.BACKWARD
                             else:
                                 return self.next_state(context, is_finished=True)
                             # return self.next_state(context=context, is_finished=True)
