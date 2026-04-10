@@ -2,14 +2,14 @@
   <div class="relative w-full h-full overflow-hidden" data-testid="pw-funnel-controls">
     <div class="absolute top-0 left-0 right-0 flex justify-between items-center z-10">
       <h4 class="component-header">Funnel</h4>
-      <div class="flex items-center gap-1">
-        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm px-1.5 h-5!" :disabled="isLoading" @click="adjustOffset(-1)">-</button>
-        <span class="text-[10px] text-muted select-none">{{ offsetDeg }}&deg;</span>
-        <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm px-1.5 h-5!" :disabled="isLoading" @click="adjustOffset(1)">+</button>
+      <div class="flex items-center gap-0.5 text-[11px]">
+        <button class="micro-btn" :disabled="isLoading" @click="adjustOffset(-1)">-</button>
+        <span class="text-muted select-none tabular-nums min-w-[2.5ch] text-center">{{ offsetDeg }}&deg;</span>
+        <button class="micro-btn" :disabled="isLoading" @click="adjustOffset(1)">+</button>
       </div>
     </div>
 
-    <svg viewBox="10 10 180 180" class="funnel-dial">
+    <svg viewBox="0 0 200 200" class="funnel-dial">
       <defs>
         <path
           v-for="seg in segments"
@@ -38,9 +38,7 @@
         </text>
       </g>
 
-      <circle :cx="CX" :cy="CY" r="32" class="center-bg" />
-
-      <text :x="CX" :y="CY + 4" class="center-val">{{ currentDegrees }}&deg;</text>
+      <text :x="CX" :y="CY + 6" class="center-val">{{ currentDegrees }}&deg;</text>
     </svg>
   </div>
 </template>
@@ -71,23 +69,33 @@ const SITES: Site[] = [
 
 const CX = 100
 const CY = 100
-const INNER_R = 36
-const OUTER_R = 78
-const LABEL_R = 57
-const SEGMENT_GAP_DEG = 4
+const INNER_R = 40
+const OUTER_R = 100
+const LABEL_R = 80
+const LABEL_R_FLIP = 90
+const GAP_HALF = 3
 const SLOT_SIZE = 360 / SITES.length
-const SEGMENT_SPAN_DEG = SLOT_SIZE - SEGMENT_GAP_DEG
 
 function polarToXY(angleDeg: number, r: number): { x: number; y: number } {
   const rad = (angleDeg - 90) * DEG_TO_RAD
   return { x: CX + r * Math.cos(rad), y: CY + r * Math.sin(rad) }
 }
 
-function arcPath(startDeg: number, endDeg: number, r1: number, r2: number): string {
-  const p1 = polarToXY(startDeg, r1)
-  const p2 = polarToXY(endDeg, r1)
-  const p3 = polarToXY(endDeg, r2)
-  const p4 = polarToXY(startDeg, r2)
+function gapEdgePoint(gapDeg: number, segCenterDeg: number, r: number): { x: number; y: number } {
+  const gRad = (gapDeg - 90) * DEG_TO_RAD
+  const offsetSign = Math.sign(Math.sin((segCenterDeg - gapDeg) * DEG_TO_RAD))
+  const t = Math.sqrt(r * r - GAP_HALF * GAP_HALF)
+  return {
+    x: CX + GAP_HALF * offsetSign * -Math.sin(gRad) + t * Math.cos(gRad),
+    y: CY + GAP_HALF * offsetSign * Math.cos(gRad) + t * Math.sin(gRad),
+  }
+}
+
+function arcPath(gap1: number, gap2: number, center: number, r1: number, r2: number): string {
+  const p1 = gapEdgePoint(gap1, center, r1)
+  const p2 = gapEdgePoint(gap2, center, r1)
+  const p3 = gapEdgePoint(gap2, center, r2)
+  const p4 = gapEdgePoint(gap1, center, r2)
   const f = (n: number) => n.toFixed(2)
   return [
     `M${f(p1.x)},${f(p1.y)}`,
@@ -98,9 +106,9 @@ function arcPath(startDeg: number, endDeg: number, r1: number, r2: number): stri
   ].join(' ')
 }
 
-function labelArcPath(startDeg: number, endDeg: number, r: number, flip: boolean): string {
-  const from = flip ? endDeg : startDeg
-  const to = flip ? startDeg : endDeg
+function labelArcPath(gap1: number, gap2: number, r: number, flip: boolean): string {
+  const from = flip ? gap2 : gap1
+  const to = flip ? gap1 : gap2
   const p1 = polarToXY(from, r)
   const p2 = polarToXY(to, r)
   const f = (n: number) => n.toFixed(2)
@@ -115,15 +123,15 @@ interface Segment {
 }
 
 const segments: Segment[] = SITES.map((site, i) => {
-  const startDeg = -(SLOT_SIZE / 2) + i * SLOT_SIZE + SEGMENT_GAP_DEG / 2
-  const endDeg = startDeg + SEGMENT_SPAN_DEG
-  const midDeg = (startDeg + endDeg) / 2
-  const flip = midDeg > 120 && midDeg < 240
+  const centerDeg = i * SLOT_SIZE
+  const gap1 = centerDeg - SLOT_SIZE / 2
+  const gap2 = centerDeg + SLOT_SIZE / 2
+  const flip = centerDeg > 90 && centerDeg < 270
   return {
     index: i,
     label: site.label,
-    path: arcPath(startDeg, endDeg, INNER_R, OUTER_R),
-    labelArc: labelArcPath(startDeg, endDeg, LABEL_R, flip),
+    path: arcPath(gap1, gap2, centerDeg, INNER_R, OUTER_R),
+    labelArc: labelArcPath(gap1, gap2, flip ? LABEL_R_FLIP : LABEL_R, flip),
   }
 })
 
@@ -138,9 +146,9 @@ const funnelState = computed((): ControllerStateMessage | null => {
 
 const currentDegrees = computed((): string => {
   const state = funnelState.value
-  if (!state?.names || !state.positions) return '--'
+  if (!state?.names || !state.positions) return '---'
   const idx = state.names.indexOf('funnel')
-  if (idx < 0) return '--'
+  if (idx < 0) return '---'
   const deg = (state.positions[idx] ?? 0) * RAD_TO_DEG
   return Object.is(Math.round(deg), -0) ? '0' : deg.toFixed(0)
 })
@@ -245,21 +253,42 @@ watch(buttons, (btns) => {
 }
 
 .seg-label {
-  font-size: 10px;
+  font-size: 16px;
   font-weight: 600;
   fill: var(--control-primary);
   pointer-events: none;
   user-select: none;
 }
 
-.center-bg {
-  fill: var(--card-bg);
-  stroke: var(--input-border);
-  stroke-width: 1;
+.micro-btn {
+  width: 18px;
+  height: 18px;
+  line-height: 1;
+  border-radius: 4px;
+  border: 1px solid var(--input-border);
+  background: transparent;
+  color: var(--control-primary);
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.15s ease;
+}
+
+.micro-btn:hover:not(:disabled) {
+  background: var(--control-primary);
+  color: #fff;
+}
+
+.micro-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .center-val {
-  font-size: 13px;
+  font-size: 20px;
   font-weight: 700;
   fill: var(--text-primary, currentColor);
   text-anchor: middle;
