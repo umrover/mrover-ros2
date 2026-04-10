@@ -2,6 +2,8 @@ import * as THREE from 'three'
 
 export const NUM_COSTMAP_BLOCKS = 40
 
+const COSTMAP_ROTATION_OFFSET = Math.PI
+
 const BLOCK_WIDTH = 40
 const GRID_SIZE = NUM_COSTMAP_BLOCKS * NUM_COSTMAP_BLOCKS
 const SIDE_LENGTH = BLOCK_WIDTH * NUM_COSTMAP_BLOCKS
@@ -14,12 +16,9 @@ export interface CostmapRenderer {
 }
 
 export function createCostmap(scene: THREE.Scene): CostmapRenderer {
-  const anchor = new THREE.Object3D()
-  scene.add(anchor)
-
   const container = new THREE.Group()
-  container.rotation.y = -Math.PI / 2
-  anchor.add(container)
+  container.rotation.y = COSTMAP_ROTATION_OFFSET
+  scene.add(container)
 
   // Color plane via DataTexture
   const textureData = new Uint8Array(GRID_SIZE * 4)

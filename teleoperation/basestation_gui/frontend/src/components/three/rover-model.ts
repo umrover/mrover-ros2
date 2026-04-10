@@ -82,7 +82,7 @@ export function loadRover(scene: THREE.Scene): RoverModel {
       // ROS Z-up to Three.js Y-up frame conversion
       const roverContainer = new THREE.Group()
       roverContainer.position.set(0, -50, 0)
-      roverContainer.rotation.x = -Math.PI / 2
+      roverContainer.rotation.set(-Math.PI / 2, 0, 0)
       headingGroup.add(roverContainer)
       roverContainer.add(robot)
       robot.updateMatrixWorld()
