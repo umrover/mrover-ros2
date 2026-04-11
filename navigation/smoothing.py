@@ -162,7 +162,7 @@ class Relaxation:
             return trajectory, total_cost
 
         min_idx = -1
-        max_diff = -sys.maxsize
+        max_diff = -float(sys.maxsize)
 
         # Loops through trajectory nodes, locates the node, that when removed,
         # decreases the cost the most (distance is factored into cost).
