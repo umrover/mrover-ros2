@@ -9,6 +9,4 @@ function quaternionToMapAngle(quaternion: Quaternion): number {
   return quaternionToYaw(quaternion) * (180 / Math.PI) + 90
 }
 
-const ROTATION_OFFSET = Math.PI
-
-export { quaternionToYaw, quaternionToMapAngle, ROTATION_OFFSET }
+export { quaternionToYaw, quaternionToMapAngle }
