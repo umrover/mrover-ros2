@@ -77,7 +77,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import type { ControllerStateMessage, IkFeedbackMessage, OccupancyGridMessage } from '@/types/websocket'
 import type { OrientationMessage } from '@/types/coordinates'
-import { quaternionToYaw, ROTATION_OFFSET } from '@/utils/map'
+import { quaternionToYaw } from '@/utils/map'
 import { useRoverScene, CameraType, NUM_COSTMAP_BLOCKS } from '@/composables/useRoverScene'
 
 const { onMessage, setupWebSocket, closeWebSocket } = useWebsocketStore()
@@ -321,7 +321,7 @@ onMessage<OrientationMessage>('nav', 'orientation', (msg) => {
     roverMapPos = { x: msg.position.x, y: msg.position.y }
   }
   roverHeadingRad = -quaternionToYaw(msg.orientation)
-  setRoverHeading(roverHeadingRad + ROTATION_OFFSET)
+  setRoverHeading(roverHeadingRad)
   updateTopDownCamera()
 })
 </script>
