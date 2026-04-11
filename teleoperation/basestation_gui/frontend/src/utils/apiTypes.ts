@@ -44,7 +44,7 @@ export interface CreateBasicWaypointResponse extends APIResponse {
 export interface AutonEnableWaypoint {
   latitude_degrees: number
   longitude_degrees: number
-  tag_id: number
+  tag_id: number | null
   type: number
   enable_costmap: boolean
 }
@@ -79,4 +79,13 @@ export interface RecordingWaypointsResponse extends APIResponse {
 
 export interface RAModeResponse extends APIResponse {
   mode?: string
+}
+
+export interface StowResponse extends APIResponse {
+  mode?: string
+  stow_target: {
+    pos: { x: number; y: number; z: number }
+    pitch: number
+    roll: number
+  }
 }

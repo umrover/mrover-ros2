@@ -1,83 +1,214 @@
 <template>
-  <div class="flex flex-col w-full h-full">
-    <div class="flex flex-wrap gap-1 mb-2 shrink-0">
+  <div class="rover3d-root">
+    <canvas
+      class="webgl"
+      @click="closeDropdowns()"
+      @pointerdown="onPointerDown"
+      @pointermove="onPointerMove"
+      @pointerup="onPointerUp"
+    ></canvas>
+    <div class="overlay-toolbar left-0 right-0 items-center justify-between">
+      <div class="flex gap-1">
+        <div class="relative">
+          <button
+            type="button"
+            class="overlay-toolbar-btn"
+            @click="viewDropdownOpen = !viewDropdownOpen">
+            {{ viewLabels[viewMode] }}
+            <i class="bi bi-chevron-down"></i>
+          </button>
+          <ul class="dropdown-menu left-0 right-auto" :class="{ show: viewDropdownOpen }">
+            <li v-for="(label, key) in viewLabels" :key="key">
+              <button
+                class="dropdown-item"
+                :class="{ active: viewMode === key }"
+                @click="switchView(key); viewDropdownOpen = false">
+                {{ label }}
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <template v-if="isTopMode">
+          <div class="relative">
+            <button
+              type="button"
+              class="overlay-toolbar-btn"
+              @click="rotationDropdownOpen = !rotationDropdownOpen">
+              {{ rotationLabels[rotationMode] }}
+              <i class="bi bi-chevron-down"></i>
+            </button>
+            <ul class="dropdown-menu left-0 right-auto" :class="{ show: rotationDropdownOpen }">
+              <li v-for="(label, key) in rotationLabels" :key="key">
+                <button
+                  class="dropdown-item"
+                  :class="{ active: rotationMode === key }"
+                  @click="setRotationMode(key); rotationDropdownOpen = false">
+                  {{ label }}
+                </button>
+              </li>
+            </ul>
+          </div>
+        </template>
+
+        <button
+          v-if="showReset"
+          type="button"
+          class="overlay-toolbar-btn"
+          title="Reset camera position"
+          @click="handleReset()">
+          <i class="bi bi-arrow-counterclockwise"></i>
+        </button>
+      </div>
+
       <button
         type="button"
-        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
-        @click="set_camera_type('default')">
-        Default
-      </button>
-      <button
-        type="button"
-        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
-        @click="set_camera_type('follow')">
-        Follow
-      </button>
-      <button
-        type="button"
-        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
-        @click="set_camera_type('arm')">
-        Arm
-      </button>
-      <button
-        type="button"
-        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
-        @click="set_camera_type('full arm')">
-        Full Arm
-      </button>
-      <button
-        type="button"
-        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
-        @click="set_camera_type('side arm')">
-        Side Arm
-      </button>
-      <button
-        type="button"
-        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
-        @click="set_camera_type('top')">
-        Top Down
-      </button>
-      <button
-        type="button"
-        class="cmd-btn cmd-btn-sm cmd-btn-outline-control grow"
-        @click="set_camera_type('bottom')">
-        Bottom Up
-      </button>
-      <button
-        type="button"
-        class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary grow"
-        @click="updateCostMapGrid()">
-        Test
+        class="overlay-toolbar-btn"
+        @click="toggleCostMap()">
+        Cost Map <i :class="costmapVisible ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
       </button>
     </div>
-    <canvas class="webgl grow min-h-0 w-full"></canvas>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
-import { storeToRefs } from 'pinia'
-import type { ControllerStateMessage } from '@/types/websocket'
-import threeSetup, { updatePose, updateIKTarget, set_camera_type, updateCostMapGrid} from '../rover_three.js'
+import type { ControllerStateMessage, IkFeedbackMessage, OccupancyGridMessage } from '@/types/websocket'
+import type { OrientationMessage } from '@/types/coordinates'
+import { quaternionToYaw } from '@/utils/map'
+import { useRoverScene, CameraType, NUM_COSTMAP_BLOCKS } from '@/composables/useRoverScene'
 
-interface ArmIKMessage {
-  type: 'ik_target'
-  target: {
-    pose: {
-      position: {
-        x: number
-        y: number
-        z: number
-      }
+const { onMessage, setupWebSocket, closeWebSocket } = useWebsocketStore()
+
+const {
+  setup: setupScene,
+  dispose: disposeScene,
+  setCamera,
+  resetCamera,
+  setNavAzimuth,
+  updateCostMap,
+  toggleCostMapVisibility,
+  setCostMapVisibility,
+  updateJoints,
+  updateIKTarget,
+  setRoverHeading,
+} = useRoverScene()
+
+enum ViewMode {
+  Orbit = 'orbit',
+  Follow = 'follow',
+  Arm = 'arm',
+  Top = 'top',
+}
+
+enum RotationMode {
+  Manual = 'manual',
+  North = 'north',
+  FollowHeading = 'follow',
+}
+
+const viewLabels: Record<ViewMode, string> = {
+  [ViewMode.Orbit]: 'Orbit',
+  [ViewMode.Follow]: 'Follow',
+  [ViewMode.Arm]: 'Arm',
+  [ViewMode.Top]: 'Top-Down',
+}
+
+const rotationLabels: Record<RotationMode, string> = {
+  [RotationMode.Manual]: 'Manual',
+  [RotationMode.North]: 'True North',
+  [RotationMode.FollowHeading]: 'Follow Heading',
+}
+
+const LS_VIEW_MODE = 'rover3d.viewMode'
+const LS_ROTATION_MODE = 'rover3d.rotationMode'
+
+const validViewModes = new Set(Object.values(ViewMode))
+const validRotationModes = new Set(Object.values(RotationMode))
+
+function loadEnum<T>(key: string, valid: Set<string>, fallback: T): T {
+  const stored = localStorage.getItem(key)
+  return stored && valid.has(stored) ? (stored as T) : fallback
+}
+
+const viewMode = ref<ViewMode>(loadEnum(LS_VIEW_MODE, validViewModes, ViewMode.Orbit))
+const rotationMode = ref<RotationMode>(loadEnum(LS_ROTATION_MODE, validRotationModes, RotationMode.FollowHeading))
+const viewDropdownOpen = ref(false)
+const rotationDropdownOpen = ref(false)
+
+const isTopMode = computed(() => viewMode.value === ViewMode.Top)
+const showReset = computed(() => {
+  if (viewMode.value === ViewMode.Orbit) return true
+  if (isTopMode.value && rotationMode.value === RotationMode.Manual) return true
+  return false
+})
+
+let manualAzimuth = 0
+let roverMapPos = { x: 0, y: 0 }
+let roverHeadingRad = 0
+let dragStartX = 0
+let dragStartAzimuth = 0
+let isDragging = false
+
+const viewToCameraType: Record<ViewMode, CameraType> = {
+  [ViewMode.Orbit]: CameraType.Orbit,
+  [ViewMode.Follow]: CameraType.Follow,
+  [ViewMode.Arm]: CameraType.Arm,
+  [ViewMode.Top]: CameraType.Top,
+}
+
+function switchView(mode: ViewMode) {
+  viewMode.value = mode
+  localStorage.setItem(LS_VIEW_MODE, mode)
+
+  setCamera(viewToCameraType[mode])
+
+  if (mode === ViewMode.Top) {
+    setCostMapVisibility(costmapVisible.value)
+    if (rotationMode.value === RotationMode.Manual) {
+      manualAzimuth = 0
+      setNavAzimuth(0)
+    } else {
+      updateTopDownCamera()
     }
   }
 }
 
-const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
+function handleReset() {
+  if (isTopMode.value && rotationMode.value === RotationMode.Manual) {
+    manualAzimuth = 0
+    setNavAzimuth(0)
+  } else {
+    resetCamera()
+  }
+}
 
-const threeScene = ref<(() => void) | null>(null)
+function closeDropdowns() {
+  viewDropdownOpen.value = false
+  rotationDropdownOpen.value = false
+}
+
+function onPointerDown(e: PointerEvent) {
+  if (!isTopMode.value || rotationMode.value !== RotationMode.Manual) return
+  if (e.button !== 0) return
+  isDragging = true
+  dragStartX = e.clientX
+  dragStartAzimuth = manualAzimuth
+  ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+}
+
+function onPointerMove(e: PointerEvent) {
+  if (!isDragging) return
+  const deltaX = e.clientX - dragStartX
+  const sensitivity = 0.005
+  manualAzimuth = dragStartAzimuth + deltaX * sensitivity
+  setNavAzimuth(manualAzimuth)
+}
+
+function onPointerUp() {
+  isDragging = false
+}
 
 const jointNameMap: Record<string, string> = {
   joint_a: 'chassis_to_arm_a',
@@ -88,59 +219,122 @@ const jointNameMap: Record<string, string> = {
   gripper: 'gripper_link',
 }
 
+const COSTMAP_VISIBLE_KEY = 'rover3d.costmapVisible'
+const costmapVisible = ref(localStorage.getItem(COSTMAP_VISIBLE_KEY) !== 'false')
+
+function toggleCostMap() {
+  costmapVisible.value = !costmapVisible.value
+  localStorage.setItem(COSTMAP_VISIBLE_KEY, String(costmapVisible.value))
+  toggleCostMapVisibility()
+}
+
 onMounted(() => {
-  threeScene.value = threeSetup()
+  const canvas = document.querySelector('canvas.webgl') as HTMLCanvasElement
+  setupScene(canvas)
+  if (!costmapVisible.value) {
+    setCostMapVisibility(false)
+  }
+  switchView(viewMode.value)
+  setupWebSocket('nav')
 })
 
 onBeforeUnmount(() => {
-  if (threeScene.value) {
-    threeScene.value()
-  }
+  disposeScene()
+  closeWebSocket('nav')
 })
 
-const armMessage = computed(() => messages.value['arm'])
-const contextMessage = computed(() => messages.value['context'])
+onMessage<ControllerStateMessage>('arm', 'arm_state', (msg) => {
+  const joints = msg.names.map((name: string, index: number) => {
+    const urdfName = jointNameMap[name] || name
+    const rawPosition: number = msg.positions[index] ?? 0
+    const position = urdfName === 'chassis_to_arm_a'
+      ? rawPosition * -100 + 40
+      : rawPosition
 
-watch(armMessage, (msg: unknown) => {
-  if (!msg || typeof msg !== 'object') return
+    return { name: urdfName, position }
+  })
 
-  if ('type' in msg && msg.type === 'arm_state') {
-    const typedMsg = msg as ControllerStateMessage
-    if (!Array.isArray(typedMsg.names)) return
-    const joints = typedMsg.names.map((name: string, index: number) => {
-      const urdfName = jointNameMap[name] || name
-      let position = typedMsg.positions[index] ?? 0
-
-      if (urdfName === 'chassis_to_arm_a') {
-        position = position * -100 + 40
-      }
-
-      return {
-        name: urdfName,
-        position,
-      }
-    })
-
-    updatePose(joints)
-  } else if ('type' in msg && msg.type === 'ik_target') {
-    const typedMsg = msg as ArmIKMessage
-    if (typedMsg.target.pose && typedMsg.target.pose.position) {
-      const position = {
-        x: typedMsg.target.pose.position.x * 100,
-        y: typedMsg.target.pose.position.z * 100,
-        z: typedMsg.target.pose.position.y * -100 + 20,
-      }
-      updateIKTarget(position)
-    }
-  }
+  updateJoints(joints)
 })
 
-watch(contextMessage, (msg: unknown) => {
-  if (typeof msg == 'object' && msg !== null && 'type' in msg) {
-    const typedMsg = msg as { type: string; state?: string }
-    if (typedMsg.type === 'costmap') {
-      updateCostMapGrid()
+onMessage<IkFeedbackMessage>('arm', 'ik_feedback', (msg) => {
+  updateIKTarget({
+    x: msg.pos.x * 100,
+    y: msg.pos.z * 100,
+    z: msg.pos.y * -100 + 20,
+  })
+})
+
+
+
+function setRotationMode(mode: RotationMode) {
+  rotationMode.value = mode
+  localStorage.setItem(LS_ROTATION_MODE, mode)
+
+  if (mode === RotationMode.Manual) {
+    manualAzimuth = 0
+    setNavAzimuth(0)
+  } else {
+    updateTopDownCamera()
+  }
+}
+
+function updateTopDownCamera() {
+  if (!isTopMode.value) return
+  if (rotationMode.value === RotationMode.North) {
+    setNavAzimuth(0)
+  } else if (rotationMode.value === RotationMode.FollowHeading) {
+    setNavAzimuth(roverHeadingRad - Math.PI / 2)
+  }
+}
+
+onMessage<OccupancyGridMessage>('drive', 'costmap', (msg) => {
+  const { resolution, width, height, origin } = msg.info
+
+  const roverCol = Math.floor((roverMapPos.x - origin.position.x) / resolution)
+  const roverRow = Math.floor((roverMapPos.y - origin.position.y) / resolution)
+
+  const halfBlocks = Math.floor(NUM_COSTMAP_BLOCKS / 2)
+  const startCol = roverCol - halfBlocks
+  const startRow = roverRow - halfBlocks
+
+  const processedData: number[] = []
+  for (let i = NUM_COSTMAP_BLOCKS - 1, k = 0; i >= 0; --i) {
+    for (let j = 0; j < NUM_COSTMAP_BLOCKS; ++j, ++k) {
+      const col = startCol + j
+      const row = startRow + i
+      if (col < 0 || col >= width || row < 0 || row >= height) {
+        processedData[k] = -1
+      } else {
+        processedData[k] = msg.data[row * width + col] ?? -1
+      }
     }
   }
+
+  updateCostMap(processedData)
+  updateTopDownCamera()
+})
+
+onMessage<OrientationMessage>('nav', 'orientation', (msg) => {
+  if (msg.position) {
+    roverMapPos = { x: msg.position.x, y: msg.position.y }
+  }
+  roverHeadingRad = -quaternionToYaw(msg.orientation)
+  setRoverHeading(roverHeadingRad)
+  updateTopDownCamera()
 })
 </script>
+
+<style scoped>
+.rover3d-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.webgl {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+</style>

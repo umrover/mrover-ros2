@@ -177,12 +177,12 @@ class WaypointState(State):
         arrived = False
         cmd_vel = Twist()
         if len(self.astar_traj.coordinates) - self.astar_traj.cur_pt != 0:
-            waypoint_position_in_map = self.astar_traj.get_current_point()
             cmd_vel, arrived = context.drive.get_drive_command(
-                waypoint_position_in_map,
+                self.astar_traj,
                 context.rover.get_pose_in_map(),
                 context.node.get_parameter("waypoint.stop_threshold").value,
                 context.node.get_parameter("waypoint.drive_forward_threshold").value,
+                last_point=self.waypoint_traj.is_last(),
             )
 
         if arrived:

@@ -198,11 +198,12 @@ class CostmapSearchState(State):
         target_position_in_map = self.astar_traj.get_current_point()
 
         cmd_vel, arrived = context.drive.get_drive_command(
-            target_position_in_map,
+            self.astar_traj,
             context.rover.get_pose_in_map(),
             self.STOP_THRESH,
             self.DRIVE_FWD_THRESH,
             path_start=self.prev_target_pos_in_map,
+            last_point=self.spiral_traj.is_last(),
         )
 
         if not arrived:

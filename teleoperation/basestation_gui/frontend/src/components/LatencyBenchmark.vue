@@ -4,38 +4,38 @@
       <h5 class="font-semibold">Latency Benchmark</h5>
       <div
         class="flex items-center gap-2 px-2 py-1 rounded"
-        :class="connectionStatus === 'connected' ? 'bg-cmd-success-subtle' : 'bg-cmd-danger-subtle'"
+        :class="connectionStatus === 'connected' ? 'bg-success-subtle' : 'bg-danger-subtle'"
       >
         <span
           class="rounded-full inline-block"
           style="width: 8px; height: 8px;"
-          :class="connectionStatus === 'connected' ? 'bg-cmd-success' : 'bg-cmd-danger'"
+          :class="connectionStatus === 'connected' ? 'bg-success' : 'bg-danger'"
         ></span>
         <span
           class="text-sm font-medium"
-          :class="connectionStatus === 'connected' ? 'text-cmd-success' : 'text-cmd-danger'"
+          :class="connectionStatus === 'connected' ? 'text-success' : 'text-danger'"
         >{{ connectionStatus }}</span>
       </div>
     </div>
 
     <div class="flex gap-2 items-center flex-wrap">
       <button
-        class="cmd-btn cmd-btn-sm flex items-center gap-1"
-        :class="isRunning ? 'cmd-btn-danger' : 'cmd-btn-success'"
+        class="btn btn-sm flex items-center gap-1"
+        :class="isRunning ? 'btn-danger' : 'btn-success'"
         data-testid="pw-latency-start"
         @click="toggleBenchmark"
       >
         <i :class="isRunning ? 'bi bi-stop-fill' : 'bi bi-play-fill'"></i>
         {{ isRunning ? 'Stop' : 'Start' }}
       </button>
-      <button class="cmd-btn cmd-btn-sm cmd-btn-secondary flex items-center gap-1" data-testid="pw-latency-reset" @click="resetStats">
+      <button class="btn btn-sm btn-secondary flex items-center gap-1" data-testid="pw-latency-reset" @click="resetStats">
         <i class="bi bi-arrow-counterclockwise"></i> Reset
       </button>
       <div class="flex items-center gap-1">
         <input
           v-model.number="frequency"
           type="number"
-          class="cmd-form-control cmd-form-control-sm text-center"
+          class="form-control form-control-sm text-center"
           data-testid="pw-latency-freq"
           style="width: 65px"
           min="1"
@@ -45,10 +45,10 @@
       </div>
     </div>
 
-    <div class="cmd-panel">
+    <div class="panel">
       <div class="p-4">
         <div class="uppercase text-muted font-semibold text-sm mb-2">Latency</div>
-        <div class="flex justify-between py-1 bg-cmd-primary-subtle rounded px-2 mb-1">
+        <div class="flex justify-between py-1 bg-primary-subtle rounded px-2 mb-1">
           <span>Current RTT</span>
           <span class="font-mono font-medium">{{ currentLatency }} ms</span>
         </div>
@@ -71,7 +71,7 @@
       </div>
     </div>
 
-    <div class="cmd-panel">
+    <div class="panel">
       <div class="p-4">
         <div class="uppercase text-muted font-semibold text-sm mb-2">Throughput</div>
         <div class="flex justify-between py-1">
@@ -97,7 +97,7 @@
       </div>
     </div>
 
-    <div class="cmd-panel">
+    <div class="panel">
       <div class="p-4">
         <div class="uppercase text-muted font-semibold text-sm mb-2">Reliability</div>
         <div class="flex justify-between py-1">
@@ -106,13 +106,13 @@
         </div>
         <div class="flex justify-between py-1">
           <span>Lost</span>
-          <span class="font-mono" :class="packetsLost > 0 ? 'text-cmd-danger' : 'text-cmd-success'">
+          <span class="font-mono" :class="packetsLost > 0 ? 'text-danger' : 'text-success'">
             {{ packetsLost }} ({{ packetLossRate }}%)
           </span>
         </div>
         <div class="flex justify-between py-1">
           <span>Out of Order</span>
-          <span class="font-mono" :class="outOfOrderCount > 0 ? 'text-cmd-warning' : ''">
+          <span class="font-mono" :class="outOfOrderCount > 0 ? 'text-warning' : ''">
             {{ outOfOrderCount }}
           </span>
         </div>
@@ -343,9 +343,9 @@ const packetLossRate = computed(() => {
 const actualFrequencyColor = computed(() => {
   const diff = Math.abs(actualFrequency.value - frequency.value)
   const percentDiff = (diff / frequency.value) * 100
-  if (percentDiff > 20) return 'text-cmd-danger'
-  if (percentDiff > 10) return 'text-cmd-warning'
-  return 'text-cmd-success'
+  if (percentDiff > 20) return 'text-danger'
+  if (percentDiff > 10) return 'text-warning'
+  return 'text-success'
 })
 
 watch(frequency, () => {

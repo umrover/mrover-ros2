@@ -1,12 +1,11 @@
 #pragma once
 
+#include "CallbackCheckBox.hpp"
 #include "GstRtpVideoCreatorWidget.hpp"
 #include "GstVideoWidgets.hpp"
-#include "ImagePreview.hpp"
 #include "VideoSelectorWidget.hpp"
 
 namespace mrover {
-
     class CameraClientMainWindow : public QMainWindow {
         Q_OBJECT
 
@@ -22,17 +21,14 @@ namespace mrover {
     public:
         explicit CameraClientMainWindow(QWidget* parent = nullptr);
 
-        auto createCamera(std::string const& name, std::string const& pipeline, CameraCallbacks callbacks) -> bool;
-        auto getCameraGridWidget() -> GstVideoGridWidget*;
-
-    public slots:
-        void showImagePreview(QString const& cameraName, QImage const& image);
+        auto createCamera(std::string const& name, std::string const& pipeline) -> bool;
+        auto getCameraSelectorWidget() -> VideoSelectorWidget*;
+        static auto showImagePopup(QImage const& image) -> void;
 
     signals:
         void closed();
 
     protected:
-        auto closeEvent(QCloseEvent* event) -> void override;
+        void closeEvent(QCloseEvent* event) override;
     };
-
-} // namespace mrover
+}; // namespace mrover

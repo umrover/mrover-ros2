@@ -22,7 +22,7 @@ async def enable_auton(data: AutonEnableRequest):
             enable=data.enabled,
             waypoints=[
                 GPSWaypoint(
-                    tag_id=wp.tag_id,
+                    tag_id=wp.tag_id if wp.tag_id is not None else -1,
                     latitude_degrees=wp.latitude_degrees,
                     longitude_degrees=wp.longitude_degrees,
                     type=WaypointType(val=int(wp.type)),
@@ -90,4 +90,24 @@ async def toggle_path_interpolation(data: TeleopEnableRequest):
     result = await call_service_async(client, request)
     if result is None:
         raise HTTPException(status_code=500, detail="Service /toggle_path_interpolation is not available or timed out")
+    return {'status': 'success', 'enabled': data.enabled}
+
+
+@router.post("/toggle_stereo_detector/")
+async def toggle_stereo_detector(data: TeleopEnableRequest):
+    client = get_service_client(SetBool, "/toggle_stereo_detector")
+    request = SetBool.Request(data=data.enabled)
+    result = await call_service_async(client, request)
+    if result is None:
+        raise HTTPException(status_code=500, detail="Service /toggle_stereo_detector is not available or timed out")
+    return {'status': 'success', 'enabled': data.enabled}
+
+
+@router.post("/toggle_image_detector/")
+async def toggle_image_detector(data: TeleopEnableRequest):
+    client = get_service_client(SetBool, "/toggle_image_detector")
+    request = SetBool.Request(data=data.enabled)
+    result = await call_service_async(client, request)
+    if result is None:
+        raise HTTPException(status_code=500, detail="Service /toggle_image_detector is not available or timed out")
     return {'status': 'success', 'enabled': data.enabled}

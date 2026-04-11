@@ -12,11 +12,10 @@ class BasicWaypointList(BaseModel):
 
 class AutonWaypoint(BaseModel):
     name: str
-    tag_id: int = -1
+    tag_id: int | None = None
     type: int = 0
     lat: float = Field(default=0.0, ge=-90.0, le=90.0)
     lon: float = Field(default=0.0, ge=-180.0, le=180.0)
-    enable_costmap: bool = True
     deletable: bool = True
     db_id: int | None = None
 
@@ -25,11 +24,10 @@ class AutonWaypointList(BaseModel):
 
 class CreateAutonWaypoint(BaseModel):
     name: str
-    tag_id: int = -1
+    tag_id: int | None = None
     type: int = 0
     lat: float = Field(default=0.0, ge=-90.0, le=90.0)
     lon: float = Field(default=0.0, ge=-180.0, le=180.0)
-    enable_costmap: bool = True
 
 class UpdateAutonWaypoint(BaseModel):
     name: str | None = None
@@ -37,7 +35,6 @@ class UpdateAutonWaypoint(BaseModel):
     type: int | None = None
     lat: float | None = Field(default=None, ge=-90.0, le=90.0)
     lon: float | None = Field(default=None, ge=-180.0, le=180.0)
-    enable_costmap: bool | None = None
 
 class UpdateBasicWaypoint(BaseModel):
     name: str | None = None
@@ -48,7 +45,7 @@ class UpdateBasicWaypoint(BaseModel):
 class AutonEnableWaypoint(BaseModel):
     latitude_degrees: float = Field(ge=-90.0, le=90.0)
     longitude_degrees: float = Field(ge=-180.0, le=180.0)
-    tag_id: int = -1
+    tag_id: int | None = None
     type: int = 0
     enable_costmap: bool = True
 
@@ -69,7 +66,7 @@ class GimbalAdjustRequest(BaseModel):
     absolute: bool = False
 
 class GearDiffRequest(BaseModel):
-    position: float = Field(ge=0.0, le=6.28318)
+    position: float = Field(ge=-3.14159, le=3.14159)
     is_counterclockwise: bool = False
 
 class RecordingCreateRequest(BaseModel):

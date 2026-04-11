@@ -2,22 +2,53 @@
 
 #include "pch.hpp"
 
-namespace mrover {
+class ImagePreview : public QMainWindow {
+    Q_OBJECT
 
-    class ImagePreview : public QMainWindow {
-        Q_OBJECT
+    QLabel* label;
+    QImage image;
+    QString name;
 
-        QLabel* mLabel;
-        QImage mImage;
+public:
+    explicit ImagePreview(QWidget* parent = nullptr) : QMainWindow(parent), label(new QLabel(this)) {
 
-    public:
-        explicit ImagePreview(QWidget* parent = nullptr);
+        label->setAlignment(Qt::AlignCenter);
+        label->setMinimumSize(640, 480);
+        setCentralWidget(label);
 
-        auto updateImage(QImage const& newImage) -> void;
+        auto* toolbar = addToolBar("Toolbar");
 
-    private slots:
-        void saveImage();
-        void saveImageAs();
-    };
+        auto* saveAction = toolbar->addAction("Save");
+        connect(saveAction, &QAction::triggered, this, &ImagePreview::saveImage);
 
-} // namespace mrover
+        auto* saveAsAction = toolbar->addAction("Save As");
+        connect(saveAsAction, &QAction::triggered, this, &ImagePreview::saveImageAs);
+    }
+
+    auto updateImage(QImage const& newImage) -> void {
+        image = newImage.copy();
+        label->setPixmap(QPixmap::fromImage(image));
+        label->resize(image.size());
+    }
+
+private slots:
+    void saveImage() {
+        QString const downloads = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+        QString const timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss");
+        QString const filename = downloads + "/image_" + timestamp + ".png";
+
+        if (!image.save(filename)) {
+            qWarning("Failed to save image!");
+        }
+    }
+
+    void saveImageAs() {
+        QString const filename = QFileDialog::getSaveFileName(
+                this, "Save Image As", QStandardPaths::writableLocation(QStandardPaths::DownloadLocation) + "/image.png",
+                "All Files (*);;PNG Images (*.png);;JPEG Images (*.jpg *.jpeg)");
+
+        if (!filename.isEmpty() && !image.save(filename)) {
+            qWarning("Failed to save image.");
+        }
+    }
+};
