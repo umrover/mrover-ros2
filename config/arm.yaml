@@ -29,8 +29,8 @@ arm_hw_bridge:
     joint_b_mount_theta: 1.25499645 # radians
     joint_b_segment_offset_theta: 0.09384635 # radians
     joint_c_offset_theta: 3.5222 # radians
-    joint_c_max_position: -0.80 # radians
-    joint_c_min_position: 3.20 # radians
+    joint_c_max_position: 2.80 # radians
+    joint_c_min_position: -0.60 # radians
     joint_c:
       min_velocity: -0.377
       max_velocity: 0.377

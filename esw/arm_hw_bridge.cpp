@@ -130,13 +130,13 @@ namespace mrover {
             mGripper = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "gripper");
             mPusher = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "pusher");
 
-            mArmThrottleSub = create_subscription<msg::Throttle>("arm_thr_cmd", 1, [this](msg::Throttle::ConstSharedPtr const& msg) { processThrottleCmd(msg); });
-            mArmVelocitySub = create_subscription<msg::Velocity>("arm_vel_cmd", 1, [this](msg::Velocity::ConstSharedPtr const& msg) { processVelocityCmd(msg); });
-            mArmPositionSub = create_subscription<msg::Position>("arm_pos_cmd", 1, [this](msg::Position::ConstSharedPtr const& msg) { processPositionCmd(msg); });
+            mArmThrottleSub = create_subscription<msg::Throttle>("arm_thr_cmd", 1, [this](msg::Throttle::ConstSharedPtr const& msg) -> void { processThrottleCmd(msg); });
+            mArmVelocitySub = create_subscription<msg::Velocity>("arm_vel_cmd", 1, [this](msg::Velocity::ConstSharedPtr const& msg) -> void { processVelocityCmd(msg); });
+            mArmPositionSub = create_subscription<msg::Position>("arm_pos_cmd", 1, [this](msg::Position::ConstSharedPtr const& msg) -> void { processPositionCmd(msg); });
 
             mPusherService = create_service<srv::Pusher>(
                     "pusher",
-                    [this](srv::Pusher::Request::ConstSharedPtr const& req, srv::Pusher::Response::SharedPtr const& res) {
+                    [this](srv::Pusher::Request::ConstSharedPtr const& req, srv::Pusher::Response::SharedPtr const& res) -> void {
                         handlePusherService(req, res);
                     },
                     rmw_qos_profile_services_default,
@@ -151,7 +151,7 @@ namespace mrover {
 
             mPusherControlTimer = create_wall_timer(
                     std::chrono::milliseconds(PROBE_INTERVAL_MS),
-                    [this]() { updatePusherStateMachine(); },
+                    [this]() -> void { updatePusherStateMachine(); },
                     mCbGroup);
             mProbeTimer = create_wall_timer(
                     mProbeInterval,
@@ -162,7 +162,7 @@ namespace mrover {
                         probeIfBrushless(mJointDE1, "joint_de_1");
                     });
 
-            mAbsOffsetTimer = create_wall_timer(std::chrono::milliseconds(500), [this]() { updateAbsoluteOffsets(); });
+            mAbsOffsetTimer = create_wall_timer(std::chrono::milliseconds(500), [this]() -> void { updateAbsoluteOffsets(); });
 
             mPublishDataTimer = create_wall_timer(
                     std::chrono::milliseconds(100),
@@ -213,7 +213,7 @@ namespace mrover {
         Radians mJointBMountTheta, mJointBSegmentOffsetTheta, mJointBOffset, mJointCOffsetTheta, mJointCMaxPosition, mJointCMinPosition;
 
         Percent mPusherThrottle;
-        float mPusherWaitDuration, mPusherWaitCycles;
+        float mPusherWaitDuration{}, mPusherWaitCycles{};
 
         Radians mJointDEPitchOffset, mJointDERollOffset;
         std::optional<Vector2<Radians>> mJointDEPitchRoll; // position after offset is applied (raw - offset)
@@ -362,10 +362,10 @@ namespace mrover {
                         auto const pos = Radians{mJointC->getPosition()};
                         if (pos >= mJointCMaxPosition) {
                             RCLCPP_INFO(get_logger(), "Joint C max position limit hit!");
-                            thr = Dimensionless{0};
+                            thr = std::min(Dimensionless{0}, throttle);
                         } else if (pos <= mJointCMinPosition) {
                             RCLCPP_INFO(get_logger(), "Joint C min position limit hit!");
-                            thr = Dimensionless{0};
+                            thr = std::max(Dimensionless{0}, throttle);
                         }
                         mJointC->setDesiredThrottle(thr);
                         break;
@@ -445,10 +445,10 @@ namespace mrover {
                         auto const pos = Radians{mJointC->getPosition()};
                         if (pos >= mJointCMaxPosition) {
                             RCLCPP_INFO(get_logger(), "Joint C max position limit hit!");
-                            vel = 0.0f;
+                            vel = std::min(0.0f, vel);
                         } else if (pos <= mJointCMinPosition) {
                             RCLCPP_INFO(get_logger(), "Joint C min position limit hit!");
-                            vel = 0.0f;
+                            vel = std::max(0.0f, vel);
                         }
                         mJointC->setDesiredVelocity(RadiansPerSecond{vel});
                         break;
@@ -523,10 +523,10 @@ namespace mrover {
                         auto const absPos = Radians{mJointC->getPosition()};
                         if (absPos >= mJointCMaxPosition) {
                             RCLCPP_INFO(get_logger(), "Joint C max position limit hit!");
-                            pos = 0.0f;
+                            pos = mJointCMaxPosition.get();
                         } else if (absPos <= mJointCMinPosition) {
                             RCLCPP_INFO(get_logger(), "Joint C min position limit hit!");
-                            pos = 0.0f;
+                            pos = mJointCMinPosition.get();
                         }
                         mJointC->setDesiredPosition(Radians{pos});
                         break;
