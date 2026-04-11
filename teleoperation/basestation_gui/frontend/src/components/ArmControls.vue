@@ -81,8 +81,7 @@ const stowTarget = ref<{ x: number; y: number; z: number } | null>(null)
 
 const { connected, axes, buttons, vibrationActuator } = useGamepadPolling({
 
-  // controllerIdFilter: 'Microsoft',
-  controllerIdFilter: 'X-Box',
+  controllerIdFilter: 'Microsoft',
   topic: 'arm',
   messageType: 'ra_controller',
 })
