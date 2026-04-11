@@ -1,3 +1,4 @@
+import * as THREE from 'three'
 import { ref } from 'vue'
 import { createScene, type SceneContext } from '@/components/three/scene'
 import { createCameras, type CameraManager, CameraType } from '@/components/three/cameras'
@@ -12,14 +13,19 @@ export function useRoverScene() {
   let cameraManager: CameraManager | null = null
   let costmap: CostmapRenderer | null = null
   let roverModel: RoverModel | null = null
+  let roverPivot: THREE.Group | null = null
 
   const cameraType = ref<CameraType>(CameraType.Orbit)
 
   function setup(canvas: HTMLCanvasElement) {
     sceneCtx = createScene(canvas)
-    cameraManager = createCameras(canvas, sceneCtx.scene)
+
+    roverPivot = new THREE.Group()
+    sceneCtx.scene.add(roverPivot)
+
+    cameraManager = createCameras(canvas, sceneCtx.scene, roverPivot)
     costmap = createCostmap(sceneCtx.scene)
-    roverModel = loadRover(sceneCtx.scene)
+    roverModel = loadRover(roverPivot)
 
     const resizeObserver = new ResizeObserver(() => {
       cameraManager?.updateAspect(canvas.clientWidth, canvas.clientHeight)
@@ -41,6 +47,7 @@ export function useRoverScene() {
     cameraManager = null
     costmap = null
     roverModel = null
+    roverPivot = null
   }
 
   function setCamera(type: CameraType) {
@@ -64,10 +71,6 @@ export function useRoverScene() {
     costmap?.setVisibility(visible)
   }
 
-  function setCostMapRotation(radians: number) {
-    costmap?.setRotation(radians)
-  }
-
   function resetCamera() {
     cameraManager?.resetActive()
   }
@@ -85,7 +88,9 @@ export function useRoverScene() {
   }
 
   function setRoverHeading(radians: number) {
-    roverModel?.setHeading(radians)
+    if (roverPivot) {
+      roverPivot.rotation.y = radians
+    }
   }
 
   return {
@@ -99,7 +104,6 @@ export function useRoverScene() {
     resetCostMap,
     toggleCostMapVisibility,
     setCostMapVisibility,
-    setCostMapRotation,
     updateJoints,
     updateIKTarget,
     setRoverHeading,

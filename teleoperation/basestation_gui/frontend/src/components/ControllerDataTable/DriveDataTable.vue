@@ -1,6 +1,5 @@
 <template>
   <div class="flex flex-col gap-2 h-full">
-    <h4 class="component-header">Drive</h4>
     <div class="overflow-x-auto scroll flex-1">
       <table class="table compact-table w-full">
         <thead>

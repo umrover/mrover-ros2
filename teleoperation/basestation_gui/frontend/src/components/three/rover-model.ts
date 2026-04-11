@@ -18,7 +18,6 @@ export interface Position3D {
 export interface RoverModel {
   updateJoints: (joints: JointUpdate[]) => void
   updateIKTarget: (position: Position3D | null) => void
-  setHeading: (radians: number) => void
 }
 
 const DEFAULT_JOINT_VALUES: Record<string, number> = {
@@ -30,13 +29,9 @@ const DEFAULT_JOINT_VALUES: Record<string, number> = {
   gripper_link: 0,
 }
 
-export function loadRover(scene: THREE.Scene): RoverModel {
+export function loadRover(parent: THREE.Group): RoverModel {
   let rover: THREE.Object3D | null = null
 
-  const headingGroup = new THREE.Group()
-  scene.add(headingGroup)
-
-  // IK target sphere
   const ikSphere = new THREE.Mesh(
     new THREE.SphereGeometry(2, 16, 16),
     new THREE.MeshStandardMaterial({
@@ -46,7 +41,7 @@ export function loadRover(scene: THREE.Scene): RoverModel {
     }),
   )
   ikSphere.visible = false
-  scene.add(ikSphere)
+  parent.add(ikSphere)
 
   // Debug GUI (hidden by default)
   const gui = new GUI({ width: 400 })
@@ -82,8 +77,8 @@ export function loadRover(scene: THREE.Scene): RoverModel {
       // ROS Z-up to Three.js Y-up frame conversion
       const roverContainer = new THREE.Group()
       roverContainer.position.set(0, -50, 0)
-      roverContainer.rotation.x = -Math.PI / 2
-      headingGroup.add(roverContainer)
+      roverContainer.rotation.set(-Math.PI / 2, 0, 0)
+      parent.add(roverContainer)
       roverContainer.add(robot)
       robot.updateMatrixWorld()
 
@@ -168,9 +163,5 @@ export function loadRover(scene: THREE.Scene): RoverModel {
     ikSphere.visible = true
   }
 
-  function setHeading(radians: number) {
-    headingGroup.rotation.y = radians
-  }
-
-  return { updateJoints, updateIKTarget, setHeading }
+  return { updateJoints, updateIKTarget }
 }

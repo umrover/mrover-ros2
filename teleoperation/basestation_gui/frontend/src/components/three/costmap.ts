@@ -11,16 +11,11 @@ export interface CostmapRenderer {
   reset: () => void
   toggleVisibility: () => void
   setVisibility: (visible: boolean) => void
-  setRotation: (radians: number) => void
 }
 
 export function createCostmap(scene: THREE.Scene): CostmapRenderer {
-  const anchor = new THREE.Object3D()
-  scene.add(anchor)
-
   const container = new THREE.Group()
-  container.rotation.y = -Math.PI / 2
-  anchor.add(container)
+  scene.add(container)
 
   // Color plane via DataTexture
   const textureData = new Uint8Array(GRID_SIZE * 4)
@@ -157,9 +152,5 @@ export function createCostmap(scene: THREE.Scene): CostmapRenderer {
     textPlane.visible = visible
   }
 
-  function setRotation(radians: number) {
-    anchor.rotation.y = radians
-  }
-
-  return { update, reset, toggleVisibility, setVisibility, setRotation }
+  return { update, reset, toggleVisibility, setVisibility }
 }

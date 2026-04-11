@@ -1,6 +1,6 @@
 <template>
   <Teleport to="body">
-    <div v-if="isOpen" class="modal-backdrop" @click.self="close" data-testid="pw-waypoint-modal">
+    <div v-if="isOpen" class="modal-backdrop" @click.self="close" @keydown.escape="close" @keydown.enter.prevent="submit" data-testid="pw-waypoint-modal">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
@@ -21,7 +21,7 @@
               <div>
                 <label for="waypointid" class="form-label">Tag ID:</label>
                 <input
-                  v-if="form.type == 1"
+                  v-if="form.type === 1"
                   class="form-control"
                   id="waypointid"
                   v-model="form.tag_id"
@@ -41,12 +41,12 @@
               </div>
               <div class="col-span-2">
                 <label class="form-label">Type:</label>
-                <select class="form-select" v-model="form.type">
-                  <option value="0">No Search</option>
-                  <option value="1">Post</option>
-                  <option value="2">Mallet</option>
-                  <option value="3">Water Bottle</option>
-                  <option value="4">Rock Pick</option>
+                <select class="form-select" v-model.number="form.type">
+                  <option :value="0">No Search</option>
+                  <option :value="1">Post</option>
+                  <option :value="2">Mallet</option>
+                  <option :value="3">Water Bottle</option>
+                  <option :value="4">Rock Pick</option>
                 </select>
               </div>
             </div>
@@ -77,7 +77,7 @@ const { isOpen, show, hide } = useModal()
 
 const defaultForm = () => ({
   name: '',
-  tag_id: -1,
+  tag_id: null as number | null,
   type: 0,
 })
 
@@ -95,13 +95,13 @@ function close() {
 async function submit() {
   const payload = {
     ...form.value,
+    tag_id: form.value.type === 1 ? form.value.tag_id : null,
     lat: autonomyStore.clickPoint.lat,
     lon: autonomyStore.clickPoint.lon,
-    enable_costmap: true,
   }
 
   try {
-    await autonomyStore.createWaypoint(payload)
+    await autonomyStore.addToStore(payload)
   } catch (error) {
     console.error('Failed to create waypoint:', error)
     return

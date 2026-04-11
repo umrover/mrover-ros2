@@ -36,6 +36,7 @@ const PRESETS: Record<CameraType, CameraPreset> = {
 export function createCameras(
   canvas: HTMLCanvasElement,
   scene: THREE.Scene,
+  roverPivot: THREE.Group,
 ): CameraManager {
   const aspect = canvas.clientWidth / canvas.clientHeight
   const makeCamera = () => new THREE.PerspectiveCamera(75, aspect, 0.1, 5000)
@@ -51,7 +52,13 @@ export function createCameras(
     const preset = PRESETS[key as CameraType]
     cam.position.copy(preset.position)
     cam.lookAt(preset.target)
-    scene.add(cam)
+
+    const type = key as CameraType
+    if (type === CameraType.Follow || type === CameraType.Arm) {
+      roverPivot.add(cam)
+    } else {
+      scene.add(cam)
+    }
   }
 
   const controls = new OrbitControls(cameras[CameraType.Orbit], canvas)
@@ -118,7 +125,8 @@ export function createCameras(
 
   function applyNavOrientation() {
     const cam = cameras[CameraType.Top]
-    cam.up.set(Math.sin(navAzimuth), 0, Math.cos(navAzimuth))
+    const adjusted = navAzimuth + Math.PI
+    cam.up.set(Math.sin(adjusted), 0, Math.cos(adjusted))
     cam.lookAt(controls.target)
   }
 

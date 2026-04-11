@@ -1,5 +1,5 @@
 <template>
-  <div class="grid grid-cols-3 gap-2">
+  <div class="flex flex-col gap-2">
     <div class="flex flex-col gap-1">
       <span class="data-label">General</span>
       <FeedbackButton
@@ -19,6 +19,16 @@
         :checked="teleopEnabled"
         :action="teleopAction"
         @toggle="handleTeleopToggle"
+      />
+    </div>
+    <div class="flex flex-col gap-1">
+      <span class="data-label">Costmap</span>
+      <FeedbackButton
+        class="w-full"
+        data-testid="pw-costmap-toggle-all"
+        :name="'All Costmaps'"
+        :checked="allCostmapToggle"
+        @toggle="handleCostmapToggle"
       />
     </div>
     <div class="flex flex-col gap-1">
@@ -79,14 +89,13 @@ const emit = defineEmits<{
 }>()
 
 const autonAction = (newState: boolean) => {
-  const routeMap = autonomyStore.routeForMap
   const waypoints = newState
-    ? routeMap.map(waypoint => ({
-        latitude_degrees: waypoint.latLng.lat,
-        longitude_degrees: waypoint.latLng.lng,
-        tag_id: waypoint.tag_id,
-        type: waypoint.type,
-        enable_costmap: waypoint.enable_costmap,
+    ? autonomyStore.execution.map(wp => ({
+        latitude_degrees: wp.lat,
+        longitude_degrees: wp.lon,
+        tag_id: wp.tag_id,
+        type: wp.type,
+        enable_costmap: autonomyStore.allCostmapToggle,
       }))
     : []
 
@@ -102,6 +111,7 @@ const pathRelaxationEnabled = computed(() => autonomyStore.pathRelaxationEnabled
 const pathInterpolationEnabled = computed(() => autonomyStore.pathInterpolationEnabled)
 const stereoDetectorEnabled = computed(() => autonomyStore.stereoDetectorEnabled)
 const imageDetectorEnabled = computed(() => autonomyStore.imageDetectorEnabled)
+const allCostmapToggle = computed(() => autonomyStore.allCostmapToggle)
 
 const teleopAction = (newState: boolean) => autonAPI.enableTeleop(newState)
 const purePursuitAction = (newState: boolean) => autonAPI.togglePurePursuit(newState)
@@ -137,5 +147,9 @@ const handleStereoDetectorToggle = (newState: boolean) => {
 
 const handleImageDetectorToggle = (newState: boolean) => {
   autonomyStore.imageDetectorEnabled = newState
+}
+
+const handleCostmapToggle = (newState: boolean) => {
+  autonomyStore.allCostmapToggle = newState
 }
 </script>
