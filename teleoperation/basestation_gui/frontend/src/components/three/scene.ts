@@ -11,7 +11,7 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
   const scene = new THREE.Scene()
   scene.background = new THREE.Color(0x87ceeb)
 
-  // Lighting
+  // lighting
   const ambientLight = new THREE.AmbientLight(0x808080, 1)
   scene.add(ambientLight)
 
@@ -20,7 +20,7 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
   directionalLight.castShadow = true
   scene.add(directionalLight)
 
-  // Renderer
+  // renderer
   const renderer = new THREE.WebGLRenderer({ antialias: true, canvas })
   renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
@@ -29,7 +29,7 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
   renderer.toneMapping = THREE.ACESFilmicToneMapping
   renderer.toneMappingExposure = 2.5
 
-  // Resize handling - observe parent to avoid feedback loop with setSize
+  // resize handling
   const resizeObserver = new ResizeObserver(() => {
     renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))

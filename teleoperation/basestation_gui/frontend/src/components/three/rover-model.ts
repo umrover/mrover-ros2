@@ -74,7 +74,7 @@ export function loadRover(parent: THREE.Group): RoverModel {
     (robot: THREE.Object3D) => {
       rover = robot
 
-      // ROS Z-up to Three.js Y-up frame conversion
+      // ROS Z-up to Three.js Y-up conversion
       const roverContainer = new THREE.Group()
       roverContainer.position.set(0, -50, 0)
       roverContainer.rotation.set(-Math.PI / 2, 0, 0)
@@ -82,7 +82,7 @@ export function loadRover(parent: THREE.Group): RoverModel {
       roverContainer.add(robot)
       robot.updateMatrixWorld()
 
-      // Set initial joint positions (separated from GUI)
+      // parse joints and initial positions
       robot.traverse((obj: THREE.Object3D) => {
         const joint = obj as THREE.Object3D & {
           jointType?: string
@@ -106,7 +106,7 @@ export function loadRover(parent: THREE.Group): RoverModel {
         }
       })
 
-      // Debug GUI sliders (decoupled from initial joint setup)
+      // debug sliders
       robot.traverse((obj: THREE.Object3D) => {
         const joint = obj as THREE.Object3D & {
           jointType?: string

@@ -17,7 +17,6 @@ export function createCostmap(scene: THREE.Scene): CostmapRenderer {
   const container = new THREE.Group()
   scene.add(container)
 
-  // Color plane via DataTexture
   const textureData = new Uint8Array(GRID_SIZE * 4)
   const texture = new THREE.DataTexture(
     textureData,
@@ -37,7 +36,6 @@ export function createCostmap(scene: THREE.Scene): CostmapRenderer {
   colorPlane.rotation.x = -Math.PI / 2
   container.add(colorPlane)
 
-  // Text overlay via CanvasTexture
   const textCanvas = document.createElement('canvas')
   textCanvas.width = SIDE_LENGTH
   textCanvas.height = SIDE_LENGTH
@@ -52,7 +50,6 @@ export function createCostmap(scene: THREE.Scene): CostmapRenderer {
   textPlane.lookAt(-BLOCK_WIDTH / 2, 50, -BLOCK_WIDTH / 2)
   container.add(textPlane)
 
-  // Initialize text canvas style
   const fontSize = BLOCK_WIDTH * 0.3
   ctx.fillStyle = 'white'
   ctx.font = fontSize + 'px Arial'
