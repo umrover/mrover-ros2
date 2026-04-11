@@ -26,6 +26,7 @@ from visualization_msgs.msg import Marker
 import numpy as np
 from navigation.smoothing import smoothing
 
+
 class WaypointState(State):
     # STOP_THRESHOLD: float = rospy.get_param("waypoint/stop_threshold")
     # DRIVE_FORWARD_THRESHOLD: float = rospy.get_param("waypoint/drive_forward_threshold")
@@ -78,7 +79,7 @@ class WaypointState(State):
         current_waypoint = context.course.current_waypoint()
         if current_waypoint is None:
             return
-        
+
         self.USE_RELAXATION = context.node.get_parameter("smoothing.use_relaxation").value
         self.USE_INTERPOLATION = context.node.get_parameter("smoothing.use_interpolation").value
 

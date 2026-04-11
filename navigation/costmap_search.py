@@ -18,6 +18,7 @@ from state_machine.state import State
 from rclpy.publisher import Publisher
 from navigation.smoothing import smoothing
 
+
 # REFERENCE: https://docs.google.com/document/d/18GjDWxIu5f5-N5t5UgbrZGdEyaDj9ZMEUuXex8-NKrA/edit
 class CostmapSearchState(State):
     """

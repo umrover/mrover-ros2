@@ -472,7 +472,7 @@ class Context:
             self.disable_requested = True
         response.success = True
         return response
-    
+
     def toggle_path_relaxation(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
         self.node.set_parameters([Parameter("smoothing.use_relaxation", Parameter.Type.BOOL, request.data)])
         self.node.get_logger().info(f"Set path relaxation toggle to {request.data}.")

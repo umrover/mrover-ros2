@@ -7,9 +7,7 @@ import numpy as np
 import math, sys
 
 
-def smoothing(
-    trajectory: Trajectory, context: Context, should_relax: bool, should_interpolate: bool
-) -> Trajectory:
+def smoothing(trajectory: Trajectory, context: Context, should_relax: bool, should_interpolate: bool) -> Trajectory:
     """
     Performs relaxation and/or interpolation on given trajectory
 
@@ -22,11 +20,7 @@ def smoothing(
         # Perform relaxation
         relaxed_path = Relaxation.relax(
             context,
-            Trajectory(
-                np.apply_along_axis(
-                    lambda coord: cartesian_to_ij(context, coord), 1, trajectory.coordinates
-                )
-            ),
+            Trajectory(np.apply_along_axis(lambda coord: cartesian_to_ij(context, coord), 1, trajectory.coordinates)),
         )
 
         # Convert cost map coordinates to cartesian
@@ -116,9 +110,7 @@ class Relaxation:
         max_y, max_x = cost_map.height - 1, cost_map.width - 1
 
         for y, x in interpolated:
-            if (
-                abs(0.5 - (x - int(x))) < 1e-5 and abs(0.5 - (y - int(y))) < 1e-5
-            ):  # Close to grid intersection
+            if abs(0.5 - (x - int(x))) < 1e-5 and abs(0.5 - (y - int(y))) < 1e-5:  # Close to grid intersection
                 # Get costs from surrounding cost map squares
                 x, y = int(x), int(y)
 
@@ -226,9 +218,7 @@ class Relaxation:
 
 class SplineInterpolation:
     @staticmethod
-    def interpolate(
-        ctx: Context, trajectory: Trajectory, spacing: float = 2.0, k: int = 2
-    ) -> Trajectory:
+    def interpolate(ctx: Context, trajectory: Trajectory, spacing: float = 2.0, k: int = 2) -> Trajectory:
         """
         Fits k-degree splines to the given trajectory and returns a new trajectory with
         evenly spaced points sampled from the splines. We approximate the total distance
@@ -262,13 +252,9 @@ class SplineInterpolation:
 
         # Attempts to generate the spline
         try:
-            spline, u = splprep(
-                [trajectory.coordinates[:, 0], trajectory.coordinates[:, 1]], s=0, k=2
-            )
+            spline, u = splprep([trajectory.coordinates[:, 0], trajectory.coordinates[:, 1]], s=0, k=2)
         except Exception as e:
-            ctx.node.get_logger().error(
-                f"{e} - spline could not be generated, returning original trajectory"
-            )
+            ctx.node.get_logger().error(f"{e} - spline could not be generated, returning original trajectory")
             return trajectory
 
         # Generates a parameterized spline and samples finely along the curve,
