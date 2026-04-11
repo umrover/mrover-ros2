@@ -229,11 +229,11 @@ namespace mrover {
         return bearingDegrees * std::numbers::pi_v<float> / 180.0f;
     }
 
-    auto ObjectDetectorBase::resizeBoundingBoxes(cv::Size const& outputSpace, std::vector<Detection>& detections) const -> void{
+    auto ObjectDetectorBase::resizeBoundingBoxes(cv::Size const& outputSpace, std::vector<Detection>& detections) const -> void {
         float xRatio = static_cast<float>(outputSpace.width) / static_cast<float>(mModel.inputTensorSize[2]);
         float yRatio = static_cast<float>(outputSpace.height) / static_cast<float>(mModel.inputTensorSize[3]);
-        
-        for(auto& det : detections){
+
+        for (auto& det: detections) {
             cv::Rect newBoundingBox;
             newBoundingBox.x = static_cast<int>(static_cast<float>(det.box.x) * xRatio);
             newBoundingBox.y = static_cast<int>(static_cast<float>(det.box.y) * yRatio);
