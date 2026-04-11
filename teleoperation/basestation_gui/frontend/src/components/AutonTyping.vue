@@ -103,7 +103,7 @@ interface KeyboardYawMessage {
 }
 
 websocketStore.onMessage<KeyboardYawMessage>('auton', 'keyboard_yaw', (msg) => {
-  yawDegrees.value = msg.yaw * (180 / Math.PI)
+  yawDegrees.value = msg.yaw
 })
 
 onMounted(() => {
