@@ -18,16 +18,6 @@ namespace mrover {
         try {
             RCLCPP_INFO(this->get_logger(), "Created Zed Wrapper Node, %s", NODE_NAME);
 
-            // Publishers
-            mRightImgPub = create_publisher<sensor_msgs::msg::Image>("zed/right/image", 1);
-            mLeftImgPub = create_publisher<sensor_msgs::msg::Image>("zed/left/image", 1);
-            mImuPub = create_publisher<sensor_msgs::msg::Imu>("zed_imu/data_raw", 1);
-            mMagPub = create_publisher<sensor_msgs::msg::MagneticField>("zed_imu/mag", 1);
-            mPcPub = create_publisher<sensor_msgs::msg::PointCloud2>("zed/left/points", 1);
-            mRightCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>("zed/right/camera_info", 1);
-            mLeftCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>("zed/left/camera_info", 1);
-            mMagHeadingPub = create_publisher<mrover::msg::Heading>("zed_imu/mag_heading", 1);
-
             // Declare and set Params
             int imageWidth{};
             int imageHeight{};
@@ -37,6 +27,7 @@ namespace mrover {
             std::string grabResolutionString, depthModeString;
 
             std::vector<ParameterWrapper> params{
+                    {"device_name", mDeviceName, "zed"},
                     {"depth_confidence", mDepthConfidence, 70},
                     {"serial_number", mSerialNumber, -1},
                     {"grab_target_fps", mGrabTargetFps, 60},
@@ -53,6 +44,16 @@ namespace mrover {
                     {"use_area_memory", mUseAreaMemory, true}};
 
             ParameterWrapper::declareParameters(this, params);
+
+            // Publishers
+            mRightImgPub = create_publisher<sensor_msgs::msg::Image>(mDeviceName + "/right/image", 1);
+            mLeftImgPub = create_publisher<sensor_msgs::msg::Image>(mDeviceName + "/left/image", 1);
+            mImuPub = create_publisher<sensor_msgs::msg::Imu>(mDeviceName + "_imu/data_raw", 1);
+            mMagPub = create_publisher<sensor_msgs::msg::MagneticField>(mDeviceName + "_imu/mag", 1);
+            mPcPub = create_publisher<sensor_msgs::msg::PointCloud2>(mDeviceName + "/left/points", 1);
+            mRightCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>(mDeviceName + "/right/camera_info", 1);
+            mLeftCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>(mDeviceName + "/left/camera_info", 1);
+            mMagHeadingPub = create_publisher<mrover::msg::Heading>(mDeviceName + "_imu/mag_heading", 1);
 
             mSvoPath = svoFile.c_str();
 
@@ -99,7 +100,7 @@ namespace mrover {
             mDepthEnabled = initParameters.depth_mode != sl::DEPTH_MODE::NONE;
 
             if (mZed.open(initParameters) != sl::ERROR_CODE::SUCCESS) {
-                throw std::runtime_error("ZED failed to open");
+                throw std::runtime_error(mDeviceName + " failed to open");
             }
 
             mZedInfo = mZed.getCameraInformation();
@@ -137,28 +138,28 @@ namespace mrover {
 
 
                 if (sl::ERROR_CODE error = mZed.grab(runtimeParameters); error != sl::ERROR_CODE::SUCCESS)
-                    throw std::runtime_error(std::format("ZED failed to grab {}", sl::toString(error).c_str()));
+                    throw std::runtime_error(std::format("{} failed to grab {}", mDeviceName, sl::toString(error).c_str()));
 
-                mLoopProfilerGrab.measureEvent("zed_grab");
+                mLoopProfilerGrab.measureEvent(mDeviceName + "_grab");
 
                 // Retrieval has to happen on the same thread as grab so that the image and point cloud are synced
                 if (mZed.retrieveImage(mGrabMeasures.rightImage, sl::VIEW::RIGHT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
-                    throw std::runtime_error("ZED failed to retrieve right image");
+                    throw std::runtime_error(mDeviceName + " failed to retrieve right image");
 
-                mLoopProfilerGrab.measureEvent("zed_retrieve_right_image");
+                mLoopProfilerGrab.measureEvent(mDeviceName + "_retrieve_right_image");
 
                 // Only left set is used for processing
                 if (mDepthEnabled) {
                     if (mZed.retrieveImage(mGrabMeasures.leftImage, sl::VIEW::LEFT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
-                        throw std::runtime_error("ZED failed to retrieve left image");
+                        throw std::runtime_error(mDeviceName + " failed to retrieve left image");
                     if (mZed.retrieveMeasure(mGrabMeasures.leftPoints, sl::MEASURE::XYZ, sl::MEM::GPU, mPointResolution) != sl::ERROR_CODE::SUCCESS)
-                        throw std::runtime_error("ZED failed to retrieve point cloud");
+                        throw std::runtime_error(mDeviceName + " failed to retrieve point cloud");
                 }
 
-                mLoopProfilerGrab.measureEvent("zed_retrieve_left_image");
+                mLoopProfilerGrab.measureEvent(mDeviceName + "_retrieve_left_image");
 
                 if (mZed.retrieveMeasure(mGrabMeasures.leftNormals, sl::MEASURE::NORMALS, sl::MEM::GPU, mNormalsResolution) != sl::ERROR_CODE::SUCCESS)
-                    throw std::runtime_error("ZED failed to retrieve point cloud normals");
+                    throw std::runtime_error(mDeviceName + " failed to retrieve point cloud normals");
 
                 assert(mGrabMeasures.leftImage.timestamp == mGrabMeasures.leftPoints.timestamp);
 
@@ -183,7 +184,7 @@ namespace mrover {
                         try {
                             SE3d leftCameraInOdom{{translation.x, translation.y, translation.z},
                                                   Eigen::Quaterniond{orientation.w, orientation.x, orientation.y, orientation.z}.normalized()};
-                            SE3d baseLinkToLeftCamera = SE3Conversions::fromTfTree(*mTfBuffer, "base_link", "zed_left_camera_frame");
+                            SE3d baseLinkToLeftCamera = SE3Conversions::fromTfTree(*mTfBuffer, "base_link", mDeviceName + "_left_camera_frame");
                             SE3d baseLinkInOdom = leftCameraInOdom * baseLinkToLeftCamera;
                             SE3Conversions::pushToTfTree(*mTfBroadcaster, "base_link", "odom", baseLinkInOdom, now());
                         } catch (tf2::TransformException& e) {
@@ -202,7 +203,7 @@ namespace mrover {
 
                     sensor_msgs::msg::Imu imuMsg;
                     fillImuMessage(this, sensorData.imu, imuMsg);
-                    imuMsg.header.frame_id = "zed_mag_frame";
+                    imuMsg.header.frame_id = mDeviceName + "_mag_frame";
                     imuMsg.header.stamp = now();
                     mImuPub->publish(imuMsg);
 
@@ -210,10 +211,10 @@ namespace mrover {
                         sensor_msgs::msg::MagneticField magMsg;
                         mrover::msg::Heading headingMsg;
                         fillMagMessage(sensorData.magnetometer, magMsg, headingMsg);
-                        magMsg.header.frame_id = "zed_mag_frame";
+                        magMsg.header.frame_id = mDeviceName + "_mag_frame";
                         magMsg.header.stamp = now();
                         mMagPub->publish(magMsg);
-                        headingMsg.header.frame_id = "zed_mag_frame";
+                        headingMsg.header.frame_id = mDeviceName + "_mag_frame";
                         headingMsg.header.stamp = now();
                         mMagHeadingPub->publish(headingMsg);
                     }
@@ -252,21 +253,21 @@ namespace mrover {
                     if (mDepthEnabled) {
                         fillPointCloudMessageFromGpu(mPcMeasures.leftPoints, mPcMeasures.leftImage, mPcMeasures.leftNormals, mPointCloudGpu, pointCloudMsg);
                         pointCloudMsg->header.stamp = mPcMeasures.time;
-                        pointCloudMsg->header.frame_id = "zed_left_camera_frame";
+                        pointCloudMsg->header.frame_id = mDeviceName + "_left_camera_frame";
                         mLoopProfilerUpdate.measureEvent("fill_pc");
                     }
 
 
                     auto leftImgMsg = std::make_unique<sensor_msgs::msg::Image>();
                     fillImageMessage(mPcMeasures.leftImage, leftImgMsg);
-                    leftImgMsg->header.frame_id = "zed_left_camera_optical_frame";
+                    leftImgMsg->header.frame_id = mDeviceName + "_left_camera_optical_frame";
                     leftImgMsg->header.stamp = mPcMeasures.time;
                     mLeftImgPub->publish(std::move(leftImgMsg));
                     mLoopProfilerUpdate.measureEvent("pub_left");
 
                     auto rightImgMsg = std::make_unique<sensor_msgs::msg::Image>();
                     fillImageMessage(mPcMeasures.rightImage, rightImgMsg);
-                    rightImgMsg->header.frame_id = "zed_right_camera_optical_frame";
+                    rightImgMsg->header.frame_id = mDeviceName + "_right_camera_optical_frame";
                     rightImgMsg->header.stamp = mPcMeasures.time;
                     mRightImgPub->publish(std::move(rightImgMsg));
                     mLoopProfilerUpdate.measureEvent("pub_right");
@@ -281,9 +282,9 @@ namespace mrover {
                 auto leftCamInfoMsg = sensor_msgs::msg::CameraInfo();
                 auto rightCamInfoMsg = sensor_msgs::msg::CameraInfo();
                 fillCameraInfoMessages(calibration, mImageResolution, leftCamInfoMsg, rightCamInfoMsg);
-                leftCamInfoMsg.header.frame_id = "zed_left_camera_optical_frame";
+                leftCamInfoMsg.header.frame_id = mDeviceName + "_left_camera_optical_frame";
                 leftCamInfoMsg.header.stamp = mPcMeasures.time;
-                rightCamInfoMsg.header.frame_id = "zed_right_camera_optical_frame";
+                rightCamInfoMsg.header.frame_id = mDeviceName + "_right_camera_optical_frame";
                 rightCamInfoMsg.header.stamp = mPcMeasures.time;
                 mLeftCamInfoPub->publish(leftCamInfoMsg);
                 mRightCamInfoPub->publish(rightCamInfoMsg);
@@ -299,7 +300,7 @@ namespace mrover {
     }
 
     ZedWrapper::~ZedWrapper() {
-        RCLCPP_INFO(get_logger(), "ZED node shutting down");
+        RCLCPP_INFO(get_logger(), "%s node shutting down", mDeviceName.c_str());
         mPointCloudThread.join();
         mGrabThread.join();
     }
