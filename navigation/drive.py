@@ -302,10 +302,8 @@ class DriveController:
         # and returns a drive command and boolean. The drive command you return should utilize pure
         # pursuit logic: https://wiki.purduesigbots.com/software/control-algorithms/basic-pure-pursuit
 
-        # Trajectory is None -> There are no points to go to
-        # Should never occur
-        if waypoints is None:
-            return (Twist(), True)
+        # Trajectory is None -> There are no points to go to (this should never occur if this function is used correctly)
+        assert waypoints is not None
 
         # Get the direction vector of the rover and position,
         # zero the Z components since our controller only assumes motion and control over the rover in the XY plane
@@ -363,11 +361,7 @@ class DriveController:
         max_lookahead_dist = self.node.get_parameter("pure_pursuit.max_lookahead_distance").value
 
         # Modify the error to be in the range -pi/2 to pi/2
-        edited_err = angular_error
-        if angular_error > 0:
-            edited_err = min(angular_error, np.pi / 2)
-        elif angular_error < 0:
-            edited_err = max(angular_error, -1 * np.pi / 2)
+        edited_err = np.clip(angular_error, -1 * np.pi / 2, np.pi / 2)
 
         # Drive controller for linear and angular velocity
         # Equation for angular velocity was determined through papers such as Purdue's
@@ -629,7 +623,7 @@ class DriveController:
                 point=[intersection_points[0], intersection_points[1]],
                 color=[0.0, 1.0, 0.0],
                 id=1,
-                lifetime=self.node.get_parameter("pub_lookahead_rate").value,
+                lifetime=self.node.get_parameter("pub_path_rate").value,
                 size=0.2,
             )
         )
@@ -640,7 +634,7 @@ class DriveController:
                 point=rover_pos,
                 color=[1.0, 0.0, 0.0],
                 id=1,
-                lifetime=self.node.get_parameter("pub_lookahead_rate").value,
+                lifetime=self.node.get_parameter("pub_path_rate").value,
                 radius=self._last_lookahead_dist,
             )
         )
