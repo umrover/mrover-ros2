@@ -66,6 +66,7 @@ find_package(urdf REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(magic_enum REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
+find_package(dynamixel_sdk REQUIRED)
 
 find_package(Assimp NAMES Assimp assimp REQUIRED)
 find_package(Bullet REQUIRED)
@@ -118,7 +119,7 @@ endif()
 find_package(PkgConfig REQUIRED)
 pkg_search_module(NetLink libnl-3.0 IMPORTED_TARGET QUIET)
 pkg_search_module(NetLinkRoute libnl-route-3.0 IMPORTED_TARGET QUIET)
-pkg_search_module(Gst gstreamer-1.0 IMPORTED_TARGET QUIET)
+pkg_search_module(Gst gstreamer-1.0 IMPORTED_TARGET QUIET) # if this is failing try: `sudo apt install libunwind-dev`
 pkg_search_module(GstApp gstreamer-app-1.0 IMPORTED_TARGET QUIET)
 pkg_search_module(LibUdev libudev IMPORTED_TARGET QUIET)
 
@@ -237,7 +238,7 @@ target_link_libraries(rover_gps_driver parameter_utils)
 
 mrover_add_node(heading_filter localization/heading_filter.cpp)
 ament_target_dependencies(heading_filter rclcpp rcutils sensor_msgs builtin_interfaces message_filters)
-target_link_libraries(heading_filter lie)
+target_link_libraries(heading_filter lie parameter_utils)
 
 mrover_add_node(pose_filter localization/pose_filter/*.cpp)
 ament_target_dependencies(pose_filter rclcpp tf2 tf2_ros geometry_msgs sensor_msgs)
@@ -323,18 +324,23 @@ if (EXISTS ${MROVER_EMBEDDED_ROOT_DIR} AND NOT APPLE)
     mrover_add_header_only_library(motor esw/motor)
     target_link_libraries(motor INTERFACE can_device units parameter_utils)
 
+    mrover_add_header_only_library(servo esw/servo)
+    target_link_libraries(servo INTERFACE units parameter_utils)
+
     mrover_add_header_only_library(science esw/science)
     target_link_libraries(science INTERFACE can_device units)
 
     macro(mrover_add_esw_bridge_node name sources)
         mrover_add_node(${name} ${sources})
-        ament_target_dependencies(${name} rclcpp std_srvs)
-        target_link_libraries(${name} can_device units motor science)
+        ament_target_dependencies(${name} rclcpp std_srvs dynamixel_sdk)
+        target_link_libraries(${name} can_device units motor science servo)
     endmacro()
 
+    # esw hardware bridge nodes
     mrover_add_esw_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
     mrover_add_esw_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
     mrover_add_esw_bridge_node(science_hw_bridge esw/science_hw_bridge.cpp)
+    mrover_add_esw_bridge_node(mast_gimbal_hw_bridge esw/mast_gimbal_hw_bridge.cpp)
 endif()
 
 mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
