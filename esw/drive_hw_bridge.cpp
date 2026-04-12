@@ -22,9 +22,9 @@ namespace mrover {
 
     using namespace std::chrono_literals;
 
-    class MotorTestBridge final : public rclcpp::Node {
+    class DriveHWBridge final : public rclcpp::Node {
     public:
-        MotorTestBridge() : Node{"drive_hw_bridge"} {
+        DriveHWBridge() : Node{"drive_hw_bridge"} {
             // all initialization is done in the init() function to allow for the usage of shared_from_this()
         }
 
@@ -147,7 +147,7 @@ namespace mrover {
 
 auto main(int const argc, char** argv) -> int {
     rclcpp::init(argc, argv);
-    auto const drive_bridge = std::make_shared<mrover::MotorTestBridge>();
+    auto const drive_bridge = std::make_shared<mrover::DriveHWBridge>();
     drive_bridge->init();
     rclcpp::spin(drive_bridge);
     rclcpp::shutdown();
