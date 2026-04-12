@@ -355,6 +355,7 @@ namespace mrover {
 
             if (velZeroCheck()) {
                 mCarrotPos = mArmPos;
+                mCheckCarrotPos = mArmPos;
                 carrot_initialized = false;
                 mPIDx.reset();
                 mPIDy.reset();
@@ -365,7 +366,7 @@ namespace mrover {
             }           
             if (!carrot_initialized) {
                 mCarrotPos = mArmPos;
-                //mCheckCarrotPos = mArmPos;
+                mCheckCarrotPos = mArmPos;
                 carrot_initialized = true;
                 mPrevTime = now;
                 for (int i = 0; i < 5; i++) {
@@ -375,11 +376,14 @@ namespace mrover {
             }
 
 
-            double dt = (now - mPrevTime).seconds();
+            double dt;
             mPrevTime = now;
 
             dt = 0.015;
+            double pid_dt = 0.033;
             //double dt = 0.033;
+
+            //dt = std::clamp((now - mPrevTime).seconds(), 0.001, 0.05);
 
             double const k = 1.3; //1.2 //1,75 //1.5
 
@@ -389,12 +393,20 @@ namespace mrover {
             mCarrotPos.pitch += mVelTarget.angular.y * dt * k;
             mCarrotPos.roll += mVelTarget.angular.x * dt * k;
 
-        /*(SE3Conversions::pushToTfTree(
+            double k_check = 1.0;
+
+            mCheckCarrotPos.x += mVelTarget.linear.x * dt * k_check;
+            mCheckCarrotPos.y += mVelTarget.linear.y * dt * k_check;
+            mCheckCarrotPos.z += mVelTarget.linear.z * dt * k_check;
+            mCheckCarrotPos.pitch += mVelTarget.angular.y * dt * k_check;
+            mCheckCarrotPos.roll += mVelTarget.angular.x * dt * k_check;
+
+            SE3Conversions::pushToTfTree(
                     mTfBroadcaster,
                     "checking_target",
                     "arm_base_link",
                     mCheckCarrotPos.toSE3(),
-                    now);*/
+                    now);
 
             auto error_x = mCarrotPos.x - mArmPos.x;
             auto error_y = mCarrotPos.y - mArmPos.y;
@@ -416,18 +428,21 @@ namespace mrover {
 
             }
 
-            /*double error_check_x = mCheckCarrotPos.x - mCarrotPos.x;
+            double error_check_x = mCheckCarrotPos.x - mCarrotPos.x;
             double error_check_y = mCheckCarrotPos.y - mCarrotPos.y;
             double error_check_z = mCheckCarrotPos.z - mCarrotPos.z;
             double error_check = std::sqrt(error_check_x * error_check_x + error_check_y * error_check_y + error_check_z * error_check_z);
 
+            bool arm_ik_failing = false;
+
             if (error_check > 0.04) {
+                arm_ik_failing = true;
                 RCLCPP_WARN_THROTTLE(
                             get_logger(),
                             *get_clock(),
                             1000,
                             "Arm IK failing! Desired movement will not be achieved. Return to normal bounds");
-            }*/
+            }
 
             SE3Conversions::pushToTfTree(
                     mTfBroadcaster,
@@ -445,13 +460,28 @@ namespace mrover {
             error_pitch = mCarrotPos.pitch - mArmPos.pitch;
             error_roll = mCarrotPos.roll - mArmPos.roll;
 
-            adjusted_v.linear.x += mPIDx.update(error_x, dt);
-            adjusted_v.linear.y += mPIDy.update(error_y, dt);
-            adjusted_v.linear.z += mPIDz.update(error_z, dt);
-            adjusted_v.angular.y += mPIDpitch.update(error_pitch, dt);
-            adjusted_v.angular.x += mPIDroll.update(error_roll, dt);
+            adjusted_v.linear.x += mPIDx.update(error_x, pid_dt);
+            adjusted_v.linear.y += mPIDy.update(error_y, pid_dt);
+            adjusted_v.linear.z += mPIDz.update(error_z, pid_dt);
+            adjusted_v.angular.y += mPIDpitch.update(error_pitch, pid_dt);
+            adjusted_v.angular.x += mPIDroll.update(error_roll, pid_dt);
             //adjusted_v.angular.x = mVelTarget.angular.x;
             //adjusted_v.angular.y = mVelTarget.angular.y;
+
+            double arm_extension = std::sqrt(mArmPos.x * mArmPos.x + mArmPos.z * mArmPos.z);
+            double max_extension = LINK_BC + LINK_CD + END_EFFECTOR_LENGTH;
+            double extension_ratio = arm_extension / max_extension;
+
+            double gravity_ff = 0.01 + 0.03 * extension_ratio;
+            //double ee_ff = 0.001 + 0.003 * extension_ratio;
+
+            /*if (!arm_ik_failing) {
+                adjusted_v.angular.x = 0;
+                adjusted_v.angular.y = 0;
+            }*/
+            //adjusted_v.linear.x += gravity_ff;
+            //adjusted_v.linear.z += gravity_ff;
+            //adjusted_v.angular.y -= ee_ff;
 
             auto velocities = ikVelCalc(adjusted_v);
             /*auto velocities_weird_idk = ikVelCalc(mVelTarget);

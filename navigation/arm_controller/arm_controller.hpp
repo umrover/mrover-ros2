@@ -82,11 +82,11 @@ namespace mrover {
 
         };
 
-        ArmPidController mPIDx{80, 0.004, 0.0, 0.05};
-        ArmPidController mPIDy{40, 0.004, 0.0, 0.05};
-        ArmPidController mPIDz{80, 0.004, 0.0, 0.2};
-        ArmPidController mPIDpitch{8, 0.0, 0.0, 0.05};
-        ArmPidController mPIDroll{8, 0.0, 0.0, 0.05};
+        ArmPidController mPIDx{200, 1, 16, 0.2};
+        ArmPidController mPIDy{200, 0.00, 16, 0.05};
+        ArmPidController mPIDz{200, 1, 16, 0.2};
+        ArmPidController mPIDpitch{10, 0.0, 3.0, 0.05};
+        ArmPidController mPIDroll{10, 0.0, 3.0, 0.05};
         
         // these positional limits are slightly conservative versions of the limits listed in the 2025-26 cdr
         std::unordered_map<std::string, JointWrapper> joints = {

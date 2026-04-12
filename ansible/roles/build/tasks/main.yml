@@ -12,17 +12,17 @@
     repo: deb [signed-by=/usr/share/keyrings/deadsnakes-ppa-keyring.gpg] http://ppa.launchpad.net/deadsnakes/ppa/ubuntu {{ ubuntu_release }} main
 
 # Allows us to install G++13, so we can use an updated libstdc++ which provides more standard library features (C++20)
-- name: Add GCC PPA Key
-  become: True
-  apt_key:
-    keyserver: keyserver.ubuntu.com
-    id: 60C317803A41BA51845E371A1E9377A2BA9EF27F
-    keyring: /usr/share/keyrings/ubuntu-toolchain-r-ppa-keyring.gpg
+# - name: Add GCC PPA Key
+#   become: True
+#   apt_key:
+#     keyserver: keyserver.ubuntu.com
+#     id: 60C317803A41BA51845E371A1E9377A2BA9EF27F
+#     keyring: /usr/share/keyrings/ubuntu-toolchain-r-ppa-keyring.gpg
 
-- name: Add GCC PPA
-  become: True
-  apt_repository:
-    repo: deb [signed-by=/usr/share/keyrings/ubuntu-toolchain-r-ppa-keyring.gpg] http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu {{ ubuntu_release }} main
+# - name: Add GCC PPA
+#   become: True
+#   apt_repository:
+#     repo: deb [signed-by=/usr/share/keyrings/ubuntu-toolchain-r-ppa-keyring.gpg] http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu {{ ubuntu_release }} main
 
 - name: Add LLVM APT Key
   become: True
