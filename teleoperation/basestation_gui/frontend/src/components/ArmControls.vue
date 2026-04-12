@@ -137,47 +137,52 @@ const newRAMode = async (newMode: string) => {
   }
 }
 
+const check_horizontal_axis_limit = (idx: number, limit_status: number, dead_radius: number = 0.05) => {
+  if(axes.value[idx] > dead_radius && limit_status == 1){
+    forcing_limit.value = true
+  } else if (axes.value[idx] < -dead_radius && limit_status == 2){
+    forcing_limit.value = true
+  }
+}
+
+const check_vertical_axis_limit = (idx: number, limit_status: number, dead_radius: number = 0.05) => {
+  if(axes.value[idx] < -dead_radius && limit_status == 1){
+    forcing_limit.value = true
+  } else if (axes.value[idx] > dead_radius && limit_status == 2){
+    forcing_limit.value = true
+  }
+}
+
+const check_button_limit = (left_idx: number, right_idx: number, limit_status: number) => {
+  if(buttons.value[left_idx] && limit_status == 1){
+    forcing_limit.value = true
+  } else if (buttons.value[right_idx] && limit_status == 2){
+    forcing_limit.value = true
+  }
+}
+
 onMessage<ControllerStateMessage>('arm', 'arm_state', (msg) => {
   forcing_limit.value = false;
   
-  // Check if controller input is over limit
-
   // Left joystick horizontal
-  console.log(axes.value[3])
-  if(axes.value[0] > 0.05 && msg.limits_hit[0] == 1){
-    forcing_limit.value = true
-  } else if (axes.value[0] < -0.05 && msg.limits_hit[0] == 2){
-    forcing_limit.value = true
-  }
+  check_horizontal_axis_limit(0, msg.limits_hit[0])
 
   // Left joystick vertical
-  if(axes.value[1] < -0.05 && msg.limits_hit[1] == 1){
-    forcing_limit.value = true
-  } else if (axes.value[1] > 0.05 && msg.limits_hit[1] == 2){
-    forcing_limit.value = true
-  }
+  check_vertical_axis_limit(1, msg.limits_hit[1])
 
   // Right joystick vertical
-  if(axes.value[3] < -0.05 && msg.limits_hit[2] == 1){
-    forcing_limit.value = true
-  } else if (axes.value[3] > 0.05 && msg.limits_hit[2] == 2){
-    forcing_limit.value = true
-  }
+  check_vertical_axis_limit(3, msg.limits_hit[2])
 
   // Bumpers
-  if(buttons.value[4] && msg.limits_hit[4] == 1){
-    forcing_limit.value = true
-  } else if (buttons.value[5] && msg.limits_hit[4] == 2){
-    forcing_limit.value = true
-  }
+  check_button_limit(4, 5, msg.limits_hit[4])
 
   // Vibrate controller if forcing limit
   if(forcing_limit.value){
-  vibrationActuator.value.playEffect('dual-rumble', {
-    startDelay: 0,
-    duration: 100,
-    weakMagnitude: 0.1,
-    strongMagnitude: 0,})
+    vibrationActuator.value.playEffect('dual-rumble', {
+      startDelay: 0,
+      duration: 100,
+      weakMagnitude: 0.1,
+      strongMagnitude: 0,})
   }
 })
 </script>
