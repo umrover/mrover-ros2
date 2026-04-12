@@ -70,8 +70,6 @@ import NavigationStatus from '@/components/NavigationStatus.vue'
 import VelocityReading from '@/components/VelocityReading.vue'
 import DriveControls from '@/components/DriveControls.vue'
 import GimbalControls from '@/components/GimbalControls.vue'
-import ArmDataTable from '@/components/ControllerDataTable/ArmDataTable.vue'
-import DriveDataTable from '@/components/ControllerDataTable/DriveDataTable.vue'
 import { useAutonomyStore } from '@/stores/autonomy'
 import { storeToRefs } from 'pinia'
 

@@ -44,8 +44,6 @@
 
 <script lang="ts" setup>
 import BaseGridView from '@/components/BaseGridView.vue'
-import ArmDataTable from '@/components/ControllerDataTable/ArmDataTable.vue'
-import DriveDataTable from '@/components/ControllerDataTable/DriveDataTable.vue'
 import ArmControls from '@/components/ArmControls.vue'
 import DriveControls from '@/components/DriveControls.vue'
 import Rover3D from '@/components/Rover3D.vue'

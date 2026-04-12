@@ -62,8 +62,6 @@
 
 <script lang="ts" setup>
 import BaseGridView from '@/components/BaseGridView.vue'
-import ArmDataTable from '@/components/ControllerDataTable/ArmDataTable.vue'
-import DriveDataTable from '@/components/ControllerDataTable/DriveDataTable.vue'
 import ArmControls from '@/components/ArmControls.vue'
 import BasicMap from '@/components/BasicRoverMap.vue'
 import BasicWaypointEditor from '@/components/BasicWaypointEditor.vue'
