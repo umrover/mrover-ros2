@@ -85,6 +85,10 @@ navigation:
       recovery_distance: 2.0
       give_up_time: 10.0
 
+    smoothing:
+      use_interpolation: true
+      use_relaxation: true
+
 stuck_detector:
   ros__parameters:
     # How many readings to consider the rover stuck
