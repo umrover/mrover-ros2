@@ -21,7 +21,6 @@ from mrover.msg import (
     ImageTarget,
     ImageTargets,
 )
-
 from std_srvs.srv import SetBool
 from mrover.srv import EnableAuton
 from nav_msgs.msg import Path
