@@ -21,7 +21,7 @@ navigation:
     pure_pursuit:
       min_lookahead_distance: 0.4
       max_lookahead_distance: 1.5
-      use_pure_pursuit: false
+      use_pure_pursuit: true
 
     costmap:
       custom_costmap: false
