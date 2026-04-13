@@ -1,4 +1,4 @@
-import type { RAModeResponse, StowResponse } from './apiTypes'
+import type { RAModeResponse, StowResponse, StowPosition, StowConfigResponse } from './apiTypes'
 import { apiFetch } from './apiFetch'
 
 export const armAPI = {
@@ -11,6 +11,31 @@ export const armAPI = {
 
   stowArm(): Promise<StowResponse> {
     return apiFetch('/arm/stow/', {
+      method: 'POST'
+    })
+  },
+
+  getStowConfig(): Promise<StowConfigResponse> {
+    return apiFetch('/arm/stow/config/', {
+      method: 'GET'
+    })
+  },
+
+  captureStowPose(): Promise<StowConfigResponse> {
+    return apiFetch('/arm/stow/capture/', {
+      method: 'POST'
+    })
+  },
+
+  saveStowConfig(data: StowPosition): Promise<StowConfigResponse> {
+    return apiFetch('/arm/stow/config/', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  },
+
+  resetStowConfig(): Promise<StowConfigResponse> {
+    return apiFetch('/arm/stow/config/reset/', {
       method: 'POST'
     })
   }

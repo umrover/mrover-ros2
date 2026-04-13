@@ -110,6 +110,9 @@ if __name__ == "__main__":
     from backend.database import ensure_initialized
     ensure_initialized()
 
+    from backend.ra_controls import load_stow_position
+    load_stow_position()
+
     if args.serve_static:
         dist = Path(__file__).resolve().parent / "frontend" / "dist"
         index = dist / "index.html"

@@ -1,22 +1,31 @@
 import asyncio
+import math
 from enum import Enum
 import threading
 
+import rclpy.time
+import tf2_ros
+from tf2_ros import LookupException, ConnectivityException, ExtrapolationException
 from rclpy.publisher import Publisher
 
 from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
 from backend.mappings import ControllerAxis, ControllerButton
 from backend.managers.ros import get_service_client
+from backend.database import get_config, set_config
 from backend.utils.ros_service import call_service_async
+from lie import SE3
 from mrover.msg import Throttle, IK
 from mrover.srv import IkMode
 from geometry_msgs.msg import Twist
+
+STOW_CONFIG_KEY = "arm.stow_position"
 
 ra_mode = "disabled"
 ra_mode_lock = threading.Lock()
 
 ik_pos_pub: Publisher | None = None
 stow_task: asyncio.Task | None = None
+tf_buffer: tf2_ros.Buffer | None = None
 
 
 async def stow_publish_loop() -> None:
@@ -32,6 +41,11 @@ async def stow_publish_loop() -> None:
 def register_ik_pos_pub(pub: Publisher) -> None:
     global ik_pos_pub
     ik_pos_pub = pub
+
+
+def register_tf_buffer(buffer: tf2_ros.Buffer) -> None:
+    global tf_buffer
+    tf_buffer = buffer
 
 
 def get_ra_mode() -> str:
@@ -76,13 +90,82 @@ IK_MODE_POSITION_CONTROL = 0
 IK_MODE_VELOCITY_CONTROL = 1
 IK_MODE_TYPING = 2
 
-# Target end-effector pose (in arm_base_link frame) for the stow action.
+STOW_POSITION_DEFAULTS = {
+    "x": 1.124319,
+    "y": 0.0,
+    "z": 0.042229,
+    "pitch": 0.072694,
+    "roll": 0.0,
+}
 STOW_POSITION = IK()
-STOW_POSITION.pos.x = 1.124319
-STOW_POSITION.pos.y = 0.0
-STOW_POSITION.pos.z = 0.042229
-STOW_POSITION.pitch = 0.072694
-STOW_POSITION.roll = 0.0
+
+
+def _quat_to_pitch_roll(qx: float, qy: float, qz: float, qw: float) -> tuple[float, float]:
+    sin_pitch = 2.0 * (qw * qy - qz * qx)
+    sin_pitch = max(-1.0, min(1.0, sin_pitch))
+    pitch = math.asin(sin_pitch)
+    roll = math.atan2(2.0 * (qw * qx + qy * qz), 1.0 - 2.0 * (qx * qx + qy * qy))
+    return pitch, roll
+
+
+def _apply_stow_fields(values: dict) -> None:
+    STOW_POSITION.pos.x = float(values["x"])
+    STOW_POSITION.pos.y = float(values["y"])
+    STOW_POSITION.pos.z = float(values["z"])
+    STOW_POSITION.pitch = float(values.get("pitch", STOW_POSITION_DEFAULTS["pitch"]))
+    STOW_POSITION.roll = float(values.get("roll", STOW_POSITION_DEFAULTS["roll"]))
+
+
+def stow_position_dict() -> dict:
+    return {
+        "x": STOW_POSITION.pos.x,
+        "y": STOW_POSITION.pos.y,
+        "z": STOW_POSITION.pos.z,
+        "pitch": STOW_POSITION.pitch,
+        "roll": STOW_POSITION.roll,
+    }
+
+
+def load_stow_position() -> None:
+    """Populate STOW_POSITION from config.db, seeding the default row on first boot."""
+    stored = get_config(STOW_CONFIG_KEY)
+    if stored is None:
+        stored = STOW_POSITION_DEFAULTS
+        set_config(STOW_CONFIG_KEY, stored)
+    _apply_stow_fields(stored)
+
+
+def update_stow_position(x: float, y: float, z: float, pitch: float, roll: float) -> dict:
+    values = {"x": x, "y": y, "z": z, "pitch": pitch, "roll": roll}
+    _apply_stow_fields(values)
+    set_config(STOW_CONFIG_KEY, values)
+    return stow_position_dict()
+
+
+def capture_current_arm_pose() -> dict | None:
+    """Look up arm_base_link -> arm_fk and return pose as {x,y,z,pitch,roll}, or None."""
+    if tf_buffer is None:
+        return None
+    try:
+        if not tf_buffer.can_transform("arm_base_link", "arm_fk", rclpy.time.Time()):
+            return None
+        arm_in_base = SE3.from_tf_tree(tf_buffer, "arm_fk", "arm_base_link")
+    except (LookupException, ConnectivityException, ExtrapolationException):
+        return None
+    tx, ty, tz = arm_in_base.translation()
+    qx, qy, qz, qw = arm_in_base.quat()
+    pitch, roll = _quat_to_pitch_roll(float(qx), float(qy), float(qz), float(qw))
+    return {
+        "x": float(tx),
+        "y": float(ty),
+        "z": float(tz),
+        "pitch": pitch,
+        "roll": roll,
+    }
+
+
+# Seed defaults synchronously so the module is usable before ensure_initialized runs.
+_apply_stow_fields(STOW_POSITION_DEFAULTS)
 
 
 class Joint(Enum):

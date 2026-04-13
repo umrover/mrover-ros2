@@ -5,7 +5,7 @@ from lie import SE3
 from backend.ws.base_ws import WebSocketHandler
 from backend.managers.ros import get_logger
 from backend.input import DeviceInputs
-from backend.ra_controls import send_ra_controls, register_ik_pos_pub
+from backend.ra_controls import send_ra_controls, register_ik_pos_pub, register_tf_buffer
 from mrover.msg import Throttle, IK, ControllerState
 from geometry_msgs.msg import Twist
 from rclpy.publisher import Publisher
@@ -27,6 +27,7 @@ class ArmHandler(WebSocketHandler):
         self.ik_vel_pub = self.node.create_publisher(Twist, "/ik_vel_cmd", 1)
         self.publishers.extend([self.arm_thr_pub, self.ik_pos_pub, self.ik_vel_pub])
         register_ik_pos_pub(self.ik_pos_pub)
+        register_tf_buffer(self.buffer)
 
         self.forward_ros_topic("/arm_controller_state", ControllerState, "arm_state")
         self.forward_ros_topic("/arm_ik", IK, "ik_target")
@@ -38,7 +39,7 @@ class ArmHandler(WebSocketHandler):
         try:
             if not self.buffer.can_transform("arm_base_link", "arm_fk", rclpy.time.Time()):
                 return
-            arm_in_base = SE3.from_tf_tree(self.buffer, "arm_base_link", "arm_fk")
+            arm_in_base = SE3.from_tf_tree(self.buffer, "arm_fk", "arm_base_link")
             pos = arm_in_base.translation()
             self.schedule_send({
                 "type": "ik_feedback",

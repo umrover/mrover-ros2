@@ -1,9 +1,32 @@
 <template>
   <div class="flex flex-col gap-2 h-full">
     <div class="flex justify-between items-center">
-      <h4 class="component-header">Arm Controls</h4>
-      <IndicatorDot :is-active="connected" class="mr-2" />
+      <div class="flex items-center gap-3">
+        <h4 class="component-header">Arm Controls</h4>
+        <span v-if="mode === 'stow'" class="text-sm font-mono" data-testid="pw-arm-stow-distance">
+          Stow distance: <span v-html="formatNumber(euclideanDistance, 1, 2)"></span> m
+        </span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="btn btn-sm btn-icon btn-outline-secondary"
+          data-testid="pw-arm-stow-config"
+          title="Edit stow target"
+          @click="openStowModal"
+        >
+          <i class="bi bi-gear"></i>
+        </button>
+        <IndicatorDot :is-active="connected" class="mr-2" />
+      </div>
     </div>
+    <StowConfigModal
+      v-if="stowConfig"
+      :is-open="stowModalOpen"
+      :initial="stowConfig"
+      @close="stowModalOpen = false"
+      @saved="onStowSaved"
+    />
     <div class="flex w-full" role="group" aria-label="Arm mode selection" data-testid="pw-arm-mode-buttons">
       <div class="btn-group-connected w-full">
         <button
@@ -61,16 +84,21 @@
 <script lang="ts" setup>
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { armAPI } from '@/utils/api'
+import { formatNumber } from '@/utils/formatNumber'
 import { useGamepadPolling } from '@/composables/useGamepadPolling'
 import { useWebsocketStore } from '@/stores/websocket'
+import { useNotificationsStore } from '@/stores/notifications'
 import type { IkFeedbackMessage } from '@/types/websocket'
+import type { StowPosition } from '@/utils/apiTypes'
 import GamepadDisplay from './GamepadDisplay.vue'
 import IndicatorDot from './IndicatorDot.vue'
+import StowConfigModal from './StowConfigModal.vue'
 
 const { onMessage } = useWebsocketStore()
+const notificationsStore = useNotificationsStore()
 
-const STOW_DISTANCE_THRESHOLD_M = 0.1
-const STOW_TIMEOUT_MS = 5000
+const STOW_DISTANCE_THRESHOLD_M = 0.1 // meters — edit this to change the arrival tolerance
+const STOW_TIMEOUT_MS = 10000
 const STOW_POLL_INTERVAL_MS = 100
 
 type Point3 = { x: number; y: number; z: number }
@@ -79,6 +107,8 @@ const mode = ref('disabled')
 const isStowing = ref(false)
 const stowTarget = ref<Point3 | null>(null)
 const position = ref<Point3>({ x: 0, y: 0, z: 0 })
+const stowModalOpen = ref(false)
+const stowConfig = ref<StowPosition | null>(null)
 
 let stowWatcherHandle: ReturnType<typeof setInterval> | null = null
 
@@ -109,8 +139,35 @@ const keyDown = async (event: { key: string }) => {
   }
 }
 
+const loadStowConfig = async () => {
+  try {
+    const result = await armAPI.getStowConfig()
+    if (result.status === 'success' && result.stow_position) {
+      stowConfig.value = result.stow_position
+    }
+  } catch (error) {
+    notificationsStore.addNotification({
+      component: 'Arm Controls',
+      message: 'Failed to load stow config.',
+      fullData: { error: String(error) }
+    })
+  }
+}
+
+const openStowModal = async () => {
+  await loadStowConfig()
+  if (stowConfig.value) {
+    stowModalOpen.value = true
+  }
+}
+
+const onStowSaved = (value: StowPosition) => {
+  stowConfig.value = value
+}
+
 onMounted(() => {
   document.addEventListener('keydown', keyDown)
+  loadStowConfig()
 })
 
 onBeforeUnmount(() => {
@@ -140,16 +197,32 @@ const stowArm = async () => {
     }
 
     const startTime = Date.now()
-    stowWatcherHandle = setInterval(() => {
-      if (
-        euclideanDistance.value < STOW_DISTANCE_THRESHOLD_M ||
-        Date.now() - startTime >= STOW_TIMEOUT_MS
-      ) {
+    stowWatcherHandle = setInterval(async () => {
+      if (euclideanDistance.value < STOW_DISTANCE_THRESHOLD_M) {
         stopStowWatcher()
+        await newRAMode('disabled')
+      } else if (Date.now() - startTime >= STOW_TIMEOUT_MS) {
+        notificationsStore.addNotification({
+          component: 'Arm Controls',
+          message: `Stow timed out after ${STOW_TIMEOUT_MS / 1000}s. Arm did not reach target within ${STOW_DISTANCE_THRESHOLD_M}m.`,
+          fullData: {
+            distanceM: euclideanDistance.value,
+            thresholdM: STOW_DISTANCE_THRESHOLD_M,
+            timeoutMs: STOW_TIMEOUT_MS,
+            target: stowTarget.value,
+            position: position.value
+          }
+        })
+        stopStowWatcher()
+        await newRAMode('disabled')
       }
     }, STOW_POLL_INTERVAL_MS)
   } catch (error) {
-    console.error('Failed to start stow:', error)
+    notificationsStore.addNotification({
+      component: 'Arm Controls',
+      message: 'Failed to start stow.',
+      fullData: { error: String(error) }
+    })
     stopStowWatcher()
   }
 }
@@ -163,7 +236,11 @@ const newRAMode = async (newMode: string) => {
       mode.value = data.mode
     }
   } catch (error) {
-    console.error('Failed to set arm mode:', error)
+    notificationsStore.addNotification({
+      component: 'Arm Controls',
+      message: `Failed to set arm mode to '${newMode}'.`,
+      fullData: { error: String(error) }
+    })
   }
 }
 </script>

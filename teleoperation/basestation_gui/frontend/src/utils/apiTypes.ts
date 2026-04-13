@@ -89,3 +89,15 @@ export interface StowResponse extends APIResponse {
     roll: number
   }
 }
+
+export interface StowPosition {
+  x: number
+  y: number
+  z: number
+  pitch: number
+  roll: number
+}
+
+export interface StowConfigResponse extends APIResponse {
+  stow_position: StowPosition
+}

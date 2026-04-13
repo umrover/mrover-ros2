@@ -1,6 +1,8 @@
+import json
 import logging
 import sqlite3
 import os
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -11,6 +13,7 @@ os.makedirs(BASE_DIR, exist_ok=True)
 
 WAYPOINTS_DB = os.path.join(BASE_DIR, 'waypoints.db')
 RECORDINGS_DB = os.path.join(BASE_DIR, 'recordings.db')
+CONFIG_DB = os.path.join(BASE_DIR, 'config.db')
 
 def init_waypoints_db():
     try:
@@ -126,6 +129,39 @@ def init_recordings_db():
         logger.error(f"Error initializing recordings database: {e}")
         raise
 
+def init_config_db():
+    try:
+        conn = sqlite3.connect(CONFIG_DB)
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS config (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            )
+        ''')
+        conn.commit()
+        conn.close()
+        logger.info(f"Config database initialized: {CONFIG_DB}")
+    except Exception as e:
+        logger.error(f"Error initializing config database: {e}")
+        raise
+
+
+def reset_config_db():
+    conn = sqlite3.connect(CONFIG_DB)
+    try:
+        conn.execute('DROP TABLE IF EXISTS config')
+        conn.execute('''
+            CREATE TABLE config (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            )
+        ''')
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def get_waypoints_db():
     conn = sqlite3.connect(WAYPOINTS_DB)
     conn.row_factory = sqlite3.Row
@@ -135,6 +171,39 @@ def get_recordings_db():
     conn = sqlite3.connect(RECORDINGS_DB)
     conn.row_factory = sqlite3.Row
     return conn
+
+def get_config_db():
+    conn = sqlite3.connect(CONFIG_DB)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def get_config(key: str, default: Any = None) -> Any:
+    """Return the JSON-decoded value stored under `key`, or `default` if absent."""
+    conn = get_config_db()
+    try:
+        row = conn.execute('SELECT value FROM config WHERE key = ?', (key,)).fetchone()
+    finally:
+        conn.close()
+    if row is None:
+        return default
+    return json.loads(row['value'])
+
+
+def set_config(key: str, value: Any) -> None:
+    """JSON-encode `value` and upsert under `key`."""
+    payload = json.dumps(value)
+    conn = get_config_db()
+    try:
+        conn.execute(
+            'INSERT INTO config (key, value) VALUES (?, ?) '
+            'ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+            (key, payload),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
 
 # For backwards compatibility
 def get_db_connection():
@@ -147,4 +216,5 @@ def ensure_initialized():
     if not _initialized:
         init_waypoints_db()
         init_recordings_db()
+        init_config_db()
         _initialized = True
