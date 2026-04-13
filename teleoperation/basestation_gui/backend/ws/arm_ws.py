@@ -38,19 +38,16 @@ class ArmHandler(WebSocketHandler):
         try:
             if not self.buffer.can_transform("arm_base_link", "arm_fk", rclpy.time.Time()):
                 return
-            
             arm_in_base = SE3.from_tf_tree(self.buffer, "arm_base_link", "arm_fk")
             pos = arm_in_base.translation()
-            # maybe pitch/roll in the future?
-            data_to_send = {
+            self.schedule_send({
                 "type": "ik_feedback",
                 "pos": {
-                    "x": pos[0],
-                    "y": pos[1],
-                    "z": pos[2],
-                }
-            }
-            self.schedule_send(data_to_send)
+                    "x": float(pos[0]),
+                    "y": float(pos[1]),
+                    "z": float(pos[2]),
+                },
+            })
         except (LookupException, ConnectivityException, ExtrapolationException):
             pass
         except Exception as e:
@@ -71,11 +68,3 @@ class ArmHandler(WebSocketHandler):
             )
         else:
             get_logger().warning(f"Unhandled ARM message: {msg_type}")
-
-    async def trigger_stow(self):
-        send_ra_controls(
-            None,
-            self.arm_thr_pub,
-            self.ik_pos_pub,
-            self.ik_vel_pub,
-        )
