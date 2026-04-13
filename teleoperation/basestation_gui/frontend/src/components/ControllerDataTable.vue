@@ -84,7 +84,7 @@ watch(showValues, (val) => localStorage.setItem(valuesKey, String(val)))
 const names = ref<string[]>([])
 const states = ref<string[]>([])
 const errors = ref<string[]>([])
-const limitHits = ref<boolean[]>([])
+const limitHits = ref<number[]>([])
 const positions = ref<number[]>([])
 const velocities = ref<number[]>([])
 const currents = ref<number[]>([])
@@ -113,7 +113,7 @@ function combineLeftRight() {
   names.value = [...arr(left?.names), ...arr(right?.names)] as string[]
   states.value = [...arr(left?.states), ...arr(right?.states)] as string[]
   errors.value = [...arr(left?.errors), ...arr(right?.errors)] as string[]
-  limitHits.value = [...arr(left?.limits_hit), ...arr(right?.limits_hit)] as boolean[]
+  limitHits.value = [...arr(left?.limits_hit), ...arr(right?.limits_hit)] as number[]
   positions.value = [...arr(left?.positions), ...arr(right?.positions)] as number[]
   velocities.value = [...arr(left?.velocities), ...arr(right?.velocities)] as number[]
   currents.value = [...arr(left?.currents), ...arr(right?.currents)] as number[]

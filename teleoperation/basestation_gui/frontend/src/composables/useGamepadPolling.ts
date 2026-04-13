@@ -14,7 +14,7 @@ export interface UseGamepadPollingReturn {
   connected: Ref<boolean>
   axes: Ref<number[]>
   buttons: Ref<number[]>
-  vibrationActuator: Ref<GamepadHapticActuator>
+  vibrationActuator: Ref<GamepadHapticActuator | undefined>
 }
 
 export function useGamepadPolling(options: UseGamepadPollingOptions): UseGamepadPollingReturn {

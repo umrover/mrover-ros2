@@ -177,7 +177,7 @@ onMessage<ControllerStateMessage>('arm', 'arm_state', (msg) => {
   check_button_limit(4, 5, msg.limits_hit[4])
 
   // Vibrate controller if forcing limit
-  if(forcing_limit.value){
+  if(forcing_limit.value && vibrationActuator.value){
     vibrationActuator.value.playEffect('dual-rumble', {
       startDelay: 0,
       duration: 100,
