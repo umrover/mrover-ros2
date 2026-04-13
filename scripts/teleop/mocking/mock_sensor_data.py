@@ -9,6 +9,8 @@ import argparse
 from mrover.msg import Humidity, Temperature, Oxygen, UV, Ozone, CO2, Pressure, ControllerState, Throttle, SensorStates
 
 SP_MOTORS = ["linear_actuator", "auger", "pump_0", "pump_1", "sensor_actuator"]
+
+
 class MockSensorData(Node):
     def __init__(self, sensor_rate: float, controller_rate: float):
         super().__init__("mock_sensor_data")
@@ -65,9 +67,15 @@ class MockSensorData(Node):
         pressure_msg = Pressure()
         pressure_msg.pressure = 101325.0 + 2000.0 * math.sin(self.t * 0.4) + random.uniform(-200, 200)
         self.pressure_pub.publish(pressure_msg)
-        
+
         state_msg = SensorStates()
-        state_msg.uv_state, state_msg.co2_state, state_msg.thp_state, state_msg.oxygen_state, state_msg.ozone_state = bool(random.getrandbits(1)), bool(random.getrandbits(1)), bool(random.getrandbits(1)), bool(random.getrandbits(1)), bool(random.getrandbits(1))
+        state_msg.uv_state, state_msg.co2_state, state_msg.thp_state, state_msg.oxygen_state, state_msg.ozone_state = (
+            bool(random.getrandbits(1)),
+            bool(random.getrandbits(1)),
+            bool(random.getrandbits(1)),
+            bool(random.getrandbits(1)),
+            bool(random.getrandbits(1)),
+        )
         self.sensor_states_pub.publish(state_msg)
 
     def publish_controller_state(self):
