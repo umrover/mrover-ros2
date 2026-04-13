@@ -29,7 +29,7 @@ export interface ControllerStateMessage {
   positions: number[];
   velocities: number[];
   currents: number[];
-  limits_hit: boolean[];
+  limits_hit: number[];
 }
 
 export interface JointStateMessage {
@@ -111,6 +111,15 @@ export interface SPCO2Message {
 export interface SPPressureMessage {
   type: 'sp_pressure';
   pressure: number;
+}
+
+export interface IkFeedbackMessage {
+  type: 'ik_feedback';
+  pos: {
+    x: number;
+    y: number;
+    z: number;
+  };
 }
 
 export type ScienceMessage = OxygenMessage | UVMessage | TemperatureMessage | HumidityMessage | SPHumidityMessage | SPTemperatureMessage | SPOxygenMessage | SPUVMessage | SPOzoneMessage | SPCO2Message | SPPressureMessage;

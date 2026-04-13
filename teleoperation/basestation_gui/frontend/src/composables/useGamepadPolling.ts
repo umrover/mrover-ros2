@@ -13,6 +13,7 @@ export interface UseGamepadPollingReturn {
   connected: Ref<boolean>
   axes: Ref<number[]>
   buttons: Ref<number[]>
+  vibrationActuator: Ref<GamepadHapticActuator | undefined>
 }
 
 export function useGamepadPolling(options: UseGamepadPollingOptions): UseGamepadPollingReturn {
@@ -22,6 +23,7 @@ export function useGamepadPolling(options: UseGamepadPollingOptions): UseGamepad
   const connected = ref(false)
   const axes = ref<number[]>([0, 0, 0, 0])
   const buttons = ref<number[]>(new Array(17).fill(0))
+  const vibrationActuator = ref<GamepadHapticActuator>()
 
   let interval: number | undefined
 
@@ -32,6 +34,7 @@ export function useGamepadPolling(options: UseGamepadPollingOptions): UseGamepad
       connected.value = !!gamepad
       if (!gamepad) return
 
+      vibrationActuator.value = gamepad.vibrationActuator
       const rawAxes = Array.from(gamepad.axes)
       const mappedButtons = gamepad.buttons.map(b => b.value)
 
@@ -53,5 +56,5 @@ export function useGamepadPolling(options: UseGamepadPollingOptions): UseGamepad
     }
   })
 
-  return { connected, axes, buttons }
+  return { connected, axes, buttons, vibrationActuator }
 }
