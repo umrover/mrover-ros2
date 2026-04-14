@@ -64,6 +64,10 @@ namespace mrover {
         mPointCloudSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
             pointCloudCallback(msg);
         });
+
+        mToggleStereoService = create_service<std_srvs::srv::SetBool>("/toggle_stereo_tag", [this](std_srvs::srv::SetBool::Request::ConstSharedPtr req, std_srvs::srv::SetBool::Response::SharedPtr res){
+            toggleStereoCallback(req, res);
+        });
     }
 
     ImageTagDetector::ImageTagDetector(rclcpp::NodeOptions const& options) : TagDetectorBase{"image_tag_detector", options}, mCameraHorizontalFOV{} {
@@ -78,6 +82,10 @@ namespace mrover {
 
         mImageSub = create_subscription<sensor_msgs::msg::Image>("/long_range_cam/image", 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
             imageCallback(msg);
+        });
+
+        mToggleImageService = create_service<std_srvs::srv::SetBool>("/toggle_image_tag", [this](std_srvs::srv::SetBool::Request::ConstSharedPtr req, std_srvs::srv::SetBool::Response::SharedPtr res){
+            toggleImageCallback(req, res);
         });
     }
 } // namespace mrover
