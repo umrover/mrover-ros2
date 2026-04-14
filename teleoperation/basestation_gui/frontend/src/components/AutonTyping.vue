@@ -68,7 +68,7 @@ create instance of rosaction in callback area -->
       <div class="flex flex-col items-center text-center w-full">
         <h4 class="component-header mb-2">Planar Alignment</h4>
         <div class="flex items-baseline justify-center gap-1 p-2 rounded bg-theme-view">
-          <span class="cmd-data-value">{{ yawDegrees.toFixed(1) }}</span>
+          <span class="cmd-data-value">{{ yawAngle.toFixed(3) }}</span>
           <span class="cmd-data-unit">degrees</span>
         </div>
       </div>
@@ -95,7 +95,7 @@ const codeSent = ref(false)
 const currentIndex = ref(0)
 const currentState = ref('')
 const letterStates = ref<string[]>(Array(6).fill('notTyped'))
-const yawDegrees = ref(0)
+const yawAngle = ref(0)
 
 interface KeyboardYawMessage {
   type: 'keyboard_yaw'
@@ -103,7 +103,7 @@ interface KeyboardYawMessage {
 }
 
 websocketStore.onMessage<KeyboardYawMessage>('auton', 'keyboard_yaw', (msg) => {
-  yawDegrees.value = msg.yaw
+  yawAngle.value = msg.yaw
 })
 
 onMounted(() => {
