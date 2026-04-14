@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cmath>
+
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
 
@@ -278,13 +280,14 @@ namespace mrover {
         }
 
         auto processMessage(CANMsg_t const& msg) -> void {
-            std::visit([this](auto const& val) {
+            std::visit([this](auto const& val) -> void {
                 using T = std::decay_t<decltype(val)>;
                 if constexpr (std::is_same_v<T, moteus::CanFdFrame>) {
                     auto result = moteus::Query::Parse(val.data, val.size);
 
                     if (mOptions.use_abs_position && mAbsPosExtraIndex != -1) {
-                        mPosition = (result.extra[mAbsPosExtraIndex].value * mOptions.abs_units_multiplier) - mOptions.abs_position_offset;
+                        double const rawPos = (result.extra[mAbsPosExtraIndex].value * mOptions.abs_units_multiplier) - mOptions.abs_position_offset;
+                        mPosition = static_cast<float>(std::remainder(rawPos, mOptions.abs_units_multiplier));
                     } else {
                         mPosition = static_cast<float>(result.position);
                     }
