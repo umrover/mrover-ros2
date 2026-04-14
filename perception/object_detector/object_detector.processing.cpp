@@ -1,5 +1,4 @@
 #include "object_detector.hpp"
-#include "mrover/msg/detail/object_detector_type__struct.hpp"
 
 namespace mrover {
 

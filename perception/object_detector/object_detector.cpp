@@ -1,6 +1,4 @@
 #include "object_detector.hpp"
-#include "mrover/msg/detail/object_detector_type__struct.hpp"
-#include "mrover/srv/detail/toggle_image_object_detector__struct.hpp"
 #include <functional>
 
 namespace mrover {
