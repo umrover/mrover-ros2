@@ -1,10 +1,17 @@
 from fastapi import APIRouter, HTTPException
-from backend.ra_controls import set_ra_mode as update_ra_mode
-from backend.models_pydantic import RAModeRequest
+from backend.ra_controls import (
+    set_ra_mode as update_ra_mode,
+    STOW_POSITION,
+    stow_position_dict,
+    update_stow_position,
+    reset_stow_position,
+    capture_current_arm_pose,
+)
+from backend.models_pydantic import RAModeRequest, StowPositionRequest
 
 router = APIRouter(prefix="/api/arm", tags=["arm"])
 
-VALID_RA_MODES = ["disabled", "throttle", "ik-pos", "ik-vel"]
+VALID_RA_MODES = ["disabled", "throttle", "ik-pos", "ik-vel", "stow"]
 
 
 @router.post("/ra_mode/")
@@ -15,5 +22,55 @@ async def change_ra_mode(data: RAModeRequest):
             status_code=400, detail=f"Invalid mode '{mode}'. Must be one of: {', '.join(VALID_RA_MODES)}"
         )
 
-    await update_ra_mode(mode)
+    if not await update_ra_mode(mode):
+        raise HTTPException(status_code=503, detail="Failed to set RA mode (ROS service might be unavailable)")
+
     return {"status": "success", "mode": mode}
+
+
+@router.post("/stow/")
+async def change_to_stow():
+    mode = "stow"
+    if not await update_ra_mode(mode):
+        raise HTTPException(status_code=503, detail="Failed to start stow sequence (ROS service might be unavailable)")
+
+    return {
+        "status": "success",
+        "mode": mode,
+        "stow_target": {
+            "pos": {
+                "x": STOW_POSITION.pos.x,
+                "y": STOW_POSITION.pos.y,
+                "z": STOW_POSITION.pos.z,
+            },
+            "pitch": STOW_POSITION.pitch,
+            "roll": STOW_POSITION.roll,
+        },
+    }
+
+
+@router.get("/stow/config/")
+async def get_stow_config():
+    return {"status": "success", "stow_position": stow_position_dict()}
+
+
+@router.post("/stow/capture/")
+async def capture_stow_pose():
+    pose = capture_current_arm_pose()
+    if pose is None:
+        raise HTTPException(
+            status_code=503,
+            detail="TF transform arm_base_link -> arm_fk is not available yet.",
+        )
+    return {"status": "success", "stow_position": pose}
+
+
+@router.post("/stow/config/")
+async def save_stow_config(data: StowPositionRequest):
+    saved = update_stow_position(data.x, data.y, data.z, data.pitch, data.roll)
+    return {"status": "success", "stow_position": saved}
+
+
+@router.post("/stow/config/reset/")
+async def reset_stow_config():
+    return {"status": "success", "stow_position": reset_stow_position()}

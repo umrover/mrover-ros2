@@ -84,6 +84,13 @@ class RecordingWaypointRequest(BaseModel):
 class RAModeRequest(BaseModel):
     mode: str
 
+class StowPositionRequest(BaseModel):
+    x: float
+    y: float
+    z: float
+    pitch: float
+    roll: float
+
 class ServoPositionRequest(BaseModel):
     names: List[str]
     positions: List[float]
