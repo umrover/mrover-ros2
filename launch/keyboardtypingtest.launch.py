@@ -29,7 +29,7 @@ def generate_launch_description():
     arm_e_link_to_cam = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
-        arguments=["0.03713988", "0", "-0.0945642", "0", "-1.134", "0", "arm_fk_c_de", "finger_camera_frame1"],
+        arguments=["0.03713988", "0", "-0.0945642", "0", "-1.134", "0", "arm_fk_de", "finger_camera_frame1"],
     )
 
     return launch.LaunchDescription([keyboard_typing, arm_e_link_to_cam])

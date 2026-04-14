@@ -192,12 +192,12 @@ namespace mrover {
         }
 
         double y = joint_state->positions[0]; // joint a position
-        
+
         // joint b position
         double angle = -joint_state->positions[1];
         double x = LINK_BC * std::cos(angle);
         double z = LINK_BC * std::sin(angle);
-        
+
         // joint c position
         angle -= joint_state->positions[2] - JOINT_C_OFFSET;
         x += LINK_CD * std::cos(angle);
@@ -209,7 +209,7 @@ namespace mrover {
         angle -= joint_state->positions[3] + JOINT_C_OFFSET;
         x += END_EFFECTOR_LENGTH * std::cos(angle);
         z += END_EFFECTOR_LENGTH * std::sin(angle);
-        armTf = SE3d{{x, y, z}, SO3d{0, 0, 0}};
+        armTf = SE3d{{x, y, z}, SO3d{joint_state->positions[4], -angle, 0}};
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk_ee", "arm_base_link", armTf, get_clock()->now());
 
         mArmPos = {x, y, z, -angle, joint_state->positions[4], std::max(joint_state->positions[5], 0.0f)};
