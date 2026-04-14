@@ -54,3 +54,8 @@
 #include "parameter.hpp"
 #include "point.hpp"
 #include <tensorrt.hpp>
+
+// Services
+#include <mrover/srv/toggle_stereo_object_detector.hpp>
+#include <mrover/srv/toggle_image_object_detector.hpp>
+#include <rclcpp/service.hpp>

@@ -44,7 +44,9 @@ namespace mrover {
         std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
         std::shared_ptr<tf2_ros::TransformListener> mTfListener = std::make_shared<tf2_ros::TransformListener>(*mTfBuffer);
 
-        Model mModel;
+        Model bottleModel;
+        Model malletModel;
+        Model pickModel;
 
         std::string mCameraFrame;
         std::string mWorldFrame;
@@ -53,7 +55,9 @@ namespace mrover {
 
         LoopProfiler mLoopProfiler;
 
-        TensortRT mTensorRT;
+        TensortRT mBottleTensorRT;
+        TensortRT mMalletTensorRT;
+        TensortRT mPickTensorRT;
 
         sensor_msgs::msg::Image mDetectionsImageMessage;
 
@@ -67,6 +71,10 @@ namespace mrover {
         float mModelNMSThreshold{};
         bool mDebug{};
 
+        // nullptr = OFF
+        Model* currentModel = nullptr;
+        TensortRT* currentTensorRT = nullptr;
+        
         auto spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr,
                                        std::size_t u, std::size_t v,
                                        std::size_t width, std::size_t height) const -> std::optional<SE3d>;
@@ -101,6 +109,11 @@ namespace mrover {
         static auto convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg, cv::Mat const& image) -> void;
 
         auto pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void;
+
+        // Mode switching server and function
+        rclcpp::Service<mrover::srv::ToggleStereoObjectDetector>::SharedPtr mServer;
+
+        auto toggleStereoMode(mrover::srv::ToggleStereoObjectDetector::Request::ConstSharedPtr& request, mrover::srv::ToggleStereoObjectDetector::Response::SharedPtr& response) -> void;
     };
 
     class ImageObjectDetector final : public ObjectDetectorBase {
@@ -117,5 +130,10 @@ namespace mrover {
         auto getObjectBearing(cv::InputArray const& image, cv::Rect const& box) const -> float;
 
         auto imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
+
+        // Mode switching server and function
+        rclcpp::Service<mrover::srv::ToggleImageObjectDetector>::SharedPtr mServer;
+
+        auto toggleImageMode(mrover::srv::ToggleImageObjectDetector::Request::ConstSharedPtr& request, mrover::srv::ToggleImageObjectDetector::Response::SharedPtr& response) -> void;
     };
 } // namespace mrover
