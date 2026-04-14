@@ -25,7 +25,7 @@ this url endpoint is not publicly documented
 TILE_URL = "https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
 CONCURRENCY = 64
 MAX_RETRIES = 2
-OUTPUT = Path(__file__).resolve().parent / "basestation_gui" / "frontend" / "public" / "map"
+OUTPUT = Path(__file__).resolve().parent.parent / "teleoperation" / "basestation_gui" / "frontend" / "public" / "map"
 
 LOCATIONS = {
     "a2": (42.293988, -83.710156),
