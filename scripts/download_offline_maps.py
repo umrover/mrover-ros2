@@ -137,7 +137,9 @@ def run(lat: float, lon: float, dry_run: bool) -> None:
     if dry_run:
         return
 
-    print(f"\nThis will download {tot:,} tiles from Google Maps into:\n  {OUTPUT}\nExisting cached tiles will be reused.\n")
+    print(
+        f"\nThis will download {tot:,} tiles from Google Maps into:\n  {OUTPUT}\nExisting cached tiles will be reused.\n"
+    )
     confirm = input("Continue? [Y/n] ")
     if confirm.strip().lower() not in ("y", ""):
         print("Aborted.")
