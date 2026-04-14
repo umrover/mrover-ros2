@@ -20,9 +20,13 @@ namespace mrover {
             fkCallback(msg);
         });
 
-        mTypingServer = rclcpp_action::create_server<action::TypingDeltas>(
+        mPusherCli = create_client<srv::Pusher>("pusher");
+
+        mTypingGoalID = std::nullopt;
+
+        mTypingServer = rclcpp_action::create_server<action::TypingPosition>(
             this,
-            "typing_ik",
+            "typing_pos",
             [this](auto & uuid, auto typingGoal) { return handleTypingGoal(uuid, typingGoal); },
             [this](auto typingGoalHandle) { return handleTypingCancel(typingGoalHandle); },
             [this](auto typingGoalHandle) { return handleTypingAccepted(typingGoalHandle); }
@@ -188,22 +192,28 @@ namespace mrover {
         }
 
         double y = joint_state->positions[0]; // joint a position
+
         // joint b position
         double angle = -joint_state->positions[1];
         double x = LINK_BC * std::cos(angle);
         double z = LINK_BC * std::sin(angle);
+
         // joint c position
         angle -= joint_state->positions[2] - JOINT_C_OFFSET;
         x += LINK_CD * std::cos(angle);
         z += LINK_CD * std::sin(angle);
+        auto armTf = SE3d{{x, y, z}, SO3d{0, 0, 0}};
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk_de", "arm_base_link", armTf, get_clock()->now());
+
         // joint de position
         angle -= joint_state->positions[3] + JOINT_C_OFFSET;
         x += END_EFFECTOR_LENGTH * std::cos(angle);
         z += END_EFFECTOR_LENGTH * std::sin(angle);
-        mArmPos = {x, y, z, -angle, joint_state->positions[4], std::max(joint_state->positions[5], 0.0f)};
+        armTf = SE3d{{x, y, z}, SO3d{joint_state->positions[4], -angle, 0}};
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk_ee", "arm_base_link", armTf, get_clock()->now());
 
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk", "arm_base_link", mArmPos.toSE3(), get_clock()->now());
-    }
+        mArmPos = {x, y, z, -angle, joint_state->positions[4], std::max(joint_state->positions[5], 0.0f)};
+    }    
 
     void ArmController::posCallback(msg::IK::ConstSharedPtr const& ik_target) {
         mPosTarget = *ik_target;
@@ -214,12 +224,12 @@ namespace mrover {
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "Received position command in velocity mode!");
     }
 
-    auto ArmController::handleTypingGoal(const rclcpp_action::GoalUUID & uuid, std::shared_ptr<const action::TypingDeltas_Goal> typingGoal) -> rclcpp_action::GoalResponse {
+    auto ArmController::handleTypingGoal(const rclcpp_action::GoalUUID & uuid, const std::shared_ptr<const action::TypingPosition_Goal> &typingGoal) -> rclcpp_action::GoalResponse {
         (void)typingGoal;
-        
+
         if(mArmMode != ArmMode::TYPING) 
             RCLCPP_WARN(get_logger(), "Rejecting goal: recieved typing goal while not in typing mode!");
-        
+
         if(mTypingGoalID) {
             RCLCPP_WARN(get_logger(), "Rejecting goal: received new typing goal while there already exists an active goal!");
             return rclcpp_action::GoalResponse::REJECT;
@@ -229,8 +239,8 @@ namespace mrover {
         RCLCPP_INFO(get_logger(), "Accepting new typing goal");
         return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
     }
-    
-    auto ArmController::handleTypingCancel(const std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingDeltas>> typingGoalHandle) -> rclcpp_action::CancelResponse {
+
+    auto ArmController::handleTypingCancel(const std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingPosition>> &typingGoalHandle) -> rclcpp_action::CancelResponse {
         if(!mTypingGoalID || typingGoalHandle->get_goal_id() != mTypingGoalID.value()) {
             RCLCPP_WARN(get_logger(), "Rejecting cancel: attempted to cancel an invalid typing goal");
             return rclcpp_action::CancelResponse::REJECT;
@@ -238,31 +248,31 @@ namespace mrover {
         RCLCPP_INFO(get_logger(), "Accepting typing goal cancel");
         return rclcpp_action::CancelResponse::ACCEPT;
     }
-    
-    auto ArmController::handleTypingAccepted(const std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingDeltas>> typingGoalHandle) -> void {
+
+    auto ArmController::handleTypingAccepted(const std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingPosition>> &typingGoalHandle) -> void {
         std::thread([this, typingGoalHandle]() {
-            auto result = std::make_shared<action::TypingDeltas::Result>();
+            auto result = std::make_shared<action::TypingPosition::Result>();
             result->success = false;
-            auto feedback = std::make_shared<action::TypingDeltas::Feedback>();
+            auto feedback = std::make_shared<action::TypingPosition::Feedback>();
             RCLCPP_INFO(get_logger(), "Joint A Current: %f, Gripper Current: %f", joints["joint_a"].pos, joints["gripper"].pos);
-            RCLCPP_INFO(get_logger(), "Joint A: %f, Gripper: %f", mPosTarget.y, mPosTarget.gripper);
+
 
             // make param
             rclcpp::Duration typingTimeout = rclcpp::Duration(15, 0);
             rclcpp::Time startTime = get_clock()->now();
 
             // make param
-            rclcpp::Rate loopRate(3);
+            rclcpp::WallRate loopRate(3);
             while(get_clock()->now() - startTime < typingTimeout) {
                 mLastUpdate = get_clock()->now();
-                mPosTarget.y = mTypingOrigin.y + typingGoalHandle->get_goal()->x_delta;
-                mPosTarget.gripper = mTypingOrigin.gripper + typingGoalHandle->get_goal()->y_delta;
+                mPosTarget.y = mTypingOrigin.y + typingGoalHandle->get_goal()->x;
+                mPosTarget.gripper = mTypingOrigin.gripper + typingGoalHandle->get_goal()->y;
+                RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 100, "Joint A Target: %f, Gripper Target: %f", mPosTarget.y, mPosTarget.gripper);
                 if(typingGoalHandle->is_canceling()) {
                     result->success = false;
                     typingGoalHandle->canceled(result);
 
                     mTypingGoalID = std::nullopt;
-
 
                     RCLCPP_INFO(get_logger(), "Typing goal sucessfully cancelled");
                     return;
@@ -270,26 +280,53 @@ namespace mrover {
 
                 double distRemaining = sqrt(pow(joints["joint_a"].pos - mPosTarget.y, 2) + pow((joints["gripper"].pos - mPosTarget.gripper), 2));
                 // make param
-                if(distRemaining < 0.0002) {
-                    result->success = true;
-                    typingGoalHandle->succeed(result);
+                if(distRemaining < 0.004) {
+                    RCLCPP_INFO(get_logger(), "Reached target position.");
+                    // make param
+                    auto pauseTime = std::chrono::seconds(1);
+                    std::this_thread::sleep_for(pauseTime);
+
+                    auto pusherTimeout = std::chrono::seconds(3);
+                    if(mPusherCli->wait_for_service(pusherTimeout)) {
+                        RCLCPP_INFO(get_logger(), "Calling pusher service.");
+
+                    auto pusherReq = std::make_shared<srv::Pusher::Request>();
+                    pusherReq->start = true;    
+                    auto pusherFuture = mPusherCli->async_send_request(pusherReq);
+
+                    if(pusherFuture.wait_for(std::chrono::seconds(5)) == std::future_status::ready) {
+                            RCLCPP_INFO(get_logger(), "Pusher service succeeded.");
+                            std::this_thread::sleep_for(pauseTime);
+                            result->success = true;
+                        } else {
+                            RCLCPP_INFO(get_logger(), "Pusher service failed.");
+                            result->success = false;
+                        }
+                    } else {
+                        if(!rclcpp::ok()) return;
+                        RCLCPP_WARN(get_logger(), "Pusher service took too long to become available"); 
+                        result->success = false;
+                    }
+                    if(result->success)
+                        RCLCPP_INFO(get_logger(), "Pusher service succeeded.");
+                    else 
+                        RCLCPP_INFO(get_logger(), "Pusher service failed.");
 
                     mTypingGoalID = std::nullopt;
+                    typingGoalHandle->succeed(result);
 
-
-                    RCLCPP_INFO(get_logger(), "Typing goal sucessfully finished");
                     return;
                 }
 
                 // send feedback
                 feedback->dist_remaining = static_cast<float>(distRemaining);
                 typingGoalHandle->publish_feedback(feedback);
+                loopRate.sleep();
             }
             result->success = false;
             typingGoalHandle->abort(result);
 
             mTypingGoalID = std::nullopt;
-            
 
             RCLCPP_INFO(get_logger(), "Aborting goal: typing goal took too long!");
             return;
@@ -449,29 +486,31 @@ namespace mrover {
             }
 
         } else { // typing mode
-            msg::Position positions;
-            positions.names = {"joint_a", "gripper"};
-            positions.positions = {
-                    static_cast<float>(mPosTarget.y),
-                    static_cast<float>(mPosTarget.gripper),
-            };
+            if(mTypingGoalID) {
+                msg::Position positions;
+                positions.names = {"joint_a", "gripper"};
+                positions.positions = {
+                        static_cast<float>(mPosTarget.y),
+                        static_cast<float>(mPosTarget.gripper),
+                };
 
-            // bounds checking and such
-            for (size_t i = 0; i < positions.names.size(); ++i) {
-                auto it = joints.find(positions.names[i]);
-                // hopefully this will never happen, but just in case
-                if (it == joints.end()) {
-                    RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown joint \"" << positions.names[i] << "\"");
-                    return;
-                }
+                // bounds checking and such
+                for (size_t i = 0; i < positions.names.size(); ++i) {
+                    auto it = joints.find(positions.names[i]);
+                    // hopefully this will never happen, but just in case
+                    if (it == joints.end()) {
+                        RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown joint \"" << positions.names[i] << "\"");
+                        return;
+                    }
 
-                if (!it->second.limits.posInBounds(positions.positions[i])) {
-                    RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Position for joint " << positions.names[i] << " not within limits! (" << positions.positions[i] << ")");
-                    RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Typing IK failed");
-                    return;
+                    if (!it->second.limits.posInBounds(positions.positions[i])) {
+                        RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Position for joint " << positions.names[i] << " not within limits! (" << positions.positions[i] << ")");
+                        RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Typing IK failed");
+                        return;
+                    }
                 }
+                mPosPub->publish(positions);
             }
-            mPosPub->publish(positions);
         }
     }
 
