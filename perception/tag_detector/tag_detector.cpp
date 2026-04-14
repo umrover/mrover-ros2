@@ -65,7 +65,7 @@ namespace mrover {
             pointCloudCallback(msg);
         });
 
-        mToggleStereoService = create_service<std_srvs::srv::SetBool>("/toggle_stereo_tag", [this](std_srvs::srv::SetBool::Request::ConstSharedPtr req, std_srvs::srv::SetBool::Response::SharedPtr res){
+        mToggleStereoService = create_service<std_srvs::srv::SetBool>("/toggle_stereo_tag", [this](std_srvs::srv::SetBool::Request::ConstSharedPtr req, std_srvs::srv::SetBool::Response::SharedPtr res) {
             toggleStereoCallback(req, res);
         });
     }
@@ -84,7 +84,7 @@ namespace mrover {
             imageCallback(msg);
         });
 
-        mToggleImageService = create_service<std_srvs::srv::SetBool>("/toggle_image_tag", [this](std_srvs::srv::SetBool::Request::ConstSharedPtr req, std_srvs::srv::SetBool::Response::SharedPtr res){
+        mToggleImageService = create_service<std_srvs::srv::SetBool>("/toggle_image_tag", [this](std_srvs::srv::SetBool::Request::ConstSharedPtr req, std_srvs::srv::SetBool::Response::SharedPtr res) {
             toggleImageCallback(req, res);
         });
     }
