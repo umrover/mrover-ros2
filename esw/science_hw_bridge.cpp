@@ -1,23 +1,18 @@
 #include <cstddef>
 #include <cstring>
 #include <memory>
-#include <span>
 
 #include <rclcpp/node.hpp>
 #include <rclcpp/rclcpp.hpp>
 
-#include <mrover/msg/co2.hpp>
 #include <mrover/msg/controller_state.hpp>
-#include <mrover/msg/humidity.hpp>
-#include <mrover/msg/oxygen.hpp>
-#include <mrover/msg/ozone.hpp>
-#include <mrover/msg/pressure.hpp>
-#include <mrover/msg/temperature.hpp>
 #include <mrover/msg/throttle.hpp>
-#include <mrover/msg/uv.hpp>
+#include <mrover/srv/servo_position.hpp>
 
 #include <brushed.hpp>
 #include <science.hpp>
+#include <servo.hpp>
+#include <u2d2.hpp>
 
 
 namespace mrover {
@@ -31,9 +26,35 @@ namespace mrover {
         ScienceHWBridge() : Node{"science_hw_bridge"} {}
 
         auto init() -> void {
+            // parse parameters
+            std::vector<ParameterWrapper> parameters = {
+                    {"u2d2_device", mU2D2DeviceName, "/dev/u2d2"},
+            };
+            ParameterWrapper::declareParameters(this, parameters);
+
+            mU2D2 = U2D2::getSharedInstance();
+            if (mU2D2->init(mU2D2DeviceName) != U2D2::Status::Success) {
+                RCLCPP_FATAL(this->get_logger(), "failed to initialize U2D2 on %s", mU2D2DeviceName.c_str());
+                rclcpp::shutdown();
+            }
+
             mScienceBoard = std::make_shared<ScienceBoard>(shared_from_this(), "jetson", "science");
             mAuger = std::make_shared<BrushedController<Radians>>(shared_from_this(), "jetson", "auger");
             mLinearActuator = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "linear_actuator");
+            mFunnelServo = std::make_shared<Servo>(shared_from_this(), "funnel");
+
+            mServiceGroup = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+
+            auto subOptions = rclcpp::SubscriptionOptions();
+            subOptions.callback_group = mServiceGroup;
+
+            mFunnelPositionService = this->create_service<srv::ServoPosition>(
+                    "sp_funnel_servo",
+                    [this](srv::ServoPosition::Request::SharedPtr const& req, srv::ServoPosition::Response::SharedPtr const& res) {
+                        servoPositionCallback(req, res);
+                    },
+                    rmw_qos_profile_services_default,
+                    mServiceGroup);
 
             mSPThrottleSub = create_subscription<msg::Throttle>("sp_thr_cmd", 1, [this](msg::Throttle::ConstSharedPtr const& msg) { processThrottleCmd(msg); });
 
@@ -59,18 +80,24 @@ namespace mrover {
         }
 
     private:
-        std::vector<std::string> const mActuatorNames{"auger", "linear_actuator"};
+        std::vector<std::string> const mActuatorNames{"auger", "linear_actuator", "funnel"};
 
         std::shared_ptr<ScienceBoard> mScienceBoard;
         std::shared_ptr<BrushedController<Radians>> mAuger;
         std::shared_ptr<BrushedController<Meters>> mLinearActuator;
+        std::shared_ptr<Servo> mFunnelServo;
 
+        std::shared_ptr<U2D2> mU2D2;
+        std::string mU2D2DeviceName;
+
+        rclcpp::CallbackGroup::SharedPtr mServiceGroup;
+        rclcpp::Service<srv::ServoPosition>::SharedPtr mFunnelPositionService;
         rclcpp::TimerBase::SharedPtr mPublishDataTimer;
         rclcpp::Subscription<msg::Throttle>::SharedPtr mSPThrottleSub;
         rclcpp::Publisher<msg::ControllerState>::SharedPtr mControllerStatePub;
         msg::ControllerState mControllerState;
 
-        auto processThrottleCmd(msg::Throttle::ConstSharedPtr const& msg) -> void {
+        auto processThrottleCmd(msg::Throttle::ConstSharedPtr const& msg) const -> void {
             if (msg->names.size() != msg->throttles.size()) {
                 RCLCPP_ERROR(get_logger(), "Name count and value count mismatched!");
                 return;
@@ -90,6 +117,28 @@ namespace mrover {
                         break;
                 }
             }
+        }
+
+        auto servoPositionCallback(srv::ServoPosition::Request::SharedPtr const& req, srv::ServoPosition::Response::SharedPtr const& res) const -> void {
+            if (req->names.size() != 1 || req->names.at(0) != "funnel") return;
+
+            mFunnelServo->setPosition(req->positions[0], Servo::ServoMode::Optimal);
+            res->at_tgts.resize(1);
+
+            auto const start = this->now();
+            auto const timeout = rclcpp::Duration::from_seconds(3);
+            rclcpp::Rate loop_rate(10);
+
+            while ((this->now() - start) < timeout) {
+                auto const status = mFunnelServo->getTargetStatus();
+                bool const reached = status == U2D2::Status::Success;
+                res->at_tgts[0] = reached;
+
+                if (reached) return;
+                loop_rate.sleep();
+            }
+
+            RCLCPP_WARN(this->get_logger(), "servo position timeout reached!");
         }
 
         auto publishDataCallback() -> void {
@@ -117,6 +166,20 @@ namespace mrover {
                         mControllerState.currents[i] = mLinearActuator->getCurrent();
                         mControllerState.limits_hit[i] = mLinearActuator->getLimitsHitBits();
                         break;
+                    case 'f' + 'o': {
+                        double pos, vel, cur;
+                        U2D2::Status const status = mFunnelServo->getPosition(pos);
+                        mFunnelServo->getVelocity(vel);
+                        mFunnelServo->getCurrent(cur);
+                        mControllerState.names[i] = name;
+                        mControllerState.states[i] = U2D2::stringifyStatus(mFunnelServo->getTargetStatus());
+                        mControllerState.errors[i] = U2D2::stringifyStatus(status);
+                        mControllerState.positions[i] = static_cast<float>(pos);
+                        mControllerState.velocities[i] = static_cast<float>(vel);
+                        mControllerState.currents[i] = static_cast<float>(cur);
+                        mControllerState.limits_hit[i] = mFunnelServo->getLimitStatus();
+                        break;
+                    }
                 }
             }
 
@@ -127,11 +190,15 @@ namespace mrover {
 } // namespace mrover
 
 
-auto main(int argc, char** argv) -> int {
+auto main(int const argc, char** argv) -> int {
     rclcpp::init(argc, argv);
-    auto scienceBridge = std::make_shared<mrover::ScienceHWBridge>();
+    auto const scienceBridge = std::make_shared<mrover::ScienceHWBridge>();
     scienceBridge->init();
-    rclcpp::spin(scienceBridge);
+
+    rclcpp::executors::MultiThreadedExecutor executor;
+    executor.add_node(scienceBridge);
+    executor.spin();
+
     rclcpp::shutdown();
     return EXIT_SUCCESS;
 }
