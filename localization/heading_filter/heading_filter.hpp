@@ -23,6 +23,10 @@ namespace mrover {
         message_filters::Subscriber<mrover::msg::Heading> rtk_heading_sub;
         message_filters::Subscriber<mrover::msg::FixStatus> rtk_heading_status_sub;
         rclcpp::Subscription<geometry_msgs::msg::Twist>::ConstSharedPtr cmd_vel_sub;
+        
+        rclcpp::Publisher<mrover::msg::Heading>::SharedPtr drive_forward_pub;
+        rclcpp::Publisher<mrover::msg::Heading>::SharedPtr imu_uncorrected_pub;
+        
 
         // params
         std::string world_frame, gps_frame;

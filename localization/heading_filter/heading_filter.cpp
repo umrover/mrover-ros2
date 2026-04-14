@@ -77,6 +77,8 @@ namespace mrover {
         X = 0;
         P = 1;
 
+        drive_forward_pub = this->create_publisher<mrover::msg::Heading>("/drive_forward_heading", 1);
+        imu_uncorrected_pub = this->create_publisher<mrover::msg::Heading>("/imu_uncorrected_heading", 1);
     }
 
     void HeadingFilter::predict(double process_noise) {
@@ -124,6 +126,13 @@ namespace mrover {
             RCLCPP_WARN(get_logger(), "Computed heading not finite, skipping heading correction");
             return;
         }
+
+        mrover::msg::Heading msg;
+
+        msg.heading = fmod(90. - (uncorrected_heading * (180. / M_PI)) + 360., 360.);
+
+        imu_uncorrected_pub->publish(msg);
+
         if (heading_status->fix_type.fix == mrover::msg::FixType::FIXED) {
             double const rover_map_deg = fmod(heading->heading + 90. + 360., 360.);
             double measured_heading_deg = 90. - rover_map_deg;
@@ -137,7 +146,7 @@ namespace mrover {
             heading_correction_delta = fmod((heading_correction_delta + 3 * M_PI), 2 * M_PI) - M_PI;
             predict(process_noise);
             correct(heading_correction_delta, rtk_noise);
-
+            
             auto const correctionDelta = (X - previousX);
             RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "%s", std::format("RTK heading correction delta on X: {} rad", correctionDelta).c_str());
         }
@@ -313,6 +322,12 @@ namespace mrover {
 
         const double drive_forward_heading = std::atan2(mean_v.y(), mean_v.x());
 
+        mrover::msg::Heading msg;
+
+        msg.heading = fmod(90. - (drive_forward_heading * (180. / M_PI)) + 360., 360.);
+
+        drive_forward_pub->publish(msg);
+        
         // Compare against current IMU-derived heading and do a Kalman correct on delta.
         auto const& qmsg = last_imu->orientation;
         if (!std::isfinite(qmsg.w) || !std::isfinite(qmsg.x) || !std::isfinite(qmsg.y) || !std::isfinite(qmsg.z)) {
