@@ -21,7 +21,7 @@ export const useAutonomyStore = defineStore('autonomy', () => {
   const highlightedWaypoint = ref(-1)
   const autonEnabled = ref(false)
   const teleopEnabled = ref(false)
-  const purePursuitEnabled = ref(false)
+  const purePursuitEnabled = ref(true)
   const pathRelaxationEnabled = ref(false)
   const pathInterpolationEnabled = ref(false)
   const stereoDetectorEnabled = ref(false)
