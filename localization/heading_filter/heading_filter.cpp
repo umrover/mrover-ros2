@@ -127,12 +127,6 @@ namespace mrover {
             return;
         }
 
-        mrover::msg::Heading msg;
-
-        msg.heading = fmod(90. - (uncorrected_heading * (180. / M_PI)) + 360., 360.);
-
-        imu_uncorrected_pub->publish(msg);
-
         if (heading_status->fix_type.fix == mrover::msg::FixType::FIXED) {
             double const rover_map_deg = fmod(heading->heading + 90. + 360., 360.);
             double measured_heading_deg = 90. - rover_map_deg;
@@ -179,9 +173,29 @@ namespace mrover {
         }
         uncorrected_orientation.normalize();
         SO3d uncorrected_orientation_rotm = uncorrected_orientation;
+        
+        R2d uncorrected_forward = uncorrected_orientation.toRotationMatrix().col(0).head(2);
+        if (uncorrected_forward.array().isFinite().all()) {
+            double uncorrected_heading = atan2(uncorrected_forward.y(), uncorrected_forward.x());
+            if (std::isfinite(uncorrected_heading)) {
+                mrover::msg::Heading msg;
+
+                msg.heading = fmod(90. - (uncorrected_heading * (180. / M_PI)) + 360., 360.);
+
+                imu_uncorrected_pub->publish(msg);
+                
+            }
+            else 
+            {
+                RCLCPP_WARN(get_logger(), "Computed heading not finite, skipping IMU uncorrected heading publish");
+            }
+        }
+        else 
+        {
+            RCLCPP_WARN(get_logger(), "Forward vector not finite, skipping IMU uncorrected heading publish");
+        }
 
         if (use_mag) {
-            R2d uncorrected_forward = uncorrected_orientation_rotm.rotation().col(0).head(2);
             if (!uncorrected_forward.array().isFinite().all()) {
                 RCLCPP_WARN(get_logger(), "Forward Vector not finite, skipping heading correction");
                 return;
