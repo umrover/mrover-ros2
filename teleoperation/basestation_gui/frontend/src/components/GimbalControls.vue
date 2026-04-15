@@ -47,7 +47,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { chassisAPI } from '@/utils/chassisAPI'
 import { useWebsocketStore } from '@/stores/websocket'
 import type { ControllerStateMessage } from '@/types/websocket'
@@ -55,11 +55,10 @@ import IndicatorDot from './IndicatorDot.vue'
 
 const websocketStore = useWebsocketStore()
 
-const gimbalJointState = computed((): ControllerStateMessage | null => {
-  const msg = websocketStore.messages['chassis']
-  if (!msg) return null
-  const typedMsg = msg as ControllerStateMessage
-  return typedMsg.type === 'gimbal_controller_state' ? typedMsg : null
+const gimbalJointState = ref<ControllerStateMessage | null>(null)
+
+websocketStore.onMessage<ControllerStateMessage>('chassis', 'gimbal_controller_state', (msg) => {
+  gimbalJointState.value = msg
 })
 
 const hasServoState = computed((): boolean => {

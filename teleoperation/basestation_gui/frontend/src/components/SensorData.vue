@@ -82,16 +82,22 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
-import { storeToRefs } from 'pinia'
 import Chart from 'chart.js/auto'
 import type { SensorData } from '../types/sensors'
-import type { ScienceMessage } from '@/types/websocket'
+import type {
+  SPOxygenMessage,
+  SPUVMessage,
+  SPTemperatureMessage,
+  SPHumidityMessage,
+  SPOzoneMessage,
+  SPCO2Message,
+  SPPressureMessage,
+} from '@/types/websocket'
 import SensorModal from '@/components/SensorModal.vue'
 
 const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
 
 const showModal = ref(false)
 
@@ -115,34 +121,26 @@ const sensor_history = ref<number[][]>([
 ])
 const timeCounter = ref(0)
 
-const scienceMessage = computed(() => messages.value['science'])
-
-watch(scienceMessage, (msg) => {
-  if (!msg) return
-  const scienceMsg = msg as ScienceMessage;
-  switch (scienceMsg.type) {
-    case 'sp_oxygen':
-      sensor_data.value.sp_oxygen = scienceMsg.percent
-      break
-    case 'sp_uv':
-      sensor_data.value.sp_uv = scienceMsg.uv_index
-      break
-    case 'sp_temp':
-      sensor_data.value.sp_temp = scienceMsg.temperature
-      break
-    case 'sp_humidity':
-      sensor_data.value.sp_humidity = scienceMsg.relative_humidity
-      break
-    case 'sp_ozone':
-      sensor_data.value.sp_ozone = scienceMsg.ppb
-      break
-    case 'sp_co2':
-      sensor_data.value.sp_co2 = scienceMsg.percent
-      break
-    case 'sp_pressure':
-      sensor_data.value.sp_pressure = scienceMsg.pressure
-      break
-  }
+websocketStore.onMessage<SPOxygenMessage>('science', 'sp_oxygen', (msg) => {
+  sensor_data.value.sp_oxygen = msg.percent
+})
+websocketStore.onMessage<SPUVMessage>('science', 'sp_uv', (msg) => {
+  sensor_data.value.sp_uv = msg.uv_index
+})
+websocketStore.onMessage<SPTemperatureMessage>('science', 'sp_temp', (msg) => {
+  sensor_data.value.sp_temp = msg.temperature
+})
+websocketStore.onMessage<SPHumidityMessage>('science', 'sp_humidity', (msg) => {
+  sensor_data.value.sp_humidity = msg.relative_humidity
+})
+websocketStore.onMessage<SPOzoneMessage>('science', 'sp_ozone', (msg) => {
+  sensor_data.value.sp_ozone = msg.ppb
+})
+websocketStore.onMessage<SPCO2Message>('science', 'sp_co2', (msg) => {
+  sensor_data.value.sp_co2 = msg.percent
+})
+websocketStore.onMessage<SPPressureMessage>('science', 'sp_pressure', (msg) => {
+  sensor_data.value.sp_pressure = msg.pressure
 })
 
 const resetHistory = () => {
