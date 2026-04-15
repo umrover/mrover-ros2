@@ -45,6 +45,10 @@ class Navigation(Node):
                 ("ref_lon", Parameter.Type.DOUBLE),
                 ("ref_alt", Parameter.Type.DOUBLE),
                 ("target_expiration_duration", Parameter.Type.DOUBLE),
+                # Pure Pursuit
+                ("pure_pursuit.min_lookahead_distance", Parameter.Type.DOUBLE),
+                ("pure_pursuit.max_lookahead_distance", Parameter.Type.DOUBLE),
+                ("pure_pursuit.use_pure_pursuit", Parameter.Type.BOOL),
                 # Costmap
                 ("costmap.custom_costmap", Parameter.Type.BOOL),
                 ("costmap.use_costmap", Parameter.Type.BOOL),
