@@ -55,9 +55,8 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
-import { storeToRefs } from 'pinia'
 import type { ControllerStateMessage } from '@/types/websocket'
 import threeSetup, { updatePose, updateIKTarget, set_camera_type, updateCostMapGrid} from '../rover_three.js'
 
@@ -74,8 +73,11 @@ interface ArmIKMessage {
   }
 }
 
+interface CostmapMessage {
+  type: 'costmap'
+}
+
 const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
 
 const threeScene = ref<(() => void) | null>(null)
 
@@ -98,49 +100,37 @@ onBeforeUnmount(() => {
   }
 })
 
-const armMessage = computed(() => messages.value['arm'])
-const contextMessage = computed(() => messages.value['context'])
+websocketStore.onMessage<ControllerStateMessage>('arm', 'arm_state', (msg) => {
+  if (!Array.isArray(msg.names)) return
+  const joints = msg.names.map((name: string, index: number) => {
+    const urdfName = jointNameMap[name] || name
+    let position = msg.positions[index] ?? 0
 
-watch(armMessage, (msg: unknown) => {
-  if (!msg || typeof msg !== 'object') return
-
-  if ('type' in msg && msg.type === 'arm_state') {
-    const typedMsg = msg as ControllerStateMessage
-    if (!Array.isArray(typedMsg.names)) return
-    const joints = typedMsg.names.map((name: string, index: number) => {
-      const urdfName = jointNameMap[name] || name
-      let position = typedMsg.positions[index] ?? 0
-
-      if (urdfName === 'chassis_to_arm_a') {
-        position = position * -100 + 40
-      }
-
-      return {
-        name: urdfName,
-        position,
-      }
-    })
-
-    updatePose(joints)
-  } else if ('type' in msg && msg.type === 'ik_target') {
-    const typedMsg = msg as ArmIKMessage
-    if (typedMsg.target.pose && typedMsg.target.pose.position) {
-      const position = {
-        x: typedMsg.target.pose.position.x * 100,
-        y: typedMsg.target.pose.position.z * 100,
-        z: typedMsg.target.pose.position.y * -100 + 20,
-      }
-      updateIKTarget(position)
+    if (urdfName === 'chassis_to_arm_a') {
+      position = position * -100 + 40
     }
+
+    return {
+      name: urdfName,
+      position,
+    }
+  })
+
+  updatePose(joints)
+})
+
+websocketStore.onMessage<ArmIKMessage>('arm', 'ik_target', (msg) => {
+  if (msg.target.pose && msg.target.pose.position) {
+    const position = {
+      x: msg.target.pose.position.x * 100,
+      y: msg.target.pose.position.z * 100,
+      z: msg.target.pose.position.y * -100 + 20,
+    }
+    updateIKTarget(position)
   }
 })
 
-watch(contextMessage, (msg: unknown) => {
-  if (typeof msg == 'object' && msg !== null && 'type' in msg) {
-    const typedMsg = msg as { type: string; state?: string }
-    if (typedMsg.type === 'costmap') {
-      updateCostMapGrid()
-    }
-  }
+websocketStore.onMessage<CostmapMessage>('context', 'costmap', () => {
+  updateCostMapGrid()
 })
 </script>
