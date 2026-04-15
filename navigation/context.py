@@ -496,11 +496,11 @@ class Context:
         # Communicate with each service and ensure they complete
         while not stereoResult and not imageResult:
             self.node.get_logger().info("Toggling Object Detector")
-            future = self.stero_cli.call_async(stereoRequest)
+            future = self.stereo_cli.call_async(stereoRequest)
             rclpy.spin_until_future_complete(self, future)
             stereoResult = future.result()
 
-            future = self.stero_cli.call_async(imageRequest)
+            future = self.image_cli.call_async(imageRequest)
             rclpy.spin_until_future_complete(self, future)
             imageResult = future.result()
 
