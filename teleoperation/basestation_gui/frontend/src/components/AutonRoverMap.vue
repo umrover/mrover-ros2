@@ -10,6 +10,7 @@
     >
       <l-control-scale :imperial="false" />
       <l-tile-layer
+        :key="online ? 'online' : 'offline'"
         ref="tileLayer"
         :url="online ? onlineUrl : offlineUrl"
         :attribution="attribution"
@@ -129,7 +130,7 @@ const {
   maxOdomCount: 500,
   drawFrequency: 1,
   initialCenter: [38.4071654, -110.7923927],
-  offlineUrl: 'map/urc/{z}/{x}/{y}.jpg',
+  offlineUrl: '/map/{z}/{x}/{y}.png',
 })
 
 const websocketStore = useWebsocketStore()

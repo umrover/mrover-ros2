@@ -26,11 +26,11 @@ JOINT_SCALES = [
 def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
     return [
         filter_input(
-            simulated_axis(controller.buttons, ControllerButton.DPAD_UP, ControllerButton.DPAD_DOWN),
+            simulated_axis(controller.buttons, ControllerButton.DPAD_DOWN, ControllerButton.DPAD_UP),
             scale=JOINT_SCALES[Joint.LINEAR_ACTUATOR.value],
         ),
         filter_input(
-            simulated_axis(controller.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER),
+            simulated_axis(controller.buttons, ControllerButton.LEFT_TRIGGER, ControllerButton.RIGHT_TRIGGER),
             scale=JOINT_SCALES[Joint.AUGER.value],
         ),
     ]

@@ -20,9 +20,9 @@ async def gear_diff_position(data: GearDiffRequest):
         sp_funnel_request.names = ["funnel"]
         sp_funnel_request.positions = [data.position]
 
-        result = await call_service_async(client, sp_funnel_request)
+        result, err = await call_service_async(client, sp_funnel_request)
         if result is None:
-            raise HTTPException(status_code=500, detail="Service call failed")
+            raise HTTPException(status_code=500, detail=err or "Service call failed")
 
         at_tgt = result.at_tgts[0] if result.at_tgts else False
         return {'status': 'success', 'position': data.position, 'at_tgt': at_tgt}

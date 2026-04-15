@@ -19,7 +19,7 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
     maxOdomCount = 100,
     drawFrequency = 1,
     initialCenter = [38.4071654, -110.7923927],
-    offlineUrl = 'map/{z}/{x}/{y}.png',
+    offlineUrl = '/map/{z}/{x}/{y}.png',
   } = options
 
   const websocketStore = useWebsocketStore()
@@ -46,7 +46,7 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
     subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
   }
   const offlineTileOptions = {
-    maxNativeZoom: 16,
+    maxNativeZoom: 24,
     maxZoom: 100,
   }
   const attribution = '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'

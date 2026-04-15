@@ -10,24 +10,25 @@
         :disabled="codeSent"
       />
       <button
+        v-if="!codeSent"
         class="btn btn-sm btn-outline-control"
         data-testid="pw-typing-submit"
-        :disabled="typingMessage.length < 3 || codeSent"
-        @click.prevent="submitCode()"
+        :disabled="typingMessage.length < 3"
+        @click.prevent="submitMessage()"
       >
         Send
       </button>
       <button
+        v-if="codeSent"
         class="btn btn-sm btn-outline-danger"
         data-testid="pw-typing-cancel"
-        :disabled="!codeSent"
-        @click.prevent="cancelCode()"
+        @click.prevent="submitMessage()"
       >
         Cancel
       </button>
       <span class="spacer"></span>
       <span class="yaw-label">YAW</span>
-      <span class="data-value" v-html="formatNumber(yawDegrees, 3, 1, true)"></span><span class="data-unit">&deg;</span>
+      <span class="data-value">{{ yawAngle.toFixed(3) }}</span><span class="data-unit">rad</span>
     </div>
     <table class="feedback-table" data-testid="pw-typing-feedback">
       <tbody>
@@ -48,12 +49,6 @@
 <script lang="ts" setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
-import { formatNumber } from '@/utils/formatNumber'
-
-interface KeyboardYawMessage {
-  type: 'keyboard_yaw'
-  yaw: number
-}
 
 interface TypingFeedbackMessage {
   type: 'typing_feedback'
@@ -65,6 +60,11 @@ interface TypingCancelledMessage {
   type: 'typing_cancelled'
 }
 
+interface KeyboardYawMessage {
+  type: 'keyboard_yaw'
+  yaw: number
+}
+
 const websocketStore = useWebsocketStore()
 
 const typingMessage = ref('')
@@ -72,7 +72,7 @@ const codeSent = ref(false)
 const currentIndex = ref(0)
 const currentState = ref('')
 const letterStates = ref<string[]>(Array(6).fill('notTyped'))
-const yawDegrees = ref(0)
+const yawAngle = ref(0)
 
 onMounted(() => {
   websocketStore.setupWebSocket('auton')
@@ -98,7 +98,7 @@ websocketStore.onMessage<TypingFeedbackMessage>('auton', 'typing_feedback', (msg
 })
 
 websocketStore.onMessage<KeyboardYawMessage>('auton', 'keyboard_yaw', (msg) => {
-  yawDegrees.value = msg.yaw * (180 / Math.PI)
+  yawAngle.value = msg.yaw
 })
 
 websocketStore.onMessage<TypingCancelledMessage>('auton', 'typing_cancelled', () => {
@@ -107,23 +107,23 @@ websocketStore.onMessage<TypingCancelledMessage>('auton', 'typing_cancelled', ()
   letterStates.value = Array(6).fill('notTyped')
 })
 
-function submitCode() {
-  websocketStore.sendMessage('auton', {
-    type: 'code',
-    code: typingMessage.value,
-  })
-  codeSent.value = true
-  letterStates.value = new Array(typingMessage.value.length).fill('notTyped')
-}
-
-function cancelCode() {
-  websocketStore.sendMessage('auton', {
-    type: 'code',
-    code: 'cancel',
-  })
-  codeSent.value = false
-  typingMessage.value = ''
-  letterStates.value = Array(6).fill('notTyped')
+function submitMessage() {
+  if (!codeSent.value) {
+    websocketStore.sendMessage('auton', {
+      type: 'code',
+      code: typingMessage.value,
+    })
+    codeSent.value = true
+    letterStates.value = new Array(typingMessage.value.length).fill('notTyped')
+  } else {
+    websocketStore.sendMessage('auton', {
+      type: 'code',
+      code: 'cancel',
+    })
+    codeSent.value = false
+    typingMessage.value = ''
+    letterStates.value = Array(6).fill('notTyped')
+  }
 }
 
 function updateLetterStates() {
@@ -140,7 +140,7 @@ function updateLetterStates() {
 }
 
 function getLetterClass(state: string) {
-  if (!codeSent.value) return 'grey-cell' // grey when not sent
+  if (!codeSent.value) return 'grey-cell'
 
   return {
     'grey-cell': state === 'grey',
