@@ -1,6 +1,5 @@
 import numpy as np
 from navigation.context import Context
-from visualization_msgs.msg import Marker
 from rclpy.duration import Duration
 from rclpy.time import Time
 from std_msgs.msg import Header

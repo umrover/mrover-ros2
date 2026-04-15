@@ -112,7 +112,7 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
             scale=JOINT_SCALES[Joint.DE_PITCH.value],
         ),
         filter_input(
-            simulated_axis(controller.buttons, ControllerButton.RIGHT_BUMPER, ControllerButton.LEFT_BUMPER),
+            simulated_axis(controller.buttons, ControllerButton.LEFT_BUMPER, ControllerButton.RIGHT_BUMPER),
             scale=JOINT_SCALES[Joint.DE_ROLL.value],
         ),
         filter_input(
@@ -120,7 +120,7 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
             scale=JOINT_SCALES[Joint.CAM.value],
         ),
         filter_input(
-            simulated_axis(controller.buttons, ControllerButton.B, ControllerButton.X),
+            simulated_axis(controller.buttons, ControllerButton.X, ControllerButton.B),
             scale=JOINT_SCALES[Joint.GRIPPER.value],
         ),
     ]
