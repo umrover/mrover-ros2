@@ -185,7 +185,6 @@ function handleReset() {
   }
 }
 
-
 function closeDropdowns() {
   viewDropdownOpen.value = false
   rotationDropdownOpen.value = false
@@ -221,6 +220,8 @@ const jointNameMap: Record<string, string> = {
   gripper: 'gripper_link',
 }
 
+const lastKnownPositions: Record<string, number> = {}
+
 const COSTMAP_VISIBLE_KEY = 'rover3d.costmapVisible'
 const costmapVisible = ref(localStorage.getItem(COSTMAP_VISIBLE_KEY) !== 'false')
 
@@ -248,11 +249,14 @@ onBeforeUnmount(() => {
 onMessage<ControllerStateMessage>('arm', 'arm_state', (msg) => {
   const joints = msg.names.map((name: string, index: number) => {
     const urdfName = jointNameMap[name] || name
-    const rawPosition: number = msg.positions[index] ?? 0
-    const position = urdfName === 'chassis_to_arm_a'
-      ? rawPosition * -100 + 40
-      : rawPosition
+    const incoming: number | null = (msg.positions as (number | null)[])[index] ?? null
 
+    if (incoming !== null) {
+      const mapped = urdfName === 'chassis_to_arm_a' ? incoming * -100 + 40 : incoming
+      lastKnownPositions[urdfName] = mapped
+    }
+
+    const position = lastKnownPositions[urdfName] ?? 0
     return { name: urdfName, position }
   })
 
