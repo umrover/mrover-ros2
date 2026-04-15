@@ -5,7 +5,7 @@ from . import (
     costmap_search,
     stuck_recovery,
 )
-from mrover.msg import WaypointType
+from mrover.msg import WaypointType, ObjectDetectorType
 from mrover.srv import MoveCostMap
 from .context import Context
 import rclpy
@@ -81,6 +81,19 @@ class WaypointState(State):
         if self.USE_COSTMAP:
             context.node.get_logger().info("Resetting costmap dilation")
             context.reset_dilation()
+
+        # Switch Object Detector to type requested
+        match current_waypoint.type.val:
+            case WaypointType.NO_SEARCH:
+                context.toggle_object_detector(ObjectDetectorType.OFF)
+            case WaypointType.POST:
+                context.toggle_object_detector(ObjectDetectorType.OFF) # TODO: Implement tag detection
+            case WaypointType.MALLET:
+                context.toggle_object_detector(ObjectDetectorType.MALLET)
+            case WaypointType.WATER_BOTTLE:
+                context.toggle_object_detector(ObjectDetectorType.WATER_BOTTLE)
+            case WaypointType.ROCK_PICK:
+                context.toggle_object_detector(ObjectDetectorType.ROCK_PICK)
 
         context.node.get_logger().info("On Enter finished")
 
