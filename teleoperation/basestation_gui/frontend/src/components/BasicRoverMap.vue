@@ -10,6 +10,7 @@
     >
       <l-control-scale :imperial="false" />
       <l-tile-layer
+        :key="online ? 'online' : 'offline'"
         ref="tileLayer"
         :url="online ? onlineUrl : offlineUrl"
         :attribution="attribution"

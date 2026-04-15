@@ -185,6 +185,7 @@ function handleReset() {
   }
 }
 
+
 function closeDropdowns() {
   viewDropdownOpen.value = false
   rotationDropdownOpen.value = false
