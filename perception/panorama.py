@@ -88,8 +88,7 @@ class Panorama(Node):
         # PC Stitching Variables
         self.pc_sub = message_filters.Subscriber(self, PointCloud2, f"/{self.zed_version}/left/points")
         self.imu_sub = message_filters.Subscriber(self, Imu, f"/{self.zed_version}_imu/data_raw")
-        self.img_sub = message_filters.Subscriber(self, Image, f"/{self.zed_version}/left/image")
-        self.sync = message_filters.ApproximateTimeSynchronizer([self.pc_sub, self.imu_sub, self.img_sub], 10, 1)
+        self.sync = message_filters.ApproximateTimeSynchronizer([self.pc_sub, self.imu_sub], 10, 1)
         self.sync.registerCallback(self.synced_gps_pc_callback)
 
         self.pc_publisher = self.create_publisher(PointCloud2, "/stitched_pc", 10)
@@ -97,12 +96,14 @@ class Panorama(Node):
         self.pc_rate = PanoRate(2, self)
         self.stitched_pc = np.empty((0, 8), dtype=np.float32)
 
-        # self.gimbal_sub = message_filters.Subscriber(self, ControllerState, "/gimbal_controller_state")
-        # self.img_sync = message_filters.ApproximateTimeSynchronizer([self.gimbal_sub, self.img_sub])
-        # self.img_sync.registerCallback(self.synced_img_gimbal_callback)
+        self.gimbal_sub = message_filters.Subscriber(self, ControllerState, "/gimbal_controller_state")
+        self.img_sub = message_filters.Subscriber(self, Image, f"/{self.zed_version}/left/image")
+        self.img_sync = message_filters.ApproximateTimeSynchronizer([self.gimbal_sub, self.img_sub], 10, 1)
+        self.img_sync.registerCallback(self.synced_img_gimbal_callback)
         self.img_list = [] # list of images
         self.img_dirs = [] # list of imu values per image
         self.headings = []
+
         self.pixels_per_deg = self.zed_image_width_pixels / self.zed_fov_deg
         self.img_rate = PanoRate(2, self)
 
@@ -122,7 +123,7 @@ class Panorama(Node):
         pc[:, 0:3] = np.delete(rotated_points, 3, 1)
         return pc
 
-    def synced_gps_pc_callback(self, pc_msg: PointCloud2, imu_msg: Imu, img_msg: Image):
+    def synced_gps_pc_callback(self, pc_msg: PointCloud2, imu_msg: Imu):
         # extract xyzrgb fields
         # get every tenth point to make the pc sparser
         # TODO: dtype hard-coded to float32
@@ -152,14 +153,14 @@ class Panorama(Node):
             rotated_pc = self.rotate_pc(rotation, self.arr_pc)
             self.stitched_pc = np.vstack((self.stitched_pc, rotated_pc))
 
-            # Record Image
-            self.current_img = cv2.cvtColor(
-                np.frombuffer(img_msg.data, dtype=np.uint8).reshape(img_msg.height, img_msg.width, 4), cv2.COLOR_RGBA2RGB
-            )
+            # # Record Image
+            # self.current_img = cv2.cvtColor(
+            #     np.frombuffer(img_msg.data, dtype=np.uint8).reshape(img_msg.height, img_msg.width, 4), cv2.COLOR_RGBA2RGB
+            # )
 
-            if self.current_img is not None:
-                self.img_list.append(copy.deepcopy(self.current_img))
-                self.img_dirs.append(np.mod(np.arctan2(rotation[1][0], rotation[0][0]), (2 * np.pi)))
+            # if self.current_img is not None:
+            #     self.img_list.append(copy.deepcopy(self.current_img))
+            #     self.img_dirs.append(np.mod(np.arctan2(rotation[1][0], rotation[0][0]), (2 * np.pi)))
 
             self.pc_rate.sleep()
 
@@ -233,20 +234,20 @@ class Panorama(Node):
             self.sync = message_filters.ApproximateTimeSynchronizer([self.pc_sub, self.imu_sub, self.img_sub], 10, 1)
             self.sync.registerCallback(self.synced_gps_pc_callback)
 
-            # self.gimbal_sub = message_filters.Subscriber(self, ControllerState, "/gimbal_controller_state")
-            # self.img_sync = message_filters.ApproximateTimeSynchronizer([self.gimbal_sub, self.img_sub])
-            # self.img_sync.registerCallback(self.synced_img_gimbal_callback)
+            self.gimbal_sub = message_filters.Subscriber(self, ControllerState, "/gimbal_controller_state")
+            self.img_sync = message_filters.ApproximateTimeSynchronizer([self.gimbal_sub, self.img_sub])
+            self.img_sync.registerCallback(self.synced_img_gimbal_callback)
 
         if self.heading_sub is not None:
             self.destroy_subscription(self.heading_sub)
             self.heading_sub = None
 
         # START SPINNING THE MAST GIMBAL
-        # req = ServoPosition.Request()
-        # req.header = Header()
-        # req.name = ["gimbal_pitch", "gimbal_yaw"]
-        # req.position = [90.0, 360.0] # TODO is 90 correct?? 0?
-        # self.gimbal_client.call_async(req)
+        req = ServoPosition.Request()
+        req.header = Header()
+        req.name = ["gimbal_pitch", "gimbal_yaw"]
+        req.position = [np.pi / 2, 2*np.pi] # TODO is 90 correct?? 0?
+        self.gimbal_client.call_async(req)
 
         return response
 
@@ -257,23 +258,23 @@ class Panorama(Node):
         self.record_pc = False
 
         # Return Mast Gimbal to original position
-        # req = ServoPosition.Request()
-        # req.header = Header()
-        # req.name = ["gimbal_pitch", "gimbal_yaw"]
-        # req.position = [90.0, 0.0] # TODO is 90 correct?? 0?
-        # self.gimbal_client.call_async(req)
+        req = ServoPosition.Request()
+        req.header = Header()
+        req.name = ["gimbal_pitch", "gimbal_yaw"]
+        req.position = [np.pi / 2, 0.0] # TODO is 90 correct?? 0?
+        self.gimbal_client.call_async(req)
 
         if self.pc_sub is not None and self.imu_sub is not None:
             self.destroy_subscription(self.pc_sub.sub)
             self.destroy_subscription(self.imu_sub.sub)
             self.destroy_subscription(self.img_sub.sub)
-            # self.destroy_subscription(self.gimbal_sub.sub)
+            self.destroy_subscription(self.gimbal_sub.sub)
             self.pc_sub = None
             self.imu_sub = None
             self.img_sub = None
-            # self.gimbal_sub = None
+            self.gimbal_sub = None
             self.sync = None
-            # self.img_sync = None
+            self.img_sync = None
 
         # construct pc from stitched
         try:
