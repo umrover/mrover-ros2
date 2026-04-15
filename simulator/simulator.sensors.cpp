@@ -269,4 +269,12 @@ namespace mrover {
         }
     }
 
+    auto Simulator::dummyToggleStereoMode(mrover::srv::ToggleStereoObjectDetector::Request::ConstSharedPtr& request, mrover::srv::ToggleStereoObjectDetector::Response::SharedPtr& response) -> void {
+        response->success = true;
+    }
+
+    auto Simulator::dummyToggleImageMode(mrover::srv::ToggleImageObjectDetector::Request::ConstSharedPtr& request, mrover::srv::ToggleImageObjectDetector::Response::SharedPtr& response) -> void {
+        response->success = true;
+    }
+
 } // namespace mrover
