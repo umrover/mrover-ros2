@@ -15,23 +15,23 @@ from geometry_msgs.msg import Twist
 ra_mode = "disabled"
 ra_mode_lock = threading.Lock()
 
-_ik_pos_pub: Publisher | None = None
+ik_pos_pub: Publisher | None = None
 stow_task: asyncio.Task | None = None
 
 
 async def stow_timer_loop():
     """Background loop to periodically publish STOW_POSITION when in stow mode."""
     while True:
-        if get_ra_mode() == "stow" and _ik_pos_pub is not None:
-            _ik_pos_pub.publish(STOW_POSITION)
+        if get_ra_mode() == "stow" and ik_pos_pub is not None:
+            ik_pos_pub.publish(STOW_POSITION)
         else:
             break
         await asyncio.sleep(0.1)  # 10 Hz
 
 
-def register_ik_pos_pub(pub: Publisher) -> None:
-    global _ik_pos_pub
-    _ik_pos_pub = pub
+def registerik_pos_pub(pub: Publisher) -> None:
+    global ik_pos_pub
+    ik_pos_pub = pub
 
 
 def get_ra_mode() -> str:
@@ -55,11 +55,11 @@ async def set_ra_mode(new_ra_mode: str) -> bool:
         ra_mode = new_ra_mode
 
     if new_ra_mode == "stow":
-        if _ik_pos_pub is not None:
-            _ik_pos_pub.publish(STOW_POSITION)
+        if ik_pos_pub is not None:
+            ik_pos_pub.publish(STOW_POSITION)
         if stow_task is None or stow_task.done():
             stow_task = asyncio.create_task(stow_timer_loop())
-    
+
     return True
 
 
@@ -82,7 +82,6 @@ STOW_POSITION.pos.y = 0.0
 STOW_POSITION.pos.z = 0.042229
 STOW_POSITION.pitch = 0.072694
 STOW_POSITION.roll = 0.0
-
 
 
 class Joint(Enum):
@@ -170,7 +169,10 @@ def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[l
 
 
 def send_ra_controls(
-    inputs: DeviceInputs, thr_pub: Publisher, ee_pos_pub: Publisher, ee_vel_pub: Publisher,
+    inputs: DeviceInputs,
+    thr_pub: Publisher,
+    ee_pos_pub: Publisher,
+    ee_vel_pub: Publisher,
 ) -> None:
     current_mode = get_ra_mode()
     match current_mode:
@@ -192,16 +194,30 @@ def send_ra_controls(
                     ik_pos_msg.pos.x = (-1.0) * safe_index(inputs.axes, ControllerAxis.LEFT_Y)
                     ik_pos_msg.pos.y = (-1.0) * safe_index(inputs.axes, ControllerAxis.LEFT_X)
                     ik_pos_msg.pos.z = (-1.0) * safe_index(inputs.axes, ControllerAxis.RIGHT_Y)
-                    ik_pos_msg.pitch = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER)
-                    ik_pos_msg.roll = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_BUMPER, ControllerButton.LEFT_BUMPER)
+                    ik_pos_msg.pitch = 1.0 * simulated_axis(
+                        inputs.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER
+                    )
+                    ik_pos_msg.roll = 1.0 * simulated_axis(
+                        inputs.buttons, ControllerButton.RIGHT_BUMPER, ControllerButton.LEFT_BUMPER
+                    )
                     ee_pos_pub.publish(ik_pos_msg)
                 case "ik-vel":
                     ik_vel_msg = Twist()
-                    ik_vel_msg.linear.x = (-1.0) * filter_input(safe_index(inputs.axes, ControllerAxis.LEFT_Y), deadzone=CONTROLLER_STICK_DEADZONE)
-                    ik_vel_msg.linear.y = (-1.0) * filter_input(safe_index(inputs.axes, ControllerAxis.LEFT_X), deadzone=CONTROLLER_STICK_DEADZONE)
-                    ik_vel_msg.linear.z = (-1.0) * filter_input(safe_index(inputs.axes, ControllerAxis.RIGHT_Y), deadzone=CONTROLLER_STICK_DEADZONE)
-                    ik_vel_msg.angular.y = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER)
-                    ik_vel_msg.angular.x = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_BUMPER, ControllerButton.LEFT_BUMPER)
+                    ik_vel_msg.linear.x = (-1.0) * filter_input(
+                        safe_index(inputs.axes, ControllerAxis.LEFT_Y), deadzone=CONTROLLER_STICK_DEADZONE
+                    )
+                    ik_vel_msg.linear.y = (-1.0) * filter_input(
+                        safe_index(inputs.axes, ControllerAxis.LEFT_X), deadzone=CONTROLLER_STICK_DEADZONE
+                    )
+                    ik_vel_msg.linear.z = (-1.0) * filter_input(
+                        safe_index(inputs.axes, ControllerAxis.RIGHT_Y), deadzone=CONTROLLER_STICK_DEADZONE
+                    )
+                    ik_vel_msg.angular.y = 1.0 * simulated_axis(
+                        inputs.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER
+                    )
+                    ik_vel_msg.angular.x = 1.0 * simulated_axis(
+                        inputs.buttons, ControllerButton.RIGHT_BUMPER, ControllerButton.LEFT_BUMPER
+                    )
                     ee_vel_pub.publish(ik_vel_msg)
 
                     cam_throttle = filter_input(

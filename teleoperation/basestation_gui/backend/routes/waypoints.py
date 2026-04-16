@@ -144,32 +144,7 @@ def delete_basic_waypoint(waypoint_id: int):
             conn.close()
 
 
-# --- Shared helpers for course tables ---
-
-def _fetch_course(conn, table: str) -> list[dict]:
-    course = conn.execute(f'SELECT * FROM {table} ORDER BY sequence_order ASC').fetchall()
-    results = []
-    for w in course:
-        wd = dict(w)
-        del wd['id']
-        wd['lat'] = wd.pop('latitude')
-        wd['lon'] = wd.pop('longitude')
-        del wd['sequence_order']
-        results.append(wd)
-    return results
-
-
-def _save_course(conn, table: str, waypoints: list) -> None:
-    conn.execute(f'DELETE FROM {table}')
-    for i, w in enumerate(waypoints):
-        conn.execute(f'''
-            INSERT INTO {table} (name, tag_id, type, latitude, longitude, sequence_order)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (w.name, w.tag_id, w.type, w.lat, w.lon, i))
-    conn.commit()
-
-
-def _fetch_store_row(conn, waypoint_id: int) -> dict:
+def fetch_store_row(conn, waypoint_id: int) -> dict:
     row = conn.execute('SELECT * FROM auton_waypoints WHERE id = ?', (waypoint_id,)).fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="Waypoint not found")
@@ -180,8 +155,6 @@ def _fetch_store_row(conn, waypoint_id: int) -> dict:
     wd['deletable'] = bool(wd['deletable'])
     return wd
 
-
-# --- Store: persistent waypoint library ---
 
 @router.get("/auton/store/")
 def get_store():
@@ -215,7 +188,7 @@ def add_to_store(data: CreateAutonWaypoint):
         conn.commit()
         return {
             'status': 'success',
-            'waypoint': _fetch_store_row(conn, cursor.lastrowid)
+            'waypoint': fetch_store_row(conn, cursor.lastrowid)
         }
     finally:
         if conn:
@@ -258,7 +231,7 @@ def update_store(waypoint_id: int, data: UpdateAutonWaypoint):
         conn.execute(f'UPDATE auton_waypoints SET {", ".join(set_clauses)} WHERE id = ?', values)
         conn.commit()
 
-        return {'status': 'success', 'waypoint': _fetch_store_row(conn, waypoint_id)}
+        return {'status': 'success', 'waypoint': fetch_store_row(conn, waypoint_id)}
     finally:
         if conn:
             conn.close()
@@ -302,14 +275,21 @@ def reset_store():
             conn.close()
 
 
-# --- Execution: active navigation batch ---
-
 @router.get("/auton/execution/")
 def get_execution():
     conn = None
     try:
         conn = get_db_connection()
-        return {'status': 'success', 'course': _fetch_course(conn, 'current_auton_course')}
+        course = conn.execute('SELECT * FROM current_auton_course ORDER BY sequence_order ASC').fetchall()
+        results = []
+        for w in course:
+            wd = dict(w)
+            del wd['id']
+            wd['lat'] = wd.pop('latitude')
+            wd['lon'] = wd.pop('longitude')
+            del wd['sequence_order']
+            results.append(wd)
+        return {'status': 'success', 'course': results}
     finally:
         if conn:
             conn.close()
@@ -320,7 +300,13 @@ def save_execution(data: AutonWaypointList):
     conn = None
     try:
         conn = get_db_connection()
-        _save_course(conn, 'current_auton_course', data.waypoints)
+        conn.execute('DELETE FROM current_auton_course')
+        for i, w in enumerate(data.waypoints):
+            conn.execute('''
+                INSERT INTO current_auton_course (name, tag_id, type, latitude, longitude, sequence_order)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (w.name, w.tag_id, w.type, w.lat, w.lon, i))
+        conn.commit()
         return {'status': 'success'}
     finally:
         if conn:
