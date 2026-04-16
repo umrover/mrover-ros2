@@ -145,7 +145,7 @@ const check_button_limit = (
   return false
 }
 
-const VIBRATION_THRESHOLD = 0.2
+const VIBRATION_THRESHOLD = 0.8
 
 onMessage<ControllerStateMessage>('arm', 'arm_state', msg => {
   const left_horiz_limit = check_horizontal_axis_limit(0, msg.limits_hit[0])
