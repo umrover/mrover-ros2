@@ -75,7 +75,7 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
-import type { ControllerStateMessage, IkFeedbackMessage, OccupancyGridMessage } from '@/types/websocket'
+import type { ControllerStateMessage, OccupancyGridMessage } from '@/types/websocket'
 import type { OrientationMessage } from '@/types/coordinates'
 import { quaternionToYaw } from '@/utils/map'
 import { useRoverScene, CameraType, NUM_COSTMAP_BLOCKS } from '@/composables/useRoverScene'
@@ -92,7 +92,6 @@ const {
   toggleCostMapVisibility,
   setCostMapVisibility,
   updateJoints,
-  updateIKTarget,
   setRoverHeading,
 } = useRoverScene()
 
@@ -261,14 +260,6 @@ onMessage<ControllerStateMessage>('arm', 'arm_state', (msg) => {
   })
 
   updateJoints(joints)
-})
-
-onMessage<IkFeedbackMessage>('arm', 'ik_feedback', (msg) => {
-  updateIKTarget({
-    x: msg.pos.x * 100,
-    y: msg.pos.z * 100,
-    z: msg.pos.y * -100 + 20,
-  })
 })
 
 

@@ -8,7 +8,7 @@
       <div class="island p-2 rounded h-full">
         <OdometryReading />
       </div>
-    </template>
+  </template>
 
     <template #nav-status>
       <div class="island p-2 rounded h-full flex flex-col">
