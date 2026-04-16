@@ -465,7 +465,7 @@ class Context:
         self.image_cli = node.create_client(ToggleImageObjectDetector, "toggle_image_object_detector")
 
         while not self.stereo_cli.wait_for_service(timeout_sec=1.0):
-            node.get_logger().info("Waiting for stero_object_detector service...")
+            node.get_logger().info("Waiting for stereo_object_detector service...")
         while not self.image_cli.wait_for_service(timeout_sec=1.0):
             node.get_logger().info("Waiting for image_object_detector service...")
 
@@ -487,9 +487,9 @@ class Context:
     
     def toggle_object_detector(self, objectType: ObjectDetectorType) -> bool:
         stereoRequest = ToggleStereoObjectDetector.Request()
-        stereoRequest.toggle = objectType
+        stereoRequest.toggle.mode = objectType
         imageRequest = ToggleImageObjectDetector.Request()
-        imageRequest.toggle = objectType
+        imageRequest.toggle.mode = objectType
         stereoResult = False
         imageResult = False
 
