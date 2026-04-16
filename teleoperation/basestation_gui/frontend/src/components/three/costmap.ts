@@ -36,7 +36,6 @@ export function createCostmap(scene: THREE.Scene): CostmapRenderer {
   colorPlane.rotation.x = -Math.PI / 2
   container.add(colorPlane)
 
-  // Drawn once at init, hidden on first real costmap update.
   const unavailableCanvas = document.createElement('canvas')
   unavailableCanvas.width = SIDE_LENGTH
   unavailableCanvas.height = SIDE_LENGTH
@@ -57,7 +56,6 @@ export function createCostmap(scene: THREE.Scene): CostmapRenderer {
   unavailablePlane.lookAt(-BLOCK_WIDTH / 2, 50, -BLOCK_WIDTH / 2)
   container.add(unavailablePlane)
 
-  // Gray out the color plane while unavailable
   for (let i = 0; i < GRID_SIZE; i++) {
     const idx = i * 4
     textureData[idx] = 80

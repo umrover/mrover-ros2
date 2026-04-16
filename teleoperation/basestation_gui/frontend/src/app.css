@@ -960,3 +960,50 @@ html {
 .overlay-toolbar-btn-active:hover {
   background: var(--control-primary);
 }
+
+/* Floating overlay toolbar */
+.overlay-toolbar {
+  position: absolute;
+  top: 0;
+  z-index: 1000;
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  pointer-events: none;
+}
+
+.overlay-toolbar > * {
+  pointer-events: auto;
+}
+
+.overlay-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  font-family: var(--cmd-font-mono);
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--card-bg) 80%, transparent);
+  backdrop-filter: blur(8px);
+  border: var(--cmd-border-width) solid var(--cmd-panel-border);
+  border-radius: var(--cmd-radius-md);
+  cursor: pointer;
+  transition: all var(--cmd-transition);
+}
+
+.overlay-toolbar-btn:hover {
+  background: var(--card-bg);
+  border-color: var(--control-primary);
+}
+
+.overlay-toolbar-btn-active {
+  color: #fff;
+  background: color-mix(in srgb, var(--control-primary) 85%, transparent);
+  border-color: var(--control-primary);
+}
+
+.overlay-toolbar-btn-active:hover {
+  background: var(--control-primary);
+}
