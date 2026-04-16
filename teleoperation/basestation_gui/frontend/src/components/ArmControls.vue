@@ -2,24 +2,35 @@
   <div class="flex flex-col gap-2 h-full">
     <div class="flex justify-between items-center">
       <h4 class="component-header">Arm Controls</h4>
-      <p class="text-danger" :class="forcing_limit ? 'visible' : 'invisible'">Limit Reached!</p>
+      <p class="text-danger" :class="forcing_limit ? 'visible' : 'invisible'">
+        Limit Reached!
+      </p>
       <IndicatorDot :is-active="connected" class="mr-2" />
     </div>
-    <div class="flex w-full" role="group" aria-label="Arm mode selection" data-testid="pw-arm-mode-buttons">
+    <div
+      class="flex w-full"
+      role="group"
+      aria-label="Arm mode selection"
+      data-testid="pw-arm-mode-buttons"
+    >
       <div class="cmd-btn-group-connected w-full">
         <button
           type="button"
           class="cmd-btn cmd-btn-sm flex-1"
-          :class="mode === 'disabled' ? 'cmd-btn-danger' : 'cmd-btn-outline-danger'"
+          :class="
+            mode === 'disabled' ? 'cmd-btn-danger' : 'cmd-btn-outline-danger'
+          "
           data-testid="pw-arm-mode-disabled"
           @click="newRAMode('disabled')"
-          >
+        >
           Disabled
         </button>
         <button
           type="button"
           class="cmd-btn cmd-btn-sm flex-1"
-          :class="mode === 'throttle' ? 'cmd-btn-success' : 'cmd-btn-outline-success'"
+          :class="
+            mode === 'throttle' ? 'cmd-btn-success' : 'cmd-btn-outline-success'
+          "
           data-testid="pw-arm-mode-throttle"
           @click="newRAMode('throttle')"
         >
@@ -28,7 +39,9 @@
         <button
           type="button"
           class="cmd-btn cmd-btn-sm flex-1"
-          :class="mode === 'ik-pos' ? 'cmd-btn-success' : 'cmd-btn-outline-success'"
+          :class="
+            mode === 'ik-pos' ? 'cmd-btn-success' : 'cmd-btn-outline-success'
+          "
           data-testid="pw-arm-mode-ik-pos"
           @click="newRAMode('ik-pos')"
         >
@@ -37,7 +50,9 @@
         <button
           type="button"
           class="cmd-btn cmd-btn-sm flex-1"
-          :class="mode === 'ik-vel' ? 'cmd-btn-success' : 'cmd-btn-outline-success'"
+          :class="
+            mode === 'ik-vel' ? 'cmd-btn-success' : 'cmd-btn-outline-success'
+          "
           data-testid="pw-arm-mode-ik-vel"
           @click="newRAMode('ik-vel')"
         >
@@ -45,7 +60,12 @@
         </button>
       </div>
     </div>
-    <GamepadDisplay :axes="axes" :buttons="buttons" layout="horizontal" class="grow min-h-0" />
+    <GamepadDisplay
+      :axes="axes"
+      :buttons="buttons"
+      layout="horizontal"
+      class="grow min-h-0"
+    />
   </div>
 </template>
 
@@ -95,46 +115,63 @@ const newRAMode = async (newMode: string) => {
   }
 }
 
-const check_horizontal_axis_limit = (idx: number, limit_status: number, dead_radius: number = 0.05) => {
-  if (axes.value[idx] > dead_radius && limit_status == 1) {
-    forcing_limit.value = true
-  } else if (axes.value[idx] < -dead_radius && limit_status == 2) {
-    forcing_limit.value = true
-  }
+const check_horizontal_axis_limit = (
+  idx: number,
+  limit_status: number,
+  dead_radius: number = 0.05,
+): boolean => {
+  if (axes.value[idx] > dead_radius && limit_status == 1) return true
+  if (axes.value[idx] < -dead_radius && limit_status == 2) return true
+  return false
 }
 
-const check_vertical_axis_limit = (idx: number, limit_status: number, dead_radius: number = 0.05) => {
-  if (axes.value[idx] < -dead_radius && limit_status == 1) {
-    forcing_limit.value = true
-  } else if (axes.value[idx] > dead_radius && limit_status == 2) {
-    forcing_limit.value = true
-  }
+const check_vertical_axis_limit = (
+  idx: number,
+  limit_status: number,
+  dead_radius: number = 0.05,
+): boolean => {
+  if (axes.value[idx] < -dead_radius && limit_status == 1) return true
+  if (axes.value[idx] > dead_radius && limit_status == 2) return true
+  return false
 }
 
-const check_button_limit = (left_idx: number, right_idx: number, limit_status: number) => {
-  if (buttons.value[left_idx] && limit_status == 1) {
-    forcing_limit.value = true
-  } else if (buttons.value[right_idx] && limit_status == 2) {
-    forcing_limit.value = true
-  }
+const check_button_limit = (
+  left_idx: number,
+  right_idx: number,
+  limit_status: number,
+): boolean => {
+  if (buttons.value[left_idx] && limit_status == 1) return true
+  if (buttons.value[right_idx] && limit_status == 2) return true
+  return false
 }
 
-onMessage<ControllerStateMessage>('arm', 'arm_state', (msg) => {
-  forcing_limit.value = false
+const VIBRATION_THRESHOLD = 0.5
+const axis_contribution = (
+  axis_idx: number,
+  x_idx: number,
+  y_idx: number,
+): number => {
+  const magnitude = Math.sqrt(axes.value[x_idx] ** 2 + axes.value[y_idx] ** 2)
+  if (magnitude < 0.01) return 0
+  return Math.abs(axes.value[axis_idx]) / magnitude
+}
 
-  // Left joystick horizontal (joint_a)
-  check_horizontal_axis_limit(0, msg.limits_hit[0])
+onMessage<ControllerStateMessage>('arm', 'arm_state', msg => {
+  const left_horiz_limit = check_horizontal_axis_limit(0, msg.limits_hit[0])
+  const left_vert_limit = check_vertical_axis_limit(1, msg.limits_hit[1])
+  const right_vert_limit = check_vertical_axis_limit(3, msg.limits_hit[2])
+  const bumper_limit = check_button_limit(4, 5, msg.limits_hit[4])
 
-  // Left joystick vertical (joint_b)
-  check_vertical_axis_limit(1, msg.limits_hit[1])
+  forcing_limit.value =
+    left_horiz_limit || left_vert_limit || right_vert_limit || bumper_limit
 
-  // Right joystick vertical (joint_c)
-  check_vertical_axis_limit(3, msg.limits_hit[2])
+  const intentional_limit =
+    (left_horiz_limit && axis_contribution(0, 0, 1) > VIBRATION_THRESHOLD) ||
+    (left_vert_limit && axis_contribution(1, 0, 1) > VIBRATION_THRESHOLD) ||
+    (right_vert_limit && axis_contribution(3, 2, 3) > VIBRATION_THRESHOLD) ||
+    bumper_limit
 
-  // Bumpers (joint_de_pitch)
-  check_button_limit(4, 5, msg.limits_hit[4])
-
-  if (forcing_limit.value && vibrationActuator.value) {
+  if (intentional_limit && vibrationActuator.value) {
     vibrationActuator.value.playEffect('dual-rumble', {
       startDelay: 0,
       duration: 100,
