@@ -9,8 +9,6 @@ from backend.ra_controls import send_ra_controls
 from mrover.msg import Throttle, IK, ControllerState
 from geometry_msgs.msg import Twist
 from rclpy.publisher import Publisher
-
-
 class ArmHandler(WebSocketHandler):
     arm_thr_pub: Publisher
     ik_pos_pub: Publisher
@@ -29,32 +27,6 @@ class ArmHandler(WebSocketHandler):
 
 
         self.forward_ros_topic("/arm_controller_state", ControllerState, "arm_state")
-        self.forward_ros_topic("/arm_ik", IK, "ik_target")
-        self.forward_ros_topic("/arm_thr_cmd", Throttle, "arm_throttle_command")
-
-        self.timers.append(self.node.create_timer(0.1, self.send_arm_feedback_callback))
-
-    def send_arm_feedback_callback(self):
-        try:
-            if not self.buffer.can_transform("arm_base_link", "arm_fk", rclpy.time.Time()):
-                return
-
-            arm_in_base = SE3.from_tf_tree(self.buffer, "arm_base_link", "arm_fk")
-            pos = arm_in_base.translation()
-            # maybe pitch/roll in the future?
-            data_to_send = {
-                "type": "ik_feedback",
-                "pos": {
-                    "x": pos[0],
-                    "y": pos[1],
-                    "z": pos[2],
-                },
-            }
-            self.schedule_send(data_to_send)
-        except (LookupException, ConnectivityException, ExtrapolationException):
-            pass
-        except Exception as e:
-            get_logger().error(f"ArmHandler feedback error: {e}")
 
     async def handle_message(self, data):
         msg_type = data.get("type")
