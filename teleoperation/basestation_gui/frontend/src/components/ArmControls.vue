@@ -120,8 +120,8 @@ const check_horizontal_axis_limit = (
   limit_status: number,
   dead_radius: number = 0.05,
 ): boolean => {
-  if (axes.value[idx] > dead_radius && limit_status == 1) return true
-  if (axes.value[idx] < -dead_radius && limit_status == 2) return true
+  if (axes.value[idx] > dead_radius && limit_status == 2) return true
+  if (axes.value[idx] < -dead_radius && limit_status == 1) return true
   return false
 }
 
@@ -162,14 +162,13 @@ onMessage<ControllerStateMessage>('arm', 'arm_state', msg => {
   const right_vert_limit = check_vertical_axis_limit(3, msg.limits_hit[2])
   const bumper_limit = check_button_limit(4, 5, msg.limits_hit[4])
 
-  forcing_limit.value =
-    left_horiz_limit || left_vert_limit || right_vert_limit || bumper_limit
-
   const intentional_limit =
     (left_horiz_limit && axis_contribution(0, 0, 1) > VIBRATION_THRESHOLD) ||
     (left_vert_limit && axis_contribution(1, 0, 1) > VIBRATION_THRESHOLD) ||
     (right_vert_limit && axis_contribution(3, 2, 3) > VIBRATION_THRESHOLD) ||
     bumper_limit
+
+  forcing_limit.value = intentional_limit
 
   if (intentional_limit && vibrationActuator.value) {
     vibrationActuator.value.playEffect('dual-rumble', {
