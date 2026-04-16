@@ -4,7 +4,9 @@ from dataclasses import dataclass
 
 import numpy as np
 import pymap3d
+import math
 import rclpy
+from lie import angle_to_rotate_2d
 from scipy import ndimage
 from rclpy.parameter import Parameter
 
@@ -123,6 +125,58 @@ class Environment:
                 return self.get_target_position("pick")
             case _:
                 return None
+    
+    def viewing_target(self, frame: str) -> bool:
+        """
+        :param frame:   Target frame name. Could be for a tag, the hammer, rock pick, or the water bottle.
+        :return:        Pose of the target in the world frame if it exists and is not too old, otherwise None
+        """
+        rover_pose = self.ctx.rover.get_pose_in_map()
+        if rover_pose is None:
+            self.ctx.node.get_logger().info(f"Rover has no pose")
+            return False
+        
+        try:
+            target_pose, t = SE3.from_tf_tree_with_time(self.ctx.tf_buffer, frame, self.ctx.world_frame)
+        except (
+            tf2_ros.LookupException,
+            tf2_ros.ConnectivityException,
+            tf2_ros.ExtrapolationException,
+        ):
+            return False
+
+        now = self.ctx.node.get_clock().now()
+        time = Time.from_msg(t)  # have to convert because time from message is a different type
+        object_detector_period: float = 1.0 / self.ctx.node.get_parameter("object_detector_frequency").value
+        object_expiration_duration = Duration(nanoseconds = object_detector_period * 1e9)
+
+        zed_fov: float = self.ctx.node.get_parameter("zed_fov").value
+
+        rover_dir = rover_pose.rotation()[:, 0]
+        rover_dir[2] = 0
+
+        target_dir = target_pose.translation()[:2] - rover_pose.translation()[:2]
+
+        dir_diff = angle_to_rotate_2d(rover_dir[:2], target_dir[:2])
+        self.ctx.node.get_logger().info(f"Angle difference from target {frame}: {dir_diff * 180 / np.pi} degrees")
+
+        return now - time < object_expiration_duration and dir_diff < zed_fov
+
+    def viewing_current_target(self) -> bool:
+        assert self.ctx.course is not None
+
+        match self.ctx.course.current_waypoint():
+            case Waypoint(type=WaypointType(val=WaypointType.POST), tag_id=tag_id):
+                return self.viewing_target(f"tag{tag_id}")
+            case Waypoint(type=WaypointType(val=WaypointType.MALLET)):
+                return self.viewing_target("hammer")
+            case Waypoint(type=WaypointType(val=WaypointType.WATER_BOTTLE)):
+                return self.viewing_target("bottle")
+            case Waypoint(type=WaypointType(val=WaypointType.ROCK_PICK)):
+                return self.viewing_target("pick")
+            case _:
+                return False
+    
 
 
 class ImageTargetsStore:

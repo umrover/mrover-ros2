@@ -169,6 +169,35 @@ class DriveController:
             return path_end
         else:
             return path_start + lookahead_point
+        
+    def get_turn_command(
+        self: DriveController,
+        target_dir: np.ndarray,
+        rover_pose: SE3,
+        completion_thresh: float,
+    ) -> tuple[Twist, bool]:
+        turning_p = self.node.get_parameter("drive.turning_p").value
+        min_turning_effort = self.node.get_parameter("drive.min_turning_effort").value
+        max_turning_effort = self.node.get_parameter("drive.max_turning_effort").value
+
+        rover_dir = rover_pose.rotation()[:, 0]
+        rover_dir[2] = 0
+
+        angular_error: float = angle_to_rotate_2d(target_dir, rover_pose)
+        if(angular_error < completion_thresh):
+            return True, Twist()
+
+        return False, Twist(
+            angular=Vector3(
+                z=np.clip(
+                    angular_error * turning_p,
+                    min_turning_effort,
+                    max_turning_effort,
+                    )
+                )
+            )
+
+        
 
     def get_drive_command(
         self: DriveController,
