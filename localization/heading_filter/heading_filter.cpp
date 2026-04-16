@@ -53,6 +53,9 @@ namespace mrover {
             }
         });
 
+        drive_forward_pub = this->create_publisher<mrover::msg::Heading>("/drive_forward_heading", 1);
+        imu_uncorrected_pub = this->create_publisher<mrover::msg::Heading>("/imu_uncorrected_heading", 1);
+
         // imu data watchdog
         const rclcpp::Duration IMU_AND_MAG_WATCHDOG_TIMEOUT = rclcpp::Duration::from_seconds(imu_timeout);
         imu_and_mag_watchdog = this->create_wall_timer(IMU_AND_MAG_WATCHDOG_TIMEOUT.to_chrono<std::chrono::milliseconds>(), [&]() {
@@ -107,14 +110,14 @@ namespace mrover {
 
         double K = (P) / (P + heading_correction_delta_noise);
         double innovation = heading_correction_delta_meas - X;
-        X = fmod((X + K * (innovation) + 3 * M_PI), 2 * M_PI) - M_PI;
+        X = std::fmod((X + K * (innovation) + 3 * M_PI), 2 * M_PI) - M_PI;
         P = (1 - K) * P;
     }
 
     void HeadingFilter::sync_rtk_heading_callback(const mrover::msg::Heading::ConstSharedPtr &heading, const mrover::msg::FixStatus::ConstSharedPtr &heading_status) {
 
         if (heading_status->fix_type.fix == mrover::msg::FixType::FIXED) {
-            double const rover_map_deg = fmod(heading->heading + 90. + 360., 360.);
+            double const rover_map_deg = std::fmod(heading->heading + 90. + 360., 360.);
             double measured_heading_deg = 90. - rover_map_deg;
             if (measured_heading_deg <= -180.) { measured_heading_deg += 360.; }
             else if (measured_heading_deg > 180.) { measured_heading_deg -= 360.; }
@@ -147,7 +150,7 @@ namespace mrover {
             RCLCPP_WARN(get_logger(), "Forward vector not finite, skipping heading correction");
             return;
         }
-        double uncorrected_heading = atan2(uncorrected_forward.y(), uncorrected_forward.x());
+        double uncorrected_heading = std::atan2(uncorrected_forward.y(), uncorrected_forward.x());
         if (!std::isfinite(uncorrected_heading)) {
             RCLCPP_WARN(get_logger(), "Computed heading not finite, skipping heading correction");
             return;
@@ -159,7 +162,7 @@ namespace mrover {
             auto const previousX = X;
 
             double heading_correction_delta = measured_heading - uncorrected_heading;
-            heading_correction_delta = fmod((heading_correction_delta + 3 * M_PI), 2 * M_PI) - M_PI;
+            heading_correction_delta = std::fmod((heading_correction_delta + 3 * M_PI), 2 * M_PI) - M_PI;
             predict(process_noise);
             correct(heading_correction_delta, rtk_noise);
 
@@ -194,6 +197,17 @@ namespace mrover {
         }
         uncorrected_orientation.normalize();
         SO3d uncorrected_orientation_rotm = uncorrected_orientation;
+
+        // For debugging purposes, calculating raw imu heading outside checks
+        R2d uncorrected_forward = uncorrected_orientation.toRotationMatrix().col(0).head(2);
+        if (uncorrected_forward.array().isFinite().all()) {
+            double uncorrected_heading = std::atan2(uncorrected_forward.y(), uncorrected_forward.x());
+            if (std::isfinite(uncorrected_heading)) {
+                mrover::msg::Heading imu_heading_msg;
+                imu_heading_msg.heading = std::fmod(90. - (uncorrected_heading * (180. / M_PI)) + 360., 360.);
+                imu_uncorrected_pub->publish(imu_heading_msg);
+            }
+        }
 
         if (prev_imu_orientation_norm) {
             double const theta = quat_geodesic_angle_rad(*prev_imu_orientation_norm, uncorrected_orientation);
@@ -244,7 +258,7 @@ namespace mrover {
             double const measured_heading = measured_heading_deg * (M_PI / 180.);
 
             double heading_correction_delta = measured_heading - uncorrected_heading;
-            heading_correction_delta = fmod((heading_correction_delta + 3 * M_PI), 2 * M_PI) - M_PI;
+            heading_correction_delta = std::fmod((heading_correction_delta + 3 * M_PI), 2 * M_PI) - M_PI;
 
             auto const previousX = X;
 
@@ -375,6 +389,11 @@ namespace mrover {
 
         const double drive_forward_heading = std::atan2(mean_v.y(), mean_v.x());
         last_drive_forward_heading = drive_forward_heading;
+        
+        // for debugging purposes, publishing drive forward heading
+        mrover::msg::Heading drive_forward_heading_msg;
+        drive_forward_heading_msg.heading = std::fmod(90. - (drive_forward_heading * (180. / M_PI)) + 360., 360.);
+        drive_forward_pub->publish(drive_forward_heading_msg);
 
         if (imu_orientation_stuck) {
             return;
