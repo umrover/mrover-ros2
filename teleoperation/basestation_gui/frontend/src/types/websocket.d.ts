@@ -18,7 +18,7 @@ export interface RootState {
 }
 
 export interface ControllerStateMessage {
-  type: 'arm_state' | 'sp_state' | 'drive_left_state' | 'drive_right_state' | 'gimbal_state' | 'sp_controller_state' | 'gimbal_controller_state';
+  type: 'arm_state' | 'sp_state' | 'drive_state' | 'gimbal_state' | 'sp_controller_state' | 'gimbal_controller_state';
   header?: {
     stamp: { sec: number; nanosec: number };
     frame_id: string;
@@ -29,7 +29,7 @@ export interface ControllerStateMessage {
   positions: number[];
   velocities: number[];
   currents: number[];
-  limits_hit: boolean[];
+  limits_hit: number[];
 }
 
 export interface JointStateMessage {
@@ -38,6 +38,35 @@ export interface JointStateMessage {
   positions: number[];
   velocities: number[];
   effort: number[];
+}
+
+export interface OccupancyGridMessage {
+  type: 'costmap';
+  header: {
+    seq: number;
+    stamp: number;
+    frame_id: number;
+  };
+  info: {
+    map_load_time: number;
+    resolution: number;
+    width: number;
+    height: number;
+    origin: {
+      position: {
+        x: number;
+        y: number;
+        z: number;
+      };
+      orientation: {
+        x: number;
+        y: number;
+        z: number;
+        w: number;
+      };
+    };
+  };
+  data: number[];
 }
 
 export interface OrientationMessage {
@@ -93,3 +122,31 @@ export interface SPPressureMessage {
   pressure: number;
 }
 
+export interface SPSensorStateMessage {
+  type: 'sp_sensor_state';
+  uv_state: boolean;
+  thp_state: boolean;
+  oxygen_state: boolean;
+  ozone_state: boolean;
+  co2_state: boolean;
+}
+
+export interface ThrottleMessage {
+  header?: {
+    stamp: { sec: number; nanosec: number };
+    frame_id: string;
+  }; 
+  names: string[];
+  throttles: number[];
+}
+
+export interface IkFeedbackMessage {
+  type: 'ik_feedback';
+  pos: {
+    x: number;
+    y: number;
+    z: number;
+  };
+}
+
+export type ScienceMessage = OxygenMessage | UVMessage | TemperatureMessage | HumidityMessage | SPHumidityMessage | SPTemperatureMessage | SPOxygenMessage | SPUVMessage | SPOzoneMessage | SPCO2Message | SPPressureMessage | SPSensorStateMessage;

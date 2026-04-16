@@ -62,11 +62,21 @@ export interface DroneWaypointMessage {
 }
 
 /**
+ * 3D position in map frame (meters).
+ */
+export interface Position3D {
+  x: number;
+  y: number;
+  z: number;
+}
+
+/**
  * Message payload for the 'orientation' type.
  */
 export interface OrientationMessage {
   type: 'orientation';
   orientation: Quaternion;
+  position?: Position3D;
 }
 
 /**

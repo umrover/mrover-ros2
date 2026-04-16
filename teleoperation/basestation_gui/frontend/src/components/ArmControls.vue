@@ -4,19 +4,20 @@
       <h4 class="component-header">Arm Controls</h4>
       <IndicatorDot :is-active="connected" class="mr-2" />
     </div>
-    <div class="btn-group w-full" role="group" aria-label="Arm mode selection" data-testid="pw-arm-mode-buttons">
+    <div class="flex w-full" role="group" aria-label="Arm mode selection" data-testid="pw-arm-mode-buttons">
+      <div class="cmd-btn-group-connected w-full">
         <button
           type="button"
-          class="cmd-btn cmd-btn-sm"
+          class="cmd-btn cmd-btn-sm flex-1"
           :class="mode === 'disabled' ? 'cmd-btn-danger' : 'cmd-btn-outline-danger'"
           data-testid="pw-arm-mode-disabled"
           @click="newRAMode('disabled')"
-        >
+          >
           Disabled
         </button>
         <button
           type="button"
-          class="cmd-btn cmd-btn-sm"
+          class="cmd-btn cmd-btn-sm flex-1"
           :class="mode === 'throttle' ? 'cmd-btn-success' : 'cmd-btn-outline-success'"
           data-testid="pw-arm-mode-throttle"
           @click="newRAMode('throttle')"
@@ -25,7 +26,7 @@
         </button>
         <button
           type="button"
-          class="cmd-btn cmd-btn-sm"
+          class="cmd-btn cmd-btn-sm flex-1"
           :class="mode === 'ik-pos' ? 'cmd-btn-success' : 'cmd-btn-outline-success'"
           data-testid="pw-arm-mode-ik-pos"
           @click="newRAMode('ik-pos')"
@@ -34,7 +35,7 @@
         </button>
         <button
           type="button"
-          class="cmd-btn cmd-btn-sm"
+          class="cmd-btn cmd-btn-sm flex-1"
           :class="mode === 'ik-vel' ? 'cmd-btn-success' : 'cmd-btn-outline-success'"
           data-testid="pw-arm-mode-ik-vel"
           @click="newRAMode('ik-vel')"
@@ -42,6 +43,7 @@
           IK Vel
         </button>
       </div>
+    </div>
     <GamepadDisplay :axes="axes" :buttons="buttons" layout="horizontal" class="grow min-h-0" />
   </div>
 </template>
@@ -87,4 +89,3 @@ const newRAMode = async (newMode: string) => {
   }
 }
 </script>
-
