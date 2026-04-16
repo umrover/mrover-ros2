@@ -15,13 +15,6 @@ from geometry_msgs.msg import Twist
 ra_mode = "disabled"
 ra_mode_lock = threading.Lock()
 
-ik_pos_pub: Publisher | None = None
-
-
-def registerik_pos_pub(pub: Publisher) -> None:
-    global ik_pos_pub
-    ik_pos_pub = pub
-
 
 def get_ra_mode() -> str:
     with ra_mode_lock:
@@ -54,6 +47,7 @@ async def call_ik_mode_service(mode: int) -> bool:
 IK_MODE_POSITION_CONTROL = 0
 IK_MODE_VELOCITY_CONTROL = 1
 IK_MODE_TYPING = 2
+
 
 class Joint(Enum):
     A = 0

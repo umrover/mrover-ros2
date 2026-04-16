@@ -5,7 +5,7 @@ from lie import SE3
 from backend.ws.base_ws import WebSocketHandler
 from backend.managers.ros import get_logger
 from backend.input import DeviceInputs
-from backend.ra_controls import send_ra_controls, registerik_pos_pub
+from backend.ra_controls import send_ra_controls
 from mrover.msg import Throttle, IK, ControllerState
 from geometry_msgs.msg import Twist
 from rclpy.publisher import Publisher
@@ -26,7 +26,7 @@ class ArmHandler(WebSocketHandler):
         self.ik_pos_pub = self.node.create_publisher(IK, "/ik_pos_cmd", 1)
         self.ik_vel_pub = self.node.create_publisher(Twist, "/ik_vel_cmd", 1)
         self.publishers.extend([self.arm_thr_pub, self.ik_pos_pub, self.ik_vel_pub])
-        registerik_pos_pub(self.ik_pos_pub)
+
 
         self.forward_ros_topic("/arm_controller_state", ControllerState, "arm_state")
         self.forward_ros_topic("/arm_ik", IK, "ik_target")
