@@ -444,7 +444,7 @@ class ApproachTargetState(State):
             return distance_to_target < self.DISTANCE_THRESHOLD, False
         else:
             context.node.get_logger().info("Time diff" + str(time_diff))
-            return distance_to_target < self.LOOK_DISTANCE_THRESHOLD, time_diff < Duration(nanoseconds=self.CHECK_UPDATE_TIME * 10^9) and self.target_in_frame(context, rover_SE3, target_pos)
+            return distance_to_target < self.LOOK_DISTANCE_THRESHOLD, time_diff < Duration(nanoseconds=self.CHECK_UPDATE_TIME * 10 ** 9) and self.target_in_frame(context, rover_SE3, target_pos)
 
     def target_in_frame(self, context: Context, rover_SE3, target_pos: np.ndarray):
         rover_to_model = target_pos - rover_SE3.translation()
