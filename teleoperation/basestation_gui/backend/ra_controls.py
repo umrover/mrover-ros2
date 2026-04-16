@@ -6,7 +6,7 @@ from rclpy.publisher import Publisher
 
 from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
 from backend.mappings import ControllerAxis, ControllerButton
-from backend.managers.ros import get_service_client, get_logger
+from backend.managers.ros import get_service_client
 from backend.utils.ros_service import call_service_async
 from mrover.msg import Throttle, IK
 from mrover.srv import IkMode
