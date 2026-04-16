@@ -80,12 +80,3 @@ export interface RecordingWaypointsResponse extends APIResponse {
 export interface RAModeResponse extends APIResponse {
   mode?: string
 }
-
-export interface StowResponse extends APIResponse {
-  mode?: string
-  stow_target: {
-    pos: { x: number; y: number; z: number }
-    pitch: number
-    roll: number
-  }
-}
