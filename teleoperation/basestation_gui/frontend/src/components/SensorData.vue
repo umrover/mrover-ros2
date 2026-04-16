@@ -10,31 +10,31 @@
       </button>
     </div>
     <div class="flex gap-2 grow">
-      <div class="flex-1 flex flex-col items-center bg-theme-view rounded p-1">
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.oxygen_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
         <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">Oxygen</span>
         <span class="font-bold">{{ sensor_data.sp_oxygen.toFixed(2) }}<span class="text-muted ml-1 text-sm">%</span></span>
       </div>
-      <div class="flex-1 flex flex-col items-center bg-theme-view rounded p-1">
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.uv_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
         <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">UV</span>
         <span class="font-bold">{{ sensor_data.sp_uv.toFixed(2) }}<span class="text-muted ml-1 text-sm">idx</span></span>
       </div>
-      <div class="flex-1 flex flex-col items-center bg-theme-view rounded p-1">
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.thp_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
         <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">Humidity</span>
         <span class="font-bold">{{ sensor_data.sp_humidity.toFixed(2) }}<span class="text-muted ml-1 text-sm">%</span></span>
       </div>
-      <div class="flex-1 flex flex-col items-center bg-theme-view rounded p-1">
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.thp_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
         <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">Temp</span>
         <span class="font-bold">{{ sensor_data.sp_temp.toFixed(2) }}<span class="text-muted ml-1 text-sm">&deg;C</span></span>
       </div>
-      <div class="flex-1 flex flex-col items-center bg-theme-view rounded p-1">
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.ozone_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
         <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">Ozone</span>
         <span class="font-bold">{{ sensor_data.sp_ozone.toFixed(2) }}<span class="text-muted ml-1 text-sm">ppb</span></span>
       </div>
-      <div class="flex-1 flex flex-col items-center bg-theme-view rounded p-1">
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.co2_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
         <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">CO2</span>
         <span class="font-bold">{{ sensor_data.sp_co2.toFixed(2) }}<span class="text-muted ml-1 text-sm">ppm</span></span>
       </div>
-      <div class="flex-1 flex flex-col items-center bg-theme-view rounded p-1">
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.thp_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
         <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">Pressure</span>
         <span class="font-bold">{{ sensor_data.sp_pressure.toFixed(0) }}<span class="text-muted ml-1 text-sm">Pa</span></span>
       </div>
@@ -109,6 +109,13 @@ const sensor_data = ref<SensorData>({
   sp_ozone: 0,
   sp_co2: 0,
   sp_pressure: 0,
+  sensor_states: {
+    uv_state: false,
+    thp_state: false,
+    oxygen_state: false,
+    ozone_state: false,
+    co2_state: false,
+  },
 })
 const sensor_history = ref<number[][]>([
   Array(20).fill(0),
@@ -293,5 +300,3 @@ onBeforeUnmount(() => {
   charts.length = 0
 })
 </script>
-
-
