@@ -3,9 +3,9 @@ import { ref } from 'vue'
 import { createScene, type SceneContext } from '@/components/three/scene'
 import { createCameras, type CameraManager, CameraType } from '@/components/three/cameras'
 import { createCostmap, NUM_COSTMAP_BLOCKS, type CostmapRenderer } from '@/components/three/costmap'
-import { loadRover, type RoverModel, type JointUpdate, type Position3D } from '@/components/three/rover-model'
+import { loadRover, type RoverModel, type JointUpdate } from '@/components/three/rover-model'
 
-export type { JointUpdate, Position3D }
+export type { JointUpdate }
 export { CameraType, NUM_COSTMAP_BLOCKS }
 
 export function useRoverScene() {
@@ -83,10 +83,6 @@ export function useRoverScene() {
     roverModel?.updateJoints(joints)
   }
 
-  function updateIKTarget(position: Position3D | null) {
-    roverModel?.updateIKTarget(position)
-  }
-
   function setRoverHeading(radians: number) {
     if (roverPivot) {
       roverPivot.rotation.y = radians
@@ -105,7 +101,6 @@ export function useRoverScene() {
     toggleCostMapVisibility,
     setCostMapVisibility,
     updateJoints,
-    updateIKTarget,
     setRoverHeading,
     NUM_COSTMAP_BLOCKS,
   }

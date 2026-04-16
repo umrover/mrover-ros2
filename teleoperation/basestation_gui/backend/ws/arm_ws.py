@@ -5,12 +5,6 @@ from backend.ra_controls import send_ra_controls
 from mrover.msg import Throttle, IK, ControllerState
 from geometry_msgs.msg import Twist
 from rclpy.publisher import Publisher
-import tf2_ros
-from tf2_ros import LookupException, ConnectivityException, ExtrapolationException
-import rclpy
-from lie import SE3
-
-
 class ArmHandler(WebSocketHandler):
     arm_thr_pub: Publisher
     ik_pos_pub: Publisher
@@ -18,7 +12,6 @@ class ArmHandler(WebSocketHandler):
 
     def __init__(self, websocket):
         super().__init__(websocket, 'arm')
-        self.buffer = tf2_ros.Buffer()
 
     async def setup(self):
         self.arm_thr_pub = self.node.create_publisher(Throttle, "/arm_thr_cmd", 1)
@@ -27,29 +20,6 @@ class ArmHandler(WebSocketHandler):
         self.publishers.extend([self.arm_thr_pub, self.ik_pos_pub, self.ik_vel_pub])
 
         self.forward_ros_topic("/arm_controller_state", ControllerState, "arm_state")
-        self.forward_ros_topic("/arm_ik", IK, "ik_target")
-
-        self.timers.append(self.node.create_timer(0.1, self.send_arm_feedback_callback))
-
-    def send_arm_feedback_callback(self):
-        try:
-            if not self.buffer.can_transform("arm_base_link", "arm_fk", rclpy.time.Time()):
-                return
-
-            arm_in_base = SE3.from_tf_tree(self.buffer, "arm_base_link", "arm_fk")
-            pos = arm_in_base.translation()
-            self.schedule_send({
-                "type": "ik_feedback",
-                "pos": {
-                    "x": float(pos[0]),
-                    "y": float(pos[1]),
-                    "z": float(pos[2]),
-                }
-            })
-        except (LookupException, ConnectivityException, ExtrapolationException):
-            pass
-        except Exception as e:
-            get_logger().error(f"ArmHandler feedback error: {e}")
 
     async def handle_message(self, data):
         msg_type = data.get('type')
