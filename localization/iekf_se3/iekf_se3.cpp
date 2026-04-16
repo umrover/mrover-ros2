@@ -416,14 +416,12 @@ namespace mrover {
         rclcpp::Time start = end - WINDOW;
 
         R3d sum_velocities = R3d::Zero();
-
-        int to_pop = 0;
+        
         double readings = 0;
 
         for (auto & [t, v] : sliding_window_velocities) 
         {
             if (t < start) {
-                to_pop++;
                 continue;
             }
             else if (t > end) {
@@ -434,13 +432,7 @@ namespace mrover {
             readings += 1;
         }
 
-        while (to_pop > 0)
-        {
-            if (!sliding_window_velocities.empty() && sliding_window_velocities.front().first < start) {
-                sliding_window_velocities.pop_front();
-            }
-            to_pop--;
-        }
+        sliding_window_velocities.clear();
 
 
         R3d mean_velocity = sum_velocities / readings;
