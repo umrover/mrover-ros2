@@ -17,11 +17,6 @@ class DoneState(State):
         if context.course and not context.course.is_complete():
             return waypoint.WaypointState()
 
-        # Stop rover
-        cmd_vel = Twist()
-        context.rover.send_drive_command(cmd_vel)
-        return self
-
 
 class OffState(State):
     def on_enter(self, context) -> None:
@@ -34,9 +29,6 @@ class OffState(State):
         if context.course and (not context.course.is_complete()):
             return waypoint.WaypointState()
         
-        saw_target: bool = context.env.viewing_target("bottle")
-        context.node.get_logger().info(f"Viewing Target: {saw_target}")
-
         return self
 
 
