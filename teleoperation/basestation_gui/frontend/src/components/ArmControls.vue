@@ -67,8 +67,6 @@ const { onMessage } = useWebsocketStore()
 const mode = ref('disabled')
 const forcing_limit = ref(false)
 
-const isStowing = ref(false)
-const stowTarget = ref<{ x: number; y: number; z: number } | null>(null)
 
 const { connected, axes, buttons } = useGamepadPolling({
   controllerIdFilter: 'Microsoft',
@@ -94,29 +92,8 @@ onMessage<IkFeedbackMessage>('arm', 'ik_feedback', (msg) => {
   console.log('yippee:', msg.pos)
 })
 
-const stowArm = async () => {
-  try {
-    isStowing.value = true
-    const result = await armAPI.stowArm()
-    if (result.status === 'success') {
-      mode.value = 'stow'
-      stowTarget.value = {
-        x: result.stow_target.pos.x,
-        y: result.stow_target.pos.y,
-        z: result.stow_target.pos.z,
-      }
-    } else {
-      isStowing.value = false
-    }
-  } catch (error) {
-    console.error('Failed to start stow:', error)
-    isStowing.value = false
-  }
-}
-
 const newRAMode = async (newMode: string) => {
   try {
-    isStowing.value = false
     mode.value = newMode
     const data = await armAPI.setRAMode(mode.value)
     if (data.status === 'success' && data.mode) {

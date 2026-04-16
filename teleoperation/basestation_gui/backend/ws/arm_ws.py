@@ -71,11 +71,3 @@ class ArmHandler(WebSocketHandler):
             )
         else:
             get_logger().warning(f"Unhandled ARM message: {msg_type}")
-
-    async def trigger_stow(self):
-        send_ra_controls(
-            None,
-            self.arm_thr_pub,
-            self.ik_pos_pub,
-            self.ik_vel_pub,
-        )
