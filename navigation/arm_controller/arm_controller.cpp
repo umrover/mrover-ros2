@@ -182,7 +182,7 @@ namespace mrover {
 
         double a_pos = joint_state->positions[0];
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_a", "arm_base_link",
-        SE3d{{0, a_pos, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{0.0, R3d::UnitY()}}}}, now);
+        SE3d{{0, a_pos, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{0, R3d::UnitY()}}}}, now);
 
         double joint_b_angle = joint_state->positions[1];
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_b", "arm_joint_a",
