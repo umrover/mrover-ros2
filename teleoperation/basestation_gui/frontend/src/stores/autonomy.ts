@@ -24,8 +24,6 @@ export const useAutonomyStore = defineStore('autonomy', () => {
   const purePursuitEnabled = ref(true)
   const pathRelaxationEnabled = ref(false)
   const pathInterpolationEnabled = ref(false)
-  const stereoDetectorEnabled = ref(false)
-  const imageDetectorEnabled = ref(false)
   const odomFormat = ref('DM')
   const clickPoint = ref({ lat: 0, lon: 0 })
 
@@ -203,8 +201,6 @@ export const useAutonomyStore = defineStore('autonomy', () => {
     purePursuitEnabled,
     pathRelaxationEnabled,
     pathInterpolationEnabled,
-    stereoDetectorEnabled,
-    imageDetectorEnabled,
     odomFormat,
     clickPoint,
     storeForMap,
