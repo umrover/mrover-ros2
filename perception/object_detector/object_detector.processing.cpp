@@ -1,23 +1,24 @@
 #include "object_detector.hpp"
+#include "mrover/srv/detail/toggle_stereo_object_detector__struct.hpp"
 
 namespace mrover {
 
     auto StereoObjectDetector::toggleStereoMode(mrover::srv::ToggleStereoObjectDetector::Request::ConstSharedPtr& request, mrover::srv::ToggleStereoObjectDetector::Response::SharedPtr& response) -> void {
-        auto setMode = request->toggle.mode;
+        auto setMode = request->mode;
         switch(setMode){
-            case msg::ObjectDetectorType::OFF:
+            case srv::ToggleStereoObjectDetector::Request::OFF:
                 currentModel = nullptr;
                 currentTensorRT = nullptr;
                 break;
-            case msg::ObjectDetectorType::WATER_BOTTLE:
+            case srv::ToggleStereoObjectDetector::Request::WATER_BOTTLE:
                 currentModel = &bottleModel;
                 currentTensorRT = &mBottleTensorRT;
                 break;
-            case msg::ObjectDetectorType::MALLET:
+            case srv::ToggleStereoObjectDetector::Request::MALLET:
                 currentModel = &malletModel;
                 currentTensorRT = &mMalletTensorRT;
                 break;
-            case msg::ObjectDetectorType::ROCK_PICK:
+            case srv::ToggleStereoObjectDetector::Request::ROCK_PICK:
                 currentModel = &pickModel;
                 currentTensorRT = &mPickTensorRT;
                 break;
@@ -27,7 +28,7 @@ namespace mrover {
                 return;
         }
         response->success = true;
-        RCLCPP_INFO_STREAM(get_logger(), std::format("Set object detector to {}", setMode));
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Set stereo object detector to {}", setMode));
     }
 
     auto StereoObjectDetector::pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void {
@@ -207,21 +208,21 @@ namespace mrover {
     }
 
     auto ImageObjectDetector::toggleImageMode(mrover::srv::ToggleImageObjectDetector::Request::ConstSharedPtr& request, mrover::srv::ToggleImageObjectDetector::Response::SharedPtr& response) -> void {
-        auto setMode = request->toggle.mode;
+        auto setMode = request->mode;
         switch(setMode){
-            case msg::ObjectDetectorType::OFF:
+            case srv::ToggleImageObjectDetector::Request::OFF:
                 currentModel = nullptr;
                 currentTensorRT = nullptr;
                 break;
-            case msg::ObjectDetectorType::WATER_BOTTLE:
+            case srv::ToggleImageObjectDetector::Request::WATER_BOTTLE:
                 currentModel = &bottleModel;
                 currentTensorRT = &mBottleTensorRT;
                 break;
-            case msg::ObjectDetectorType::MALLET:
+            case srv::ToggleImageObjectDetector::Request::MALLET:
                 currentModel = &malletModel;
                 currentTensorRT = &mMalletTensorRT;
                 break;
-            case msg::ObjectDetectorType::ROCK_PICK:
+            case srv::ToggleImageObjectDetector::Request::ROCK_PICK:
                 currentModel = &pickModel;
                 currentTensorRT = &mPickTensorRT;
                 break;
@@ -231,7 +232,7 @@ namespace mrover {
                 return;
         }
         response->success = true;
-        RCLCPP_INFO_STREAM(get_logger(), std::format("Set object detector to {}", setMode));
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Set image object detector to {}", setMode));
     }
 
     auto ImageObjectDetector::imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {

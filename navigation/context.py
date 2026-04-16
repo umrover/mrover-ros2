@@ -487,9 +487,9 @@ class Context:
     
     def toggle_object_detector(self, objectType: ObjectDetectorType) -> bool:
         stereoRequest = ToggleStereoObjectDetector.Request()
-        stereoRequest.toggle.mode = objectType
+        stereoRequest.mode = objectType
         imageRequest = ToggleImageObjectDetector.Request()
-        imageRequest.toggle.mode = objectType
+        imageRequest.mode = objectType
         stereoResult = False
         imageResult = False
 
