@@ -1,12 +1,11 @@
 #pragma once
 
-#include "mrover/action/detail/typing_position__struct.hpp"
 #include "pch.hpp"
 
 // #include "constants.h"
-namespace mrover{
-    class KeyboardTypingNode : public rclcpp::Node{
-        private:
+namespace mrover {
+    class KeyboardTypingNode : public rclcpp::Node {
+    private:
         // TypingPosition action client - this communicates with Nav
         using TypingPosition = mrover::action::TypingPosition;
         using GoalHandleTypingPosition = rclcpp_action::ClientGoalHandle<action::TypingPosition>;
@@ -18,7 +17,7 @@ namespace mrover{
         // Ik mode client
         rclcpp::Client<srv::IkMode>::SharedPtr mIkModeClient;
 
-        void feedback_callback(GoalHandleTypingPosition::SharedPtr, const std::shared_ptr<const TypingPosition::Feedback> feedback);
+        void feedback_callback(GoalHandleTypingPosition::SharedPtr, std::shared_ptr<TypingPosition::Feedback const> const feedback);
 
         auto send_goal(float x_delta, float y_delta) -> bool;
 
@@ -28,9 +27,9 @@ namespace mrover{
 
         rclcpp_action::Server<TypingCode>::SharedPtr mTypingServer;
 
-        auto handle_goal(const rclcpp_action::GoalUUID & uuid,std::shared_ptr<const TypingCode::Goal> goal) -> rclcpp_action::GoalResponse;
-        auto handle_cancel(const std::shared_ptr<GoalHandleTypingCode> goal_handle) -> rclcpp_action::CancelResponse;
-        void handle_accepted(const std::shared_ptr<GoalHandleTypingCode> goal_handle);
+        auto handle_goal(rclcpp_action::GoalUUID const& uuid, std::shared_ptr<TypingCode::Goal const> goal) -> rclcpp_action::GoalResponse;
+        auto handle_cancel(std::shared_ptr<GoalHandleTypingCode> const goal_handle) -> rclcpp_action::CancelResponse;
+        void handle_accepted(std::shared_ptr<GoalHandleTypingCode> const goal_handle);
 
         std::shared_ptr<GoalHandleTypingCode> mAcceptedGoalHandle = nullptr;
 
@@ -85,13 +84,13 @@ namespace mrover{
 
         // Filter that stores filtered pose
         cv::KalmanFilter kf;
-        
+
         cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);
 
         // Layout map (ID -> Bottom-Left Corner Position)
         std::map<int, cv::Vec3d> layout;
 
-        auto outputToCSV(cv::Vec3d &tvec, cv::Vec3d &rvec) -> void;
+        auto outputToCSV(cv::Vec3d& tvec, cv::Vec3d& rvec) -> void;
 
         auto createRoverBoard() -> void;
 
@@ -99,7 +98,7 @@ namespace mrover{
         bool filter_i0nitialized_ = false;
 
         // Change the function signature to accept vectors
-        auto updateKalmanFilter(cv::Vec3d &tvec, cv::Vec3d &rvec) -> geometry_msgs::msg::Pose;
+        auto updateKalmanFilter(cv::Vec3d& tvec, cv::Vec3d& rvec) -> geometry_msgs::msg::Pose;
 
         // auto getKeyToCameraTransform(cv::Vec3d const& rvec,
         //                              cv::Vec3d const& tvec,
@@ -120,16 +119,15 @@ namespace mrover{
 
         auto vectorMedianFilter(cv::Vec3d tvec, cv::Vec3d rvec) -> std::pair<cv::Vec3d, cv::Vec3d>;
 
-        auto squaredEuclideanDistance(const cv::Vec3d& a, const cv::Vec3d& b) -> double;
+        auto squaredEuclideanDistance(cv::Vec3d const& a, cv::Vec3d const& b) -> double;
 
         std::deque<cv::Vec3d> tvec_window;
 
         std::deque<cv::Vec3d> rvec_window;
 
-        public:
-
+    public:
         explicit KeyboardTypingNode(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
     };
-}
+} // namespace mrover
 
 extern std::unordered_map<char, cv::Vec3d> keyboard_offset;

@@ -32,7 +32,7 @@ auto const PARAMS = cv::aruco::DetectorParameters();
 
 double key_length = 0.01905;
 //initial x coordinate of row
-double secondRowX = -0.0095; 
+double secondRowX = -0.0095;
 double thirdRowX = -0.01345;
 double fourthRowX = -0.009525;
 //initial z coordinate of row
@@ -40,38 +40,37 @@ double secondRowZ = 0.0007112;
 double thirdRowZ = 0.0017272;
 double fourthRowZ = 0.0048514;
 std::unordered_map<char, cv::Vec3d> keyboard_offset = {
-        {'Z', cv::Vec3d{0,0,0}},
-        {'X', cv::Vec3d{key_length,0,0}},
-        {'C', cv::Vec3d{2*key_length,0,0}},
-        {'V', cv::Vec3d{3*key_length,0,0}},
-        {'B', cv::Vec3d{4*key_length,0,0}},
-        {'N', cv::Vec3d{5*key_length,0,0}},
-        {'M', cv::Vec3d{6*key_length,0,0}},
+        {'Z', cv::Vec3d{0, 0, 0}},
+        {'X', cv::Vec3d{key_length, 0, 0}},
+        {'C', cv::Vec3d{2 * key_length, 0, 0}},
+        {'V', cv::Vec3d{3 * key_length, 0, 0}},
+        {'B', cv::Vec3d{4 * key_length, 0, 0}},
+        {'N', cv::Vec3d{5 * key_length, 0, 0}},
+        {'M', cv::Vec3d{6 * key_length, 0, 0}},
 
-        {'A', cv::Vec3d{secondRowX, key_length,secondRowZ}},
-        {'S', cv::Vec3d{secondRowX + key_length, key_length,secondRowZ}},
-        {'D', cv::Vec3d{secondRowX + 2*key_length, key_length,secondRowZ}},
-        {'F', cv::Vec3d{secondRowX + 3*key_length, key_length,secondRowZ}},
-        {'G', cv::Vec3d{secondRowX + 4*key_length, key_length,secondRowZ}},
-        {'H', cv::Vec3d{secondRowX + 5*key_length, key_length,secondRowZ}},
-        {'J', cv::Vec3d{secondRowX + 6*key_length, key_length,secondRowZ}},
-        {'K', cv::Vec3d{secondRowX + 7*key_length, key_length,secondRowZ}},
-        {'L', cv::Vec3d{secondRowX + 8*key_length, key_length,secondRowZ}},
+        {'A', cv::Vec3d{secondRowX, key_length, secondRowZ}},
+        {'S', cv::Vec3d{secondRowX + key_length, key_length, secondRowZ}},
+        {'D', cv::Vec3d{secondRowX + 2 * key_length, key_length, secondRowZ}},
+        {'F', cv::Vec3d{secondRowX + 3 * key_length, key_length, secondRowZ}},
+        {'G', cv::Vec3d{secondRowX + 4 * key_length, key_length, secondRowZ}},
+        {'H', cv::Vec3d{secondRowX + 5 * key_length, key_length, secondRowZ}},
+        {'J', cv::Vec3d{secondRowX + 6 * key_length, key_length, secondRowZ}},
+        {'K', cv::Vec3d{secondRowX + 7 * key_length, key_length, secondRowZ}},
+        {'L', cv::Vec3d{secondRowX + 8 * key_length, key_length, secondRowZ}},
 
-        {'Q', cv::Vec3d{thirdRowX, 2*key_length,thirdRowZ}},
-        {'W', cv::Vec3d{thirdRowX + key_length, 2*key_length,thirdRowZ}},
-        {'E', cv::Vec3d{thirdRowX + 2*key_length, 2*key_length,thirdRowZ}},
-        {'R', cv::Vec3d{thirdRowX + 3*key_length, 2*key_length,thirdRowZ}},
-        {'T', cv::Vec3d{thirdRowX + 4*key_length, 2*key_length,thirdRowZ}},
-        {'Y', cv::Vec3d{thirdRowX + 5*key_length, 2*key_length,thirdRowZ}},
-        {'U', cv::Vec3d{thirdRowX + 6*key_length, 2*key_length,thirdRowZ}},
-        {'I', cv::Vec3d{thirdRowX + 7*key_length, 2*key_length,thirdRowZ}},
-        {'O', cv::Vec3d{thirdRowX + 8*key_length, 2*key_length,thirdRowZ}},
-        {'P', cv::Vec3d{thirdRowX + 9*key_length, 2*key_length,thirdRowZ}},
+        {'Q', cv::Vec3d{thirdRowX, 2 * key_length, thirdRowZ}},
+        {'W', cv::Vec3d{thirdRowX + key_length, 2 * key_length, thirdRowZ}},
+        {'E', cv::Vec3d{thirdRowX + 2 * key_length, 2 * key_length, thirdRowZ}},
+        {'R', cv::Vec3d{thirdRowX + 3 * key_length, 2 * key_length, thirdRowZ}},
+        {'T', cv::Vec3d{thirdRowX + 4 * key_length, 2 * key_length, thirdRowZ}},
+        {'Y', cv::Vec3d{thirdRowX + 5 * key_length, 2 * key_length, thirdRowZ}},
+        {'U', cv::Vec3d{thirdRowX + 6 * key_length, 2 * key_length, thirdRowZ}},
+        {'I', cv::Vec3d{thirdRowX + 7 * key_length, 2 * key_length, thirdRowZ}},
+        {'O', cv::Vec3d{thirdRowX + 8 * key_length, 2 * key_length, thirdRowZ}},
+        {'P', cv::Vec3d{thirdRowX + 9 * key_length, 2 * key_length, thirdRowZ}},
 
         // backspace
-        {'-', cv::Vec3d{fourthRowX + 11*key_length + 0.028575, 3*key_length,fourthRowZ}}
-};
+        {'-', cv::Vec3d{fourthRowX + 11 * key_length + 0.028575, 3 * key_length, fourthRowZ}}};
 
 // our coordinates
 // +X is right
@@ -86,9 +85,9 @@ std::unordered_map<char, cv::Vec3d> keyboard_offset = {
 // y -> -x
 // z -> y
 // x -> z
-Eigen::Vector3d zKeyTransformation = {0.06495,0.041575,0.0303784};
+Eigen::Vector3d zKeyTransformation = {0.06495, 0.041575, 0.0303784};
 
-Eigen::Vector3d zKeyTransformation_new = {0.07955,0.061575,0.0303784};
+Eigen::Vector3d zKeyTransformation_new = {0.07955, 0.061575, 0.0303784};
 
 // SIM UNITS, SUBJECT TO CHANGE
 // Eigen::Vector3d zKeyTransformation_new = {0.07955,-0.061575, 0.0303784};

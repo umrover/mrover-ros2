@@ -6,6 +6,7 @@ import launch
 from launch_ros.actions import Node, LoadComposableNodes
 from launch_ros.descriptions import ComposableNode
 
+
 def generate_launch_description():
     # keyboard typing node
     keyboard_typing = Node(
