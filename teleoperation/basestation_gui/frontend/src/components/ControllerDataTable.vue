@@ -59,9 +59,8 @@
 </template>
 
 <script lang='ts' setup>
-import { ref, computed, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
-import { storeToRefs } from 'pinia'
 import type { ControllerStateMessage } from '@/types/websocket'
 
 const props = defineProps<{
@@ -70,7 +69,6 @@ const props = defineProps<{
 }>()
 
 const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
 
 const statusKey = `controllerDataTable_${props.mode}_showStatus`
 const valuesKey = `controllerDataTable_${props.mode}_showValues`
@@ -119,37 +117,28 @@ function combineLeftRight() {
   currents.value = [...arr(left?.currents), ...arr(right?.currents)] as number[]
 }
 
-const driveMessage = computed(() => messages.value['drive'])
-const armMessage = computed(() => messages.value['arm'])
-const scienceMessage = computed(() => messages.value['science'])
-
-watch(driveMessage, (msg) => {
-  if (props.mode !== 'drive' || !msg) return
-  const typed = msg as ControllerStateMessage
-  if (typed.type === 'drive_left_state') {
-    leftState.value = typed
+if (props.mode === 'drive') {
+  websocketStore.onMessage<ControllerStateMessage>('drive', 'drive_left_state', (msg) => {
+    leftState.value = msg
     combineLeftRight()
-  } else if (typed.type === 'drive_right_state') {
-    rightState.value = typed
+  })
+  websocketStore.onMessage<ControllerStateMessage>('drive', 'drive_right_state', (msg) => {
+    rightState.value = msg
     combineLeftRight()
-  }
-})
+  })
+}
 
-watch(armMessage, (msg) => {
-  if (props.mode !== 'arm' || !msg) return
-  const typed = msg as ControllerStateMessage
-  if (typed.type === 'arm_state') {
-    updateFromMessage(typed)
-  }
-})
+if (props.mode === 'arm') {
+  websocketStore.onMessage<ControllerStateMessage>('arm', 'arm_state', (msg) => {
+    updateFromMessage(msg)
+  })
+}
 
-watch(scienceMessage, (msg) => {
-  if (props.mode !== 'sp' || !msg) return
-  const typed = msg as ControllerStateMessage
-  if (typed.type === 'sp_controller_state') {
-    updateFromMessage(typed)
-  }
-})
+if (props.mode === 'sp') {
+  websocketStore.onMessage<ControllerStateMessage>('science', 'sp_controller_state', (msg) => {
+    updateFromMessage(msg)
+  })
+}
 </script>
 
 <style scoped>
