@@ -161,12 +161,11 @@ namespace mrover {
             auto const correctionDelta = (X - previousX);
             RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "%s", std::format("RTK heading correction delta on X: {} rad", correctionDelta).c_str());
         }
-
-        
     }
 
     void HeadingFilter::sync_imu_and_mag_callback(const sensor_msgs::msg::Imu::ConstSharedPtr &imu, const mrover::msg::Heading::ConstSharedPtr &mag_heading) {
         imu_and_mag_watchdog.reset();
+        last_imu = *imu;
 
         if (!last_position) {
             RCLCPP_WARN(get_logger(), "No position data!");
@@ -230,7 +229,6 @@ namespace mrover {
         }
 
         prev_imu_orientation_norm = uncorrected_orientation;
-        last_imu = *imu;
 
         if (use_mag) {
             R2d uncorrected_forward = uncorrected_orientation_rotm.rotation().col(0).head(2);
