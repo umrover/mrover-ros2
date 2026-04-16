@@ -23,6 +23,7 @@ class ApproachTargetState(State):
     DISTANCE_THRESHOLD: float
     LOOK_DISTANCE_THRESHOLD: float
     STOP_ANGLE_THRESHOLD: float
+    CHECK_UPDATE_TIME: float
     time_begin: Time
     astar_traj: Trajectory
     target_traj: Trajectory
@@ -54,6 +55,7 @@ class ApproachTargetState(State):
         self.DISTANCE_THRESHOLD = context.node.get_parameter("search.distance_threshold").value
         self.LOOK_DISTANCE_THRESHOLD = context.node.get_parameter("search.distance_look_threshold").value
         self.STOP_ANGLE_THRESHOLD = context.node.get_parameter("search.stop_angle_threshold").value
+        self.CHECK_UPDATE_TIME = context.node.get_parameter("search.check_update_time").value
         self.astar_traj = Trajectory(np.array([]))
         self.target_traj = Trajectory(np.array([]))
         self.astar = AStar(context=context)
@@ -442,7 +444,7 @@ class ApproachTargetState(State):
             return distance_to_target < self.DISTANCE_THRESHOLD, False
         else:
             context.node.get_logger().info("Time diff" + str(time_diff))
-            return distance_to_target < self.LOOK_DISTANCE_THRESHOLD, time_diff < Duration(nanoseconds=30000000) and self.target_in_frame(context, rover_SE3, target_pos)
+            return distance_to_target < self.LOOK_DISTANCE_THRESHOLD, time_diff < Duration(nanoseconds=self.CHECK_UPDATE_TIME * 10^9) and self.target_in_frame(context, rover_SE3, target_pos)
 
     def target_in_frame(self, context: Context, rover_SE3, target_pos: np.ndarray):
         rover_to_model = target_pos - rover_SE3.translation()
