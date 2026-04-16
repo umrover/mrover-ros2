@@ -1,12 +1,24 @@
 import { ref, computed, watch, nextTick, onMounted, type Ref } from 'vue'
-import type WaypointItem from '@/components/AutonWaypointItem.vue'
-import type VimBar from '@/components/VimBar.vue'
 import { useWaypointKeyboard } from '@/composables/useWaypointKeyboard'
+
+interface WaypointItemInstance {
+  openEditModal: () => void
+  closeEditModal: () => void
+  saveEdit: () => void
+  saveAndClose: () => void
+  isOpen: boolean
+}
+
+interface VimBarInstance {
+  open: () => void
+  close: () => void
+  active: boolean
+}
 
 interface VimEditorRefs {
   editorRef: Ref<HTMLElement | null>
-  storeItemRefs: Record<number, InstanceType<typeof WaypointItem>>
-  commandBar: Ref<InstanceType<typeof VimBar> | null>
+  storeItemRefs: Record<number, WaypointItemInstance>
+  commandBar: Ref<VimBarInstance | null>
 }
 
 const LS_VIM = 'autonEditor.vimEnabled'

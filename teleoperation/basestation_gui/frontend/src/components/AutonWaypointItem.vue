@@ -87,7 +87,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, nextTick } from 'vue'
+import { ref, nextTick } from 'vue'
 import type { AutonWaypoint } from '@/types/waypoints'
 import { useModal } from '@/composables/useModal'
 
@@ -98,16 +98,6 @@ const props = defineProps<{
   visualSelected?: boolean
   onColon?: () => void
 }>()
-
-const TYPE_LABELS: Record<number, string> = {
-  0: 'No Search',
-  1: 'Post',
-  2: 'Mallet',
-  3: 'Water Bottle',
-  4: 'Rock Pick',
-}
-
-const typeLabel = computed(() => TYPE_LABELS[props.waypoint.type] ?? `Type ${props.waypoint.type}`)
 
 const emit = defineEmits<{
   add: [waypoint: AutonWaypoint]
