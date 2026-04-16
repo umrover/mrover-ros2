@@ -145,16 +145,7 @@ const check_button_limit = (
   return false
 }
 
-const VIBRATION_THRESHOLD = 0.5
-const axis_contribution = (
-  axis_idx: number,
-  x_idx: number,
-  y_idx: number,
-): number => {
-  const magnitude = Math.sqrt(axes.value[x_idx] ** 2 + axes.value[y_idx] ** 2)
-  if (magnitude < 0.01) return 0
-  return Math.abs(axes.value[axis_idx]) / magnitude
-}
+const VIBRATION_THRESHOLD = 0.2
 
 onMessage<ControllerStateMessage>('arm', 'arm_state', msg => {
   const left_horiz_limit = check_horizontal_axis_limit(0, msg.limits_hit[0])
@@ -163,9 +154,9 @@ onMessage<ControllerStateMessage>('arm', 'arm_state', msg => {
   const bumper_limit = check_button_limit(4, 5, msg.limits_hit[4])
 
   const intentional_limit =
-    (left_horiz_limit && axis_contribution(0, 0, 1) > VIBRATION_THRESHOLD) ||
-    (left_vert_limit && axis_contribution(1, 0, 1) > VIBRATION_THRESHOLD) ||
-    (right_vert_limit && axis_contribution(3, 2, 3) > VIBRATION_THRESHOLD) ||
+    (left_horiz_limit && Math.abs(axes.value[0]) > VIBRATION_THRESHOLD) ||
+    (left_vert_limit && Math.abs(axes.value[1]) > VIBRATION_THRESHOLD) ||
+    (right_vert_limit && Math.abs(axes.value[3]) > VIBRATION_THRESHOLD) ||
     bumper_limit
 
   forcing_limit.value = intentional_limit
