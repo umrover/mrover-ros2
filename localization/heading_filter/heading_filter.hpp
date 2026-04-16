@@ -54,8 +54,6 @@ namespace mrover {
 
         // data store
         std::optional<Eigen::Quaterniond> prev_imu_orientation_norm;
-        std::optional<double> last_rtk_heading;
-        std::optional<double> last_drive_forward_heading;
         std::optional<sensor_msgs::msg::Imu> last_imu;
         std::optional<geometry_msgs::msg::Vector3Stamped> last_position;
         std::vector<geometry_msgs::msg::Twist> twists;

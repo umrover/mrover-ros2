@@ -2,7 +2,7 @@
 
 namespace mrover {
 
-    auto HeadingFilter::quat_geodesic_angle_rad(const Eigen::Quaterniond &prev_quat, const Eigen::Quaterniond &current_quat) {
+    auto HeadingFilter::quat_geodesic_angle_rad(const Eigen::Quaterniond &prev_quat, const Eigen::Quaterniond &current_quat) -> double {
         Eigen::Quaterniond a_n = prev_quat.normalized();
         Eigen::Quaterniond b_n = current_quat.normalized();
 
@@ -116,20 +116,8 @@ namespace mrover {
 
     void HeadingFilter::sync_rtk_heading_callback(const mrover::msg::Heading::ConstSharedPtr &heading, const mrover::msg::FixStatus::ConstSharedPtr &heading_status) {
 
-        if (heading_status->fix_type.fix == mrover::msg::FixType::FIXED) {
-            double const rover_map_deg = std::fmod(heading->heading + 90. + 360., 360.);
-            double measured_heading_deg = 90. - rover_map_deg;
-            if (measured_heading_deg <= -180.) { measured_heading_deg += 360.; }
-            else if (measured_heading_deg > 180.) { measured_heading_deg -= 360.; }
-            last_rtk_heading = measured_heading_deg * (M_PI / 180.);
-        }
-
         if (!last_imu) {
             RCLCPP_WARN(get_logger(), "No IMU data!");
-            return;
-        }
-
-        if (imu_orientation_stuck) {
             return;
         }
 
@@ -157,7 +145,11 @@ namespace mrover {
         }
 
         if (heading_status->fix_type.fix == mrover::msg::FixType::FIXED) {
-            double const measured_heading = *last_rtk_heading;
+            double const rover_map_deg = fmod(heading->heading + 90. + 360., 360.);
+            double measured_heading_deg = 90. - rover_map_deg;
+            if (measured_heading_deg <= -180.) { measured_heading_deg += 360.; }
+            else if (measured_heading_deg > 180.) { measured_heading_deg -= 360.; }
+            double const measured_heading = measured_heading_deg * (M_PI / 180.);
 
             auto const previousX = X;
 
@@ -240,7 +232,7 @@ namespace mrover {
         prev_imu_orientation_norm = uncorrected_orientation;
         last_imu = *imu;
 
-        if (use_mag && !imu_orientation_stuck) {
+        if (use_mag) {
             R2d uncorrected_forward = uncorrected_orientation_rotm.rotation().col(0).head(2);
             if (!uncorrected_forward.array().isFinite().all()) {
                 RCLCPP_WARN(get_logger(), "Forward Vector not finite, skipping heading correction");
@@ -279,22 +271,15 @@ namespace mrover {
             return;
         }
 
-        if (imu_orientation_stuck && last_rtk_heading) {
-            pose_in_map.asSO3() = SO3d(Eigen::AngleAxisd(*last_rtk_heading, R3d::UnitZ()));
-        } else if (imu_orientation_stuck && last_drive_forward_heading) {
-            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000, "IMU orientation stuck and no RTK yaw, publishing drive forward yaw only");
-            pose_in_map.asSO3() = SO3d(Eigen::AngleAxisd(*last_drive_forward_heading, R3d::UnitZ()));
-        } else {
-            SO3d curr_heading_correction = Eigen::AngleAxisd(X, R3d::UnitZ());
-            SO3d corrected_orientation = curr_heading_correction * uncorrected_orientation_rotm;
-            Eigen::Quaterniond q = corrected_orientation.quat();
-            q.normalize();
-            if (!q.coeffs().array().isFinite().all() || q.squaredNorm() < 1e-12) {
-                RCLCPP_WARN(get_logger(), "Corrected orientation quaternion invalid after normalize, skipping TF publish");
-                return;
-            }
-            pose_in_map.asSO3() = SO3d(q);
+        SO3d curr_heading_correction = Eigen::AngleAxisd(X, R3d::UnitZ());
+        SO3d corrected_orientation = curr_heading_correction * uncorrected_orientation_rotm;
+        Eigen::Quaterniond q = corrected_orientation.quat();
+        q.normalize();
+        if (!q.coeffs().array().isFinite().all() || q.squaredNorm() < 1e-12) {
+            RCLCPP_WARN(get_logger(), "Corrected orientation quaternion invalid after normalize, skipping TF publish");
+            return;
         }
+        pose_in_map.asSO3() = SO3d(q);
 
         SE3Conversions::pushToTfTree(tf_broadcaster, gps_frame, world_frame, pose_in_map, get_clock()->now());
     }
@@ -388,16 +373,11 @@ namespace mrover {
         }
 
         const double drive_forward_heading = std::atan2(mean_v.y(), mean_v.x());
-        last_drive_forward_heading = drive_forward_heading;
         
         // for debugging purposes, publishing drive forward heading
         mrover::msg::Heading drive_forward_heading_msg;
         drive_forward_heading_msg.heading = std::fmod(90. - (drive_forward_heading * (180. / M_PI)) + 360., 360.);
         drive_forward_pub->publish(drive_forward_heading_msg);
-
-        if (imu_orientation_stuck) {
-            return;
-        }
 
         // Compare against current IMU-derived heading and do a Kalman correct on delta.
         auto const& qmsg = last_imu->orientation;
