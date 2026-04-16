@@ -42,6 +42,8 @@ namespace mrover{
 
         std::string current_key;
 
+        double keyboard_roll;
+
         // Params
         int mMinCodeLength{}, mMaxCodeLength{};
         cv::Mat mCameraMatrix;

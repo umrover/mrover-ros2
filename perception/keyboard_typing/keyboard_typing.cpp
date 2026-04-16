@@ -250,9 +250,7 @@ namespace mrover{
 
             std::vector<cv::Point3f> all_objPoints;
             std::vector<cv::Point2f> all_imgPoints; 
-            if (validcnt == 1) {
-                cv::solvePnP(objPoints,markerCorners[valid_indices[0]],mCameraMatrix,mDistCoeffs,combined_rvec,combined_tvec,false,cv::SOLVEPNP_IPPE_SQUARE);
-            } else if (validcnt > 1) {
+            if (validcnt > 0) {
                 for (int idx : valid_indices) {
                     int id = ids[idx];
                     
@@ -295,9 +293,9 @@ namespace mrover{
 
             std::tie(combined_tvec, combined_rvec) = vectorMedianFilter(combined_tvec, combined_rvec);
 
-            // RCLCPP_INFO_STREAM(get_logger(), "X: " << combined_tvec[0]);
-            // RCLCPP_INFO_STREAM(get_logger(), "Y: " << combined_tvec[1]);
-            // RCLCPP_INFO_STREAM(get_logger(), "Z: " << combined_tvec[2]);
+            RCLCPP_INFO_STREAM(get_logger(), "X: " << combined_tvec[0]);
+            RCLCPP_INFO_STREAM(get_logger(), "Y: " << combined_tvec[1]);
+            RCLCPP_INFO_STREAM(get_logger(), "Z: " << combined_tvec[2]);
 
             Eigen::Vector3d rvec(
                 combined_rvec[0],
@@ -462,7 +460,12 @@ namespace mrover{
 
             double pitch_rad = -std::atan2(-r20, std::hypot(r00, r10));
 
-            sendIKCommand(armbase_to_armfk.translation().x(), armbase_to_z.translation().y(), armbase_to_z.translation().z(), pitch_rad, -1.5708);
+            double r21 = armbase_to_z.transform()(2,1);
+            double r22 = armbase_to_z.transform()(2,2);
+
+            keyboard_roll = std::atan2(r21, r22);
+
+            sendIKCommand(armbase_to_armfk.translation().x(), armbase_to_z.translation().y(), armbase_to_z.translation().z(), pitch_rad, keyboard_roll);
 
             RCLCPP_INFO_STREAM(get_logger(), "y_delta = " << (armbase_to_armfk.translation().y() - armbase_to_z.translation().y()));
                             
@@ -476,22 +479,22 @@ namespace mrover{
     auto KeyboardTypingNode::sendIKCommand(float x, float y, float z, float pitch, float roll) -> void {
         if(!mIKPub){
             RCLCPP_ERROR(get_logger(), "IK publisher not initialized");
-            // shift over to arm_gripper_link
-            // float y_offset_local = -0.0062535;
         }
+        // shift over to arm_gripper_link
+        float z_offset_local = 0.073; 
 
-        // float dx = y_offset_local * (std::sin(pitch) * std::sin(roll));
-        // float dy = y_offset_local * std::cos(roll);
-        // float dz = y_offset_local * (std::cos(pitch) * std::sin(roll));
+        float dx = z_offset_local * (std::sin(pitch) * std::cos(roll));
+        float dy = z_offset_local * -std::sin(roll);
+        float dz = z_offset_local * (std::cos(pitch) * std::cos(roll));
 
         msg::IK message;
 
-        message.pos.x = x; // + dx;
-        message.pos.y = y; // + dy;
-        message.pos.z = z; // + dz;
+        message.pos.x = x + dx;
+        message.pos.y = y + dy;
+        message.pos.z = z + dz;
 
         message.pitch = pitch;
-        message.roll = roll;
+        message.roll = -1.5708;
 
         using clock = std::chrono::steady_clock;
         auto start = clock::now();
@@ -499,11 +502,11 @@ namespace mrover{
 
         SE3d curarmpos = SE3Conversions::fromTfTree(tf_buffer, "arm_fk_ee", "arm_base_link");
 
-        double dist =  pow(curarmpos.translation().x()-x, 2) + pow(curarmpos.translation().y()-y,2);
+        double dist =  pow(curarmpos.translation().y()-y, 2) + pow(curarmpos.translation().z()-z,2);
         while (clock::now() - start < duration && dist > 0.0001) {
             mIKPub->publish(message);
             curarmpos = SE3Conversions::fromTfTree(tf_buffer, "arm_fk_ee", "arm_base_link");
-            dist =  pow(curarmpos.translation().x()-x, 2) + pow(curarmpos.translation().y()-y,2);
+            dist =  pow(curarmpos.translation().y()-y, 2) + pow(curarmpos.translation().z()-y,2);
             RCLCPP_INFO_STREAM(get_logger(), "remaining distance = " << dist);
         }
 
@@ -637,12 +640,9 @@ namespace mrover{
             std::transform(launchCode.begin(), launchCode.end(), launchCode.begin(), ::toupper);
 
             // Align arm over z key
-            // RCLCPP_INFO_STREAM(this->get_logger(), "Aligning to z key");
-            align_to_z();
+            RCLCPP_INFO_STREAM(this->get_logger(), "Aligning to z key");
 
-            // rotate gripper 90 degrees
-            // RCLCPP_INFO_STREAM(this->get_logger(), "Rotating gripper 90 degrees");
-            // rotateGripper(-1.5708);
+            align_to_z();
 
             // Activate typing mode
             RCLCPP_INFO_STREAM(this->get_logger(), "Sending ik mode request");
@@ -658,19 +658,25 @@ namespace mrover{
 
                 RCLCPP_WARN(this->get_logger(), "Sending Goal");
 
-                float x_delta = 0;
-                float y_delta = 0;
+                float x_pos = 0;
+                float y_pos = 0;
 
-                x_delta = keyboard_offset[launchCode[i]][0];
-                y_delta = keyboard_offset[launchCode[i]][1];
+                x_pos = keyboard_offset[launchCode[i]][0];
+                y_pos = keyboard_offset[launchCode[i]][1];
+
+                double rolled_x_pos = (x_pos * std::cos(keyboard_roll)) - (y_pos * std::sin(keyboard_roll));
+
+                double rolled_y_pos = (x_pos * std::sin(keyboard_roll)) + (y_pos * std::cos(keyboard_roll));
 
                 RCLCPP_WARN(this->get_logger(), "X_pos", mMinCodeLength, mMaxCodeLength);
 
                 RCLCPP_INFO_STREAM(this->get_logger(), "current letter = " << launchCode[i]);
-                RCLCPP_INFO_STREAM(this->get_logger(), "x_delta = " << x_delta);
-                RCLCPP_INFO_STREAM(this->get_logger(), "y_delta = " << y_delta);
+                RCLCPP_INFO_STREAM(this->get_logger(), "x_pos = " << x_pos);
+                RCLCPP_INFO_STREAM(this->get_logger(), "y_pos = " << y_pos);
+                RCLCPP_INFO_STREAM(this->get_logger(), "rolled_x_pos = " << rolled_x_pos);
+                RCLCPP_INFO_STREAM(this->get_logger(), "rolled_y_pos = " << rolled_y_pos);
 
-                send_goal(-x_delta, y_delta);
+                send_goal(-rolled_x_pos, rolled_y_pos);
 
                 if (goal_handle->is_canceling()) {
                     result->success = false;
