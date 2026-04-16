@@ -93,3 +93,13 @@ export interface SPPressureMessage {
   pressure: number;
 }
 
+export interface IkFeedbackMessage {
+  type: 'ik_feedback';
+  pos: {
+    x: number;
+    y: number;
+    z: number;
+  };
+}
+
+  export type ScienceMessage = OxygenMessage | UVMessage | TemperatureMessage | HumidityMessage | SPHumidityMessage | SPTemperatureMessage | SPOxygenMessage | SPUVMessage | SPOzoneMessage | SPCO2Message | SPPressureMessage | IkFeedbackMessage;

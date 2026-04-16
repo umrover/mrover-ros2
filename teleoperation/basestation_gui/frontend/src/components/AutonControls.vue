@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-row gap-2">
-    <div class="flex flex-col gap-1" style="flex: 1;">
+    <div class="flex flex-col gap-1" style="flex: 1">
       <FeedbackButton
         ref="autonCheckbox"
         class="w-full"
@@ -20,7 +20,7 @@
         @toggle="handleTeleopToggle"
       />
     </div>
-    <div class="flex flex-col gap-1" style="flex: 1;">
+    <div class="flex flex-col gap-1" style="flex: 1">
       <FeedbackButton
         class="w-full"
         data-testid="pw-pure-pursuit-toggle"
@@ -64,13 +64,17 @@ const autonomyStore = useAutonomyStore()
 const autonEnabled = computed(() => autonomyStore.autonEnabled)
 const teleopEnabled = computed(() => autonomyStore.teleopEnabled)
 const purePursuitEnabled = computed(() => autonomyStore.purePursuitEnabled)
-const pathRelaxationEnabled = computed(() => autonomyStore.pathRelaxationEnabled)
-const pathInterpolationEnabled = computed(() => autonomyStore.pathInterpolationEnabled)
+const pathRelaxationEnabled = computed(
+  () => autonomyStore.pathRelaxationEnabled,
+)
+const pathInterpolationEnabled = computed(
+  () => autonomyStore.pathInterpolationEnabled,
+)
 
 const autonAction = (newState: boolean) => {
   const routeMap = autonomyStore.routeForMap
   const waypoints = newState
-    ? routeMap.map((waypoint) => ({
+    ? routeMap.map(waypoint => ({
         latitude_degrees: waypoint.latLng.lat,
         longitude_degrees: waypoint.latLng.lng,
         tag_id: waypoint.tag_id,
@@ -119,4 +123,3 @@ const handlePathInterpolationToggle = (newState: boolean) => {
   autonomyStore.pathInterpolationEnabled = newState
 }
 </script>
-
