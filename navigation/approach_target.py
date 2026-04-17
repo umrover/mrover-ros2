@@ -14,8 +14,6 @@ from rclpy.duration import Duration
 from navigation.coordinate_utils import is_high_cost_point, d_calc, segment_path, cartesian_to_ij
 
 
-
-
 class ApproachTargetState(State):
     UPDATE_DELAY: float
     USE_COSTMAP: bool
@@ -170,11 +168,11 @@ class ApproachTargetState(State):
             return self
         if self.WITHIN_DIST:
             cmd_vel, arrived = self.spin_rover(context, self.target_position)
-            if(arrived):
+            if arrived:
                 return costmap_search.CostmapSearchState()
             context.rover.send_drive_command(cmd_vel)
-            #SPIN ROVER AND CHECK IF IT IS IN DISTANCE THRESHOLD
-            if(all(self.self_in_distance_threshold(context, self.object_type))):
+            # SPIN ROVER AND CHECK IF IT IS IN DISTANCE THRESHOLD
+            if all(self.self_in_distance_threshold(context, self.object_type)):
                 context.node.get_logger().info("Exited through distance threshold")
                 return self.next_state(context, True)
             return self
@@ -236,13 +234,13 @@ class ApproachTargetState(State):
 
         # If we are within the distance threshold of the target we have finished
         self.WITHIN_DIST, within_frame = self.self_in_distance_threshold(context, self.object_type)
-        if(self.object_type in self.no_look_ahead_dict.values() and self.WITHIN_DIST):
+        if self.object_type in self.no_look_ahead_dict.values() and self.WITHIN_DIST:
             context.node.get_logger().info("Exited through distance threshold")
             return self.next_state(context=context, is_finished=True)
-        elif(self.object_type not in self.no_look_ahead_dict.values() and within_frame):
+        elif self.object_type not in self.no_look_ahead_dict.values() and within_frame:
             context.node.get_logger().info("Exited through distance threshold")
             return self.next_state(context=context, is_finished=True)
-        elif(self.WITHIN_DIST):
+        elif self.WITHIN_DIST:
             context.node.get_logger().info("Object within distance but not within frame")
 
         arrived = False
@@ -288,7 +286,8 @@ class ApproachTargetState(State):
             context.rover.send_drive_command(cmd_vel)
 
         return self
-    #Fix disabled state soon
+
+    # Fix disabled state soon
     def on_loop_costmap_disabled(self, context: Context) -> State:
         from .long_range import LongRangeState
 
@@ -297,14 +296,14 @@ class ApproachTargetState(State):
 
         if self.target_position is None:
             return self
-        
-        if(self.WITHIN_DIST):
+
+        if self.WITHIN_DIST:
             cmd_vel, arrived = self.spin_rover(context, self.target_position)
-            if(arrived):
+            if arrived:
                 return costmap_search.CostmapSearchState()
             context.rover.send_drive_command(cmd_vel)
-            #SPIN ROVER AND CHECK IF IT IS IN DISTANCE THRESHOLD
-            if(all(self.self_in_distance_threshold(context, self.object_type))):
+            # SPIN ROVER AND CHECK IF IT IS IN DISTANCE THRESHOLD
+            if all(self.self_in_distance_threshold(context, self.object_type)):
                 context.node.get_logger().info("Exited through distance threshold")
                 return self.next_state(context, True)
             return self
@@ -318,13 +317,13 @@ class ApproachTargetState(State):
             context.node.get_parameter("waypoint.drive_forward_threshold").value,
         )
         self.WITHIN_DIST, within_frame = self.self_in_distance_threshold(context, self.object_type)
-        if(self.object_type in self.no_look_ahead_dict.values() and self.WITHIN_DIST):
+        if self.object_type in self.no_look_ahead_dict.values() and self.WITHIN_DIST:
             context.node.get_logger().info("Exited through distance threshold")
             return self.next_state(context=context, is_finished=True)
-        elif(self.object_type not in self.no_look_ahead_dict.values() and within_frame):
+        elif self.object_type not in self.no_look_ahead_dict.values() and within_frame:
             context.node.get_logger().info("Exited through distance threshold")
             return self.next_state(context=context, is_finished=True)
-        elif(self.WITHIN_DIST):
+        elif self.WITHIN_DIST:
             context.node.get_logger().info("Object within distance but not within frame")
         if arrived:
             if isinstance(self, LongRangeState):
@@ -420,12 +419,16 @@ class ApproachTargetState(State):
             context.publish_path_marker(
                 points=np.array([self.target_position]), color=[1.0, 1.0, 0.0], ns=str(type(self))
             )
-    def spin_rover(self, context: Context, target_pos: np.ndarray):
+
+    def spin_rover(self, context: Context, target_pos: np.ndarray | None):
+        if target_pos is None:
+            return Twist(), True
         cmd_vel, arrived = context.drive.get_drive_command(
-            target_pos, context.rover.get_pose_in_map(), 
-            self.DISTANCE_THRESHOLD, 1e-8)
+            target_pos, context.rover.get_pose_in_map(), self.DISTANCE_THRESHOLD, 1e-8
+        )
         return cmd_vel, arrived
-    def self_in_distance_threshold(self, context: Context, object_type: int) -> tuple[bool | bool]:
+
+    def self_in_distance_threshold(self, context: Context, object_type: int) -> tuple[bool, bool]:
         rover_SE3 = context.rover.get_pose_in_map()
         if rover_SE3 is None:
             return False, False
@@ -441,7 +444,9 @@ class ApproachTargetState(State):
         if object_type in self.no_look_ahead_dict.values():
             return distance_to_target < self.DISTANCE_THRESHOLD, False
         else:
-            return distance_to_target < self.LOOK_DISTANCE_THRESHOLD, time_diff < Duration(nanoseconds=self.CHECK_UPDATE_TIME * 10 ** 9)
+            return distance_to_target < self.LOOK_DISTANCE_THRESHOLD, time_diff < Duration(
+                nanoseconds=self.CHECK_UPDATE_TIME * 10**9
+            )
 
     def point_in_distance_threshold(self, context: Context, point):
         if point is None:
