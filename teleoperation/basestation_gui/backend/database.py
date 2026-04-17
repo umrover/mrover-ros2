@@ -25,7 +25,8 @@ def init_waypoints_db():
                 type INTEGER DEFAULT 0,
                 latitude REAL DEFAULT 0.0,
                 longitude REAL DEFAULT 0.0,
-                deletable BOOLEAN DEFAULT 1
+                deletable BOOLEAN DEFAULT 1,
+                enable_costmap BOOLEAN DEFAULT 1
             )
         ''')
 
@@ -37,6 +38,7 @@ def init_waypoints_db():
                 type INTEGER DEFAULT 0,
                 latitude REAL DEFAULT 0.0,
                 longitude REAL DEFAULT 0.0,
+                enable_costmap BOOLEAN DEFAULT 1,
                 sequence_order INTEGER NOT NULL
             )
         ''')
@@ -54,18 +56,18 @@ def init_waypoints_db():
         cursor.execute("SELECT count(*) FROM auton_waypoints")
         if cursor.fetchone()[0] == 0:
             defaults = [
-                ("No Search 1", None, 0, 0.0, 0.0, 0),
-                ("No Search 2", None, 0, 0.0, 0.0, 0),
-                ("Post 1", 1, 1, 0.0, 0.0, 0),
-                ("Post 2", 2, 1, 0.0, 0.0, 0),
-                ("Post 3", 3, 1, 0.0, 0.0, 0),
-                ("Mallet", None, 2, 0.0, 0.0, 0),
-                ("Water Bottle", None, 3, 0.0, 0.0, 0),
-                ("Rock Pick", None, 4, 0.0, 0.0, 0),
+                ("No Search 1", None, 0, 0.0, 0.0, 0, 1),
+                ("No Search 2", None, 0, 0.0, 0.0, 0, 1),
+                ("Post 1", 1, 1, 0.0, 0.0, 0, 1),
+                ("Post 2", 2, 1, 0.0, 0.0, 0, 1),
+                ("Post 3", 3, 1, 0.0, 0.0, 0, 1),
+                ("Mallet", None, 2, 0.0, 0.0, 0, 1),
+                ("Water Bottle", None, 3, 0.0, 0.0, 0, 1),
+                ("Rock Pick", None, 4, 0.0, 0.0, 0, 1),
             ]
             cursor.executemany('''
-                INSERT INTO auton_waypoints (name, tag_id, type, latitude, longitude, deletable)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO auton_waypoints (name, tag_id, type, latitude, longitude, deletable, enable_costmap)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             ''', defaults)
 
             cursor.execute('DELETE FROM sqlite_sequence WHERE name = "auton_waypoints"')

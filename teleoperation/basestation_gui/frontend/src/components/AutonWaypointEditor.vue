@@ -104,13 +104,24 @@
           </div>
           <div class="flex justify-between items-center">
             <small class="text-muted">{{ wp.lat.toFixed(6) }}N, {{ wp.lon.toFixed(6) }}W</small>
-            <button
-              class="btn btn-sm btn-danger btn-icon"
-              :disabled="autonomyStore.isNavigating"
-              @click="autonomyStore.removeFromExecution(wp)"
-            >
-              <i class="bi bi-trash-fill" />
-            </button> 
+            <div class="flex gap-1">
+              <button
+                class="btn btn-sm btn-icon"
+                :class="wp.enable_costmap ? 'btn-success' : 'btn-secondary'"
+                :disabled="autonomyStore.isNavigating"
+                :title="wp.enable_costmap ? 'Costmap enabled' : 'Costmap disabled'"
+                @click="autonomyStore.toggleExecutionCostmap(index)"
+              >
+                <i class="bi bi-map" />
+              </button>
+              <button
+                class="btn btn-sm btn-danger btn-icon"
+                :disabled="autonomyStore.isNavigating"
+                @click="autonomyStore.removeFromExecution(wp)"
+              >
+                <i class="bi bi-trash-fill" />
+              </button>
+            </div>
           </div>
         </div>
       </VueDraggable>

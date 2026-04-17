@@ -153,6 +153,7 @@ def fetch_store_row(conn, waypoint_id: int) -> dict:
     wd['lat'] = wd.pop('latitude')
     wd['lon'] = wd.pop('longitude')
     wd['deletable'] = bool(wd['deletable'])
+    wd['enable_costmap'] = bool(wd['enable_costmap'])
     return wd
 
 
@@ -169,6 +170,7 @@ def get_store():
             wd['lat'] = wd.pop('latitude')
             wd['lon'] = wd.pop('longitude')
             wd['deletable'] = bool(wd['deletable'])
+            wd['enable_costmap'] = bool(wd['enable_costmap'])
             results.append(wd)
         return {'status': 'success', 'waypoints': results}
     finally:
@@ -182,9 +184,9 @@ def add_to_store(data: CreateAutonWaypoint):
     try:
         conn = get_db_connection()
         cursor = conn.execute('''
-            INSERT INTO auton_waypoints (name, tag_id, type, latitude, longitude, deletable)
-            VALUES (?, ?, ?, ?, ?, 1)
-        ''', (data.name, data.tag_id, data.type, data.lat, data.lon))
+            INSERT INTO auton_waypoints (name, tag_id, type, latitude, longitude, enable_costmap, deletable)
+            VALUES (?, ?, ?, ?, ?, ?, 1)
+        ''', (data.name, data.tag_id, data.type, data.lat, data.lon, data.enable_costmap))
         conn.commit()
         return {
             'status': 'success',
@@ -217,7 +219,7 @@ def update_store(waypoint_id: int, data: UpdateAutonWaypoint):
                 )
 
         col_map = {'lat': 'latitude', 'lon': 'longitude'}
-        allowed_cols = {'name', 'tag_id', 'type', 'latitude', 'longitude'}
+        allowed_cols = {'name', 'tag_id', 'type', 'latitude', 'longitude', 'enable_costmap'}
         set_clauses = []
         values = []
         for key, val in fields.items():
@@ -287,6 +289,7 @@ def get_execution():
             del wd['id']
             wd['lat'] = wd.pop('latitude')
             wd['lon'] = wd.pop('longitude')
+            wd['enable_costmap'] = bool(wd['enable_costmap'])
             del wd['sequence_order']
             results.append(wd)
         return {'status': 'success', 'course': results}
@@ -303,9 +306,9 @@ def save_execution(data: AutonWaypointList):
         conn.execute('DELETE FROM current_auton_course')
         for i, w in enumerate(data.waypoints):
             conn.execute('''
-                INSERT INTO current_auton_course (name, tag_id, type, latitude, longitude, sequence_order)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (w.name, w.tag_id, w.type, w.lat, w.lon, i))
+                INSERT INTO current_auton_course (name, tag_id, type, latitude, longitude, enable_costmap, sequence_order)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (w.name, w.tag_id, w.type, w.lat, w.lon, w.enable_costmap, i))
         conn.commit()
         return {'status': 'success'}
     finally:

@@ -6,6 +6,7 @@ export interface AutonWaypoint {
   type: number
   lat: number
   lon: number
+  enable_costmap: boolean
   deletable?: boolean
   db_id?: number
 }
@@ -27,4 +28,5 @@ export interface MapWaypoint {
 export interface MapRouteWaypoint extends MapWaypoint {
   tag_id: number | null
   type: number
+  enable_costmap: boolean
 }
