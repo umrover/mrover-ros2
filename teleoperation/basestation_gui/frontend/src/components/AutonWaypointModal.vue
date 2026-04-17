@@ -98,6 +98,7 @@ async function submit() {
     tag_id: form.value.type === 1 ? form.value.tag_id : null,
     lat: autonomyStore.clickPoint.lat,
     lon: autonomyStore.clickPoint.lon,
+    enable_costmap: true,
   }
 
   try {
