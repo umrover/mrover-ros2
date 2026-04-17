@@ -18,7 +18,6 @@ from mrover.msg import (
     Course as CourseMsg,
     ImageTarget,
     ImageTargets,
-    ObjectDetectorType
 )
 from mrover.srv import (
     MoveCostMap, 
@@ -411,6 +410,8 @@ class Context:
     # Object Detector Clients
     stereo_cli: Client
     image_cli: Client
+    stereo_future: Future | None
+    image_future: Future | None
 
     def setup(self, node: Node):
         from .state import OffState
@@ -463,6 +464,8 @@ class Context:
 
         self.stereo_cli = node.create_client(ToggleStereoObjectDetector, "toggle_stereo_object_detector")
         self.image_cli = node.create_client(ToggleImageObjectDetector, "toggle_image_object_detector")
+        self.stereo_future = None
+        self.image_future = None
 
         while not self.stereo_cli.wait_for_service(timeout_sec=1.0):
             node.get_logger().info("Waiting for stereo_object_detector service...")
@@ -485,26 +488,23 @@ class Context:
         response.success = True
         return response
     
-    def toggle_object_detector(self, objectType: ObjectDetectorType) -> bool:
+    def toggle_object_detector(self, objectType: ToggleImageObjectDetector.Request.mode) -> bool:
         stereoRequest = ToggleStereoObjectDetector.Request()
         stereoRequest.mode = objectType
         imageRequest = ToggleImageObjectDetector.Request()
         imageRequest.mode = objectType
-        stereoResult = False
-        imageResult = False
 
-        # Communicate with each service and ensure they complete
-        while not stereoResult and not imageResult:
-            self.node.get_logger().info("Toggling Object Detector")
-            future = self.stereo_cli.call_async(stereoRequest)
-            rclpy.spin_until_future_complete(self, future)
-            stereoResult = future.result()
+        self.node.get_logger().info("Toggling Object Detector")
 
-            future = self.image_cli.call_async(imageRequest)
-            rclpy.spin_until_future_complete(self, future)
-            imageResult = future.result()
-
+        self.stereo_future = self.stereo_cli.call_async(stereoRequest)
+        self.image_future = self.image_cli.call_async(imageRequest)
+        
         return True
+    
+    def futures_done(self) -> bool:
+        if self.image_future is None or self.stereo_future is None:
+            return True
+        return self.image_future.done() and self.stereo_future.done()
 
     def stuck_callback(self, msg: Bool) -> None:
         self.rover.stuck = msg.data

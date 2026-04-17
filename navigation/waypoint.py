@@ -5,8 +5,8 @@ from . import (
     costmap_search,
     stuck_recovery,
 )
-from mrover.msg import WaypointType, ObjectDetectorType
-from mrover.srv import MoveCostMap
+from mrover.msg import WaypointType
+from mrover.srv import MoveCostMap, ToggleImageObjectDetector
 from .context import Context
 import rclpy
 from .context import Context
@@ -85,15 +85,15 @@ class WaypointState(State):
         # Switch Object Detector to type requested
         match current_waypoint.type.val:
             case WaypointType.NO_SEARCH:
-                context.toggle_object_detector(ObjectDetectorType.OFF)
+                context.toggle_object_detector(ToggleImageObjectDetector.Request.OFF)
             case WaypointType.POST:
-                context.toggle_object_detector(ObjectDetectorType.OFF) # TODO: Implement tag detection
+                context.toggle_object_detector(ToggleImageObjectDetector.Request.OFF) # TODO: Implement tag detection
             case WaypointType.MALLET:
-                context.toggle_object_detector(ObjectDetectorType.MALLET)
+                context.toggle_object_detector(ToggleImageObjectDetector.Request.MALLET)
             case WaypointType.WATER_BOTTLE:
-                context.toggle_object_detector(ObjectDetectorType.WATER_BOTTLE)
+                context.toggle_object_detector(ToggleImageObjectDetector.Request.WATER_BOTTLE)
             case WaypointType.ROCK_PICK:
-                context.toggle_object_detector(ObjectDetectorType.ROCK_PICK)
+                context.toggle_object_detector(ToggleImageObjectDetector.Request.ROCK_PICK)
 
         context.node.get_logger().info("On Enter finished")
 
@@ -239,6 +239,10 @@ class WaypointState(State):
         :param context: Context object
         :return:        Next state
         """
+        
+        # Used for Object Detector service
+        if not context.futures_done():
+            return self
 
         if context.course is None:
             return state.DoneState()
