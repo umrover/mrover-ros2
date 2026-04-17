@@ -177,39 +177,43 @@ namespace mrover {
     }
 
     void ArmController::fkCallback(msg::ControllerState::ConstSharedPtr const& joint_state) {
-        // update joint positions stored in ArmController class
-        for (size_t i = 0; i < joint_state->names.size(); ++i) {
-            auto it = joints.find(joint_state->names[i]);
-            if (it == joints.end()) {
-                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown joint \"" << joint_state->names[i] << "\"");
-                continue;
-            }
-            if (std::isnan(joint_state->positions[i])) {
-                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Joint \"" << joint_state->names[i] << "\" has an invalid posiion.");
-                return;
-            }
-            it->second.pos = joint_state->positions[i];
+    for (size_t i = 0; i < joint_state->names.size(); ++i) {
+        auto it = joints.find(joint_state->names[i]);
+        if (it == joints.end()) {
+            RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown joint \"" << joint_state->names[i] << "\"");
+            continue;
         }
+        if (std::isnan(joint_state->positions[i])) {
+            RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Joint \"" << joint_state->names[i] << "\" has an invalid position.");
+            return;
+        }
+        it->second.pos = joint_state->positions[i];
+    }
 
-        double y = joint_state->positions[0]; // joint a position
-        SE3d armTf = SE3d{{0, y, 0}, SO3d{0, 0, 0}};
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk_a_b", "arm_base_link", armTf, get_clock()->now());
-    
-        // joint b position
+        auto const now = get_clock()->now();
+
+        double a_pos = joint_state->positions[0];
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_a", "arm_base_link",
+        SE3d{{0, a_pos, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{0, R3d::UnitY()}}}}, now);
+
+        double joint_b_angle = joint_state->positions[1];
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_b", "arm_joint_a",
+        SE3d{{0, 0, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{joint_b_angle, R3d::UnitY()}}}}, now);
+
+        double joint_c_angle = (joint_state->positions[2] - JOINT_C_OFFSET);
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_c", "arm_joint_b",
+        SE3d{{LINK_BC, 0, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{joint_c_angle, R3d::UnitY()}}}}, now);
+
+        double joint_DE_angle = (joint_state->positions[3] + JOINT_C_OFFSET);
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_DE", "arm_joint_c",
+        SE3d{{LINK_CD, 0, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{joint_DE_angle, R3d::UnitY()}}}}, now);
+
         double angle = -joint_state->positions[1];
         double x = LINK_BC * std::cos(angle);
         double z = LINK_BC * std::sin(angle);
-        armTf = SE3d{{x, 0, z}, SO3d{0, 0, 0}};
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk_b_c", "arm_fk_a_b", armTf, get_clock()->now());
-        
-        // joint c position
-        angle -= joint_state->positions[2] - JOINT_C_OFFSET;
+        angle += -joint_state->positions[2] - JOINT_C_OFFSET;
         x += LINK_CD * std::cos(angle);
         z += LINK_CD * std::sin(angle);
-        armTf = SE3d{{x, 0, z}, SO3d{0, 0, 0}};
-        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk_c_de", "arm_fk_b_c", armTf, get_clock()->now());
-
-        // joint de position
         angle -= joint_state->positions[3] + JOINT_C_OFFSET;
         x += END_EFFECTOR_LENGTH * std::cos(angle);
         z += END_EFFECTOR_LENGTH * std::sin(angle);
@@ -217,7 +221,11 @@ namespace mrover {
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk_de_ee", "arm_fk_c_de", armTf, get_clock()->now());
 
         mArmPos = {x, y, z, -angle, joint_state->positions[4], std::max(joint_state->positions[5], 0.0f)};
-    }    
+
+    SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk", "arm_base_link", mArmPos.toSE3(), now);
+}
+
+
 
     void ArmController::posCallback(msg::IK::ConstSharedPtr const& ik_target) {
         mPosTarget = *ik_target;
@@ -430,3 +438,7 @@ auto main(int argc, char** argv) -> int {
     rclcpp::shutdown();
     return EXIT_SUCCESS;
 }
+
+
+    /*SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_ee", "arm_joint_de",
+    SE3d{{END_EFFECTOR_LENGTH, 0, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{0.0, R3d::UnitY()}}}}, now);*/
