@@ -106,7 +106,7 @@ class SearchState(State):
                 enable_inward=enable_inward,
                 inward_begin=context.coverage_radius_in,
             )
-        else:  # water bottle or mallet
+        else:  # water bottle, mallet, or rock pick
             SearchState.trajectory = SearchTrajectory.spiral_traj(
                 context.course.current_waypoint_pose_in_map().translation()[0:2],
                 coverage_radius_in,

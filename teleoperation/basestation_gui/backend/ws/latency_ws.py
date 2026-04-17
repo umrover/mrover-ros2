@@ -11,7 +11,6 @@ class LatencyHandler(WebSocketHandler):
         pass
 
     async def handle_message(self, data):
-        """Handle latency benchmark messages"""
         if data.get('type') == 'ping':
             await asyncio.sleep(0.001)
 

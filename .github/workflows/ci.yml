@@ -49,6 +49,11 @@ jobs:
           # lfs: "true"
           # This makes sure that $GITHUB_WORKSPACE is the catkin workspace path
           path: "src/mrover"
+      - name: Checkout ESW Submodule
+        if: github.event.pull_request.draft == false
+        # Use this instead of `submodules: true` above to avoid checking out all top-level submodules
+        run: git submodule update --init esw/fw
+        working-directory: "${{ github.workspace }}/src/mrover"
       - name: Compiler Cache
         if: github.event.pull_request.draft == false
         uses: hendrikmuhs/ccache-action@v1.2

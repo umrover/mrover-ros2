@@ -1,54 +1,43 @@
 from enum import Enum
+import threading
 
-from rclpy.node import Node
 from rclpy.publisher import Publisher
 
 from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
 from backend.mappings import ControllerAxis, ControllerButton
-from backend.ros_manager import get_node
+from backend.managers.ros import get_service_client
+from backend.utils.ros_service import call_service_async
 from mrover.msg import Throttle, IK
 from mrover.srv import IkMode
 from geometry_msgs.msg import Twist
 
-from tf2_ros.buffer import Buffer
-
-import time
-
 ra_mode = "disabled"
+ra_mode_lock = threading.Lock()
+
 
 def get_ra_mode() -> str:
-    return ra_mode
+    with ra_mode_lock:
+        return ra_mode
 
 
-def set_ra_mode(new_ra_mode: str):
+async def set_ra_mode(new_ra_mode: str):
     global ra_mode
-    ra_mode = new_ra_mode
-
-    node = get_node()
-
     if new_ra_mode == "ik-pos":
-        call_ik_mode_service(node, IK_MODE_POSITION_CONTROL)
+        if not await call_ik_mode_service(IK_MODE_POSITION_CONTROL):
+            return
     elif new_ra_mode == "ik-vel":
-        call_ik_mode_service(node, IK_MODE_VELOCITY_CONTROL)
+        if not await call_ik_mode_service(IK_MODE_VELOCITY_CONTROL):
+            return
+
+    with ra_mode_lock:
+        ra_mode = new_ra_mode
 
 
-def call_ik_mode_service(node: Node, mode: int) -> bool:
-    client = node.create_client(IkMode, "/ik_mode")
-
-    if not client.wait_for_service(timeout_sec=1.0):
-        return False
-
+async def call_ik_mode_service(mode: int) -> bool:
+    client = get_service_client(IkMode, "/ik_mode")
     request = IkMode.Request()
     request.mode = mode
-
-    future = client.call_async(request)
-    start_time = time.time()
-    while not future.done():
-        if time.time() - start_time > 5.0:
-            return False
-        time.sleep(0.01)
-
-    result = future.result()
+    result = await call_service_async(client, request, timeout=5.0)
     return result.success if result else False
 
 
@@ -75,7 +64,7 @@ JOINT_NAMES = [
     "joint_c",
     "joint_de_pitch",
     "joint_de_roll",
-    "cam",
+    "pusher",
     "gripper",
 ]
 
@@ -85,7 +74,7 @@ JOINT_SCALES = [
     1.0,
     -1.0,
     1.0,
-    1.0,
+    0.4,
     1.0,
 ]
 
@@ -123,7 +112,7 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
             scale=JOINT_SCALES[Joint.DE_PITCH.value],
         ),
         filter_input(
-            simulated_axis(controller.buttons, ControllerButton.RIGHT_BUMPER, ControllerButton.LEFT_BUMPER),
+            simulated_axis(controller.buttons, ControllerButton.LEFT_BUMPER, ControllerButton.RIGHT_BUMPER),
             scale=JOINT_SCALES[Joint.DE_ROLL.value],
         ),
         filter_input(
@@ -131,23 +120,23 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
             scale=JOINT_SCALES[Joint.CAM.value],
         ),
         filter_input(
-            simulated_axis(controller.buttons, ControllerButton.B, ControllerButton.X),
+            simulated_axis(controller.buttons, ControllerButton.X, ControllerButton.B),
             scale=JOINT_SCALES[Joint.GRIPPER.value],
         ),
     ]
 
 
 def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[list[str], list[float]]:
-    filtered_joints = [j for j in joints]
-    return [names[i.value] for i in filtered_joints], [values[i.value] for i in filtered_joints]
+    return [names[i.value] for i in joints], [values[i.value] for i in joints]
 
 
 def send_ra_controls(
-    inputs: DeviceInputs, node: Node, thr_pub: Publisher, ee_pos_pub: Publisher, ee_vel_pub: Publisher, buffer: Buffer
+    inputs: DeviceInputs, thr_pub: Publisher, ee_pos_pub: Publisher, ee_vel_pub: Publisher,
 ) -> None:
-    match ra_mode:
+    current_mode = get_ra_mode()
+    match current_mode:
         case "throttle" | "ik-pos" | "ik-vel":
-            match ra_mode:
+            match current_mode:
                 case "throttle":
                     manual_controls = compute_manual_joint_controls(inputs)
                     throttle_msg = Throttle()
@@ -173,9 +162,11 @@ def send_ra_controls(
                     ik_vel_msg.angular.x = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER)
                     ee_vel_pub.publish(ik_vel_msg)
 
-                    manual_controls = compute_manual_joint_controls(inputs)
+                    cam_throttle = filter_input(
+                        simulated_axis(inputs.buttons, ControllerButton.Y, ControllerButton.A),
+                        scale=JOINT_SCALES[Joint.CAM.value],
+                    )
                     throttle_msg = Throttle()
-                    joint_names, throttle_values = subset(JOINT_NAMES, manual_controls, set(Joint))
                     throttle_msg.names = ["cam"]
-                    throttle_msg.throttles = [throttle_values[joint_names.index("cam")]]
+                    throttle_msg.throttles = [cam_throttle]
                     thr_pub.publish(throttle_msg)

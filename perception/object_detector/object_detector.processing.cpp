@@ -42,9 +42,10 @@ namespace mrover {
         updateHitsObject(msg, detections);
 
         // Draw the bounding boxes on the image
-        drawDetectionBoxes(blobSizedImage, detections);
+        resizeBoundingBoxes(mRgbImage.size(), detections);
+        drawDetectionBoxes(mRgbImage, detections);
         if (mDebug) {
-            publishDetectedObjects(blobSizedImage);
+            publishDetectedObjects(mRgbImage);
         }
 
         mLoopProfiler.measureEvent("Publication");
@@ -136,7 +137,7 @@ namespace mrover {
 
     auto ObjectDetectorBase::drawDetectionBoxes(cv::InputOutputArray image, std::span<Detection const> detections) -> void {
         // Draw the detected object's bounding boxes on the image for each of the objects detected
-        std::array const fontColors{cv::Scalar{0, 4, 227}, cv::Scalar{232, 115, 5}};
+        std::array const fontColors{cv::Scalar{0, 4, 227}, cv::Scalar{232, 115, 5}, cv::Scalar{5, 225, 5}};
         for (std::size_t i = 0; i < detections.size(); i++) {
             // Font color will change for each different detection
             cv::Scalar const& fontColor = fontColors.at(detections[i].classId);
@@ -211,9 +212,10 @@ namespace mrover {
 
         mTargetsPub->publish(targets);
 
-        drawDetectionBoxes(blobSizedImage, detections);
+        resizeBoundingBoxes(mRgbImage.size(), detections);
+        drawDetectionBoxes(mRgbImage, detections);
         if (mDebug) {
-            publishDetectedObjects(blobSizedImage);
+            publishDetectedObjects(mRgbImage);
         }
 
         mLoopProfiler.measureEvent("Publication");
@@ -225,6 +227,20 @@ namespace mrover {
         float xRecentered = 0.5f - xNormalized;
         float bearingDegrees = xRecentered * mCameraHorizontalFov;
         return bearingDegrees * std::numbers::pi_v<float> / 180.0f;
+    }
+
+    auto ObjectDetectorBase::resizeBoundingBoxes(cv::Size const& outputSpace, std::vector<Detection>& detections) const -> void {
+        float xRatio = static_cast<float>(outputSpace.width) / static_cast<float>(mModel.inputTensorSize[2]);
+        float yRatio = static_cast<float>(outputSpace.height) / static_cast<float>(mModel.inputTensorSize[3]);
+
+        for (auto& det: detections) {
+            cv::Rect newBoundingBox;
+            newBoundingBox.x = static_cast<int>(static_cast<float>(det.box.x) * xRatio);
+            newBoundingBox.y = static_cast<int>(static_cast<float>(det.box.y) * yRatio);
+            newBoundingBox.width = static_cast<int>(static_cast<float>(det.box.width) * xRatio);
+            newBoundingBox.height = static_cast<int>(static_cast<float>(det.box.height) * yRatio);
+            std::swap(newBoundingBox, det.box);
+        }
     }
 
 } // namespace mrover

@@ -1,8 +1,8 @@
 std_msgs/Header header
-string[] name
-string[] state
-string[] error
-float32[] position
-float32[] velocity
-float32[] current
-uint8[] limit_hit
+string[] names
+string[] states
+string[] errors
+float32[] positions
+float32[] velocities
+float32[] currents
+uint8[] limits_hit

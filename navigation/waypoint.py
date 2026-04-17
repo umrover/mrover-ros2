@@ -10,8 +10,8 @@ from mrover.srv import MoveCostMap
 from .context import Context
 import rclpy
 from .context import Context
-from navigation.astar import AStar, SpiralEnd, NoPath, OutOfBounds, DestinationInHighCost
-from navigation.coordinate_utils import gen_marker, segment_path, is_high_cost_point, d_calc, cartesian_to_ij
+from navigation.astar import AStar, SpiralEnd, NoPath, OutOfBounds
+from navigation.coordinate_utils import segment_path, is_high_cost_point, d_calc, cartesian_to_ij
 from navigation.trajectory import Trajectory, SearchTrajectory
 from typing import Optional
 from rclpy.publisher import Publisher
@@ -24,6 +24,7 @@ from nav_msgs.msg import Path
 from std_msgs.msg import Header
 from visualization_msgs.msg import Marker
 import numpy as np
+from navigation.smoothing import smoothing
 
 
 class WaypointState(State):
@@ -40,13 +41,13 @@ class WaypointState(State):
     start_time: Time
     marker_timer: Timer
     waypoint_timer: Timer
-    path_pub: Publisher
     astar: AStar
-    marker_pub: Publisher
 
     UPDATE_DELAY: float
     NO_SEARCH_WAIT_TIME: float
     USE_COSTMAP: bool
+    USE_RELAXATION: bool
+    USE_INTERPOLATION: bool
 
     def on_enter(self, context: Context) -> None:
         if context.course is None:
@@ -64,7 +65,6 @@ class WaypointState(State):
         self.UPDATE_DELAY = context.node.get_parameter("search.update_delay").value
         self.NO_SEARCH_WAIT_TIME = context.node.get_parameter("waypoint.no_search_wait_time").value
 
-        self.marker_pub = context.node.create_publisher(Marker, "waypoint_trajectory", 10)
         self.astar = AStar(context)
         self.astar_traj = Trajectory(np.array([]))
         self.waypoint_traj = Trajectory(np.array([]))
@@ -80,6 +80,9 @@ class WaypointState(State):
         if current_waypoint is None:
             return
 
+        self.USE_RELAXATION = context.node.get_parameter("smoothing.use_relaxation").value
+        self.USE_INTERPOLATION = context.node.get_parameter("smoothing.use_interpolation").value
+
         self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
         if self.USE_COSTMAP:
             context.node.get_logger().info("Resetting costmap dilation")
@@ -90,6 +93,7 @@ class WaypointState(State):
     def on_exit(self, context: Context) -> None:
         self.marker_timer.cancel()
         self.waypoint_timer.cancel()
+        context.delete_path_marker(ns=str(type(self)))
 
     def update_waypoint(self, context: Context) -> None:
         self.waypoint_traj.clear()
@@ -117,8 +121,8 @@ class WaypointState(State):
             context.rover.send_drive_command(Twist())
             return self
 
-        if self.waypoint_traj.empty():
-
+        if self.waypoint_traj.empty() or self.waypoint_traj.done():
+            self.waypoint_traj.clear()
             context.node.get_logger().info("Generating segmented path")
 
             # Here, we use center, coverage_radius, and rover_position to calculate
@@ -162,7 +166,7 @@ class WaypointState(State):
             return self
 
         # BEGINNING OF LOGIC
-        while (
+        if (
             is_high_cost_point(context=context, point=self.waypoint_traj.get_current_point())
             and not self.waypoint_traj.is_last()
         ):
@@ -179,7 +183,6 @@ class WaypointState(State):
             if not (0 <= int(segment_point_ij[0]) < costmap_length and 0 <= int(segment_point_ij[1]) < costmap_length):
                 context.node.get_logger().info("Skipped too far, resetting")
                 self.waypoint_traj.reset()
-                break
 
             self.astar_traj.clear()
             return self
@@ -194,7 +197,8 @@ class WaypointState(State):
         if self.astar_traj.empty():
             self.display_markers(context=context)
             try:
-                self.astar_traj = self.astar.generate_trajectory(context, self.waypoint_traj.get_current_point())
+                self.astar_traj = self.astar.generate_trajectory(self.waypoint_traj.get_current_point())
+                self.astar_traj = smoothing(self.astar_traj, context, self.USE_RELAXATION, self.USE_INTERPOLATION)
             except Exception as e:
                 context.node.get_logger().info(str(e))
                 return self
@@ -209,12 +213,12 @@ class WaypointState(State):
         arrived = False
         cmd_vel = Twist()
         if len(self.astar_traj.coordinates) - self.astar_traj.cur_pt != 0:
-            waypoint_position_in_map = self.astar_traj.get_current_point()
             cmd_vel, arrived = context.drive.get_drive_command(
-                waypoint_position_in_map,
+                self.astar_traj,
                 context.rover.get_pose_in_map(),
                 context.node.get_parameter("waypoint.stop_threshold").value,
                 context.node.get_parameter("waypoint.drive_forward_threshold").value,
+                last_point=self.waypoint_traj.is_last(),
             )
 
         if arrived:
@@ -278,7 +282,7 @@ class WaypointState(State):
             return backup.BackupState()
 
         # Returns either ApproachTargetState, LongRangeState, or None
-        approach_state = context.course.get_approach_state(use_long_range=False)
+        approach_state = context.course.get_approach_state(use_long_range=True)
         if approach_state is not None:
             return approach_state
 
@@ -343,31 +347,22 @@ class WaypointState(State):
     def display_markers(self, context: Context):
         if context.course is None:
             return
-        if context.node.get_parameter("display_markers").value:
-            start_pt = self.waypoint_traj.cur_pt
-            end_pt = min(start_pt + 5, len(self.waypoint_traj.coordinates))
-            for i, coord in enumerate(self.waypoint_traj.coordinates[:end_pt]):
-                if i >= start_pt:
-                    self.marker_pub.publish(
-                        gen_marker(
-                            context=context,
-                            point=coord,
-                            color=[1.0, 0.0, 1.0],
-                            id=i,
-                            lifetime=context.node.get_parameter("pub_path_rate").value,
-                        )
-                    )
 
-            if context.course.current_waypoint() is None:
-                return
-
-            self.marker_pub.publish(
-                gen_marker(
-                    context=context,
-                    point=context.course.current_waypoint_pose_in_map().translation()[0:2],
-                    color=[0.0, 0.0, 1.0],
-                    size=0.5,
-                    id=-1,
-                    lifetime=10000,
+        if self.USE_COSTMAP:
+            context.publish_path_marker(
+                points=self.waypoint_traj.coordinates, color=[1.0, 0.0, 1.0], ns=str(type(self))
+            )
+            if not self.astar_traj.is_last() and not self.astar_traj.done():
+                context.publish_path_marker(
+                    points=self.astar_traj.coordinates[self.astar_traj.cur_pt :],
+                    color=[1.0, 0.0, 0.0],
+                    ns=str(type(AStar)),
                 )
+            else:
+                context.delete_path_marker(ns=str(type(AStar)))
+        else:
+            context.publish_path_marker(
+                points=np.array([context.course.current_waypoint_pose_in_map().translation()]),
+                color=[1.0, 0.0, 1.0],
+                ns=str(type(self)),
             )

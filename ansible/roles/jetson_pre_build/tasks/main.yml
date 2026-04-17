@@ -1,0 +1,34 @@
+- name: Hold Jetson Kernel Packages Constant
+  dpkg_selections:
+    name: nvidia-l4t-display-kernel
+    selection: hold
+
+- name: Hold Jetson Kernel Packages Constant
+  dpkg_selections:
+    name: nvidia-l4t-kernel
+    selection: hold
+
+- name: Hold Jetson Kernel Packages Constant
+  dpkg_selections:
+    name: nvidia-l4t-kernel-dtbs
+    selection: hold
+
+- name: Hold Jetson Kernel Packages Constant
+  dpkg_selections:
+    name: nvidia-l4t-kernel-headers
+    selection: hold
+
+- name: Hold Jetson Kernel Packages Constant
+  dpkg_selections:
+    name: nvidia-l4t-kernel-oot-headers
+    selection: hold
+
+- name: Hold Jetson Kernel Packages Constant
+  dpkg_selections:
+    name: nvidia-l4t-kernel-oot-modules
+    selection: hold
+
+- name: Hold Jetson Kernel Packages Constant
+  dpkg_selections:
+    name: nvidia-l4t-bootloader
+    selection: hold
