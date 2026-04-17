@@ -10,31 +10,31 @@
       </button>
     </div>
     <div class="flex gap-2 grow">
-      <div class="flex-1 flex flex-col items-center bg-theme-view rounded p-1">
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.oxygen_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
         <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">Oxygen</span>
         <span class="font-bold">{{ sensor_data.sp_oxygen.toFixed(2) }}<span class="text-muted ml-1 text-sm">%</span></span>
       </div>
-      <div class="flex-1 flex flex-col items-center bg-theme-view rounded p-1">
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.uv_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
         <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">UV</span>
         <span class="font-bold">{{ sensor_data.sp_uv.toFixed(2) }}<span class="text-muted ml-1 text-sm">idx</span></span>
       </div>
-      <div class="flex-1 flex flex-col items-center bg-theme-view rounded p-1">
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.thp_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
         <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">Humidity</span>
         <span class="font-bold">{{ sensor_data.sp_humidity.toFixed(2) }}<span class="text-muted ml-1 text-sm">%</span></span>
       </div>
-      <div class="flex-1 flex flex-col items-center bg-theme-view rounded p-1">
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.thp_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
         <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">Temp</span>
         <span class="font-bold">{{ sensor_data.sp_temp.toFixed(2) }}<span class="text-muted ml-1 text-sm">&deg;C</span></span>
       </div>
-      <div class="flex-1 flex flex-col items-center bg-theme-view rounded p-1">
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.ozone_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
         <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">Ozone</span>
         <span class="font-bold">{{ sensor_data.sp_ozone.toFixed(2) }}<span class="text-muted ml-1 text-sm">ppb</span></span>
       </div>
-      <div class="flex-1 flex flex-col items-center bg-theme-view rounded p-1">
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.co2_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
         <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">CO2</span>
         <span class="font-bold">{{ sensor_data.sp_co2.toFixed(2) }}<span class="text-muted ml-1 text-sm">ppm</span></span>
       </div>
-      <div class="flex-1 flex flex-col items-center bg-theme-view rounded p-1">
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.thp_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
         <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">Pressure</span>
         <span class="font-bold">{{ sensor_data.sp_pressure.toFixed(0) }}<span class="text-muted ml-1 text-sm">Pa</span></span>
       </div>
@@ -82,16 +82,22 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
-import { storeToRefs } from 'pinia'
 import Chart from 'chart.js/auto'
 import type { SensorData } from '../types/sensors'
-import type { ScienceMessage } from '@/types/websocket'
+import type {
+  SPOxygenMessage,
+  SPUVMessage,
+  SPTemperatureMessage,
+  SPHumidityMessage,
+  SPOzoneMessage,
+  SPCO2Message,
+  SPPressureMessage,
+} from '@/types/websocket'
 import SensorModal from '@/components/SensorModal.vue'
 
 const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
 
 const showModal = ref(false)
 
@@ -103,6 +109,13 @@ const sensor_data = ref<SensorData>({
   sp_ozone: 0,
   sp_co2: 0,
   sp_pressure: 0,
+  sensor_states: {
+    uv_state: false,
+    thp_state: false,
+    oxygen_state: false,
+    ozone_state: false,
+    co2_state: false,
+  },
 })
 const sensor_history = ref<number[][]>([
   Array(20).fill(0),
@@ -115,34 +128,26 @@ const sensor_history = ref<number[][]>([
 ])
 const timeCounter = ref(0)
 
-const scienceMessage = computed(() => messages.value['science'])
-
-watch(scienceMessage, (msg) => {
-  if (!msg) return
-  const scienceMsg = msg as ScienceMessage;
-  switch (scienceMsg.type) {
-    case 'sp_oxygen':
-      sensor_data.value.sp_oxygen = scienceMsg.percent
-      break
-    case 'sp_uv':
-      sensor_data.value.sp_uv = scienceMsg.uv_index
-      break
-    case 'sp_temp':
-      sensor_data.value.sp_temp = scienceMsg.temperature
-      break
-    case 'sp_humidity':
-      sensor_data.value.sp_humidity = scienceMsg.relative_humidity
-      break
-    case 'sp_ozone':
-      sensor_data.value.sp_ozone = scienceMsg.ppb
-      break
-    case 'sp_co2':
-      sensor_data.value.sp_co2 = scienceMsg.percent
-      break
-    case 'sp_pressure':
-      sensor_data.value.sp_pressure = scienceMsg.pressure
-      break
-  }
+websocketStore.onMessage<SPOxygenMessage>('science', 'sp_oxygen', (msg) => {
+  sensor_data.value.sp_oxygen = msg.percent
+})
+websocketStore.onMessage<SPUVMessage>('science', 'sp_uv', (msg) => {
+  sensor_data.value.sp_uv = msg.uv_index
+})
+websocketStore.onMessage<SPTemperatureMessage>('science', 'sp_temp', (msg) => {
+  sensor_data.value.sp_temp = msg.temperature
+})
+websocketStore.onMessage<SPHumidityMessage>('science', 'sp_humidity', (msg) => {
+  sensor_data.value.sp_humidity = msg.relative_humidity
+})
+websocketStore.onMessage<SPOzoneMessage>('science', 'sp_ozone', (msg) => {
+  sensor_data.value.sp_ozone = msg.ppb
+})
+websocketStore.onMessage<SPCO2Message>('science', 'sp_co2', (msg) => {
+  sensor_data.value.sp_co2 = msg.percent
+})
+websocketStore.onMessage<SPPressureMessage>('science', 'sp_pressure', (msg) => {
+  sensor_data.value.sp_pressure = msg.pressure
 })
 
 const resetHistory = () => {
@@ -295,5 +300,3 @@ onBeforeUnmount(() => {
   charts.length = 0
 })
 </script>
-
-
