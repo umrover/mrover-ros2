@@ -441,7 +441,6 @@ class ApproachTargetState(State):
         if object_type in self.no_look_ahead_dict.values():
             return distance_to_target < self.DISTANCE_THRESHOLD, False
         else:
-            context.node.get_logger().info("Time diff" + str(time_diff))
             return distance_to_target < self.LOOK_DISTANCE_THRESHOLD, time_diff < Duration(nanoseconds=self.CHECK_UPDATE_TIME * 10 ** 9)
 
     def point_in_distance_threshold(self, context: Context, point):
