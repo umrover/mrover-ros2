@@ -22,7 +22,6 @@ class ApproachTargetState(State):
     WITHIN_DIST: bool
     DISTANCE_THRESHOLD: float
     LOOK_DISTANCE_THRESHOLD: float
-    STOP_ANGLE_THRESHOLD: float
     CHECK_UPDATE_TIME: float
     time_begin: Time
     astar_traj: Trajectory
@@ -54,7 +53,6 @@ class ApproachTargetState(State):
         self.USE_COSTMAP = context.node.get_parameter("costmap.use_costmap").value or current_waypoint.enable_costmap
         self.DISTANCE_THRESHOLD = context.node.get_parameter("search.distance_threshold").value
         self.LOOK_DISTANCE_THRESHOLD = context.node.get_parameter("search.distance_look_threshold").value
-        self.STOP_ANGLE_THRESHOLD = context.node.get_parameter("search.stop_angle_threshold").value
         self.CHECK_UPDATE_TIME = context.node.get_parameter("search.check_update_time").value
         self.astar_traj = Trajectory(np.array([]))
         self.target_traj = Trajectory(np.array([]))
@@ -444,18 +442,7 @@ class ApproachTargetState(State):
             return distance_to_target < self.DISTANCE_THRESHOLD, False
         else:
             context.node.get_logger().info("Time diff" + str(time_diff))
-            return distance_to_target < self.LOOK_DISTANCE_THRESHOLD, time_diff < Duration(nanoseconds=self.CHECK_UPDATE_TIME * 10 ** 9) and self.target_in_frame(context, rover_SE3, target_pos)
-
-    def target_in_frame(self, context: Context, rover_SE3, target_pos: np.ndarray):
-        rover_to_model = target_pos - rover_SE3.translation()
-        rover_norm_model = np.linalg.norm(rover_to_model)
-        rover_to_model /= rover_norm_model
-        rover_forward = rover_SE3.rotation()[:, 0]
-        rover_dot_model = np.dot(rover_to_model, rover_forward)
-        angle_to_model = np.arccos(rover_dot_model)
-        angle_to_model = math.copysign(angle_to_model, np.cross(rover_forward, rover_to_model)[2])
-        context.node.get_logger().info("Angle to model" + str(angle_to_model))
-        return angle_to_model < self.STOP_ANGLE_THRESHOLD and angle_to_model > -1 * self.STOP_ANGLE_THRESHOLD
+            return distance_to_target < self.LOOK_DISTANCE_THRESHOLD, time_diff < Duration(nanoseconds=self.CHECK_UPDATE_TIME * 10 ** 9)
 
     def point_in_distance_threshold(self, context: Context, point):
         if point is None:
