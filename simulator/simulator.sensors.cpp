@@ -270,12 +270,12 @@ namespace mrover {
     }
 
     auto Simulator::dummyToggleStereoMode(mrover::srv::ToggleStereoObjectDetector::Request::ConstSharedPtr& request, mrover::srv::ToggleStereoObjectDetector::Response::SharedPtr& response) -> void {
-        RCLCPP_INFO_STREAM(get_logger(), "Setting dummy stereo object detection mode to: " << request->mode);
+        RCLCPP_INFO_STREAM(get_logger(), "Setting dummy stereo object detection mode to: " << std::to_string(request->mode));
         response->success = true;
     }
 
     auto Simulator::dummyToggleImageMode(mrover::srv::ToggleImageObjectDetector::Request::ConstSharedPtr& request, mrover::srv::ToggleImageObjectDetector::Response::SharedPtr& response) -> void {
-        RCLCPP_INFO_STREAM(get_logger(), "Setting dummy image object detection mode to: " << request->mode);
+        RCLCPP_INFO_STREAM(get_logger(), "Setting dummy image object detection mode to: " << std::to_string(request->mode));
         response->success = true;
     }
 
