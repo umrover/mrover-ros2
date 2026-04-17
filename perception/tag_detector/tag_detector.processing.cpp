@@ -201,6 +201,21 @@ namespace mrover {
         return std::nullopt;
     }
 
+    auto StereoTagDetector::toggleStereoCallback(std_srvs::srv::SetBool::Request::ConstSharedPtr& req, std_srvs::srv::SetBool::Response::SharedPtr& res) -> void {
+        if (!req->data && mPointCloudSub) {
+            mPointCloudSub.reset();
+        }
+
+        else if (req->data && !mPointCloudSub) {
+            mPointCloudSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
+                pointCloudCallback(msg);
+            });
+        }
+
+        res->success = true;
+        res->message = "";
+    }
+
     auto ImageTagDetector::getTagBearing(cv::InputArray image, std::span<cv::Point2f const> tagCorners) const -> float {
         // Takes the average of the corners
         cv::Point2f center = std::reduce(tagCorners.begin(), tagCorners.end()) / static_cast<float>(tagCorners.size());
@@ -208,6 +223,21 @@ namespace mrover {
         float xRecentered = 0.5f - xNormalized;
         float bearingDegrees = xRecentered * mCameraHorizontalFOV;
         return bearingDegrees * std::numbers::pi_v<float> / 180.0f;
+    }
+
+    auto ImageTagDetector::toggleImageCallback(std_srvs::srv::SetBool::Request::ConstSharedPtr& req, std_srvs::srv::SetBool::Response::SharedPtr& res) -> void {
+        if (!req->data && mImageSub) {
+            mImageSub.reset();
+        }
+
+        else if (req->data && !mImageSub) {
+            mImageSub = create_subscription<sensor_msgs::msg::Image>("/long_range_cam/image", 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+                imageCallback(msg);
+            });
+        }
+
+        res->success = true;
+        res->message = "";
     }
 
 } // namespace mrover

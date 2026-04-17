@@ -60,6 +60,9 @@ namespace mrover {
                                        std::size_t u, std::size_t v,
                                        std::size_t width, std::size_t height) const -> std::optional<SE3d>;
 
+        rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr mToggleStereoService;
+        auto toggleStereoCallback(std_srvs::srv::SetBool::Request::ConstSharedPtr& req, std_srvs::srv::SetBool::Response::SharedPtr& res) -> void;
+
     public:
         explicit StereoTagDetector(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
     };
@@ -75,6 +78,9 @@ namespace mrover {
         auto getTagBearing(cv::InputArray image, std::span<cv::Point2f const> tagCorners) const -> float;
 
         auto imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
+
+        rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr mToggleImageService;
+        auto toggleImageCallback(std_srvs::srv::SetBool::Request::ConstSharedPtr& req, std_srvs::srv::SetBool::Response::SharedPtr& res) -> void;
 
     public:
         explicit ImageTagDetector(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
