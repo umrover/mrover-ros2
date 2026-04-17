@@ -72,11 +72,12 @@ namespace mrover {
             // Decrement Object hit counts if they're not seen
             updateHitsObject(msg, detections);
 
-        // Draw the bounding boxes on the image
-        resizeBoundingBoxes(mRgbImage.size(), detections);
-        drawDetectionBoxes(mRgbImage, detections);
-        if (mDebug) {
-            publishDetectedObjects(mRgbImage);
+            // Draw the bounding boxes on the image
+            resizeBoundingBoxes(mRgbImage.size(), detections);
+            drawDetectionBoxes(mRgbImage, detections);
+            if (mDebug) {
+                publishDetectedObjects(mRgbImage);
+            }
         }
     }
 
@@ -271,27 +272,14 @@ namespace mrover {
 
             mTargetsPub->publish(targets);
 
-            drawDetectionBoxes(blobSizedImage, detections);
-            
+            resizeBoundingBoxes(mRgbImage.size(), detections);
+            drawDetectionBoxes(mRgbImage, detections);
             if (mDebug) {
-                publishDetectedObjects(blobSizedImage);
+                publishDetectedObjects(mRgbImage);
             }
-
+        
             mLoopProfiler.measureEvent("Publication");
         }
-<<<<<<< HEAD
-=======
-
-        mTargetsPub->publish(targets);
-
-        resizeBoundingBoxes(mRgbImage.size(), detections);
-        drawDetectionBoxes(mRgbImage, detections);
-        if (mDebug) {
-            publishDetectedObjects(mRgbImage);
-        }
-
-        mLoopProfiler.measureEvent("Publication");
->>>>>>> origin/main
     }
 
     auto ImageObjectDetector::getObjectBearing(cv::InputArray const& image, cv::Rect const& box) const -> float {
@@ -303,8 +291,8 @@ namespace mrover {
     }
 
     auto ObjectDetectorBase::resizeBoundingBoxes(cv::Size const& outputSpace, std::vector<Detection>& detections) const -> void {
-        float xRatio = static_cast<float>(outputSpace.width) / static_cast<float>(mModel.inputTensorSize[2]);
-        float yRatio = static_cast<float>(outputSpace.height) / static_cast<float>(mModel.inputTensorSize[3]);
+        float xRatio = static_cast<float>(outputSpace.width) / static_cast<float>(currentModel->inputTensorSize[2]);
+        float yRatio = static_cast<float>(outputSpace.height) / static_cast<float>(currentModel->inputTensorSize[3]);
 
         for (auto& det: detections) {
             cv::Rect newBoundingBox;
