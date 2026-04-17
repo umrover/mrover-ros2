@@ -119,5 +119,4 @@ function handleStoreUpdate(waypoint: AutonWaypoint, index: number) {
   scrollbar-gutter: stable;
   background-color: var(--view-bg);
 }
-
 </style>
