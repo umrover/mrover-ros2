@@ -173,9 +173,9 @@ def create_auton_waypoint(data: CreateAutonWaypoint):
     try:
         conn = get_db_connection()
         cursor = conn.execute('''
-            INSERT INTO auton_waypoints (name, tag_id, type, latitude, longitude, enable_costmap, deletable)
-            VALUES (?, ?, ?, ?, ?, ?, 1)
-        ''', (data.name, data.tag_id, data.type, data.lat, data.lon, data.enable_costmap))
+            INSERT INTO auton_waypoints (name, tag_id, type, latitude, longitude, enable_costmap, coverage_radius, deletable)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+        ''', (data.name, data.tag_id, data.type, data.lat, data.lon, data.enable_costmap, data.coverage_radius))
         conn.commit()
         db_id = cursor.lastrowid
 
@@ -189,6 +189,7 @@ def create_auton_waypoint(data: CreateAutonWaypoint):
                 'lat': data.lat,
                 'lon': data.lon,
                 'enable_costmap': data.enable_costmap,
+                'coverage_radius': data.coverage_radius,
                 'deletable': True,
             }
         }
@@ -211,7 +212,7 @@ def update_auton_waypoint(waypoint_id: int, data: UpdateAutonWaypoint):
             raise HTTPException(status_code=400, detail="No fields to update")
 
         col_map = {'lat': 'latitude', 'lon': 'longitude'}
-        allowed_cols = {'name', 'tag_id', 'type', 'latitude', 'longitude', 'enable_costmap'}
+        allowed_cols = {'name', 'tag_id', 'type', 'latitude', 'longitude', 'enable_costmap', 'coverage_radius'}
         set_clauses = []
         values = []
         for key, val in fields.items():
@@ -323,8 +324,8 @@ def save_current_auton_course(data: AutonWaypointList):
 
         for i, w in enumerate(course):
             conn.execute('''
-                INSERT INTO current_auton_course (name, tag_id, type, latitude, longitude, enable_costmap, sequence_order)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO current_auton_course (name, tag_id, type, latitude, longitude, enable_costmap, coverage_radius, sequence_order)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 w.name,
                 w.tag_id,
@@ -332,6 +333,7 @@ def save_current_auton_course(data: AutonWaypointList):
                 w.lat,
                 w.lon,
                 w.enable_costmap,
+                w.coverage_radius,
                 i
             ))
 
