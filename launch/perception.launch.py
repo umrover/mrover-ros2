@@ -62,7 +62,7 @@ def generate_launch_description():
         name="zed_streamer_annotated",
         parameters=[Path(get_package_share_directory("mrover"), "config", "cameras.yaml")],
         extra_arguments=[{"use_intra_process_comms": True}],
-    ),
+    )
 
     # create the composed container
     loaded_container = LoadComposableNodes(
