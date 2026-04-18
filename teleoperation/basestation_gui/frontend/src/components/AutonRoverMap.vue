@@ -40,21 +40,12 @@
       <l-polyline :lat-lngs="odomPath" :color="'blue'" :dash-array="'5, 5'" />
     </l-map>
 
-    <div class="map-controls cmd-panel">
-      <div class="flex items-center gap-2">
-        <input
-        v-model="online"
-          type="checkbox"
-          class="cmd-form-check p-0"
-        />
-        <span class="cmd-data-label">Online</span>
-      </div>
-      <button @click="centerOnRover" class="cmd-btn cmd-btn-sm cmd-btn-outline-control map-btn">
-        Center on Rover
+    <div class="overlay-toolbar right-0">
+      <button class="overlay-toolbar-btn" :class="{ 'overlay-toolbar-btn-active': online }" @click="online = !online">
+        Online
       </button>
-      <button @click="centerOnBasestation" class="cmd-btn cmd-btn-sm cmd-btn-outline-control map-btn">
-        Center on Base
-      </button>
+      <button @click="centerOnRover" class="overlay-toolbar-btn">Center on Rover</button>
+      <button @click="centerOnBasestation" class="overlay-toolbar-btn">Center on Base</button>
     </div>
   </div>
 </template>
@@ -147,20 +138,3 @@ websocketStore.onMessage<BasestationPositionMessage>('nav', 'basestation_positio
   basestation_longitude_deg.value = msg.longitude
 })
 </script>
-
-<style scoped>
-.map-controls {
-  position: absolute;
-  top: var(--cmd-gap-md);
-  right: var(--cmd-gap-md);
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  gap: var(--cmd-gap-sm);
-}
-
-.map-btn {
-  font-size: var(--cmd-font-xs);
-  text-transform: uppercase;
-}
-</style>
