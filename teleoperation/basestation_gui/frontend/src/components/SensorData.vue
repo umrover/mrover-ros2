@@ -118,13 +118,13 @@ const sensor_data = ref<SensorData>({
   },
 })
 const sensor_history = ref<number[][]>([
-  Array(20).fill(0),
-  Array(20).fill(0),
-  Array(20).fill(0),
-  Array(20).fill(0),
-  Array(20).fill(0),
-  Array(20).fill(0),
-  Array(20).fill(0),
+  Array(30).fill(0),
+  Array(30).fill(0),
+  Array(30).fill(0),
+  Array(30).fill(0),
+  Array(30).fill(0),
+  Array(30).fill(0),
+  Array(30).fill(0),
 ])
 const timeCounter = ref(0)
 
@@ -152,13 +152,13 @@ websocketStore.onMessage<SPPressureMessage>('science', 'sp_pressure', (msg) => {
 
 const resetHistory = () => {
   sensor_history.value = [
-    Array(20).fill(0),
-    Array(20).fill(0),
-    Array(20).fill(0),
-    Array(20).fill(0),
-    Array(20).fill(0),
-    Array(20).fill(0),
-    Array(20).fill(0),
+    Array(30).fill(0),
+    Array(30).fill(0),
+    Array(30).fill(0),
+    Array(30).fill(0),
+    Array(30).fill(0),
+    Array(30).fill(0),
+    Array(30).fill(0),
   ]
   timeCounter.value = 0
 }
@@ -197,7 +197,7 @@ const chartConfigs = [
   { title: 'Pressure (Pa)', datasets: [{ label: 'Pressure', color: '#26A69A', historyIndex: 6 }] },
 ]
 
-const maxHistory = 20
+const maxHistory = 30
 
 onMounted(() => {
   for (let i = 0; i < chartConfigs.length; ++i) {
@@ -208,7 +208,7 @@ onMounted(() => {
 
     const datasets = config.datasets.map(ds => ({
       label: ds.label,
-      data: Array(20).fill(0),
+      data: Array(30).fill(0),
       fill: false,
       borderColor: ds.color,
       tension: 0.1,
@@ -217,7 +217,7 @@ onMounted(() => {
     charts[i] = new Chart(canvasElement, {
       type: 'line',
       data: {
-        labels: Array.from({ length: 20 }, (_, i) => i),
+        labels: Array.from({ length: 30 }, (_, i) => i),
         datasets: datasets,
       },
       options: {
