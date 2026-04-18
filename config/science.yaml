@@ -2,9 +2,9 @@ science_hw_bridge:
   ros__parameters:
     funnel:
       id: 5
+      mode: "optimal"
+      operating_mode: "position"
       position_multiplier: 5.859375
-      forward_limit: 6.28
-      reverse_limit: 0.0
       position_p: 5000.0
       position_i: 0.0
       position_d: 0.0
@@ -13,3 +13,17 @@ science_hw_bridge:
       current_limit: 1750.0
       profile_acceleration: 60.0
       profile_velocity: 500.0
+    brush:
+      id: 6
+      mode: "optimal"
+      operating_mode: "velocity"
+      position_multiplier: 1.00
+      velocity_limit: 445.0
+      position_p: 5000.0
+      position_i: 0.0
+      position_d: 0.0
+      velocity_p: 5000.0
+      velocity_i: 0.0
+      current_limit: 1750.0
+      profile_acceleration: 10.0
+      profile_velocity: 60.0

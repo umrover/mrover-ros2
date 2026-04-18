@@ -44,7 +44,7 @@ namespace mrover {
 
             mPositionService = this->create_service<srv::ServoPosition>(
                     "gimbal_servo",
-                    [this](srv::ServoPosition::Request::SharedPtr const& req, srv::ServoPosition::Response::SharedPtr const& res) {
+                    [this](srv::ServoPosition::Request::SharedPtr const& req, srv::ServoPosition::Response::SharedPtr const& res) -> void {
                         servoPositionCallback(req, res);
                     },
                     rmw_qos_profile_services_default,
@@ -52,7 +52,7 @@ namespace mrover {
 
             mPublishTimer = this->create_wall_timer(
                     std::chrono::milliseconds(100),
-                    [this]() { publishDataCallback(); },
+                    [this]() -> void { publishDataCallback(); },
                     mTimerGroup);
 
             mGimbalStatePub = this->create_publisher<msg::ControllerState>("gimbal_controller_state", 10);
@@ -78,7 +78,7 @@ namespace mrover {
 
             for (size_t i = 0; i < n; ++i) {
                 if (auto const it = mServos.find(req->names[i]); it != mServos.end()) {
-                    it->second->setPosition(req->positions[i], Servo::ServoMode::Limited);
+                    it->second->setPosition(req->positions[i]);
                 }
             }
 

@@ -116,5 +116,6 @@ def generate_launch_description():
             mob_left_streamer_node,
             static_streamer_node,
             zed_container,
+            mast_gimbal_hw_bridge,
         ]
     )
