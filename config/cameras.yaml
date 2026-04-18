@@ -191,15 +191,26 @@ zed_streamer:
 camera_client:
   ros__parameters:
     test: 10
-    cameras:
-      - "mob_cam"
-      - "joint_a_cam"
-      - "ee1_cam"
-      - "ee2_cam"
-      - "ee3_cam"
-      - "sp1_cam"
-      - "sp2_cam"
-      - "zed_mini"
-      - "zed"
+    arm:
+      cameras:
+        - "mob_cam"
+        - "joint_a_cam"
+        - "ee1_cam"
+        - "ee2_cam"
+        - "ee3_cam"
+        - "zed_mini"
+        - "zed"
+    science:
+      cameras:
+        - "sp1_cam"
+        - "sp2_cam"
+        - "mob_cam"
+        - "zed_mini"
+        - "zed"
+    auton:
+      cameras:
+        - "mob_cam"
+        - "zed_mini"
+        - "zed"
     rtp_jitter_ms: 50
 

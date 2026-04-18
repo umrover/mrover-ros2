@@ -221,6 +221,12 @@ auto GstVideoGridWidget::hideVideo(std::string const& name) -> bool {
     return true;
 }
 
+auto GstVideoGridWidget::hideAll() -> void {
+    for(auto const& [name, _] : mGstVideoBoxes){
+        hideVideo(name);
+    }
+}
+
 auto GstVideoGridWidget::showVideo(std::string const& name) -> bool {
     auto* box = findVideoBox(name);
     if (!box) return false;
