@@ -22,7 +22,6 @@ namespace mrover {
         explicit CameraConfigWidget(QWidget* parent = nullptr);
 
     signals:
-        void createRequested(std::string name, std::string pipeline);
         void loadCameraConfigSignal(std::string const& config);
 
     private slots:
