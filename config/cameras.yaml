@@ -151,6 +151,22 @@
         width: 1280
         height: 720
         framerate: 15
+    long_range_cam:
+      address: 10.1.0.2
+      port: 8091
+      image_topic: "/long_range_cam/image"
+      stream:
+        pixel_format: ABGR32 # https://www.kernel.org/doc/html/v4.9/media/uapi/v4l/pixfmt-packed-rgb.html
+        width: 640
+        height: 480
+        framerate: 15
+        codec: H265
+        bitrate: 1000000
+      image_capture:
+        pixel_format: ABGR32
+        width: 640
+        height: 480
+        framerate: 15
 
 ee1_streamer:
   ros__parameters:
@@ -188,6 +204,10 @@ zed_streamer:
   ros__parameters:
     camera: "zed"
 
+long_range_streamer:
+  ros__parameters:
+    camera: "long_range_cam"
+
 camera_client:
   ros__parameters:
     test: 10
@@ -212,5 +232,6 @@ camera_client:
         - "mob_cam"
         - "zed_mini"
         - "zed"
+        - "long_range_cam"
     rtp_jitter_ms: 50
 

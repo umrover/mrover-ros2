@@ -4,6 +4,7 @@ from ament_index_python import get_package_share_directory
 
 import launch
 from launch_ros.actions import Node, LoadComposableNodes
+from launch_ros.actions import Node, ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode
 
 
@@ -59,21 +60,42 @@ def generate_launch_description():
     loaded_container = LoadComposableNodes(
         target_container="zed_container",
         composable_node_descriptions=[
-            img_tag_detector_composable_node,
             stereo_tag_detector_composable_node,
-            img_object_detector_composable_node,
             stereo_object_detector_composable_node,
             cost_map_composable_node,
         ],
     )
 
-    # usb camera node
-    usb_cam = Node(
+    # long range cam node
+    long_range_composable_node = ComposableNode(
         package="mrover",
-        executable="usb_camera",
+        plugin="mrover::UsbCamera",
         name="long_range_cam",
         parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
-        respawn=True,
+        extra_arguments=[{"use_intra_process_comms": True}],
     )
 
-    return launch.LaunchDescription([loaded_container, usb_cam])
+    long_range_streamer_composable_node = ComposableNode(
+        package="mrover",
+        plugin="mrover::GstCameraServer",
+        name="long_range_streamer",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "cameras.yaml")],
+        extra_arguments=[{"use_intra_process_comms": True}],
+    )
+
+    long_range_container = ComposableNodeContainer(
+        name="long_range_container",
+        namespace="",
+        package="rclcpp_components",
+        executable="component_container_mt",
+        composable_node_descriptions=[
+            long_range_composable_node,
+            long_range_streamer_composable_node,
+            img_tag_detector_composable_node,
+            img_object_detector_composable_node,
+        ],
+        output="screen",
+    )
+
+
+    return launch.LaunchDescription([loaded_container, long_range_container])
