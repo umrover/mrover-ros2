@@ -74,7 +74,7 @@ namespace mrover {
         // nullptr = OFF
         Model* currentModel = nullptr;
         TensortRT* currentTensorRT = nullptr;
-        
+
         auto spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr,
                                        std::size_t u, std::size_t v,
                                        std::size_t width, std::size_t height) const -> std::optional<SE3d>;

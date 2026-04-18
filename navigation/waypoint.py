@@ -93,7 +93,7 @@ class WaypointState(State):
             case WaypointType.NO_SEARCH:
                 context.toggle_object_detector(ToggleImageObjectDetector.Request.OFF)
             case WaypointType.POST:
-                context.toggle_object_detector(ToggleImageObjectDetector.Request.OFF) # TODO: Implement tag detection
+                context.toggle_object_detector(ToggleImageObjectDetector.Request.OFF)  # TODO: Implement tag detection
             case WaypointType.MALLET:
                 context.toggle_object_detector(ToggleImageObjectDetector.Request.MALLET)
             case WaypointType.WATER_BOTTLE:
@@ -246,7 +246,7 @@ class WaypointState(State):
         :param context: Context object
         :return:        Next state
         """
-        
+
         # Used for Object Detector service
         if not context.futures_done():
             return self

@@ -20,13 +20,7 @@ from mrover.msg import (
     ImageTarget,
     ImageTargets,
 )
-from mrover.srv import (
-    MoveCostMap, 
-    DilateCostMap, 
-    EnableAuton, 
-    ToggleImageObjectDetector, 
-    ToggleStereoObjectDetector
-)
+from mrover.srv import MoveCostMap, DilateCostMap, EnableAuton, ToggleImageObjectDetector, ToggleStereoObjectDetector
 from nav_msgs.msg import Path, OccupancyGrid
 from visualization_msgs.msg import Marker
 from std_srvs.srv import SetBool
@@ -500,7 +494,7 @@ class Context:
             self.disable_requested = True
         response.success = True
         return response
-    
+
     def toggle_object_detector(self, objectType: ToggleImageObjectDetector.Request.mode) -> bool:
         stereoRequest = ToggleStereoObjectDetector.Request()
         stereoRequest.mode = objectType
@@ -511,9 +505,9 @@ class Context:
 
         self.stereo_future = self.stereo_cli.call_async(stereoRequest)
         self.image_future = self.image_cli.call_async(imageRequest)
-        
+
         return True
-    
+
     def futures_done(self) -> bool:
         if self.image_future is None or self.stereo_future is None:
             return True

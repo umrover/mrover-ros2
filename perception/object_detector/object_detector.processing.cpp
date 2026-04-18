@@ -5,7 +5,7 @@ namespace mrover {
 
     auto StereoObjectDetector::toggleStereoMode(mrover::srv::ToggleStereoObjectDetector::Request::ConstSharedPtr& request, mrover::srv::ToggleStereoObjectDetector::Response::SharedPtr& response) -> void {
         auto setMode = request->mode;
-        switch(setMode){
+        switch (setMode) {
             case srv::ToggleStereoObjectDetector::Request::OFF:
                 currentModel = nullptr;
                 currentTensorRT = nullptr;
@@ -50,7 +50,7 @@ namespace mrover {
         }
 
         // if object detector is not OFF
-        if(currentModel && currentTensorRT){
+        if (currentModel && currentTensorRT) {
             convertPointCloudToRGB(msg, mRgbImage);
 
             // Convert the RGB Image into the blob Image format
@@ -208,7 +208,7 @@ namespace mrover {
 
     auto ImageObjectDetector::toggleImageMode(mrover::srv::ToggleImageObjectDetector::Request::ConstSharedPtr& request, mrover::srv::ToggleImageObjectDetector::Response::SharedPtr& response) -> void {
         auto setMode = request->mode;
-        switch(setMode){
+        switch (setMode) {
             case srv::ToggleImageObjectDetector::Request::OFF:
                 currentModel = nullptr;
                 currentTensorRT = nullptr;
@@ -247,7 +247,7 @@ namespace mrover {
 
         // Convert the RGB Image into the blob Image format
 
-        if(currentModel && currentTensorRT){
+        if (currentModel && currentTensorRT) {
             cv::Mat blobSizedImage;
             currentModel->rgbImageToBlob(*currentModel, mRgbImage, blobSizedImage, mImageBlob);
 
@@ -277,7 +277,7 @@ namespace mrover {
             if (mDebug) {
                 publishDetectedObjects(mRgbImage);
             }
-        
+
             mLoopProfiler.measureEvent("Publication");
         }
     }
