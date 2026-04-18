@@ -142,6 +142,8 @@ auto GstVideoGridWidget::addGstVideoWidget(std::string const& name, std::string 
     mVisibleOrder.push_back(name);
     rebuildGrid();
 
+    hideAll();
+
     clearError();
     return true;
 }

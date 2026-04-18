@@ -1,5 +1,6 @@
 #include "CameraClientMainWindow.hpp"
 #include "CameraConfigWidget.hpp"
+#include "CameraClientNode.hpp"
 
 namespace mrover {
 
@@ -104,5 +105,6 @@ namespace mrover {
 
     auto CameraClientMainWindow::setConfigs(std::unordered_map<std::string, std::vector<std::string>>&& configs) -> void{
         mConfigs = configs;
+        loadCameraConfigSlot(CAMERA_CONFIGS[CAMERA_CONFIG::ARM]);
     }
 } // namespace mrover
