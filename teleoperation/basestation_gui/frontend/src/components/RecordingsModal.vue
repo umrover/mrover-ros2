@@ -68,7 +68,7 @@
                     v-else
                     v-for="recording in filteredRecordings"
                     :key="recording.id"
-                    class="list-item cursor-pointer border-l-4 border-l-transparent"
+                    class="list-item cursor-pointer"
                     :class="{ 'recording-selected': selectedRecording?.id === recording.id }"
                     @click="selectRecording(recording.id)"
                   >
@@ -78,7 +78,7 @@
                         <span class="data-label">{{ formatDate(recording.created_at) }}</span>
                       </div>
                       <button
-                        class="btn btn-sm btn-danger btn-icon flex-shrink-0"
+                        class="btn btn-sm btn-danger btn-icon flex-shrink-0 !bg-theme-danger"
                         @click.stop="deleteRecording(recording.id)"
                       >
                         <i class="bi bi-trash-fill"></i>
@@ -104,8 +104,16 @@
                       <i class="bi" :class="showCourseWaypoints ? 'bi-eye-fill' : 'bi-eye-slash'"></i> 
                       Course
                     </button>
+                    <div class="h-8 w-px bg-panel-border mx-1"></div>
                     <button
-                      class="btn btn-sm btn-outline-secondary"
+                      class="btn btn-sm btn-info"
+                      :disabled="erdStore.waypoints.length === 0"
+                      @click="erdStore.exportToText()"
+                    >
+                      <i class="bi bi-download"></i> TXT
+                    </button>
+                    <button
+                      class="btn btn-sm btn-primary"
                       :disabled="!selectedRecording || waypoints.length === 0 || isDownloading"
                       @click="downloadMapPNG"
                     >
