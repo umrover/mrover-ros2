@@ -167,6 +167,38 @@
         width: 640
         height: 480
         framerate: 15
+    long_range_cam_annotated:
+      address: 10.1.0.2
+      port: 8092
+      image_topic: "/long_range_object_detector/annotated_img"
+      stream:
+        pixel_format: ABGR32 # https://www.kernel.org/doc/html/v4.9/media/uapi/v4l/pixfmt-packed-rgb.html
+        width: 640
+        height: 480
+        framerate: 15
+        codec: H265
+        bitrate: 1000000
+      image_capture:
+        pixel_format: ABGR32
+        width: 640
+        height: 480
+        framerate: 15
+    zed_annotated:
+      address: 10.1.0.2
+      port: 8093
+      image_topic: "/stereo_object_detector/annotated_img"
+      stream:
+        pixel_format: ABGR32 # https://www.kernel.org/doc/html/v4.9/media/uapi/v4l/pixfmt-packed-rgb.html
+        width: 1280
+        height: 720
+        framerate: 15
+        codec: H265
+        bitrate: 1000000
+      image_capture:
+        pixel_format: ABGR32
+        width: 1280
+        height: 720
+        framerate: 15
 
 ee1_streamer:
   ros__parameters:
@@ -208,6 +240,14 @@ long_range_streamer:
   ros__parameters:
     camera: "long_range_cam"
 
+zed_streamer_annotated:
+  ros__parameters:
+    camera: "zed_annotated"
+
+long_range_streamer_annotated:
+  ros__parameters:
+    camera: "long_range_cam_annotated"
+
 camera_client:
   ros__parameters:
     test: 10
@@ -231,7 +271,7 @@ camera_client:
       cameras:
         - "mob_cam"
         - "zed_mini"
-        - "zed"
-        - "long_range_cam"
+        - "zed_annotated"
+        - "long_range_cam_annotated"
     rtp_jitter_ms: 50
 

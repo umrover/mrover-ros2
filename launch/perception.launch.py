@@ -56,6 +56,14 @@ def generate_launch_description():
         extra_arguments=[{"use_intra_process_comms": True}],
     )
 
+    zed_streamer_annotated_composable_node = ComposableNode(
+        package="mrover",
+        plugin="mrover::GstCameraServer",
+        name="zed_streamer_annotated",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "cameras.yaml")],
+        extra_arguments=[{"use_intra_process_comms": True}],
+    ),
+
     # create the composed container
     loaded_container = LoadComposableNodes(
         target_container="zed_container",
@@ -63,6 +71,7 @@ def generate_launch_description():
             stereo_tag_detector_composable_node,
             stereo_object_detector_composable_node,
             cost_map_composable_node,
+            zed_streamer_annotated_composable_node,
         ],
     )
 
@@ -75,10 +84,10 @@ def generate_launch_description():
         extra_arguments=[{"use_intra_process_comms": True}],
     )
 
-    long_range_streamer_composable_node = ComposableNode(
+    long_range_streamer_annotated_composable_node = ComposableNode(
         package="mrover",
         plugin="mrover::GstCameraServer",
-        name="long_range_streamer",
+        name="long_range_streamer_annotated",
         parameters=[Path(get_package_share_directory("mrover"), "config", "cameras.yaml")],
         extra_arguments=[{"use_intra_process_comms": True}],
     )
@@ -90,7 +99,7 @@ def generate_launch_description():
         executable="component_container_mt",
         composable_node_descriptions=[
             long_range_composable_node,
-            long_range_streamer_composable_node,
+            long_range_streamer_annotated_composable_node,
             img_tag_detector_composable_node,
             img_object_detector_composable_node,
         ],
