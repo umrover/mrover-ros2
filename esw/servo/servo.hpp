@@ -139,17 +139,16 @@ namespace mrover {
             mLastCommandTimeNs = mNode->now().nanoseconds();
 
             mWatchdogTimer = mNode->create_wall_timer(
-                std::chrono::milliseconds(100),
-                [this]() -> void {
-                    if (mOperatingMode == OperatingMode::Velocity) {
-                        auto const now = mNode->now().nanoseconds();
-                        if (!mVelocityTimedOut.load() && (now - mLastCommandTimeNs.load() > COMMAND_TIMEOUT_NS)) {
-                            publishWrite(ADDR_GOAL_VELOCITY, 4, 0);
-                            mVelocityTimedOut = true; 
+                    std::chrono::milliseconds(100),
+                    [this]() -> void {
+                        if (mOperatingMode == OperatingMode::Velocity) {
+                            auto const now = mNode->now().nanoseconds();
+                            if (!mVelocityTimedOut.load() && (now - mLastCommandTimeNs.load() > COMMAND_TIMEOUT_NS)) {
+                                publishWrite(ADDR_GOAL_VELOCITY, 4, 0);
+                                mVelocityTimedOut = true;
+                            }
                         }
-                    }
-                }
-            );
+                    });
         }
 
         auto setCurrentPosition(ServoPosition const position) -> U2D2::Status {
@@ -173,8 +172,10 @@ namespace mrover {
 
         auto getCurrent(double& cur) const -> U2D2::Status {
             auto const rawCur = static_cast<int16_t>(mCachedRawCurrent.load());
-            if (std::abs(rawCur) < 12) cur = 0.0;
-            else cur = (rawCur * SERVO_CURRENT_MA_PER_TICK) / 1000.0;
+            if (std::abs(rawCur) < 12)
+                cur = 0.0;
+            else
+                cur = (rawCur * SERVO_CURRENT_MA_PER_TICK) / 1000.0;
             return mCachedStatus.load();
         }
 
@@ -187,7 +188,7 @@ namespace mrover {
                 return currentPositionAndStatus.second;
             }
 
-            mAtLimit = 0; 
+            mAtLimit = 0;
 
             if (mMode == ServoMode::Limited) {
                 if (!isWithinLimits(mGoalPosition)) {
@@ -280,7 +281,7 @@ namespace mrover {
                     {std::format("{}.operating_mode", mServoName), operatingModeStr, std::string("position")},
                     {std::format("{}.position_multiplier", mServoName), mPositionMultiplier, 1.0},
                     {std::format("{}.reverse_limit", mServoName), reverseLimit, 0.0},
-                    {std::format("{}.forward_limit", mServoName), forwardLimit, TAU}, 
+                    {std::format("{}.forward_limit", mServoName), forwardLimit, TAU},
                     {std::format("{}.position_p", mServoName), positionPGain, 400.0},
                     {std::format("{}.position_i", mServoName), positionIGain, 0.0},
                     {std::format("{}.position_d", mServoName), positionDGain, 0.0},
@@ -293,16 +294,25 @@ namespace mrover {
 
             ParameterWrapper::declareParameters(mNode.get(), parameters);
 
-            if (modeString == "clockwise") mMode = ServoMode::Clockwise;
-            else if (modeString == "counter_clockwise") mMode = ServoMode::CounterClockwise;
-            else if (modeString == "limited") mMode = ServoMode::Limited;
-            else mMode = ServoMode::Optimal;
+            if (modeString == "clockwise")
+                mMode = ServoMode::Clockwise;
+            else if (modeString == "counter_clockwise")
+                mMode = ServoMode::CounterClockwise;
+            else if (modeString == "limited")
+                mMode = ServoMode::Limited;
+            else
+                mMode = ServoMode::Optimal;
 
-            if (operatingModeStr == "velocity") mOperatingMode = OperatingMode::Velocity;
-            else if (operatingModeStr == "extended_position") mOperatingMode = OperatingMode::ExtendedPosition;
-            else if (operatingModeStr == "current") mOperatingMode = OperatingMode::Current;
-            else if (operatingModeStr == "pwm") mOperatingMode = OperatingMode::PWM;
-            else mOperatingMode = OperatingMode::Position;
+            if (operatingModeStr == "velocity")
+                mOperatingMode = OperatingMode::Velocity;
+            else if (operatingModeStr == "extended_position")
+                mOperatingMode = OperatingMode::ExtendedPosition;
+            else if (operatingModeStr == "current")
+                mOperatingMode = OperatingMode::Current;
+            else if (operatingModeStr == "pwm")
+                mOperatingMode = OperatingMode::PWM;
+            else
+                mOperatingMode = OperatingMode::Position;
 
             mVelocityLimit = velocityLimit;
 
@@ -354,7 +364,7 @@ namespace mrover {
 
                 if (getDistance(modTarget, mAdjustedForwardLimit) < getDistance(modTarget, mAdjustedReverseLimit)) {
                     mAtLimit |= 0x01;
-                    return targetTicks + getDistance(modTarget, mAdjustedForwardLimit); 
+                    return targetTicks + getDistance(modTarget, mAdjustedForwardLimit);
                 } else {
                     mAtLimit |= 0x02;
                     return targetTicks - getDistance(modTarget, mAdjustedReverseLimit);
