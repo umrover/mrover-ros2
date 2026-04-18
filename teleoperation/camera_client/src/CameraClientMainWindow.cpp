@@ -1,6 +1,6 @@
 #include "CameraClientMainWindow.hpp"
-#include "CameraConfigWidget.hpp"
 #include "CameraClientNode.hpp"
+#include "CameraConfigWidget.hpp"
 
 namespace mrover {
 
@@ -96,14 +96,14 @@ namespace mrover {
         QMainWindow::closeEvent(event);
     }
 
-    void CameraClientMainWindow::loadCameraConfigSlot(std::string const& config){
+    void CameraClientMainWindow::loadCameraConfigSlot(std::string const& config) {
         mCameraGridWidget->hideAll();
-        for(auto const& name : mConfigs[config]){
+        for (auto const& name: mConfigs[config]) {
             mCameraGridWidget->showVideo(name);
         }
     }
 
-    auto CameraClientMainWindow::setConfigs(std::unordered_map<std::string, std::vector<std::string>>&& configs) -> void{
+    auto CameraClientMainWindow::setConfigs(std::unordered_map<std::string, std::vector<std::string>>&& configs) -> void {
         mConfigs = configs;
         loadCameraConfigSlot(CAMERA_CONFIGS[CAMERA_CONFIG::ARM]);
     }

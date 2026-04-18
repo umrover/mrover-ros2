@@ -79,6 +79,6 @@ def generate_launch_description():
             ee1_streamer_node,
             ee2_streamer_node,
             ee3_streamer_node,
-            joint_a_streamer_node
+            joint_a_streamer_node,
         ]
     )

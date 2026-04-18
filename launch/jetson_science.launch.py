@@ -51,11 +51,5 @@ def generate_launch_description():
     panorama_node = Node(package="mrover", executable="panorama.py", name="panorama", respawn=True)
 
     return LaunchDescription(
-        [
-            launch_include_jetson_base,
-            sp1_streamer_node,
-            sp2_streamer_node,
-            science_hw_bridge_node,
-            panorama_node
-        ]
+        [launch_include_jetson_base, sp1_streamer_node, sp2_streamer_node, science_hw_bridge_node, panorama_node]
     )

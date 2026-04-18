@@ -106,6 +106,6 @@ def generate_launch_description():
             drive_hw_bridge_node,
             mob_streamer_node,
             zed_mini_container,
-            zed_container
+            zed_container,
         ]
     )

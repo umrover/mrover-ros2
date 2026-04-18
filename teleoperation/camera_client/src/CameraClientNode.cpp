@@ -11,12 +11,12 @@ namespace mrover {
 
     auto CameraClientNode::loadCameraConfigs() -> std::unordered_map<std::string, std::vector<std::string>> {
         std::unordered_map<std::string, std::vector<std::string>> configs;
-    
+
         // declare jitter
         declare_parameter("rtp_jitter_ms", 100);
         auto rtpJitterMs = std::chrono::milliseconds(get_parameter("rtp_jitter_ms").as_int());
 
-        for(unsigned char i = 0; i < CAMERA_CONFIG::COUNT; i++) {
+        for (unsigned char i = 0; i < CAMERA_CONFIG::COUNT; i++) {
             std::string configName = CAMERA_CONFIGS[i];
             std::string cameraConfigName = std::format("{}.cameras", configName);
 

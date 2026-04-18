@@ -9,7 +9,7 @@ namespace mrover {
         std::string pipeline;
     };
 
-    enum CAMERA_CONFIG : unsigned char{
+    enum CAMERA_CONFIG : unsigned char {
         ARM = 0,
         SCIENCE = 1,
         AUTON = 2,

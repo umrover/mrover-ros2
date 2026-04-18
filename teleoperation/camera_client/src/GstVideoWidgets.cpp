@@ -224,7 +224,7 @@ auto GstVideoGridWidget::hideVideo(std::string const& name) -> bool {
 }
 
 auto GstVideoGridWidget::hideAll() -> void {
-    for(auto const& [name, _] : mGstVideoBoxes){
+    for (auto const& [name, _]: mGstVideoBoxes) {
         hideVideo(name);
     }
 }
