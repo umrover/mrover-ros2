@@ -98,7 +98,7 @@ def generate_launch_description():
         output="screen",
     )
 
-        mast_gimbal_hw_bridge = Node(
+    mast_gimbal_hw_bridge = Node(
         package="mrover",
         executable="mast_gimbal_hw_bridge",
         name="mast_gimbal_hw_bridge",
