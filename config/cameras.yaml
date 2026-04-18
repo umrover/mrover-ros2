@@ -1,43 +1,9 @@
 /**:
   ros__parameters:
-    mob_cam:
-      address: 10.1.0.2 # if using RTP, should be set to IP of basestation
-      port: 8082
-      dev_node: "/dev/mob_cam"
-      dev_path: ""
-      stream:
-        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
-        width: 640
-        height: 480
-        framerate: 15
-        codec: H265
-        bitrate: 1000000
-      image_capture:
-        pixel_format: YUYV
-        width: 1280
-        height: 720
-        framerate: 5
-    joint_a_cam:
-      address: 10.1.0.2
-      port: 8083
-      dev_node: "/dev/joint_a_cam"
-      dev_path: ""
-      stream:
-        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
-        width: 640
-        height: 480
-        framerate: 15
-        codec: H265
-        bitrate: 1000000
-      image_capture:
-        pixel_format: YUYV
-        width: 1280
-        height: 720
-        framerate: 5
     ee1_cam:
       address: 10.1.0.2
-      port: 8084
-      dev_node: "/dev/ee1_cam"
+      port: 8082
+      dev_node: "/dev/port_a1_cam"
       dev_path: ""
       stream:
         pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
@@ -53,8 +19,8 @@
         framerate: 5
     ee2_cam:
       address: 10.1.0.2
-      port: 8085
-      dev_node: "/dev/ee2_cam"
+      port: 8083
+      dev_node: "/dev/port_a2_cam"
       dev_path: ""
       stream:
         pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
@@ -70,8 +36,8 @@
         framerate: 5
     ee3_cam:
       address: 10.1.0.2
-      port: 8086
-      dev_node: "/dev/ee3_cam"
+      port: 8084
+      dev_node: "/dev/port_a3_cam"
       dev_path: ""
       stream:
         pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
@@ -87,8 +53,8 @@
         framerate: 5
     sp1_cam:
       address: 10.1.0.2
-      port: 8087
-      dev_node: "/dev/sp1_cam"
+      port: 8085
+      dev_node: "/dev/port_a1_cam"
       dev_path: ""
       stream:
         pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
@@ -104,8 +70,42 @@
         framerate: 5
     sp2_cam:
       address: 10.1.0.2
+      port: 8086
+      dev_node: "/dev/port_a2_cam"
+      dev_path: ""
+      stream:
+        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
+        width: 640
+        height: 480
+        framerate: 15
+        codec: H265
+        bitrate: 1000000
+      image_capture:
+        pixel_format: YUYV
+        width: 1280
+        height: 720
+        framerate: 5
+    joint_a_cam:
+      address: 10.1.0.2
+      port: 8087
+      dev_node: "/dev/port_b_cam"
+      dev_path: ""
+      stream:
+        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
+        width: 640
+        height: 480
+        framerate: 15
+        codec: H265
+        bitrate: 1000000
+      image_capture:
+        pixel_format: YUYV
+        width: 1280
+        height: 720
+        framerate: 5
+    mob_cam:
+      address: 10.1.0.2
       port: 8088
-      dev_node: "/dev/sp2_cam"
+      dev_node: "/dev/port_j_cam"
       dev_path: ""
       stream:
         pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
@@ -152,14 +152,6 @@
         height: 720
         framerate: 15
 
-mob_streamer:
-  ros__parameters:
-    camera: "mob_cam"
-
-joint_a_streamer:
-  ros__parameters:
-    camera: "joint_a_cam"
-
 ee1_streamer:
   ros__parameters:
     camera: "ee1_cam"
@@ -180,6 +172,14 @@ sp2_streamer:
   ros__parameters:
     camera: "sp2_cam"
 
+joint_a_streamer:
+  ros__parameters:
+    camera: "joint_a_cam"
+
+mob_streamer:
+  ros__parameters:
+    camera: "mob_cam"
+
 zed_mini_streamer:
   ros__parameters:
     camera: "zed_mini"
@@ -192,13 +192,13 @@ camera_client:
   ros__parameters:
     test: 10
     cameras:
-      - "mob_cam"
-      - "joint_a_cam"
       - "ee1_cam"
       - "ee2_cam"
       - "ee3_cam"
       - "sp1_cam"
       - "sp2_cam"
+      - "joint_a_cam"
+      - "mob_cam"
       - "zed_mini"
       - "zed"
     rtp_jitter_ms: 50
