@@ -97,5 +97,4 @@ def generate_launch_description():
         output="screen",
     )
 
-
     return launch.LaunchDescription([loaded_container, long_range_container])
