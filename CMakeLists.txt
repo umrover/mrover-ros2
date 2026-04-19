@@ -293,6 +293,13 @@ if(ZED_FOUND AND CUDA_FOUND)
 
     mrover_executable_from_component(stereo_object_detector perception/executables/stereo_object_detector.cpp object_detector_component)
     mrover_executable_from_component(image_object_detector perception/executables/image_object_detector.cpp object_detector_component)
+
+    # USB Camera
+    mrover_add_component(usb_camera perception/usb_camera/*.cpp perception/usb_camera/pch.hpp UsbCamera)
+    mrover_link_component(usb_camera PkgConfig::Gst PkgConfig::GstApp opencv_core opencv_imgcodecs parameter_utils)
+    mrover_ament_component(usb_camera rclcpp rclcpp_components)
+
+    mrover_executable_from_component(usb_camera perception/executables/usb_camera.cpp usb_camera_component)
 else()
     message("ZED not found...")
 endif()
@@ -364,10 +371,6 @@ target_link_libraries(arm_controller lie)
 ament_target_dependencies(arm_controller rclcpp)
 
 if (Gst_FOUND AND GstApp_FOUND)
-    mrover_add_node(usb_camera esw/usb_camera/*.cpp esw/usb_camera/pch.hpp)
-    target_link_libraries(usb_camera PkgConfig::Gst PkgConfig::GstApp opencv_core opencv_imgcodecs parameter_utils)
-    ament_target_dependencies(usb_camera rclcpp)
-
     if (LibUdev_FOUND)
         mrover_add_component(gst_camera_server esw/gst_camera_server/*.c* esw/gst_camera_server/pch.hpp GstCameraServer)
         mrover_link_component(gst_camera_server PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_videoio opencv_imgcodecs opencv_imgproc gst_utils parameter_utils)
