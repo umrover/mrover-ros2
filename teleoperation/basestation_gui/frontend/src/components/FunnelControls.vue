@@ -2,10 +2,18 @@
   <div class="relative w-full h-full overflow-hidden" data-testid="pw-funnel-controls">
     <div class="absolute top-0 left-0 right-0 flex justify-between items-center z-10">
       <h4 class="component-header">Funnel</h4>
-      <div class="flex items-center gap-0.5 text-[11px]">
-        <button class="micro-btn" :disabled="isLoading" @click="adjustOffset(-1)">-</button>
-        <span class="text-muted select-none tabular-nums min-w-[2.5ch] text-center">{{ offsetDeg }}&deg;</span>
-        <button class="micro-btn" :disabled="isLoading" @click="adjustOffset(1)">+</button>
+      <div class="flex items-center">
+        <i
+          v-if="!hasState"
+          class="bi bi-info-circle mr-1 text-sm text-muted"
+          title="Changes not allowed until funnel position received"
+        ></i>
+        <IndicatorDot :is-active="hasState" class="mr-2" />
+        <div class="flex items-center gap-0.5 text-[11px]">
+          <button class="micro-btn" :disabled="!hasState || isLoading" @click="adjustOffset(-1)">-</button>
+          <span class="text-muted select-none tabular-nums min-w-[2.5ch] text-center">{{ offsetDeg }}&deg;</span>
+          <button class="micro-btn" :disabled="!hasState || isLoading" @click="adjustOffset(1)">+</button>
+        </div>
       </div>
     </div>
 
@@ -23,7 +31,7 @@
       <g
         v-for="seg in segments"
         :key="seg.index"
-        :class="['segment', { active: currentSite === seg.index, pending: pendingSite === seg.index, disabled: isLoading }]"
+        :class="['segment', { active: currentSite === seg.index, pending: pendingSite === seg.index, disabled: !hasState || isLoading }]"
         :data-testid="`pw-funnel-site-${seg.index}`"
         role="button"
         @click="selectSite(seg.index)"
@@ -49,6 +57,7 @@ import { scienceAPI } from '@/utils/api'
 import { useGamepadPolling } from '@/composables/useGamepadPolling'
 import { useWebsocketStore } from '@/stores/websocket'
 import type { ControllerStateMessage } from '@/types/websocket'
+import IndicatorDot from './IndicatorDot.vue'
 
 const DEG_TO_RAD = Math.PI / 180
 const RAD_TO_DEG = 180 / Math.PI
@@ -144,6 +153,8 @@ const funnelState = computed((): ControllerStateMessage | null => {
   return typedMsg.type === 'sp_controller_state' ? typedMsg : null
 })
 
+const hasState = computed(() => funnelState.value !== null)
+
 const currentDegrees = computed((): string => {
   const state = funnelState.value
   if (!state?.names || !state.positions) return '---'
@@ -153,13 +164,36 @@ const currentDegrees = computed((): string => {
   return Object.is(Math.round(deg), -0) ? '0' : deg.toFixed(0)
 })
 
-const currentSite = ref(0)
+const currentSite = ref(-1)
 const pendingSite = ref<number | null>(null)
 const isLoading = ref(false)
 const offsetDeg = ref(Number(localStorage.getItem('funnel-offset-deg')) || 0)
 
+watch([funnelState, offsetDeg], ([state, offset]) => {
+  if (!state || isLoading.value) return
+  const idx = state.names.indexOf('funnel')
+  if (idx < 0) return
+
+  const pos = state.positions[idx]
+  let closestIdx = -1
+  let minDiff = Infinity
+
+  for (let i = 0; i < SITES.length; i++) {
+    const siteRadWithOffset = SITES[i].radians + (offset as number) * DEG_TO_RAD
+    const diff = Math.abs(((siteRadWithOffset - pos + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI)
+    if (diff < minDiff) {
+      minDiff = diff
+      closestIdx = i
+    }
+  }
+
+  if (closestIdx !== -1 && minDiff < 0.2 && currentSite.value !== closestIdx) {
+    currentSite.value = closestIdx
+  }
+}, { immediate: true })
+
 async function adjustOffset(delta: number) {
-  if (isLoading.value) return
+  if (isLoading.value || !hasState.value) return
   offsetDeg.value += delta
   try {
     await sendPosition(currentSite.value)
@@ -170,7 +204,7 @@ async function adjustOffset(delta: number) {
 }
 
 async function sendPosition(index: number) {
-  if (isLoading.value) return
+  if (isLoading.value || !hasState.value || index === -1) return
   const site = SITES[index]
   if (!site) return
 
@@ -191,19 +225,25 @@ async function sendPosition(index: number) {
 }
 
 function selectSite(index: number) {
-  if (index === currentSite.value || isLoading.value) return
+  if (index === currentSite.value || isLoading.value || !hasState.value) return
   sendPosition(index)
 }
 
-const { buttons } = useGamepadPolling({ controllerIdFilter: 'Microsoft', hz: 10 })
-let prevLeft = false
-let prevRight = false
+const { buttons, connected } = useGamepadPolling({ controllerIdFilter: 'Microsoft', hz: 10 })
+let prevLeft: boolean | undefined = undefined
+let prevRight: boolean | undefined = undefined
 
 watch(buttons, (btns) => {
+  if (!connected.value || !hasState.value) return
+
   const left = (btns[14] ?? 0) > 0.5
   const right = (btns[15] ?? 0) > 0.5
-  if (left && !prevLeft) adjustOffset(-1)
-  if (right && !prevRight) adjustOffset(1)
+
+  if (prevLeft !== undefined && prevRight !== undefined) {
+    if (left && !prevLeft) adjustOffset(-1)
+    if (right && !prevRight) adjustOffset(1)
+  }
+
   prevLeft = left
   prevRight = right
 })
@@ -246,6 +286,15 @@ watch(buttons, (btns) => {
 
 .segment.disabled {
   cursor: not-allowed;
+}
+
+.segment.disabled path {
+  fill: var(--disabled-bg, #f3f4f6);
+  stroke: var(--disabled-border, #e5e7eb);
+}
+
+.segment.disabled .seg-label {
+  fill: var(--disabled-text, #9ca3af);
 }
 
 .segment.pending path {
