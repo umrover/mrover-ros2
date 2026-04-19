@@ -6,6 +6,7 @@
 #include "VideoSelectorWidget.hpp"
 
 namespace mrover {
+    class CameraConfigWidget;
 
     class CameraClientMainWindow : public QMainWindow {
         Q_OBJECT
@@ -19,14 +20,22 @@ namespace mrover {
         QDockWidget* mGstRtpVideoCreatorDock;
         GstRtpVideoCreatorWidget* mGstRtpVideoCreatorWidget;
 
+        QDockWidget* mCameraConfigDock;
+        CameraConfigWidget* mCameraConfigWidget;
+
+        std::unordered_map<std::string, std::vector<std::string>> mConfigs;
+
     public:
         explicit CameraClientMainWindow(QWidget* parent = nullptr);
 
         auto createCamera(std::string const& name, std::string const& pipeline, CameraCallbacks callbacks) -> bool;
         auto getCameraGridWidget() -> GstVideoGridWidget*;
 
+        auto setConfigs(std::unordered_map<std::string, std::vector<std::string>>&& configs) -> void;
+
     public slots:
         void showImagePreview(QString const& cameraName, QImage const& image);
+        void loadCameraConfigSlot(std::string const& config);
 
     signals:
         void closed();
