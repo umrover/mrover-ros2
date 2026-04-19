@@ -6,6 +6,7 @@
 
 /zed_wrapper:
   ros__parameters:
+    device_name: "zed"
     depth_confidence: 70
     serial_number: 31542704
     grab_target_fps: 60
