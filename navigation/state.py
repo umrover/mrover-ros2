@@ -1,4 +1,5 @@
 from geometry_msgs.msg import Twist
+from mrover.srv import ToggleImageObjectDetector
 from state_machine.state import State
 from . import waypoint
 from .context import Context
@@ -7,12 +8,17 @@ from .context import Context
 class DoneState(State):
     def on_enter(self, context: Context) -> None:
         context.node.get_logger().info("Entered done state!")
+        context.toggle_object_detector(ToggleImageObjectDetector.Request.OFF)
         pass
 
     def on_exit(self, context) -> None:
         pass
 
     def on_loop(self, context) -> State:
+        # Used for Object Detector service
+        if not context.futures_done():
+            return self
+
         # Check if we have a course to traverse
         if context.course and not context.course.is_complete():
             return waypoint.WaypointState()
@@ -25,12 +31,17 @@ class DoneState(State):
 
 class OffState(State):
     def on_enter(self, context) -> None:
+        context.toggle_object_detector(ToggleImageObjectDetector.Request.OFF)
         pass
 
     def on_exit(self, context) -> None:
         pass
 
     def on_loop(self, context) -> State:
+        # Used for Object Detector service
+        if not context.futures_done():
+            return self
+
         if context.course and (not context.course.is_complete()):
             return waypoint.WaypointState()
 
