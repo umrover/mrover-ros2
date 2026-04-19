@@ -142,6 +142,8 @@ auto GstVideoGridWidget::addGstVideoWidget(std::string const& name, std::string 
     mVisibleOrder.push_back(name);
     rebuildGrid();
 
+    hideAll();
+
     clearError();
     return true;
 }
@@ -219,6 +221,12 @@ auto GstVideoGridWidget::hideVideo(std::string const& name) -> bool {
     box->widget->setVisible(false);
     rebuildGrid();
     return true;
+}
+
+auto GstVideoGridWidget::hideAll() -> void {
+    for (auto const& [name, _]: mGstVideoBoxes) {
+        hideVideo(name);
+    }
 }
 
 auto GstVideoGridWidget::showVideo(std::string const& name) -> bool {
