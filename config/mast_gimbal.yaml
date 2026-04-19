@@ -1,14 +1,15 @@
 mast_gimbal_hw_bridge:
   ros__parameters:
-    u2d2_device: "/dev/u2d2"
     gimbal_pitch:
       id: 3
+      mode: "limited"
+      operating_mode: "extended_position"
       position_multiplier: 1.0
-      forward_limit: 0.0
-      reverse_limit: 1.57
-      position_p: 5000.0
+      forward_limit: 2.00
+      reverse_limit: 0.00
+      position_p: 6000.0
       position_i: 0.0
-      position_d: 0.0
+      position_d: 1000.0
       velocity_p: 0.0
       velocity_i: 0.0
       current_limit: 1750.0
@@ -16,6 +17,8 @@ mast_gimbal_hw_bridge:
       profile_velocity: 60.0
     gimbal_yaw:
       id: 4
+      mode: "limited"
+      operating_mode: "extended_position"
       position_multiplier: 6.25
       forward_limit: 6.108
       reverse_limit: 0.174
