@@ -223,8 +223,9 @@ namespace mrover {
         int mRoverRightKey = GLFW_KEY_L;
         int mRoverLeftKey = GLFW_KEY_J;
         int mRoverForwardKey = GLFW_KEY_I;
-        int mRoverBackwardKey = GLFW_KEY_COMMA;
-        int mRoverStopKey = GLFW_KEY_K;
+        //swapped backwardkey and stop key (swapped k and ,)
+        int mRoverBackwardKey = GLFW_KEY_K;
+        int mRoverStopKey = GLFW_KEY_COMMA;
         int mTogglePhysicsKey = GLFW_KEY_P;
         int mToggleRenderModelsKey = GLFW_KEY_M;
         int mToggleRenderWireframeCollidersKey = GLFW_KEY_C;

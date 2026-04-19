@@ -13,6 +13,8 @@ compile_commands.json
 # clangd cache
 .cache/
 
+.clangd
+
 # IMGUI window layout
 imgui.ini
 
@@ -46,6 +48,12 @@ state_machine/state_log.txt
 data/*.png
 data/raw-pano-images
 
+teleoperation/basestation_gui/install/
+teleoperation/basestation_gui/log/
+
+# blender backup files
+*.blend1
+compile_commands.json
 # Dynamixel Ignores
 .catkin_tools/
 .dynamixel_sdk/

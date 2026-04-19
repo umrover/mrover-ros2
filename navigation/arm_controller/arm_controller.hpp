@@ -1,6 +1,8 @@
 #pragma once
 #include "pch.hpp"
 
+
+
 namespace mrover {
 
     class ArmController final : public rclcpp::Node {
@@ -24,6 +26,15 @@ namespace mrover {
             }
         };
 
+        double mCarrotTime = 0.033;
+        double mCarrotk = 1;
+        rclcpp::Time mPrevTime;
+        bool carrot_initialized = false;
+        ArmPos mCarrotPos;
+        bool hold = false;
+        bool not_initialized = true;
+
+
 
         struct JointWrapper {
             struct JointLimits {
@@ -36,26 +47,26 @@ namespace mrover {
             double pos;
         };
         
-        // TODO: update velocity limits to make them real
+        // these positional limits are slightly conservative versions of the limits listed in the 2025-26 cdr
         std::unordered_map<std::string, JointWrapper> joints = {
             {"joint_a", {
-                .limits = {.minPos = 0, .maxPos = 0.35, .minVel = -0.05, .maxVel = 0.05},
+                .limits = {.minPos = 0, .maxPos = 0.37, .minVel = -0.05, .maxVel = 0.05},
                 .pos = 0
             }},
             {"joint_b", {
-                .limits = {.minPos = -0.9, .maxPos = 0, .minVel = -0.05, .maxVel = 0.05},
+                .limits = {.minPos = -1.1, .maxPos = 0.25, .minVel = -0.05, .maxVel = 0.05},
                 .pos = 0
             }},
             {"joint_c", {
-                .limits = {.minPos = -0.959931, .maxPos = 2.87979, .minVel = -0.05 * 2 * std::numbers::pi, .maxVel = 0.05 * 2 * std::numbers::pi},
+                .limits = {.minPos = -1.0, .maxPos = 3.0, .minVel = -0.05 * 2 * std::numbers::pi, .maxVel = 0.05 * 2 * std::numbers::pi},
                 .pos = 0
             }},
             {"joint_de_pitch", {
-                .limits = {.minPos = -1.3, .maxPos = 1.2, .minVel = -0.2, .maxVel = 0.2}, // pretty conservative limits atm
+                .limits = {.minPos = -1.1, .maxPos = 1.1, .minVel = -0.2, .maxVel = 0.2}, 
                 .pos = 0
             }},
             {"joint_de_roll", {
-                .limits = {.minPos = -2.36, .maxPos = 1.44, .minVel = -1, .maxVel = 1},
+                .limits = {.minPos = -3.14, .maxPos = 3.13, .minVel = -1, .maxVel = 1},
                 .pos = 0
             }},
             {"gripper", {
@@ -64,9 +75,16 @@ namespace mrover {
             }},
         };
 
-        [[maybe_unused]] rclcpp::Subscription<msg::IK>::SharedPtr mIkSub;
-        [[maybe_unused]] rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr mVelSub;
-        [[maybe_unused]] rclcpp::Subscription<msg::ControllerState>::SharedPtr mJointSub;
+        rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr mVelSub;
+        rclcpp::Subscription<msg::ControllerState>::SharedPtr mJointSub;
+        rclcpp::Subscription<msg::IK>::SharedPtr mIkSub;
+        rclcpp::Client<srv::Pusher>::SharedPtr mPusherCli;
+
+        rclcpp_action::Server<action::TypingPosition>::SharedPtr mTypingServer;
+        auto handleTypingGoal(const rclcpp_action::GoalUUID & uuid, const std::shared_ptr<const action::TypingPosition_Goal> &typingGoal) -> rclcpp_action::GoalResponse;
+        auto handleTypingCancel(const std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingPosition>> &typingGoalHandle) -> rclcpp_action::CancelResponse;
+        auto handleTypingAccepted(const std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingPosition>> &typingGoalHandle) -> void;
+        std::optional<rclcpp_action::GoalUUID> mTypingGoalID;
 
         rclcpp::Publisher<msg::Position>::SharedPtr mPosPub;
         rclcpp::Publisher<msg::Velocity>::SharedPtr mVelPub;
