@@ -116,6 +116,8 @@ namespace mrover {
             mControllerState.states.clear();
             mControllerState.limits_hit.clear();
 
+            mControllerState.header.stamp = now();
+
             for (auto const& [name, servo]: mServos) {
                 double pos, vel, cur;
                 U2D2::Status const status = servo->getPosition(pos);

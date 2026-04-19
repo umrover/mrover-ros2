@@ -33,7 +33,7 @@ namespace mrover {
         static constexpr uint8_t ADDR_GOAL_CURRENT = 102;
 
         static constexpr int32_t SERVO_TICKS = 4096;
-        static constexpr uint8_t SERVO_POSITION_DEAD_ZONE = 5;
+        static constexpr uint8_t SERVO_POSITION_DEAD_ZONE = 25;
         static constexpr double SERVO_RPM_PER_TICK = 0.22888;
         static constexpr double SERVO_CURRENT_MA_PER_TICK = 2.69;
 
