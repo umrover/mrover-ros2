@@ -1,8 +1,7 @@
 <template>
   <div class="flex flex-col gap-2 h-full">
-    <h4 class="component-header">Drive</h4>
-    <div class="overflow-x-auto cmd-scroll flex-1">
-      <table class="cmd-table compact-table w-full">
+    <div class="overflow-x-auto scroll flex-1">
+      <table class="table compact-table w-full">
         <thead>
           <tr>
             <th>Wheel</th>
@@ -17,8 +16,8 @@
             <td class="font-bold">{{ w.label }}</td>
             <td>{{ formatState(stateFor(w.id)) }}</td>
             <td>{{ formatError(errorFor(w.id)) }}</td>
-            <td class="numeric-col">{{ formatNumber(fieldAt(data.velocities, w.id)) }}</td>
-            <td class="numeric-col">{{ formatNumber(fieldAt(data.currents, w.id)) }}</td>
+            <td class="numeric-col"><span v-html="formatNumber(fieldAt(data.velocities, w.id), 3, 2, true)"></span></td>
+            <td class="numeric-col"><span v-html="formatNumber(fieldAt(data.currents, w.id), 3, 2, true)"></span></td>
           </tr>
         </tbody>
       </table>

@@ -65,10 +65,7 @@ export function formatState(v: string | undefined): string {
   return v || '---'
 }
 
-export function formatNumber(v: unknown): string {
-  if (typeof v === 'number' && Number.isFinite(v)) return v.toFixed(2)
-  return '---'
-}
+export { formatNumber } from '@/utils/formatNumber'
 
 export function formatLimit(v: number | undefined): string {
   if (v === undefined) return '---'
@@ -87,7 +84,7 @@ function hasError(v: string | undefined): boolean {
 
 export function stateRowClass(state: string | undefined, error?: string | undefined): string {
   if (!state) return 'row-no-data'
-  if (hasError(error)) return 'bg-cmd-danger-subtle'
-  if (state === 'ARMED') return 'bg-cmd-success-subtle'
+  if (hasError(error)) return 'bg-danger-subtle'
+  if (state === 'ARMED') return 'bg-success-subtle'
   return ''
 }

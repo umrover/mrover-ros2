@@ -1,8 +1,7 @@
 <template>
   <div class="flex flex-col gap-2 h-full">
-    <h4 class="component-header">Arm</h4>
-    <div class="overflow-x-auto cmd-scroll flex-1">
-      <table class="cmd-table compact-table w-full">
+    <div class="overflow-x-auto scroll flex-1">
+      <table class="table compact-table w-full">
         <thead>
           <tr>
             <th>Joint</th>
@@ -19,9 +18,9 @@
             <td class="font-bold">{{ j.label }}</td>
             <td>{{ formatState(stateFor(j.id)) }}</td>
             <td>{{ formatError(errorFor(j.id)) }}</td>
-            <td class="numeric-col">{{ formatNumber(fieldAt(data.positions, j.id)) }}</td>
-            <td class="numeric-col">{{ formatNumber(fieldAt(data.velocities, j.id)) }}</td>
-            <td class="numeric-col">{{ formatNumber(fieldAt(data.currents, j.id)) }}</td>
+            <td class="numeric-col"><span v-html="formatNumber(fieldAt(data.positions, j.id), 3, 2, true)"></span></td>
+            <td class="numeric-col"><span v-html="formatNumber(fieldAt(data.velocities, j.id), 3, 2, true)"></span></td>
+            <td class="numeric-col"><span v-html="formatNumber(fieldAt(data.currents, j.id), 3, 2, true)"></span></td>
             <td>{{ formatLimit(fieldAt(data.limitsHit, j.id)) }}</td>
           </tr>
         </tbody>

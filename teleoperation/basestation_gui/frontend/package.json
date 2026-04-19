@@ -31,7 +31,8 @@
     "vue-draggable-plus": "^0.6.1",
     "vue-flight-indicators": "^0.1.1",
     "vue-grid-layout-v3": "^3.1.2",
-    "vue-router": "^5.0.4"
+    "vue-router": "^5.0.4",
+    "vuedraggable": "^2.24.3"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.2",
@@ -47,10 +48,14 @@
     "eslint": "^10.1.0",
     "eslint-plugin-vue": "^10.8.0",
     "prettier": "^3.8.1",
+    "stylelint": "^17.4.0",
+    "stylelint-config-recess-order": "^7.6.1",
+    "stylelint-config-standard-vue": "^1.0.0",
+    "tailwindcss": "^4.2.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.57.2",
-    "vite": "^8.0.2",
+    "vite": "^7",
     "vue-grid-layout-v3-types": "^1.0.5",
-    "vue-tsc": "^3.2.6"
+    "vue-tsc": "^3.2.5"
   }
 }

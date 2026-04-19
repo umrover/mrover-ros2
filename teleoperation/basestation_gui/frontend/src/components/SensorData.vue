@@ -2,10 +2,10 @@
   <div class="flex items-center gap-2 mb-2">
     <h4 class="component-header">Sensor<br>Data</h4>
     <div class="flex flex-col gap-1">
-      <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm" data-testid="pw-sensor-view-all" @click="showModal = true">
+      <button class="btn btn-outline-control btn-sm" data-testid="pw-sensor-view-all" @click="showModal = true">
         View All
       </button>
-      <button class="cmd-btn cmd-btn-outline-secondary cmd-btn-sm" data-testid="pw-sensor-csv-btn" @click="downloadCSV">
+      <button class="btn btn-outline-secondary btn-sm" data-testid="pw-sensor-csv-btn" @click="downloadCSV">
         <i class="bi bi-download"></i> CSV
       </button>
     </div>
@@ -43,28 +43,28 @@
 
   <div class="flex flex-col gap-2 grow min-h-0">
     <div class="flex gap-2 flex-1 min-h-0">
-      <div class="cmd-panel flex flex-col flex-1 min-w-0 p-1">
-        <span class="cmd-data-label mb-1">Humidity (%)</span>
+      <div class="panel flex flex-col flex-1 min-w-0 p-1">
+        <span class="data-label mb-1">Humidity (%)</span>
         <div class="grow min-h-0">
           <canvas ref="chartRef0"></canvas>
         </div>
       </div>
-      <div class="cmd-panel flex flex-col flex-1 min-w-0 p-1">
-        <span class="cmd-data-label mb-1">UV Index</span>
+      <div class="panel flex flex-col flex-1 min-w-0 p-1">
+        <span class="data-label mb-1">UV Index</span>
         <div class="grow min-h-0">
           <canvas ref="chartRef1"></canvas>
         </div>
       </div>
     </div>
     <div class="flex gap-2 flex-1 min-h-0">
-      <div class="cmd-panel flex flex-col flex-1 min-w-0 p-1">
-        <span class="cmd-data-label mb-1">Ozone (ppb)</span>
+      <div class="panel flex flex-col flex-1 min-w-0 p-1">
+        <span class="data-label mb-1">Ozone (ppb)</span>
         <div class="grow min-h-0">
           <canvas ref="chartRef2"></canvas>
         </div>
       </div>
-      <div class="cmd-panel flex flex-col flex-1 min-w-0 p-1">
-        <span class="cmd-data-label mb-1">Pressure (Pa)</span>
+      <div class="panel flex flex-col flex-1 min-w-0 p-1">
+        <span class="data-label mb-1">Pressure (Pa)</span>
         <div class="grow min-h-0">
           <canvas ref="chartRef3"></canvas>
         </div>
