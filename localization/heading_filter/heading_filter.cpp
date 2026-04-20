@@ -27,7 +27,8 @@ namespace mrover {
             {"rover_heading_change_threshold", heading_delta_threshold, 0.05},
             {"minimum_linear_speed", min_speed, 0.4},
             {"process_noise", process_noise, 0.000001},
-            {"use_mag", use_mag, false}
+            {"use_mag", use_mag, false},
+            {"use_rtk_only", use_rtk_only, false},
         };
 
         ParameterWrapper::declareParameters(this, params);
@@ -43,35 +44,6 @@ namespace mrover {
 
         rtk_heading_sub.subscribe(this, "/heading/fix");
         rtk_heading_status_sub.subscribe(this, "/heading_fix_status");
-        imu_sub.subscribe(this, "/zed_imu/data_raw");
-        mag_heading_sub.subscribe(this, "/zed_imu/mag_heading");
-
-        cmd_vel_sub = this->create_subscription<geometry_msgs::msg::Twist>("/cmd_vel", 10, [&](const geometry_msgs::msg::Twist::ConstSharedPtr &twist_msg) {
-            twists.push_back(*twist_msg);
-            if (twists.size() > TWISTS_CAP) {
-                twists.erase(twists.begin(), twists.begin() + (twists.size() - TWISTS_CAP));
-            }
-        });
-
-        drive_forward_pub = this->create_publisher<mrover::msg::Heading>("/drive_forward_heading", 1);
-        imu_uncorrected_pub = this->create_publisher<mrover::msg::Heading>("/imu_uncorrected_heading", 1);
-
-        // imu data watchdog
-        const rclcpp::Duration IMU_AND_MAG_WATCHDOG_TIMEOUT = rclcpp::Duration::from_seconds(imu_timeout);
-        imu_and_mag_watchdog = this->create_wall_timer(IMU_AND_MAG_WATCHDOG_TIMEOUT.to_chrono<std::chrono::milliseconds>(), [&]() {
-            RCLCPP_WARN(get_logger(), "ZED IMU data watchdog expired");
-            last_imu.reset();
-            prev_imu_orientation_norm.reset();
-            imu_stuck_counter = 0;
-            imu_unstuck_counter = 0;
-            imu_orientation_stuck = false;
-        });
-
-        // drive forward correction timer
-        drive_forward_timer = this->create_wall_timer(
-            std::chrono::milliseconds(static_cast<int64_t>(DRIVE_FORWARD_TIMER_S * 1000.0)),
-            [this]() -> void { drive_forward_callback(); }
-        );
 
         // synchronizers
         uint32_t queue_size = 10;
@@ -85,14 +57,48 @@ namespace mrover {
         rtk_heading_sync->setAgePenalty(0.5);
         rtk_heading_sync->registerCallback(&HeadingFilter::sync_rtk_heading_callback, this);
 
-        imu_and_mag_sync = std::make_shared<message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::Imu, mrover::msg::Heading>>>(
-            message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::Imu, mrover::msg::Heading>(queue_size),
-            imu_sub,
-            mag_heading_sub
-        );
+        if (!use_rtk_only) {
+            imu_sub.subscribe(this, "/zed_imu/data_raw");
+            mag_heading_sub.subscribe(this, "/zed_imu/mag_heading");
 
-        imu_and_mag_sync->setAgePenalty(0.5);
-        imu_and_mag_sync->registerCallback(&HeadingFilter::sync_imu_and_mag_callback, this);
+            cmd_vel_sub = this->create_subscription<geometry_msgs::msg::Twist>("/cmd_vel", 10, [&](const geometry_msgs::msg::Twist::ConstSharedPtr &twist_msg) {
+                twists.push_back(*twist_msg);
+                if (twists.size() > TWISTS_CAP) {
+                    twists.erase(twists.begin(), twists.begin() + (twists.size() - TWISTS_CAP));
+                }
+            });
+
+            drive_forward_pub = this->create_publisher<mrover::msg::Heading>("/drive_forward_heading", 1);
+            imu_uncorrected_pub = this->create_publisher<mrover::msg::Heading>("/imu_uncorrected_heading", 1);
+
+            // imu data watchdog
+            const rclcpp::Duration IMU_AND_MAG_WATCHDOG_TIMEOUT = rclcpp::Duration::from_seconds(imu_timeout);
+            imu_and_mag_watchdog = this->create_wall_timer(IMU_AND_MAG_WATCHDOG_TIMEOUT.to_chrono<std::chrono::milliseconds>(), [&]() {
+                RCLCPP_WARN(get_logger(), "ZED IMU data watchdog expired");
+                last_imu.reset();
+                prev_imu_orientation_norm.reset();
+                imu_stuck_counter = 0;
+                imu_unstuck_counter = 0;
+                imu_orientation_stuck = false;
+            });
+
+            // drive forward correction timer
+            drive_forward_timer = this->create_wall_timer(
+                std::chrono::milliseconds(static_cast<int64_t>(DRIVE_FORWARD_TIMER_S * 1000.0)),
+                [this]() -> void { drive_forward_callback(); }
+            );
+
+            imu_and_mag_sync = std::make_shared<message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::Imu, mrover::msg::Heading>>>(
+                message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::Imu, mrover::msg::Heading>(queue_size),
+                imu_sub,
+                mag_heading_sub
+            );
+
+            imu_and_mag_sync->setAgePenalty(0.5);
+            imu_and_mag_sync->registerCallback(&HeadingFilter::sync_imu_and_mag_callback, this);
+        } else {
+            RCLCPP_WARN(get_logger(), "Heading filter publishing in rtk-yaw-only mode");
+        }
 
         X = 0;
         P = 1;
@@ -115,6 +121,28 @@ namespace mrover {
     }
 
     void HeadingFilter::sync_rtk_heading_callback(const mrover::msg::Heading::ConstSharedPtr &heading, const mrover::msg::FixStatus::ConstSharedPtr &heading_status) {
+
+        if (heading_status->fix_type.fix == mrover::msg::FixType::FIXED) {
+            double const rover_map_deg = fmod(heading->heading + 90. + 360., 360.);
+            double measured_heading_deg = 90. - rover_map_deg;
+            if (measured_heading_deg <= -180.) { measured_heading_deg += 360.; }
+            else if (measured_heading_deg > 180.) { measured_heading_deg -= 360.; }
+            if (use_rtk_only) {
+                if (!last_position) {
+                    RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "RTK-yaw only mode, waiting for /linearized_pos");
+                    return;
+                }
+                R3d position_in_map(last_position->vector.x, last_position->vector.y, last_position->vector.z);
+                double const measured_heading = measured_heading_deg * (M_PI / 180.);
+                SE3d pose_in_map(position_in_map, SO3d(Eigen::AngleAxisd(measured_heading, R3d::UnitZ())));
+                SE3Conversions::pushToTfTree(tf_broadcaster, gps_frame, world_frame, pose_in_map, get_clock()->now());
+                return;
+            }
+        }
+        
+        if (use_rtk_only) {
+            return;
+        }
 
         if (!last_imu) {
             RCLCPP_WARN(get_logger(), "No IMU data!");
@@ -164,6 +192,10 @@ namespace mrover {
     }
 
     void HeadingFilter::sync_imu_and_mag_callback(const sensor_msgs::msg::Imu::ConstSharedPtr &imu, const mrover::msg::Heading::ConstSharedPtr &mag_heading) {
+        if (use_rtk_only) {
+            return;
+        }
+        
         imu_and_mag_watchdog.reset();
         last_imu = *imu;
 
@@ -283,6 +315,9 @@ namespace mrover {
     }
 
     void HeadingFilter::drive_forward_callback() {
+        if (use_rtk_only) {
+            return;
+        }
 
         if (!last_imu) {
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "No IMU data for drive-forward correction");
