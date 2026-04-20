@@ -175,7 +175,7 @@ class DriveController:
         target_dir: np.ndarray,
         rover_pose: SE3,
         completion_thresh: float,
-    ) -> tuple[Twist, bool]:
+    ) -> tuple[Twist, bool, float]:
         turning_p = self.node.get_parameter("drive.turning_p").value
         min_turning_effort = self.node.get_parameter("drive.min_turning_effort").value
         max_turning_effort = self.node.get_parameter("drive.max_turning_effort").value
@@ -185,17 +185,17 @@ class DriveController:
 
         angular_error: float = abs(angle_to_rotate_2d(target_dir[:2], rover_dir[:2]))
         if(angular_error < completion_thresh):
-            return True, Twist()
+            return Twist(), True, angular_error
 
-        return False, Twist(
+        return Twist(
             angular=Vector3(
                 z=np.clip(
-                    angular_error * turning_p,
+                    -angular_error * turning_p,
                     min_turning_effort,
                     max_turning_effort,
                     )
                 )
-            )
+            ), False,  angular_error
 
         
 
