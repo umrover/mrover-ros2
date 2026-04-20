@@ -53,11 +53,11 @@ import { useWebsocketStore } from '@/stores/websocket'
 import type { ControllerStateMessage } from '@/types/websocket'
 import IndicatorDot from './IndicatorDot.vue'
 
-const websocketStore = useWebsocketStore()
+const { onMessage } = useWebsocketStore()
 
 const gimbalJointState = ref<ControllerStateMessage | null>(null)
 
-websocketStore.onMessage<ControllerStateMessage>('chassis', 'gimbal_controller_state', (msg) => {
+onMessage<ControllerStateMessage>('chassis', 'gimbal_controller_state', (msg) => {
   gimbalJointState.value = msg
 })
 
