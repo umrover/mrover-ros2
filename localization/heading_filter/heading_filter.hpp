@@ -31,7 +31,7 @@ namespace mrover {
         // params
         std::string world_frame, gps_frame;
         double imu_timeout, mag_noise, rtk_noise, drive_noise, heading_delta_threshold, min_speed, process_noise;
-        bool use_mag;
+        bool use_mag, use_rtk_only;
 
         // transform broadcaster
         tf2_ros::Buffer tf_buffer{get_clock()};
