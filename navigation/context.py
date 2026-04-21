@@ -280,7 +280,7 @@ class Course:
     def look_for_object(self) -> bool:
         """
         :return: Whether the currently active waypoint is an object (if it exists).
-                 Either the mallet or the water bottle.
+                 Either the mallet, water bottle, or the rock pick.
         """
         current_waypoint = self.current_waypoint()
         return current_waypoint is not None and current_waypoint.type.val in {
