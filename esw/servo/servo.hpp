@@ -199,15 +199,16 @@ namespace mrover {
                 auto const targetRaw = static_cast<int64_t>((mGoalPosition + mPositionOffsetTicks) * mPositionMultiplier);
                 auto const currentRaw = static_cast<int64_t>(mCachedRawPosition.load());
 
-                int64_t diff = (targetRaw - currentRaw) % SERVO_TICKS;
-                if (diff < 0) diff += SERVO_TICKS;
+                auto const jointPeriodRaw = static_cast<int64_t>(SERVO_TICKS * mPositionMultiplier);
+                int64_t diff = (targetRaw - currentRaw) % jointPeriodRaw;
+                if (diff < 0) diff += jointPeriodRaw;
 
                 if (mMode == ServoMode::Optimal) {
-                    if (diff > (SERVO_TICKS / 2)) {
-                        diff -= SERVO_TICKS;
+                    if (diff > (jointPeriodRaw / 2)) {
+                        diff -= jointPeriodRaw;
                     }
                 } else if (mMode == ServoMode::Clockwise) {
-                    if (diff > 0) diff -= SERVO_TICKS;
+                    if (diff > 0) diff -= jointPeriodRaw;
                 }
 
                 int64_t newTargetRaw = currentRaw + diff;
