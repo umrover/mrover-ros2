@@ -215,6 +215,13 @@ class DriveController:
             target_pos,
             rover_pose,
         )
+    def spin_rover(self, rover_pose: SE3, target_pos: np.ndarray | None) -> tuple[Twist, bool]:
+        if target_pos is None:
+            return Twist(), True
+        cmd_vel, arrived = self.get_drive_command(
+            target_pos, rover_pose, self.DISTANCE_THRESHOLD, 1e-8
+        )
+        return cmd_vel, arrived
 
     def get_default_drive_command(
         self: DriveController,
