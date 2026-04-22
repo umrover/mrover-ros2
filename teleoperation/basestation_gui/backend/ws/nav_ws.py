@@ -32,8 +32,10 @@ class NavHandler(WebSocketHandler):
         try:
             if not self.buffer.can_transform("map", "base_link", rclpy.time.Time()):
                 return
-            base_link_in_map = SE3.from_tf_tree(self.buffer, "map", "base_link")
-            quat = base_link_in_map.quat().tolist()
+            map_to_base_link = SE3.from_tf_tree(self.buffer, "map", "base_link")
+            quat = map_to_base_link.quat().tolist()
+            rover_in_map = map_to_base_link.inverse()
+            tx, ty, tz = rover_in_map.translation()
             data_to_send = {
                 "type": "orientation",
                 "orientation": {
@@ -41,6 +43,11 @@ class NavHandler(WebSocketHandler):
                     "y": quat[1],
                     "z": quat[2],
                     "w": quat[3],
+                },
+                "position": {
+                    "x": float(tx),
+                    "y": float(ty),
+                    "z": float(tz),
                 },
             }
             self.schedule_send(data_to_send)

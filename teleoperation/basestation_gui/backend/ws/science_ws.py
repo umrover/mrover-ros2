@@ -2,7 +2,7 @@ from backend.ws.base_ws import WebSocketHandler
 from backend.managers.ros import get_logger
 from backend.input import DeviceInputs
 from backend.sp_controls import send_sp_controls
-from mrover.msg import Throttle, ControllerState, Humidity, Temperature, Oxygen, UV, Ozone, CO2, Pressure
+from mrover.msg import Throttle, ControllerState, Humidity, Temperature, Oxygen, UV, Ozone, CO2, Pressure, SensorStates
 
 class ScienceHandler(WebSocketHandler):
     def __init__(self, websocket):
@@ -20,6 +20,7 @@ class ScienceHandler(WebSocketHandler):
         self.forward_ros_topic("/sp_co2_data", CO2, "sp_co2")
         self.forward_ros_topic("/sp_pressure_data", Pressure, "sp_pressure")
         self.forward_ros_topic("/sp_controller_state", ControllerState, "sp_controller_state")
+        self.forward_ros_topic("/sp_sensor_states", SensorStates, "sp_sensor_state")
 
     async def handle_message(self, data):
         msg_type = data.get('type')
