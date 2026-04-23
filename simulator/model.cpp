@@ -33,7 +33,6 @@ namespace mrover {
                 aiMesh const* mesh = scene->mMeshes[meshIndex];
 
                 if (!mesh->HasNormals()) throw std::invalid_argument{std::format("Mesh #{} has no normals", meshIndex)};
-                if (!mesh->HasTextureCoords(0)) throw std::invalid_argument{std::format("Mesh #{} has no texture coordinates", meshIndex)};
 
                 auto& [vertices, normals, tangents, bitangents, uvs, indices, texture, normal_map, roughness, metallic] = meshes.emplace_back();
 
@@ -61,11 +60,16 @@ namespace mrover {
                     normals.data[normalIndex] = Eigen::Vector3f{normal.x, normal.y, normal.z};
                 }
 
-                assert(mesh->HasTextureCoords(0));
                 uvs.data.resize(mesh->mNumVertices);
-                for (std::size_t uvIndex = 0; uvIndex < mesh->mNumVertices; ++uvIndex) {
-                    aiVector3D const& uv = mesh->mTextureCoords[0][uvIndex];
-                    uvs.data[uvIndex] = {uv.x, uv.y};
+                if (mesh->HasTextureCoords(0)) {
+                    for (std::size_t uvIndex = 0; uvIndex < mesh->mNumVertices; ++uvIndex) {
+                        aiVector3D const& uv = mesh->mTextureCoords[0][uvIndex];
+                        uvs.data[uvIndex] = {uv.x, uv.y};
+                    }
+                } else {
+                    for (std::size_t uvIndex = 0; uvIndex < mesh->mNumVertices; ++uvIndex) {
+                        uvs.data[uvIndex] = {0, 0};
+                    }
                 }
 
                 assert(mesh->HasTangentsAndBitangents());
