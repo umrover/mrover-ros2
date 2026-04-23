@@ -1,4 +1,3 @@
-from rclpy.impl.implementation_singleton import package
 from pathlib import Path
 
 from ament_index_python import get_package_share_directory
