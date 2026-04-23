@@ -67,8 +67,9 @@ class Panorama(Node):
         super().__init__('panorama')
 
         # Variable for the ZED you'd like to use (zed or zed_mini)
-        self.zed_version= "zed"
-        self.zed_fov_deg = 110
+        self.zed_version= "zed_mini"
+        self.zed_fov_deg = 85
+        self.zed_fov_rad = self.zed_fov_deg * (np.pi / 180)
         self.zed_image_width_pixels = 1280
 
         # Pano Action Server
@@ -77,8 +78,8 @@ class Panorama(Node):
         self.gimbal_client = self.create_client(ServoPosition, "gimbal_servo")
 
         # Start the panorama
-        self.record_image = False
-        self.record_pc = False
+        self.recorded_one_image = False
+        self.recorded_one_pc = False
 
         # Heading variables
         self.heading_sub = self.create_subscription(Heading, "/heading/fix", self.heading_callback, 1)
@@ -98,13 +99,13 @@ class Panorama(Node):
 
         self.gimbal_sub = message_filters.Subscriber(self, ControllerState, "/gimbal_controller_state")
         self.img_sub = message_filters.Subscriber(self, Image, f"/{self.zed_version}/left/image")
-        self.img_sync = message_filters.ApproximateTimeSynchronizer([self.gimbal_sub, self.img_sub], 10, 1)
+        self.img_sync = message_filters.ApproximateTimeSynchronizer([self.img_sub, self.gimbal_sub], 10, 0.1)
         self.img_sync.registerCallback(self.synced_img_gimbal_callback)
         self.img_list = [] # list of images
         self.img_dirs = [] # list of imu values per image
         self.headings = []
 
-        self.pixels_per_deg = self.zed_image_width_pixels / self.zed_fov_deg
+        self.pixels_per_rad = self.zed_image_width_pixels / self.zed_fov_rad
         self.img_rate = PanoRate(2, self)
 
         if not os.path.isdir("data/raw-pano-images"):
@@ -127,7 +128,7 @@ class Panorama(Node):
         # extract xyzrgb fields
         # get every tenth point to make the pc sparser
         # TODO: dtype hard-coded to float32
-        if self.record_pc:
+        if not self.recorded_one_pc:
             self.get_logger().info("HERE!")
             self.current_pc = pc_msg
             self.arr_pc = np.frombuffer(bytearray(pc_msg.data), dtype=np.float32).reshape(
@@ -161,22 +162,23 @@ class Panorama(Node):
             # if self.current_img is not None:
             #     self.img_list.append(copy.deepcopy(self.current_img))
             #     self.img_dirs.append(np.mod(np.arctan2(rotation[1][0], rotation[0][0]), (2 * np.pi)))
-
+            # self.recorded_one_pc = True
             self.pc_rate.sleep()
 
     def synced_img_gimbal_callback(self, img: Image, gimbal: ControllerState):
-        if self.record_image:
+        if self.recorded_one_image:
             self.current_img = cv2.cvtColor(
                 np.frombuffer(img.data, dtype=np.uint8).reshape(img.height, img.width, 4), cv2.COLOR_RGBA2RGB
             )
 
-            idx = gimbal.names.index("yaw")
+            idx = gimbal.names.index("gimbal_yaw")
             pos = gimbal.positions[idx]
 
             if self.current_img is not None:
                 self.img_list.append(copy.deepcopy(self.current_img))
                 self.img_dirs.append(pos)
                 self.headings.append((self.cur_heading + pos) % (2 * np.pi))
+                # self.recorded_one_image = True
                 self.img_rate.sleep()
 
     def heading_callback(self, heading: Heading):
@@ -221,8 +223,8 @@ class Panorama(Node):
         self.get_logger().info('Starting Pano...')
 
         self.stitcher = cv2.Stitcher_create(cv2.Stitcher_PANORAMA)
-        self.record_image = True
-        self.record_pc = True
+        self.recorded_one_image = True
+        self.recorded_one_pc = True
 
         # if self.img_sub is None:
         #     self.img_sub = self.create_subscription(Image, f"/{self.zed_version}/left/image", self.image_callback, 1)
@@ -231,22 +233,22 @@ class Panorama(Node):
             self.pc_sub = message_filters.Subscriber(self, PointCloud2, f"/{self.zed_version}/left/points")
             self.imu_sub = message_filters.Subscriber(self, Imu, f"/{self.zed_version}_imu/data_raw")
             self.img_sub = message_filters.Subscriber(self, Image, f"/{self.zed_version}/left/image")
-            self.sync = message_filters.ApproximateTimeSynchronizer([self.pc_sub, self.imu_sub, self.img_sub], 10, 1)
+            self.sync = message_filters.ApproximateTimeSynchronizer([self.pc_sub, self.imu_sub], 10, 1)
             self.sync.registerCallback(self.synced_gps_pc_callback)
 
             self.gimbal_sub = message_filters.Subscriber(self, ControllerState, "/gimbal_controller_state")
-            self.img_sync = message_filters.ApproximateTimeSynchronizer([self.gimbal_sub, self.img_sub])
+            self.img_sync = message_filters.ApproximateTimeSynchronizer([self.img_sub, self.gimbal_sub])
             self.img_sync.registerCallback(self.synced_img_gimbal_callback)
 
         if self.heading_sub is not None:
             self.destroy_subscription(self.heading_sub)
             self.heading_sub = None
 
-        # START SPINNING THE MAST GIMBAL
+        # START SPINNING THE MAST GIMBAL 
         req = ServoPosition.Request()
         req.header = Header()
-        req.name = ["gimbal_pitch", "gimbal_yaw"]
-        req.position = [np.pi / 2, 2*np.pi] # TODO is 90 correct?? 0?
+        req.name = ["gimbal_yaw"]
+        req.position = [2*np.pi] # TODO is 90 correct?? 0?
         self.gimbal_client.call_async(req)
 
         return response
@@ -254,14 +256,14 @@ class Panorama(Node):
     def end_callback(self, _, response):
         self.get_logger().info('Ending Pano...')
 
-        self.record_image = False
-        self.record_pc = False
+        self.recorded_one_image = False
+        self.recorded_one_pc = False
 
         # Return Mast Gimbal to original position
         req = ServoPosition.Request()
         req.header = Header()
-        req.name = ["gimbal_pitch", "gimbal_yaw"]
-        req.position = [np.pi / 2, 0.0] # TODO is 90 correct?? 0?
+        req.name = ["gimbal_yaw"]
+        req.position = [0.0] # TODO is 90 correct?? 0?
         self.gimbal_client.call_async(req)
 
         if self.pc_sub is not None and self.imu_sub is not None:
@@ -313,9 +315,8 @@ class Panorama(Node):
         # Calculate shifts
         dirs = np.abs(np.array(self.img_dirs).astype(float)) * (180 / np.pi)
         diffs = np.abs(np.diff(dirs))
-        shift = diffs * self.pixels_per_deg
+        shift = diffs * self.pixels_per_rad
         shift = shift.astype(int)
-        print(self.pixels_per_deg)
         print("Directions (deg): " + str(dirs))
         print("Diffs: " + str(diffs))
         print("Shifts: " + str(shift))
