@@ -4,5 +4,4 @@
     ros_distro: humble
     ubuntu_release: jammy
   roles:
-    - build
     - percep_build
