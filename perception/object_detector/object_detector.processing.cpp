@@ -1,5 +1,4 @@
 #include "object_detector.hpp"
-#include "mrover/srv/detail/toggle_stereo_object_detector__struct.hpp"
 
 namespace mrover {
 
