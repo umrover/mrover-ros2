@@ -313,7 +313,7 @@ class Panorama(Node):
         self.get_logger().info(f"Stitching {len(self.img_list)} images...")            
 
         # Calculate shifts
-        dirs = np.abs(np.array(self.img_dirs).astype(float)) * (180 / np.pi)
+        dirs = np.abs(np.array(self.img_dirs).astype(float))
         diffs = np.abs(np.diff(dirs))
         shift = diffs * self.pixels_per_rad
         shift = shift.astype(int)
