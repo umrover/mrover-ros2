@@ -372,12 +372,12 @@ namespace mrover {
         // TODO(neven): make these constraints more rigid?
         if (uri.find("rover.urdf.xacro") != std::string_view::npos) {
             static constexpr std::array<std::tuple<std::string_view, std::string_view, float, float>, 4> crank_links{{
-                {"right", "rear", -1, -1},
-                {"left", "rear", -1, 1},
-                {"right", "front", 1, 1},
-                {"left", "front", 1, -1},
+                    {"right", "rear", -1, -1},
+                    {"left", "rear", -1, 1},
+                    {"right", "front", 1, 1},
+                    {"left", "front", 1, -1},
             }};
-            for (const auto& [side, pos, frontRearSign, inOutSign] : crank_links) {
+            for (auto const& [side, pos, frontRearSign, inOutSign]: crank_links) {
                 int crankLink = linkNameToMeta.at(std::format("{}_lambda_crank_{}_link", side, pos)).index;
                 int lambdaLink = linkNameToMeta.at(std::format("{}_lambda_{}_link", side, pos)).index;
                 auto* p2p = simulator.makeBulletObject<btMultiBodyPoint2Point>(simulator.mMultibodyConstraints, multiBody, crankLink, multiBody, lambdaLink, btVector3(frontRearSign * 0.07078f, -0.05856, 0), btVector3(frontRearSign * -0.08668f, -0.14353, inOutSign * 0.005f));
