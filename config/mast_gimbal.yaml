@@ -15,6 +15,7 @@ mast_gimbal_hw_bridge:
       current_limit: 1750.0
       profile_acceleration: 10.0
       profile_velocity: 60.0
+      boot_position: 0.0
     gimbal_yaw:
       id: 4
       mode: "limited"
@@ -30,3 +31,4 @@ mast_gimbal_hw_bridge:
       current_limit: 1000.0
       profile_acceleration: 100.0
       profile_velocity: 300.0
+      boot_position: 3.14
