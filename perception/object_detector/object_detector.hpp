@@ -44,9 +44,9 @@ namespace mrover {
         std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
         std::shared_ptr<tf2_ros::TransformListener> mTfListener = std::make_shared<tf2_ros::TransformListener>(*mTfBuffer);
 
-        Model bottleModel;
-        Model malletModel;
-        Model pickModel;
+        Model mBottleModel;
+        Model mMalletModel;
+        Model mPickModel;
 
         std::string mCameraFrame;
         std::string mWorldFrame;

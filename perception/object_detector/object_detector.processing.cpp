@@ -10,15 +10,15 @@ namespace mrover {
                 currentTensorRT = nullptr;
                 break;
             case srv::ToggleStereoObjectDetector::Request::WATER_BOTTLE:
-                currentModel = &bottleModel;
+                currentModel = &mBottleModel;
                 currentTensorRT = &mBottleTensorRT;
                 break;
             case srv::ToggleStereoObjectDetector::Request::MALLET:
-                currentModel = &malletModel;
+                currentModel = &mMalletModel;
                 currentTensorRT = &mMalletTensorRT;
                 break;
             case srv::ToggleStereoObjectDetector::Request::ROCK_PICK:
-                currentModel = &pickModel;
+                currentModel = &mPickModel;
                 currentTensorRT = &mPickTensorRT;
                 break;
             default:
@@ -213,15 +213,15 @@ namespace mrover {
                 currentTensorRT = nullptr;
                 break;
             case srv::ToggleImageObjectDetector::Request::WATER_BOTTLE:
-                currentModel = &bottleModel;
+                currentModel = &mBottleModel;
                 currentTensorRT = &mBottleTensorRT;
                 break;
             case srv::ToggleImageObjectDetector::Request::MALLET:
-                currentModel = &malletModel;
+                currentModel = &mMalletModel;
                 currentTensorRT = &mMalletTensorRT;
                 break;
             case srv::ToggleImageObjectDetector::Request::ROCK_PICK:
-                currentModel = &pickModel;
+                currentModel = &mPickModel;
                 currentTensorRT = &mPickTensorRT;
                 break;
             default:
