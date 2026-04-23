@@ -270,10 +270,6 @@ namespace mrover {
 
         rclcpp::Service<mrover::srv::ToggleImageObjectDetector>::SharedPtr dummyImageToggleServer;
 
-        auto dummyToggleStereoMode(mrover::srv::ToggleStereoObjectDetector::Request::ConstSharedPtr& request, mrover::srv::ToggleStereoObjectDetector::Response::SharedPtr& response) -> void;
-
-        auto dummyToggleImageMode(mrover::srv::ToggleImageObjectDetector::Request::ConstSharedPtr& request, mrover::srv::ToggleImageObjectDetector::Response::SharedPtr& response) -> void;
-
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster{this};
