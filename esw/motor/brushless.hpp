@@ -131,6 +131,8 @@ namespace mrover {
         std::optional<moteus::Controller> mMoteus;
         std::int8_t mMoteusAux1Info{}, mMoteusAux2Info{};
         bool mHasLimit{};
+        bool mExtSoftFwd{false};
+        bool mExtSoftBwd{false};
 
     public:
         BrushlessController(rclcpp::Node::SharedPtr node, std::string masterName, std::string controllerName, Options options = Options{})
@@ -329,19 +331,34 @@ namespace mrover {
             mDevice.publishMessage(brakeFrame);
         }
 
+        auto setExternalSoftLimits(bool fwd, bool bwd) -> void {
+            mExtSoftFwd = fwd;
+            mExtSoftBwd = bwd;
+        }
+
         auto getPressedLimitSwitchInfo() -> MoteusLimitSwitchInfo {
             MoteusLimitSwitchInfo result{};
+            bool const internalFwd = (mPosition >= mMaxPosition.get());
+            bool const internalBwd = (mPosition <= mMinPosition.get());
+
             for (std::size_t i = 0; i < MAX_NUM_LIMIT_SWITCHES; ++i) {
+                bool hardwareHit = false;
                 if (mLimitSwitchesInfo[i].present && mLimitSwitchesInfo[i].enabled) {
                     std::uint8_t const auxInfo = (mLimitSwitchesInfo[i].auxNumber == MoteusAuxNumber::AUX1) ? mMoteusAux1Info : mMoteusAux2Info;
                     bool gpioState = auxInfo & (1 << static_cast<std::size_t>(mLimitSwitchesInfo[i].auxPin));
-
-                    // Assign to Base m_limit_hit
-                    mLimitHit[i] = (gpioState == mLimitSwitchesInfo[i].activeHigh);
+                    hardwareHit = (gpioState == mLimitSwitchesInfo[i].activeHigh);
                 }
+
+                if (mLimitSwitchesInfo[i].limitsForward) {
+                    mLimitHit[i] = hardwareHit || internalFwd || mExtSoftFwd;
+                } else {
+                    mLimitHit[i] = hardwareHit || internalBwd || mExtSoftBwd;
+                }
+
                 result.isForwardPressed = (mLimitHit[i] && mLimitSwitchesInfo[i].limitsForward) || result.isForwardPressed;
                 result.isBackwardPressed = (mLimitHit[i] && !mLimitSwitchesInfo[i].limitsForward) || result.isBackwardPressed;
-                if (mLimitSwitchesInfo[i].usedForReadjustment && mLimitHit[i]) {
+
+                if (mLimitSwitchesInfo[i].usedForReadjustment && hardwareHit) {
                     adjust(mLimitSwitchesInfo[i].readjustPosition);
                 }
             }
