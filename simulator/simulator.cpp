@@ -38,12 +38,12 @@ namespace mrover {
 
             mIkModeClient = create_client<srv::IkMode>("ik_mode");
 
-            dummyStereoToggleServer = create_service<mrover::srv::ToggleStereoObjectDetector>("toggle_stereo_object_detector", [this](const mrover::srv::ToggleStereoObjectDetector::Request::ConstSharedPtr& request, const mrover::srv::ToggleStereoObjectDetector::Response::SharedPtr& response) {
+            dummyStereoToggleServer = create_service<mrover::srv::ToggleStereoObjectDetector>("toggle_stereo_object_detector", [this](mrover::srv::ToggleStereoObjectDetector::Request::ConstSharedPtr const& request, mrover::srv::ToggleStereoObjectDetector::Response::SharedPtr const& response) {
                 RCLCPP_INFO_STREAM(get_logger(), "Setting dummy stereo object detection mode to: " << std::to_string(request->mode));
                 response->success = true;
             });
 
-            dummyImageToggleServer = create_service<mrover::srv::ToggleImageObjectDetector>("toggle_image_object_detector", [this](const mrover::srv::ToggleImageObjectDetector::Request::ConstSharedPtr& request, const mrover::srv::ToggleImageObjectDetector::Response::SharedPtr& response) {
+            dummyImageToggleServer = create_service<mrover::srv::ToggleImageObjectDetector>("toggle_image_object_detector", [this](mrover::srv::ToggleImageObjectDetector::Request::ConstSharedPtr const& request, mrover::srv::ToggleImageObjectDetector::Response::SharedPtr const& response) {
                 RCLCPP_INFO_STREAM(get_logger(), "Setting dummy image object detection mode to: " << std::to_string(request->mode));
                 response->success = true;
             });
