@@ -108,6 +108,24 @@ def generate_launch_description():
         ],
     )
 
+    launch_localization = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            Path(get_package_share_directory("mrover"), "launch/localization.launch.py").__str__()
+        )
+    )
+
+    base_link_to_right_gps = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        arguments=["0.0", "0.47", "0", "0", "0", "0", "1", "gps_frame", "base_link"],
+    )
+
+    base_link_to_zed = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        arguments=["0", "0", "1", "0", "0", "0", "1", "base_link", "zed_left_camera_frame"],
+    )
+
     return LaunchDescription(
         [
             launch_include_can,
@@ -117,5 +135,8 @@ def generate_launch_description():
             mob_streamer_node,
             zed_mini_container,
             zed_container,
+            base_link_to_right_gps,
+            base_link_to_zed,
+            launch_localization,
         ]
     )
