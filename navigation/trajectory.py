@@ -94,35 +94,21 @@ class SearchTrajectory(Trajectory):
         # num_points is is simply the number of points we generate along the spiral
         num_points = num_segments_per_rotation * num_spirals + 1
 
+        angles = None
+        radii = None
+
         if inward_spiral:
-            # angles are evenly spaced between the start angle and 2pi*num_segments_per_rotation
-            # an angle is created for each point of the spiral (hence why we include num_points)
-            # our start angle is start_angle as we first want to go to the closest point on circle's radius
-            in_angles = np.linspace(start_angle, 2 * np.pi * num_spirals, num_points)
-            # radii is simply evenly spaced "divisions" of the coverage_radius going inwards on each of the points in num_points
-
-            # The in_radii is simply the reverse as the outward spiral radii, and we switch out
-            # coverage_radius for start_radius as we want to go from start_radius to 0
-            in_radii = np.linspace(start_radius, 0.0, num_points)
-            in_x_coords = np.cos(in_angles) * in_radii
-            in_y_coords = np.sin(in_angles) * in_radii
-            vertices = np.hstack((in_x_coords.reshape(-1, 1), in_y_coords.reshape(-1, 1)))
-
-        else:
-            # angles are evenly spaced between the start angle and 2pi*num_segments_per_rotation
-            # an angle is created for each point of the spiral (hence why we include num_points)
-            # our start angle is start_angle as we first want to go to directly to the origin first
             angles = np.linspace(start_angle, 2 * np.pi * num_spirals, num_points)
-            # radii is simply evenly spaced "divisions" of the coverage_radius going outwards on each of the points in num_points
+            radii = np.linspace(start_radius, 0.0, num_points)
+        
+        else:
+            angles = np.linspace(start_angle, 2 * np.pi * num_spirals, num_points)
             radii = np.linspace(0, coverage_radius, num_points)
-            # Radii are computed via following polar formula.
-            # This is correct because you want the radius to increase by 'distance_between_spirals' every 2pi radians (one rotation)
-            # convert to cartesian coordinates
-            x_coords = np.cos(angles) * radii
-            y_coords = np.sin(angles) * radii
-            # we want to return as a 2D matrix where each row is a coordinate pair
-            # so we reshape x and y coordinates to be (n, 1) matricies then stack horizontally to get (n, 2) matrix
-            vertices = np.hstack((x_coords.reshape(-1, 1), y_coords.reshape(-1, 1)))
+            
+        x_coords = np.cos(angles) * radii
+        y_coords = np.sin(angles) * radii
+
+        vertices = np.hstack((x_coords.reshape(-1, 1), y_coords.reshape(-1, 1)))
 
         all_points = []
 
@@ -151,7 +137,6 @@ class SearchTrajectory(Trajectory):
         insert_extra: bool,
         rover_position: np.ndarray,
         enable_inward: bool,
-        inward_begin: float,
     ):
         """
         Generates a square spiral search pattern around a center position, assumes rover is at the center position
@@ -174,16 +159,14 @@ class SearchTrajectory(Trajectory):
 
         # debugging help
         print("Distance from center:", distance_from_center)
-        inward_spiral = False
 
         # we do an inward spiral if we are more than half the coverage radius away from the center
         if enable_inward:
             # we pass this to the gen_spiral_coordinates function to indicate the necessity of an inward spiral
-            inward_spiral = True
             # as we want to do an inward spiral, we need to find the closest point from the rover
             # to the start radius. Multiplies the unit vector with the coverage radius and offsets with the center
             closest_radius_point = (
-                center + (direction_from_center / np.linalg.norm(direction_from_center)) * inward_begin
+                center + (direction_from_center / np.linalg.norm(direction_from_center)) * coverage_radius
             )
 
             # finds the vector, in this case, to go to the closest radius point. move_to_center is misleading...help
@@ -193,12 +176,12 @@ class SearchTrajectory(Trajectory):
             # we calculate this using the direction from the closest_radius_point to the center
             starting_angle = np.arctan2(closest_radius_point[1] - center[1], closest_radius_point[0] - center[0])
             zero_centered_spiral_r2 = cls.gen_spiral_coordinates(
-                inward_begin,
+                coverage_radius,
                 distance_between_spirals,
                 segments_per_rotation,
                 insert_extra,
-                inward_spiral,
-                inward_begin,
+                enable_inward,
+                coverage_radius,
                 starting_angle,
             )
 
@@ -210,13 +193,11 @@ class SearchTrajectory(Trajectory):
                 distance_between_spirals,
                 segments_per_rotation,
                 insert_extra,
-                inward_spiral,
+                enable_inward,
                 distance_from_center,
                 starting_angle,
             )
 
-        # just for debugging
-        print("Inward true/false: ", inward_spiral)
 
         # numpy broadcasting magic to add center to each row of the spiral coordinates
         spiral_coordinates_r2 = zero_centered_spiral_r2 + center

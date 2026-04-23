@@ -333,7 +333,6 @@ class CostmapSearchState(State):
                 rover_position=context.rover.get_pose_in_map().translation()[0:2],
                 # the below two parameters are used in trajectory.py for generating inward spirals
                 enable_inward=enable_inward,
-                inward_begin=context.course.current_waypoint().coverage_radius,
             )
 
         self.spiral_traj.cur_pt = context.course.last_spiral_point

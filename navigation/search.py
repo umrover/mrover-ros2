@@ -104,7 +104,6 @@ class SearchState(State):
                 # max_segment_length=context.node.get_parameter("search.max_segment_length").value,
                 rover_position=rover_position,
                 enable_inward=enable_inward,
-                inward_begin=context.coverage_radius_in,
             )
         else:  # water bottle, mallet, or rock pick
             SearchState.trajectory = SearchTrajectory.spiral_traj(
@@ -117,6 +116,5 @@ class SearchState(State):
                 # max_segment_length=context.node.get_parameter("search.max_segment_length").value,
                 rover_position=rover_position,
                 enable_inward=enable_inward,
-                inward_begin=context.coverage_radius_in,
             )
         self.prev_target_pos_in_map = None
