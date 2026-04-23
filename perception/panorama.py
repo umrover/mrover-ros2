@@ -128,8 +128,8 @@ class Panorama(Node):
         # extract xyzrgb fields
         # get every tenth point to make the pc sparser
         # TODO: dtype hard-coded to float32
-        if not self.recorded_one_pc:
-            self.get_logger().info("HERE!")
+        if self.recorded_one_pc:
+            self.get_logger().info("Grabbing a PC")
             self.current_pc = pc_msg
             self.arr_pc = np.frombuffer(bytearray(pc_msg.data), dtype=np.float32).reshape(
                 pc_msg.height * pc_msg.width, int(pc_msg.point_step / 4)
@@ -148,21 +148,9 @@ class Panorama(Node):
                 [0, 0, 0, 1]
             ])
 
-            # self.get_logger().info(f"Angle: {(np.mod(np.arctan2(rotation[1][0], rotation[0][0]), (2 * np.pi))) * (180/np.pi)}")
-            # pass
-
             rotated_pc = self.rotate_pc(rotation, self.arr_pc)
             self.stitched_pc = np.vstack((self.stitched_pc, rotated_pc))
 
-            # # Record Image
-            # self.current_img = cv2.cvtColor(
-            #     np.frombuffer(img_msg.data, dtype=np.uint8).reshape(img_msg.height, img_msg.width, 4), cv2.COLOR_RGBA2RGB
-            # )
-
-            # if self.current_img is not None:
-            #     self.img_list.append(copy.deepcopy(self.current_img))
-            #     self.img_dirs.append(np.mod(np.arctan2(rotation[1][0], rotation[0][0]), (2 * np.pi)))
-            # self.recorded_one_pc = True
             self.pc_rate.sleep()
 
     def synced_img_gimbal_callback(self, img: Image, gimbal: ControllerState):
