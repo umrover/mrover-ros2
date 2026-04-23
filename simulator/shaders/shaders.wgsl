@@ -78,7 +78,7 @@ struct OutFragment {
     out.normalInCamera = (su.worldToCamera * mixedNormal + vec4(1, 1, 1, 0)) / 2;
     out.normalInCamera.a = 1;
     // Ambient
-    let ambientStrength = 0.2;
+    let ambientStrength = 0.4;
     let ambient = ambientStrength * su.lightColor;
     // Diffuse
     let lightDirInWorld = normalize(su.lightInWorld - in.positionInWorld);
@@ -186,7 +186,7 @@ fn GeometrySmith(normal: vec3f, viewDir: vec3f, lightDir: vec3f, roughness: f32)
     let PI = 3.14159265;
     let NdotL = max(dot(mixedNormal, lightDirInWorld), 0.0);
     let Lo = (kD * albedo / PI + specular) * radiance * NdotL;
-    let ambient = 0.3 * albedo * ao;
+    let ambient = 0.4 * albedo * ao;
 
     var color = ambient + Lo;
     // gamma correct

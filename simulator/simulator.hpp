@@ -251,7 +251,7 @@ namespace mrover {
         bool mRenderModels = true;
         bool mRenderWireframeColliders = false;
         bool mPbrEnabled = false;
-        bool mNormalMapEnabled = true;
+        bool mNormalMapEnabled = false;
         double mPublishHammerDistanceThreshold = 3;
         double mPublishBottleDistanceThreshold = 3;
         float mCameraLockSlerp = 0.02;
