@@ -47,6 +47,7 @@ namespace mrover {
         double mPositionMultiplier{1};
         uint8_t mServoID{};
         uint8_t mAtLimit{0};
+        ServoPosition mBootPosition;
 
         rclcpp::Node::SharedPtr mNode;
         rclcpp::Publisher<msg::ServoConfigure>::SharedPtr mConfigPub;
@@ -107,14 +108,15 @@ namespace mrover {
             mStateSub = mNode->create_subscription<msg::ServoOut>(
                     std::format("/u2d2/{}/out", mServoName), 10,
                     [this](msg::ServoOut::ConstSharedPtr const& msg) -> void {
-                        if (!mHasReceivedData) {
-                            mPositionOffsetTicks = 0;
-                            mHasReceivedData = true;
-                        }
                         mCachedRawPosition = msg->position;
                         mCachedRawVelocity = msg->velocity;
                         mCachedRawCurrent = msg->current;
                         mCachedStatus = static_cast<U2D2::Status>(msg->status);
+
+                        if (!mHasReceivedData) {
+                            mHasReceivedData = true;
+                            setCurrentPosition(mBootPosition);
+                        }
                     });
 
             int servoID;
@@ -276,7 +278,6 @@ namespace mrover {
             double velocityLimit;
             double profileAcceleration;
             double profileVelocity;
-            double bootPosition;
 
             std::vector<ParameterWrapper> parameters = {
                     {std::format("{}.mode", mServoName), modeString, std::string("optimal")},
@@ -293,7 +294,7 @@ namespace mrover {
                     {std::format("{}.velocity_limit", mServoName), velocityLimit, 445.0},
                     {std::format("{}.profile_acceleration", mServoName), profileAcceleration, 100.0},
                     {std::format("{}.profile_velocity", mServoName), profileVelocity, 100.0},
-                    {std::format("{}.boot_position", mServoName), bootPosition, 0.0}};
+                    {std::format("{}.boot_position", mServoName), mBootPosition, 0.0}};
 
             ParameterWrapper::declareParameters(mNode.get(), parameters);
 
@@ -331,9 +332,6 @@ namespace mrover {
 
             mAdjustedReverseLimit = static_cast<int64_t>((reverseLimit / TAU) * SERVO_TICKS);
             mAdjustedForwardLimit = static_cast<int64_t>((forwardLimit / TAU) * SERVO_TICKS);
-
-            // set current position after boot
-            setCurrentPosition(bootPosition);
         }
 
         [[nodiscard]] auto isWithinLimits(int64_t targetTicks) const -> bool {
