@@ -3,7 +3,7 @@
 set -euxo pipefail
 
 # determine the build profile
-build_profile=Debug
+build_profile=RelWithDebInfo
 
 if [[ "$#" -ne "0" ]]; then
 	if [[ "$#" -eq "1" && ( "$1" == "Release" || "$1" == "RelWithDebInfo" || "$1" == "Debug" ) ]]; then

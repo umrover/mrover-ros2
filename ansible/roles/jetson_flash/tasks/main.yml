@@ -1,0 +1,123 @@
+- name: Ensure Jetson Is Connected In Recovery Mode
+  shell:
+    cmd: lsusb | grep "7023 NVIDIA"
+
+- name: Get Jetson Drivers
+  get_url:
+    url: https://developer.nvidia.com/downloads/embedded/l4t/r{{ jetson_linux_version_major }}_release_v{{ jetson_linux_version_minor }}.{{ jetson_linux_version_patch }}/release/Jetson_Linux_r{{ jetson_linux_version_major }}.{{ jetson_linux_version_minor }}.{{ jetson_linux_version_patch }}_aarch64.tbz2
+    dest: /tmp/jetson-driver-package.tbz2
+
+- name: Get Jetson Root File System
+  get_url:
+    url: https://developer.nvidia.com/downloads/embedded/l4t/r{{ jetson_linux_version_major }}_release_v{{ jetson_linux_version_minor }}.{{ jetson_linux_version_patch }}/release/Tegra_Linux_Sample-Root-Filesystem_r{{ jetson_linux_version_major }}.{{ jetson_linux_version_minor }}.{{ jetson_linux_version_patch }}_aarch64.tbz2
+    dest: /tmp/jetson-rootfs-package.tbz2
+
+- name: Get Jetson Cross Compiler
+  get_url:
+    url: https://developer.nvidia.com/downloads/embedded/l4t/r{{ jetson_linux_version_major }}_release_v3.0/toolchain/aarch64--glibc--stable-2022.08-1.tar.bz2
+    dest: /tmp/jetson-cross-compiler.tbz2
+
+- name: Get PCAN Drivers
+  get_url:
+    url: https://www.peak-system.com/fileadmin/media/linux/files/peak-linux-driver-{{ pcan_version_major }}.{{ pcan_version_minor }}.{{ pcan_version_patch }}.tar.gz
+    dest: /tmp/pcan-drivers.tbz2
+
+- name: Create Jetson Directory
+  file:
+    path: /tmp/jetson-flash/Linux_for_Tegra/rootfs/
+    state: directory
+
+- name: Unzip Driver Tarball
+  unarchive:
+    src: /tmp/jetson-driver-package.tbz2
+    dest: /tmp/jetson-flash
+    creates: /tmp/jetson-flash/Linux_for_Tegra/bootloader
+
+- name: Unzip RootFs Tarball
+  become: true
+  unarchive:
+    src: /tmp/jetson-rootfs-package.tbz2
+    dest: /tmp/jetson-flash/Linux_for_Tegra/rootfs/
+    creates: /tmp/jetson-flash/Linux_for_Tegra/rootfs/bin
+
+- name: Unzip Cross Compiler
+  unarchive:
+    src: /tmp/jetson-cross-compiler.tbz2
+    dest: /tmp
+    creates: /tmp/aarch64--glibc--stable-2022.08-1
+
+- name: Unzip PCAN Drivers
+  unarchive:
+    src: /tmp/pcan-drivers.tbz2
+    dest: /tmp
+    creates: /tmp/peak-linux-driver-{{ pcan_version_major }}.{{ pcan_version_minor }}.{{ pcan_version_patch }}
+
+- name: Remove PCAN Testing
+  # TODO(john): this is not the best solution
+  replace:
+    path: /tmp/peak-linux-driver-{{ pcan_version_major }}.{{ pcan_version_minor }}.{{ pcan_version_patch }}/Makefile
+    regexp: "\\@\\$\\(MAKE\\) -C test \\$1"
+    replace: ""
+
+- name: Run L4T Flash Prerequisites
+  become: true
+  shell:
+    chdir: /tmp/jetson-flash/Linux_for_Tegra
+    cmd: ./tools/l4t_flash_prerequisites.sh
+
+- name: Run Apply Binaries
+  become: true
+  shell:
+    chdir: /tmp/jetson-flash/Linux_for_Tegra
+    cmd: ./apply_binaries.sh
+
+- name: Install Apt Packages
+  become: true
+  apt:
+    cache_valid_time: 604800
+    state: latest
+    name:
+      - git
+      - build-essential
+      - bc
+      - flex
+      - bison
+      - libssl-dev
+      - zstd
+
+- name: Sync Kernel Sources
+  shell:
+    chdir: /tmp/jetson-flash/Linux_for_Tegra/source
+    cmd: ./source_sync.sh -k -t jetson_{{ jetson_linux_version_major }}.{{ jetson_linux_version_minor }}.{{ jetson_linux_version_patch }}
+    creates: /tmp/jetson-flash/Linux_for_Tegra/source/kernel/kernel-jammy-src
+
+- name: Sync Kernel Configuration
+  synchronize:
+    src: files/config
+    dest: /tmp/jetson-flash/Linux_for_Tegra/source/kernel/kernel-jammy-src/.config
+
+- name: Sync Kernel Configuration With Oldconfig
+  synchronize:
+    src: files/config
+    dest: /tmp/jetson-flash/Linux_for_Tegra/source/kernel/kernel-jammy-src/arch/arm64/configs/oldconfig
+
+- name: Build Jetson Kernel
+  become: true
+  command: ./ansible/roles/jetson_flash/files/scripts/build_jetson_kernel.sh
+  failed_when: False # this is not ideal
+  args:
+    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
+    # no creates here because it is always desired to recompile the kernel if running this ansible
+
+- name: Build PCAN
+  become: true
+  command: ./ansible/roles/jetson_flash/files/scripts/build_pcan_drivers.sh {{ pcan_version_major }} {{ pcan_version_minor }} {{ pcan_version_patch }}
+  args:
+    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
+    # no creates here because we always rebuild
+
+- name: Flash Jetson
+  become: true
+  command: ./flash.sh jetson-agx-orin-devkit internal
+  args:
+    chdir: /tmp/jetson-flash/Linux_for_Tegra

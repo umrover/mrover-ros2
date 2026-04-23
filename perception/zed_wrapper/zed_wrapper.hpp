@@ -34,6 +34,8 @@ namespace mrover {
         LoopProfiler mLoopProfilerUpdate;
 
         // Params
+        std::string mDeviceName{};
+
         int mSerialNumber{};
         int mGrabTargetFps{};
         int mDepthConfidence{};

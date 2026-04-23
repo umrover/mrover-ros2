@@ -1,0 +1,4 @@
+bool clear_faults
+bool reset
+---
+bool success

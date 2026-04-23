@@ -18,6 +18,7 @@
 #include <mrover/msg/ik.hpp>
 #include <mrover/msg/position.hpp>
 #include <mrover/msg/velocity.hpp>
+#include <mrover/msg/controller_state.hpp>
 #include <mrover/srv/ik_mode.hpp>
 
 #include <lie.hpp>

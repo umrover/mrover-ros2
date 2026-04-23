@@ -70,6 +70,7 @@ namespace mrover {
             ImGui::Checkbox("Render Wireframe Colliders (C)", &mRenderWireframeColliders);
             ImGui::Checkbox("Use PBR Rendering", &mPbrEnabled);
             ImGui::Checkbox("Use Normal Mapping", &mNormalMapEnabled);
+            ImGui::Checkbox("Render Skybox", &mRenderSkybox);
             ImGui::Text("Camera Locked: %s", mCameraInRoverTarget ? "True" : "False");
             ImGui::SliderFloat("Camera Lock Lerp", &mCameraLockSlerp, 0.0f, 1.0f);
 

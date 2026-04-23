@@ -1,18 +1,20 @@
-import asyncio
+import argparse
 import sys
-import os
+from pathlib import Path
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import msgpack
+import traceback
 
-# Import ROS manager - add current directory to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from backend.ros_manager import get_node
+# Import Singleton ROS Manager
+sys.path.insert(0, str(Path(__file__).parent))
+from backend.managers.ros import get_node, get_logger
+from backend.logging_config import LOGGING_CONFIG
 
-# Import Routers
+# API Routers
 from backend.routes.waypoints import router as waypoints_router
 from backend.routes.recordings import router as recordings_router
 from backend.routes.auton import router as auton_router
@@ -20,13 +22,14 @@ from backend.routes.chassis import router as chassis_router
 from backend.routes.science import router as science_router
 from backend.routes.arm import router as arm_router
 
-# Import Handlers
+# Websocket Handlers
 from backend.ws.arm_ws import ArmHandler
 from backend.ws.drive_ws import DriveHandler
 from backend.ws.chassis_ws import ChassisHandler
 from backend.ws.nav_ws import NavHandler
 from backend.ws.science_ws import ScienceHandler
 from backend.ws.latency_ws import LatencyHandler
+from backend.ws.auton_ws import AutonHandler
 
 app = FastAPI()
 
@@ -34,7 +37,6 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -47,11 +49,9 @@ app.include_router(chassis_router)
 app.include_router(science_router)
 app.include_router(arm_router)
 
-@app.get("/api/health")
-def health():
-    return {"status": "ok"}
+MAX_WS_PAYLOAD_BYTES = 1024 * 1024  # 1 MB
 
-# WebSocket Handlers ... (Keep existing logic)
+# WebSocket Handlers
 async def handle_websocket(websocket: WebSocket, ConsumerClass):
     await websocket.accept()
     handler = ConsumerClass(websocket)
@@ -59,70 +59,67 @@ async def handle_websocket(websocket: WebSocket, ConsumerClass):
         await handler.setup()
         while True:
             data = await websocket.receive_bytes()
+            if len(data) > MAX_WS_PAYLOAD_BYTES:
+                get_logger().warning(f"Oversized payload ({len(data)} bytes) on {handler.endpoint}, dropping")
+                continue
             unpacked = msgpack.unpackb(data, raw=False)
             await handler.handle_message(unpacked)
     except WebSocketDisconnect:
-        print(f"Client disconnected from {handler.endpoint}")
+        pass
     except Exception as e:
-        print(f"Error in {handler.endpoint} handler: {e}")
-        import traceback
-        traceback.print_exc()
+        get_logger().error(f"Error in {handler.endpoint} handler: {e}\n{traceback.format_exc()}")
     finally:
         await handler.cleanup()
 
-@app.websocket("/arm")
+@app.websocket("/ws/arm")
 async def ws_arm(websocket: WebSocket):
     await handle_websocket(websocket, ArmHandler)
 
-@app.websocket("/drive")
+@app.websocket("/ws/drive")
 async def ws_drive(websocket: WebSocket):
     await handle_websocket(websocket, DriveHandler)
 
-@app.websocket("/chassis")
+@app.websocket("/ws/chassis")
 async def ws_chassis(websocket: WebSocket):
     await handle_websocket(websocket, ChassisHandler)
 
-@app.websocket("/nav")
+@app.websocket("/ws/nav")
 async def ws_nav(websocket: WebSocket):
     await handle_websocket(websocket, NavHandler)
 
-@app.websocket("/science")
+@app.websocket("/ws/science")
 async def ws_science(websocket: WebSocket):
     await handle_websocket(websocket, ScienceHandler)
 
-@app.websocket("/latency")
+@app.websocket("/ws/latency")
 async def ws_latency(websocket: WebSocket):
     await handle_websocket(websocket, LatencyHandler)
 
+@app.websocket("/ws/auton")
+async def ws_auton(websocket: WebSocket):
+    await handle_websocket(websocket, AutonHandler)
+
 if __name__ == "__main__":
-    # Initialize ROS
-    node = get_node()
-    print("ROS2 node initialized")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--serve-static", action="store_true")
+    parser.add_argument("--port", type=int, default=8000)
+    args = parser.parse_args()
 
-    # Serve Frontend Static Files (Production Mode)
-    if os.getenv("SERVE_STATIC_FRONTEND") == "true":
-        frontend_dist = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend/dist")
-        if os.path.exists(frontend_dist):
-            print(f"Serving static files from {frontend_dist}")
-            # Serve files from assets directory first (css, js, images)
-            app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
-            
-            # Catch-all route for SPA (Single Page Application) support
-            # This must be the last route registered.
-            @app.get("/{full_path:path}")
-            async def serve_spa(full_path: str):
-                # Check if the requested path is for a file that exists in the root of dist
-                file_path = os.path.join(frontend_dist, full_path)
-                if os.path.exists(file_path) and os.path.isfile(file_path):
-                    return FileResponse(file_path)
-                    
-                # Otherwise, serve index.html for SPA routing (e.g., /about -> index.html)
-                return FileResponse(os.path.join(frontend_dist, "index.html"))
-        else:
-            print("Frontend 'dist' directory not found. Not serving static files.")
-    else:
-        print("SERVE_STATIC_FRONTEND is not 'true'. Running in API-only mode (no static file serving).")
+    get_node()
 
-    # Run Uvicorn
-    port = int(os.getenv("PORT", "8000"))
-    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
+    from backend.database import ensure_initialized
+    ensure_initialized()
+
+    if args.serve_static:
+        dist = Path(__file__).resolve().parent / "frontend" / "dist"
+        index = dist / "index.html"
+        app.mount("/assets", StaticFiles(directory=dist / "assets"), name="assets")
+
+        @app.get("/{full_path:path}")
+        async def serve_spa(full_path: str):
+            requested = (dist / full_path).resolve()
+            if requested.is_relative_to(dist) and requested.is_file():
+                return FileResponse(requested)
+            return FileResponse(index)
+
+    uvicorn.run(app, host="0.0.0.0", port=args.port, log_config=LOGGING_CONFIG)

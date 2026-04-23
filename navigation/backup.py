@@ -8,7 +8,7 @@ from . import state, waypoint
 from .context import Context
 from .trajectory import Trajectory
 from .coordinate_utils import is_high_cost_point
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, PoseStamped, Point
 
 
 class BackupState(State):
@@ -24,15 +24,20 @@ class BackupState(State):
     def on_enter(self, context: Context) -> None:
         context.node.get_logger().info("Entered Backup State")
 
-        if context.rover.path_history is None or len(context.rover.path_history) < 1:
+        if context.rover.path_history is None or len(context.rover.path_history.poses) < 1:
             context.node.get_logger().warn("Cannot backup: no path history")
             return
 
-        reverse_deque = context.rover.path_history.copy()
-        reverse_deque.reverse()
-        reverse_path = np.array(reverse_deque)
+        path_history_poses: list[PoseStamped] = context.rover.path_history.poses
+        path_history_poses.reverse()
+        path_history_coordinates = np.array(
+            [
+                [pose_stamped.pose.position.x, pose_stamped.pose.position.y, pose_stamped.pose.position.z]
+                for pose_stamped in path_history_poses
+            ]
+        )
 
-        self.backtrack_traj = Trajectory(reverse_path)
+        self.backtrack_traj = Trajectory(path_history_coordinates)
         self.dist_traveled = 0.0
         self.start_time = context.node.get_clock().now()
 
@@ -56,7 +61,7 @@ class BackupState(State):
         return waypoint.WaypointState()
 
     def on_loop(self, context: Context) -> State:
-        if context.rover.path_history is None or self.backtrack_traj.done():
+        if len(context.rover.path_history.poses) == 0 or self.backtrack_traj.done():
             return self.next_state(context)
 
         if context.node.get_clock().now() - self.start_time < Duration(seconds=self.WAIT_TIME):

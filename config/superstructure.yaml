@@ -6,6 +6,6 @@
 
 superstructure:
   ros__parameters:
-    input_topics: [ 'sim_cmd_vel', 'nav_cmd_vel', 'joystick_cmd_vel', 'controller_cmd_vel']
+    input_topics: [ 'sim_cmd_vel', 'nav_cmd_vel', 'joystick_vel_cmd', 'controller_vel_cmd']
     timeout: 0.5
     rate: 30.0

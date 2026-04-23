@@ -9,102 +9,150 @@
 #include <units.hpp>
 
 #include <mrover/msg/controller_state.hpp>
-#include <mrover/msg/position.hpp>
-#include <mrover/msg/throttle.hpp>
-#include <mrover/msg/velocity.hpp>
-#include <mrover/srv/adjust_motor.hpp>
-#include <sensor_msgs/msg/joint_state.hpp>
+#include <mrover/srv/servo_position.hpp>
 
-#include "motor_library/brushed.hpp"
+#include <servo.hpp>
+#include <u2d2.hpp>
 
 namespace mrover {
 
     class MastGimbalHWBridge : public rclcpp::Node {
 
     public:
-        MastGimbalHWBridge() : rclcpp::Node{"mast_gimbal_hw_bridge"} {
+        MastGimbalHWBridge() : Node{"mast_gimbal_hw_bridge"} {
             // all initialization is done in the init() function to allow for the usage of shared_from_this()
         }
 
         auto init() -> void {
+            // parse parameters
+            std::vector<ParameterWrapper> parameters = {
+                    {"u2d2_device", mU2D2DeviceName, "/dev/u2d2"},
+            };
+            ParameterWrapper::declareParameters(this, parameters);
 
-            for (auto const& name: mMotorNames) {
-                mMotors[name] = std::make_shared<BrushedController>(shared_from_this(), "jetson", name);
+            mU2D2 = U2D2::getSharedInstance();
+            if (mU2D2->init(mU2D2DeviceName) != U2D2::Status::Success) {
+                RCLCPP_FATAL(this->get_logger(), "failed to initialize U2D2 on %s", mU2D2DeviceName.c_str());
+                rclcpp::shutdown();
             }
 
-            mThrottleSub = create_subscription<msg::Throttle>("mast_gimbal_throttle_cmd", 1, [this](msg::Throttle::ConstSharedPtr const& msg) { processThrottleCmd(msg); });
+            for (std::string const& servoName: mServoNames) {
+                auto servo = std::make_shared<Servo>(shared_from_this(), servoName);
+                mServos.insert_or_assign(servoName, servo);
+                mControllerState.names.push_back(servoName);
+            }
 
-            mPublishDataTimer = create_wall_timer(
+            mTimerGroup = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+            mServiceGroup = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+
+            auto subOptions = rclcpp::SubscriptionOptions();
+            subOptions.callback_group = mServiceGroup;
+
+            mPositionService = this->create_service<srv::ServoPosition>(
+                    "gimbal_servo",
+                    [this](srv::ServoPosition::Request::SharedPtr const& req, srv::ServoPosition::Response::SharedPtr const& res) {
+                        servoPositionCallback(req, res);
+                    },
+                    rmw_qos_profile_services_default,
+                    mServiceGroup);
+
+            mPublishTimer = this->create_wall_timer(
                     std::chrono::milliseconds(100),
-                    [this]() { publishDataCallback(); });
-            mJointDataPub = create_publisher<sensor_msgs::msg::JointState>("mast_gimbal_joint_data", 1);
-            mControllerStatePub = create_publisher<msg::ControllerState>("mast_gimbal_controller_state", 1);
+                    [this]() { publishDataCallback(); },
+                    mTimerGroup);
 
-            mJointData.name = mMotorNames;
-            mJointData.position.resize(mMotorNames.size());
-            mJointData.velocity.resize(mMotorNames.size());
-            mJointData.effort.resize(mMotorNames.size());
-
-            mControllerState.name = mMotorNames;
-            mControllerState.state.resize(mMotorNames.size());
-            mControllerState.error.resize(mMotorNames.size());
-            mControllerState.limit_hit.resize(mMotorNames.size());
+            mGimbalStatePub = this->create_publisher<msg::ControllerState>("gimbal_controller_state", 10);
         }
 
     private:
-        std::vector<std::string> const mMotorNames = {"mast_gimbal_pitch", "mast_gimbal_yaw"};
-        std::unordered_map<std::string, std::shared_ptr<BrushedController>> mMotors;
+        std::vector<std::string> mServoNames = {"gimbal_pitch", "gimbal_yaw"};
+        std::unordered_map<std::string, std::shared_ptr<Servo>> mServos;
 
-        rclcpp::Subscription<msg::Throttle>::SharedPtr mThrottleSub;
+        std::shared_ptr<U2D2> mU2D2;
+        std::string mU2D2DeviceName;
 
-        rclcpp::TimerBase::SharedPtr mPublishDataTimer;
-        rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr mJointDataPub;
-        rclcpp::Publisher<msg::ControllerState>::SharedPtr mControllerStatePub;
-        sensor_msgs::msg::JointState mJointData;
+        rclcpp::CallbackGroup::SharedPtr mServiceGroup;
+        rclcpp::CallbackGroup::SharedPtr mTimerGroup;
+
+        rclcpp::Service<srv::ServoPosition>::SharedPtr mPositionService;
+        rclcpp::Publisher<msg::ControllerState>::SharedPtr mGimbalStatePub;
+        rclcpp::TimerBase::SharedPtr mPublishTimer;
         msg::ControllerState mControllerState;
 
+        auto servoPositionCallback(srv::ServoPosition::Request::SharedPtr const& req, srv::ServoPosition::Response::SharedPtr const& res) -> void {
+            size_t const n = req->names.size();
+            res->at_tgts.resize(n, false);
 
-        auto processThrottleCmd(msg::Throttle::ConstSharedPtr const& msg) -> void {
-            if (msg->names.size() != msg->throttles.size()) {
-                RCLCPP_ERROR(get_logger(), "Name count and value count mismatched!");
-                return;
+            for (size_t i = 0; i < n; ++i) {
+                if (auto const it = mServos.find(req->names[i]); it != mServos.end()) {
+                    it->second->setPosition(req->positions[i], Servo::ServoMode::Limited);
+                }
             }
 
-            for (std::size_t i = 0; i < msg->names.size(); ++i) {
-                std::string const& name = msg->names[i];
-                Dimensionless const& throttle = msg->throttles[i];
-                mMotors[name]->setDesiredThrottle(throttle);
+            auto const start = this->now();
+            auto const timeout = rclcpp::Duration::from_seconds(3);
+            rclcpp::Rate loop_rate(10);
+
+            while ((this->now() - start) < timeout) {
+                bool all_done = true;
+
+                for (size_t i = 0; i < n; ++i) {
+                    auto it = mServos.find(req->names[i]);
+                    if (it == mServos.end()) continue;
+
+                    auto const status = it->second->getTargetStatus();
+                    bool const reached = status == U2D2::Status::Success;
+                    res->at_tgts[i] = reached;
+
+                    if (!reached) all_done = false;
+                }
+
+                if (all_done) return;
+                loop_rate.sleep();
             }
+
+            RCLCPP_WARN(this->get_logger(), "servo position timeout reached!");
         }
 
-
         auto publishDataCallback() -> void {
-            mJointData.header.stamp = get_clock()->now();
+            mControllerState.names.clear();
+            mControllerState.positions.clear();
+            mControllerState.velocities.clear();
+            mControllerState.currents.clear();
+            mControllerState.errors.clear();
+            mControllerState.states.clear();
+            mControllerState.limits_hit.clear();
 
-            for (size_t i = 0; i < mMotorNames.size(); ++i) {
-                auto const& name = mMotorNames[i];
-                auto const& motor = mMotors[name];
+            for (auto const& [name, servo]: mServos) {
+                double pos, vel, cur;
+                U2D2::Status const status = servo->getPosition(pos);
+                servo->getVelocity(vel);
+                servo->getCurrent(cur);
 
-                mJointData.position[i] = {motor->getPosition().get()};
-                mJointData.velocity[i] = {motor->getVelocity().get()};
-                mJointData.effort[i] = {motor->getEffort()};
-
-                mControllerState.state[i] = {motor->getState()};
-                mControllerState.error[i] = {motor->getErrorState()};
-                mControllerState.limit_hit[i] = {motor->getLimitsHitBits()};
+                mControllerState.names.push_back(name);
+                mControllerState.positions.push_back(static_cast<float>(pos));
+                mControllerState.velocities.push_back(static_cast<float>(vel));
+                mControllerState.currents.push_back(static_cast<float>(cur));
+                mControllerState.errors.push_back(U2D2::stringifyStatus(status));
+                mControllerState.states.push_back(U2D2::stringifyStatus(servo->getTargetStatus()));
+                mControllerState.limits_hit.push_back(servo->getLimitStatus());
             }
 
-            mJointDataPub->publish(mJointData);
-            mControllerStatePub->publish(mControllerState);
+            mGimbalStatePub->publish(mControllerState);
         }
     };
 } // namespace mrover
 
-auto main(int argc, char** argv) -> int {
+
+auto main(int const argc, char** argv) -> int {
     rclcpp::init(argc, argv);
-    auto mast_gimbal_hw_bridge = std::make_shared<mrover::MastGimbalHWBridge>();
+    auto const mast_gimbal_hw_bridge = std::make_shared<mrover::MastGimbalHWBridge>();
     mast_gimbal_hw_bridge->init();
-    rclcpp::spin(mast_gimbal_hw_bridge);
+
+    rclcpp::executors::MultiThreadedExecutor executor;
+    executor.add_node(mast_gimbal_hw_bridge);
+    executor.spin();
+
     rclcpp::shutdown();
     return EXIT_SUCCESS;
 }

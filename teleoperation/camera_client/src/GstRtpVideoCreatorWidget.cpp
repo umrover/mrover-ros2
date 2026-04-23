@@ -9,7 +9,6 @@ inline auto fromStringView(std::string_view view) -> QString {
 GstRtpVideoCreatorWidget::GstRtpVideoCreatorWidget(QWidget* parent) : QWidget(parent) {
     mMainLayout = new QVBoxLayout(this);
 
-    // Form
     mFormWidget = new QWidget(this);
     mFormLayout = new QFormLayout(mFormWidget);
     mNameLineEdit = new QLineEdit(mFormWidget);
@@ -23,13 +22,11 @@ GstRtpVideoCreatorWidget::GstRtpVideoCreatorWidget(QWidget* parent) : QWidget(pa
     mFormLayout->addRow(tr("&Codec*"), mVideoCodecComboBox);
     mMainLayout->addWidget(mFormWidget);
 
-    // Error
     mErrorLabel = new QLabel(this);
     mErrorLabel->setStyleSheet("QLabel { color : red; }");
     mErrorLabel->setVisible(false);
     mMainLayout->addWidget(mErrorLabel);
 
-    // Submit
     mSubmitButton = new QPushButton(tr("Submit"), this);
     connect(mSubmitButton, &QPushButton::clicked, this, &GstRtpVideoCreatorWidget::onSubmitClicked);
     mMainLayout->addWidget(mSubmitButton);
@@ -50,7 +47,7 @@ void GstRtpVideoCreatorWidget::onCreateResult(bool success, QString const& error
     setWaiting(false);
 }
 
-void GstRtpVideoCreatorWidget::setWaiting(bool waiting) {
+auto GstRtpVideoCreatorWidget::setWaiting(bool waiting) -> void {
     mSubmitButton->setEnabled(!waiting);
     mNameLineEdit->setEnabled(!waiting);
     mPortLineEdit->setEnabled(!waiting);
@@ -73,7 +70,7 @@ void GstRtpVideoCreatorWidget::onSubmitClicked() {
     }
 
     gst::video::Codec const codec = gst::video::getCodecFromStringView(mVideoCodecComboBox->currentText().toStdString());
-    std::string const pipeline = gst::video::createRtpToRawSrc(static_cast<std::uint16_t>(port), codec);
+    std::string const pipeline = createRtpToRawSrc(static_cast<std::uint16_t>(port), codec);
 
     std::string name;
     if (mNameLineEdit->text().isEmpty()) {

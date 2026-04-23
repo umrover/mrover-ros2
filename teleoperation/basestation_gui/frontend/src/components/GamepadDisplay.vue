@@ -1,5 +1,5 @@
 <template>
-  <div ref="container"></div>
+  <div ref="container" class="w-full h-full"></div>
 </template>
 
 <script setup lang="ts">
@@ -9,6 +9,7 @@ import { GamepadDisplay } from 'gamepad-display'
 const props = defineProps<{
   axes: number[]
   buttons: number[]
+  layout?: 'default' | 'horizontal'
 }>()
 
 const container = ref<HTMLElement | null>(null)
@@ -16,7 +17,9 @@ let display: GamepadDisplay | null = null
 
 onMounted(() => {
   if (container.value) {
-    display = new GamepadDisplay(container.value)
+    display = new GamepadDisplay(container.value, {
+      layout: props.layout ?? 'default'
+    })
 
     if (props.axes && props.buttons) {
       display.update(props.axes, props.buttons)
@@ -30,8 +33,7 @@ watch(
     if (display && props.axes && props.buttons) {
       display.update(props.axes, props.buttons)
     }
-  },
-  { deep: true }
+  }
 )
 
 onUnmounted(() => {

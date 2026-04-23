@@ -18,26 +18,55 @@ export interface RootState {
 }
 
 export interface ControllerStateMessage {
-  type: 'arm_state' | 'sp_state' | 'drive_left_state' | 'drive_right_state' | 'gimbal_state' | 'sp_controller_state';
+  type: 'arm_state' | 'sp_state' | 'drive_state' | 'gimbal_state' | 'sp_controller_state' | 'gimbal_controller_state';
   header?: {
     stamp: { sec: number; nanosec: number };
     frame_id: string;
   };
-  name: string[];
-  state: string[];
-  error: string[];
-  position: number[];
-  velocity: number[];
-  current: number[];
-  limit_hit: boolean[];
+  names: string[];
+  states: string[];
+  errors: string[];
+  positions: number[];
+  velocities: number[];
+  currents: number[];
+  limits_hit: number[];
 }
 
 export interface JointStateMessage {
   type: 'drive_left_joint_state' | 'drive_right_joint_state' | 'gimbal_joint_state';
-  name: string[];
-  position: number[];
-  velocity: number[];
+  names: string[];
+  positions: number[];
+  velocities: number[];
   effort: number[];
+}
+
+export interface OccupancyGridMessage {
+  type: 'costmap';
+  header: {
+    seq: number;
+    stamp: number;
+    frame_id: number;
+  };
+  info: {
+    map_load_time: number;
+    resolution: number;
+    width: number;
+    height: number;
+    origin: {
+      position: {
+        x: number;
+        y: number;
+        z: number;
+      };
+      orientation: {
+        x: number;
+        y: number;
+        z: number;
+        w: number;
+      };
+    };
+  };
+  data: number[];
 }
 
 export interface OrientationMessage {
@@ -56,26 +85,6 @@ export interface CmdVelMessage {
   type: 'cmd_vel';
   linear: { x: number; y: number; z: number };
   angular: { x: number; y: number; z: number };
-}
-
-export interface OxygenMessage {
-  type: 'oxygen';
-  percent: number;
-}
-
-export interface UVMessage {
-  type: 'uv';
-  uv_index: number;
-}
-
-export interface TemperatureMessage {
-  type: 'temperature';
-  temperature: number;
-}
-
-export interface HumidityMessage {
-  type: 'humidity';
-  relative_humidity: number;
 }
 
 export interface SPHumidityMessage {
@@ -100,12 +109,12 @@ export interface SPUVMessage {
 
 export interface SPOzoneMessage {
   type: 'sp_ozone';
-  ozone: number;
+  ppb: number;
 }
 
 export interface SPCO2Message {
   type: 'sp_co2';
-  co2: number;
+  percent: number;
 }
 
 export interface SPPressureMessage {
@@ -113,4 +122,22 @@ export interface SPPressureMessage {
   pressure: number;
 }
 
-export type ScienceMessage = OxygenMessage | UVMessage | TemperatureMessage | HumidityMessage | SPHumidityMessage | SPTemperatureMessage | SPOxygenMessage | SPUVMessage | SPOzoneMessage | SPCO2Message | SPPressureMessage;
+export interface SPSensorStateMessage {
+  type: 'sp_sensor_state';
+  uv_state: boolean;
+  thp_state: boolean;
+  oxygen_state: boolean;
+  ozone_state: boolean;
+  co2_state: boolean;
+}
+
+export interface ThrottleMessage {
+  header?: {
+    stamp: { sec: number; nanosec: number };
+    frame_id: string;
+  }; 
+  names: string[];
+  throttles: number[];
+}
+
+export type ScienceMessage = OxygenMessage | UVMessage | TemperatureMessage | HumidityMessage | SPHumidityMessage | SPTemperatureMessage | SPOxygenMessage | SPUVMessage | SPOzoneMessage | SPCO2Message | SPPressureMessage | SPSensorStateMessage;

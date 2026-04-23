@@ -1,127 +1,121 @@
 <template>
-  <div class="d-flex flex-column gap-2 p-3">
-    <h4 class="m-0">Latency Benchmark</h4>
-
-    <div class="d-flex gap-2 align-items-center flex-wrap">
-      <button
-        class="btn btn-sm"
-        :class="isRunning ? 'btn-danger' : 'btn-success'"
-        @click="toggleBenchmark"
+  <div class="flex flex-col gap-2 p-4 text-sm">
+    <div class="flex justify-between items-center">
+      <h5 class="font-semibold">Latency Benchmark</h5>
+      <div
+        class="flex items-center gap-2 px-2 py-1 rounded"
+        :class="connectionStatus === 'connected' ? 'bg-cmd-success-subtle' : 'bg-cmd-danger-subtle'"
       >
-        {{ isRunning ? 'Stop' : 'Start' }} Benchmark
-      </button>
-      <button
-        class="btn btn-sm btn-secondary"
-        @click="resetStats"
-      >
-        Reset
-      </button>
-      <div class="d-flex align-items-center gap-1">
-        <input
-          v-model.number="frequency"
-          type="number"
-          class="form-control form-control-sm"
-          style="width: 70px"
-          min="1"
-          max="1000"
-        />
-        <span class="text-nowrap">Hz</span>
+        <span
+          class="rounded-full inline-block"
+          style="width: 8px; height: 8px;"
+          :class="connectionStatus === 'connected' ? 'bg-cmd-success' : 'bg-cmd-danger'"
+        ></span>
+        <span
+          class="text-sm font-medium"
+          :class="connectionStatus === 'connected' ? 'text-cmd-success' : 'text-cmd-danger'"
+        >{{ connectionStatus }}</span>
       </div>
     </div>
 
-    <div class="d-flex flex-column gap-1">
-      <h6 class="mb-1 mt-2">Connection</h6>
-      <div class="d-flex justify-content-between">
-        <span>Status:</span>
-        <span :class="connectionStatus === 'connected' ? 'text-success' : 'text-danger'">
-          {{ connectionStatus }}
-        </span>
+    <div class="flex gap-2 items-center flex-wrap">
+      <button
+        class="cmd-btn cmd-btn-sm flex items-center gap-1"
+        :class="isRunning ? 'cmd-btn-danger' : 'cmd-btn-success'"
+        data-testid="pw-latency-start"
+        @click="toggleBenchmark"
+      >
+        <i :class="isRunning ? 'bi bi-stop-fill' : 'bi bi-play-fill'"></i>
+        {{ isRunning ? 'Stop' : 'Start' }}
+      </button>
+      <button class="cmd-btn cmd-btn-sm cmd-btn-secondary flex items-center gap-1" data-testid="pw-latency-reset" @click="resetStats">
+        <i class="bi bi-arrow-counterclockwise"></i> Reset
+      </button>
+      <div class="flex items-center gap-1">
+        <input
+          v-model.number="frequency"
+          type="number"
+          class="cmd-form-control cmd-form-control-sm text-center"
+          data-testid="pw-latency-freq"
+          style="width: 65px"
+          min="1"
+          max="1000"
+        />
+        <span class="text-muted">Hz</span>
       </div>
+    </div>
 
-      <h6 class="mb-1 mt-2">Latency</h6>
-      <div class="d-flex justify-content-between">
-        <span>Current RTT:</span>
-        <span class="font-monospace">{{ currentLatency }} ms</span>
+    <div class="cmd-panel">
+      <div class="p-4">
+        <div class="uppercase text-muted font-semibold text-sm mb-2">Latency</div>
+        <div class="flex justify-between py-1 bg-cmd-primary-subtle rounded px-2 mb-1">
+          <span>Current RTT</span>
+          <span class="font-mono font-medium">{{ currentLatency }} ms</span>
+        </div>
+        <div class="flex justify-between py-1">
+          <span>Average</span>
+          <span class="font-mono">{{ averageLatency }} ms</span>
+        </div>
+        <div class="flex justify-between py-1">
+          <span>Min / Max</span>
+          <span class="font-mono">{{ minLatency }} / {{ maxLatency }} ms</span>
+        </div>
+        <div class="flex justify-between py-1">
+          <span>Std Dev</span>
+          <span class="font-mono">{{ stdDevLatency }} ms</span>
+        </div>
+        <div class="flex justify-between py-1">
+          <span>P95 / P99</span>
+          <span class="font-mono">{{ p95Latency }} / {{ p99Latency }} ms</span>
+        </div>
       </div>
-      <div class="d-flex justify-content-between">
-        <span>Average RTT:</span>
-        <span class="font-monospace">{{ averageLatency }} ms</span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>Min RTT:</span>
-        <span class="font-monospace">{{ minLatency }} ms</span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>Max RTT:</span>
-        <span class="font-monospace">{{ maxLatency }} ms</span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>Std Dev:</span>
-        <span class="font-monospace">{{ stdDevLatency }} ms</span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>P95 RTT:</span>
-        <span class="font-monospace">{{ p95Latency }} ms</span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>P99 RTT:</span>
-        <span class="font-monospace">{{ p99Latency }} ms</span>
-      </div>
+    </div>
 
-      <h6 class="mb-1 mt-2">Throughput</h6>
-      <div class="d-flex justify-content-between">
-        <span>Target Frequency:</span>
-        <span class="font-monospace">{{ frequency }} Hz</span>
+    <div class="cmd-panel">
+      <div class="p-4">
+        <div class="uppercase text-muted font-semibold text-sm mb-2">Throughput</div>
+        <div class="flex justify-between py-1">
+          <span>Frequency</span>
+          <span class="font-mono" :class="actualFrequencyColor">{{ actualFrequency }} / {{ frequency }} Hz</span>
+        </div>
+        <div class="flex justify-between py-1">
+          <span>Messages/sec</span>
+          <span class="font-mono">{{ messagesPerSecond }}</span>
+        </div>
+        <div class="flex justify-between py-1">
+          <span>Upload</span>
+          <span class="font-mono">{{ uploadThroughput }} KB/s</span>
+        </div>
+        <div class="flex justify-between py-1">
+          <span>Download</span>
+          <span class="font-mono">{{ downloadThroughput }} KB/s</span>
+        </div>
+        <div class="flex justify-between py-1">
+          <span>Total TX / RX</span>
+          <span class="font-mono">{{ totalBytesSent }} / {{ totalBytesReceived }} KB</span>
+        </div>
       </div>
-      <div class="d-flex justify-content-between">
-        <span>Actual Frequency:</span>
-        <span class="font-monospace" :class="actualFrequencyColor">{{ actualFrequency }} Hz</span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>Messages/sec:</span>
-        <span class="font-monospace">{{ messagesPerSecond }}</span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>Upload:</span>
-        <span class="font-monospace">{{ uploadThroughput }} KB/s</span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>Download:</span>
-        <span class="font-monospace">{{ downloadThroughput }} KB/s</span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>Total Sent:</span>
-        <span class="font-monospace">{{ totalBytesSent }} KB</span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>Total Received:</span>
-        <span class="font-monospace">{{ totalBytesReceived }} KB</span>
-      </div>
+    </div>
 
-      <h6 class="mb-1 mt-2">Reliability</h6>
-      <div class="d-flex justify-content-between">
-        <span>Packets Sent:</span>
-        <span class="font-monospace">{{ packetsSent }}</span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>Packets Received:</span>
-        <span class="font-monospace">{{ packetsReceived }}</span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>Packets Lost:</span>
-        <span class="font-monospace" :class="packetsLost > 0 ? 'text-danger' : 'text-success'">
-          {{ packetsLost }}
-        </span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>Packet Loss:</span>
-        <span class="font-monospace" :class="parseFloat(packetLossRate) > 0 ? 'text-warning' : 'text-success'">
-          {{ packetLossRate }}%
-        </span>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>Out of Order:</span>
-        <span class="font-monospace">{{ outOfOrderCount }}</span>
+    <div class="cmd-panel">
+      <div class="p-4">
+        <div class="uppercase text-muted font-semibold text-sm mb-2">Reliability</div>
+        <div class="flex justify-between py-1">
+          <span>Packets</span>
+          <span class="font-mono">{{ packetsReceived }} / {{ packetsSent }}</span>
+        </div>
+        <div class="flex justify-between py-1">
+          <span>Lost</span>
+          <span class="font-mono" :class="packetsLost > 0 ? 'text-cmd-danger' : 'text-cmd-success'">
+            {{ packetsLost }} ({{ packetLossRate }}%)
+          </span>
+        </div>
+        <div class="flex justify-between py-1">
+          <span>Out of Order</span>
+          <span class="font-mono" :class="outOfOrderCount > 0 ? 'text-cmd-warning' : ''">
+            {{ outOfOrderCount }}
+          </span>
+        </div>
       </div>
     </div>
   </div>
@@ -172,7 +166,6 @@ const connectionStatus = ref('disconnected')
 let flashInTimer: number | undefined
 let flashOutTimer: number | undefined
 
-// Helpers for store updates to keep UI in sync
 const updateStoreStatus = (status: string) => {
   websocketStore.setConnectionStatus('latency', status)
 }
@@ -180,7 +173,7 @@ const updateStoreStatus = (status: string) => {
 const updateStoreActivityIn = () => {
   websocketStore.setLastIncomingActivity('latency', Date.now())
   websocketStore.setFlashIn('latency', true)
-  
+
   if (flashInTimer !== undefined) {
     clearTimeout(flashInTimer)
   }
@@ -350,9 +343,9 @@ const packetLossRate = computed(() => {
 const actualFrequencyColor = computed(() => {
   const diff = Math.abs(actualFrequency.value - frequency.value)
   const percentDiff = (diff / frequency.value) * 100
-  if (percentDiff > 20) return 'text-danger'
-  if (percentDiff > 10) return 'text-warning'
-  return 'text-success'
+  if (percentDiff > 20) return 'text-cmd-danger'
+  if (percentDiff > 10) return 'text-cmd-warning'
+  return 'text-cmd-success'
 })
 
 watch(frequency, () => {
@@ -545,9 +538,3 @@ onUnmounted(() => {
   }
 })
 </script>
-
-<style scoped>
-.font-monospace {
-  font-family: 'Courier New', monospace;
-}
-</style>
