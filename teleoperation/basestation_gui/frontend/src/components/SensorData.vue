@@ -1,79 +1,72 @@
 <template>
-  <div class="d-flex flex-row gap-2 justify-content-between align-items-start pb-1">
-    <h3>Sensor Data</h3>
-    <div class="d-flex flex-row gap-2">
-      <button class="btn btn-primary text-nowrap" @click="showModal = true">
+  <div class="flex items-center gap-2 mb-2">
+    <h4 class="component-header">Sensor<br>Data</h4>
+    <div class="flex flex-col gap-1">
+      <button class="cmd-btn cmd-btn-outline-control cmd-btn-sm" data-testid="pw-sensor-view-all" @click="showModal = true">
         View All
       </button>
-      <button class="btn btn-secondary text-nowrap" @click="downloadCSV">
+      <button class="cmd-btn cmd-btn-outline-secondary cmd-btn-sm" data-testid="pw-sensor-csv-btn" @click="downloadCSV">
         <i class="bi bi-download"></i> CSV
       </button>
     </div>
+    <div class="flex gap-2 grow">
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.oxygen_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
+        <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">Oxygen</span>
+        <span class="font-bold">{{ sensor_data.sp_oxygen.toFixed(2) }}<span class="text-muted ml-1 text-sm">%</span></span>
+      </div>
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.uv_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
+        <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">UV</span>
+        <span class="font-bold">{{ sensor_data.sp_uv.toFixed(2) }}<span class="text-muted ml-1 text-sm">idx</span></span>
+      </div>
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.thp_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
+        <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">Humidity</span>
+        <span class="font-bold">{{ sensor_data.sp_humidity.toFixed(2) }}<span class="text-muted ml-1 text-sm">%</span></span>
+      </div>
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.thp_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
+        <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">Temp</span>
+        <span class="font-bold">{{ sensor_data.sp_temp.toFixed(2) }}<span class="text-muted ml-1 text-sm">&deg;C</span></span>
+      </div>
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.ozone_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
+        <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">Ozone</span>
+        <span class="font-bold">{{ sensor_data.sp_ozone.toFixed(2) }}<span class="text-muted ml-1 text-sm">ppb</span></span>
+      </div>
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.co2_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
+        <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">CO2</span>
+        <span class="font-bold">{{ sensor_data.sp_co2.toFixed(2) }}<span class="text-muted ml-1 text-sm">ppm</span></span>
+      </div>
+      <div class="flex-1 flex flex-col items-center rounded p-1" :class="sensor_data.sensor_states.thp_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
+        <span class="font-semibold uppercase text-muted text-[0.65rem] tracking-[0.05em]">Pressure</span>
+        <span class="font-bold">{{ sensor_data.sp_pressure.toFixed(0) }}<span class="text-muted ml-1 text-sm">Pa</span></span>
+      </div>
+    </div>
   </div>
-  <div class="d-flex align-items-start">
-    <table class="table table-bordered table-sm mx-3 mb-0">
-      <thead>
-        <tr class="table-success">
-          <th>SP Sensors</th>
-          <th>Oxygen (%)</th>
-          <th>UV (index)</th>
-          <th>Humidity (%)</th>
-          <th>Temp (°C)</th>
-          <th>Ozone (ppb)</th>
-          <th>CO2 (Rel. %)</th>
-          <th>Pressure (Pa)</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <th class="table-secondary">Live Data</th>
-          <td>{{ sensor_data.sp_oxygen.toFixed(2) }}</td>
-          <td>{{ sensor_data.sp_uv.toFixed(2) }}</td>
-          <td>{{ sensor_data.sp_humidity.toFixed(2) }}</td>
-          <td>{{ sensor_data.sp_temp.toFixed(2) }}</td>
-          <td>{{ sensor_data.sp_ozone.toFixed(2) }}</td>
-          <td>{{ sensor_data.sp_co2.toFixed(2) }}</td>
-          <td>{{ sensor_data.sp_pressure.toFixed(2) }}</td>
-        </tr>
-      </tbody>
-    </table>
 
-  </div>
-
-  <div class="d-flex flex-column gap-2 mt-2 flex-fill" style="min-height: 0">
-    <div class="d-flex gap-2" style="flex: 1; min-height: 0">
-      <div class="bg-theme-card border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
-        <div class="d-flex justify-content-between align-items-center mb-1">
-          <strong style="font-size: 14px; color: var(--text-primary)">Humidity (%)</strong>
-        </div>
-        <div style="flex: 1; min-height: 0">
-          <canvas id="chart0"></canvas>
+  <div class="flex flex-col gap-2 grow min-h-0">
+    <div class="flex gap-2 flex-1 min-h-0">
+      <div class="cmd-panel flex flex-col flex-1 min-w-0 p-1">
+        <span class="cmd-data-label mb-1">Humidity (%)</span>
+        <div class="grow min-h-0">
+          <canvas ref="chartRef0"></canvas>
         </div>
       </div>
-      <div class="bg-theme-card border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
-        <div class="d-flex justify-content-between align-items-center mb-1">
-          <strong style="font-size: 14px; color: var(--text-primary)">UV Index</strong>
-        </div>
-        <div style="flex: 1; min-height: 0">
-          <canvas id="chart1"></canvas>
+      <div class="cmd-panel flex flex-col flex-1 min-w-0 p-1">
+        <span class="cmd-data-label mb-1">UV Index</span>
+        <div class="grow min-h-0">
+          <canvas ref="chartRef1"></canvas>
         </div>
       </div>
     </div>
-    <div class="d-flex gap-2" style="flex: 1; min-height: 0">
-      <div class="bg-theme-card border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
-        <div class="d-flex justify-content-between align-items-center mb-1">
-          <strong style="font-size: 14px; color: var(--text-primary)">Ozone (ppb)</strong>
-        </div>
-        <div style="flex: 1; min-height: 0">
-          <canvas id="chart2"></canvas>
+    <div class="flex gap-2 flex-1 min-h-0">
+      <div class="cmd-panel flex flex-col flex-1 min-w-0 p-1">
+        <span class="cmd-data-label mb-1">Ozone (ppb)</span>
+        <div class="grow min-h-0">
+          <canvas ref="chartRef2"></canvas>
         </div>
       </div>
-      <div class="bg-theme-card border rounded p-2 d-flex flex-column" style="flex: 1; min-width: 0">
-        <div class="d-flex justify-content-between align-items-center mb-1">
-          <strong style="font-size: 14px; color: var(--text-primary)">Pressure (Pa)</strong>
-        </div>
-        <div style="flex: 1; min-height: 0">
-          <canvas id="chart3"></canvas>
+      <div class="cmd-panel flex flex-col flex-1 min-w-0 p-1">
+        <span class="cmd-data-label mb-1">Pressure (Pa)</span>
+        <div class="grow min-h-0">
+          <canvas ref="chartRef3"></canvas>
         </div>
       </div>
     </div>
@@ -89,16 +82,22 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
-import { storeToRefs } from 'pinia'
 import Chart from 'chart.js/auto'
 import type { SensorData } from '../types/sensors'
-import type { ScienceMessage } from '@/types/websocket'
+import type {
+  SPOxygenMessage,
+  SPUVMessage,
+  SPTemperatureMessage,
+  SPHumidityMessage,
+  SPOzoneMessage,
+  SPCO2Message,
+  SPPressureMessage,
+} from '@/types/websocket'
 import SensorModal from '@/components/SensorModal.vue'
 
 const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
 
 const showModal = ref(false)
 
@@ -110,46 +109,45 @@ const sensor_data = ref<SensorData>({
   sp_ozone: 0,
   sp_co2: 0,
   sp_pressure: 0,
+  sensor_states: {
+    uv_state: false,
+    thp_state: false,
+    oxygen_state: false,
+    ozone_state: false,
+    co2_state: false,
+  },
 })
 const sensor_history = ref<number[][]>([
-  Array(20).fill(0), // sp_oxygen
-  Array(20).fill(0), // sp_humidity
-  Array(20).fill(0), // sp_temp
-  Array(20).fill(0), // sp_uv
-  Array(20).fill(0), // sp_ozone
-  Array(20).fill(0), // sp_co2
-  Array(20).fill(0), // sp_pressure
+  Array(20).fill(0),
+  Array(20).fill(0),
+  Array(20).fill(0),
+  Array(20).fill(0),
+  Array(20).fill(0),
+  Array(20).fill(0),
+  Array(20).fill(0),
 ])
 const timeCounter = ref(0)
 
-const scienceMessage = computed(() => messages.value['science'])
-
-watch(scienceMessage, (msg) => {
-  if (!msg) return
-  const scienceMsg = msg as ScienceMessage;
-  switch (scienceMsg.type) {
-    case 'sp_oxygen':
-      sensor_data.value.sp_oxygen = scienceMsg.percent
-      break
-    case 'sp_uv':
-      sensor_data.value.sp_uv = scienceMsg.uv_index
-      break
-    case 'sp_temp':
-      sensor_data.value.sp_temp = scienceMsg.temperature
-      break
-    case 'sp_humidity':
-      sensor_data.value.sp_humidity = scienceMsg.relative_humidity
-      break
-    case 'sp_ozone':
-      sensor_data.value.sp_ozone = scienceMsg.ppb
-      break
-    case 'sp_co2':
-      sensor_data.value.sp_co2 = scienceMsg.ppm
-      break
-    case 'sp_pressure':
-      sensor_data.value.sp_pressure = scienceMsg.pressure
-      break
-  }
+websocketStore.onMessage<SPOxygenMessage>('science', 'sp_oxygen', (msg) => {
+  sensor_data.value.sp_oxygen = msg.percent
+})
+websocketStore.onMessage<SPUVMessage>('science', 'sp_uv', (msg) => {
+  sensor_data.value.sp_uv = msg.uv_index
+})
+websocketStore.onMessage<SPTemperatureMessage>('science', 'sp_temp', (msg) => {
+  sensor_data.value.sp_temp = msg.temperature
+})
+websocketStore.onMessage<SPHumidityMessage>('science', 'sp_humidity', (msg) => {
+  sensor_data.value.sp_humidity = msg.relative_humidity
+})
+websocketStore.onMessage<SPOzoneMessage>('science', 'sp_ozone', (msg) => {
+  sensor_data.value.sp_ozone = msg.ppb
+})
+websocketStore.onMessage<SPCO2Message>('science', 'sp_co2', (msg) => {
+  sensor_data.value.sp_co2 = msg.percent
+})
+websocketStore.onMessage<SPPressureMessage>('science', 'sp_pressure', (msg) => {
+  sensor_data.value.sp_pressure = msg.pressure
 })
 
 const resetHistory = () => {
@@ -183,6 +181,12 @@ const downloadCSV = () => {
   anchor.click()
 }
 
+const chartRef0 = ref<HTMLCanvasElement | null>(null)
+const chartRef1 = ref<HTMLCanvasElement | null>(null)
+const chartRef2 = ref<HTMLCanvasElement | null>(null)
+const chartRef3 = ref<HTMLCanvasElement | null>(null)
+const chartRefs = [chartRef0, chartRef1, chartRef2, chartRef3]
+
 const charts: Chart[] = []
 let updateInterval: number | undefined = undefined
 
@@ -196,77 +200,49 @@ const chartConfigs = [
 const maxHistory = 20
 
 onMounted(() => {
-  function waitForElm(selector: string): Promise<Element | null> {
-    return new Promise(resolve => {
-      const elm = document.querySelector(selector);
-      if (elm) {
-        return resolve(elm);
-      }
-
-      const observer = new MutationObserver(() => {
-        const elm = document.querySelector(selector);
-        if (elm) {
-          observer.disconnect();
-          resolve(elm);
-        }
-      });
-
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-      });
-    });
-  }
-
   for (let i = 0; i < chartConfigs.length; ++i) {
-    waitForElm(`#chart${i}`).then(canvasElement => {
-      if (canvasElement instanceof HTMLCanvasElement) {
-        const config = chartConfigs[i];
-        if (!config) return;
+    const canvasElement = chartRefs[i]?.value
+    if (!canvasElement) continue
+    const config = chartConfigs[i]
+    if (!config) continue
 
-        const datasets = config.datasets.map(ds => ({
-          label: ds.label,
-          data: Array(20).fill(0),
-          fill: false,
-          borderColor: ds.color,
-          tension: 0.1,
-        }));
+    const datasets = config.datasets.map(ds => ({
+      label: ds.label,
+      data: Array(20).fill(0),
+      fill: false,
+      borderColor: ds.color,
+      tension: 0.1,
+    }))
 
-        charts[i] = new Chart(canvasElement, {
-          type: 'line',
-          data: {
-            labels: Array.from({ length: 20 }, (_, i) => i),
-            datasets: datasets,
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: false,
-            plugins: {
-              title: {
-                display: false
-              },
-              legend: {
-                display: false
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: false,
-                ticks: {
-                  font: { size: 10 },
-                  maxTicksLimit: 8,
-                  precision: 2,
-                }
-              },
-              x: {
-                ticks: { font: { size: 10 } }
-              }
+    charts[i] = new Chart(canvasElement, {
+      type: 'line',
+      data: {
+        labels: Array.from({ length: 20 }, (_, i) => i),
+        datasets: datasets,
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: {
+          title: { display: false },
+          legend: { display: false },
+        },
+        scales: {
+          y: {
+            beginAtZero: false,
+            ticks: {
+              font: { size: 10 },
+              maxTicksLimit: 8,
+              precision: 2,
             },
           },
-        });
-      }
-    });
+          x: {
+            ticks: { font: { size: 10 } },
+          },
+        },
+      },
+    })
   }
 
   updateInterval = window.setInterval(() => {

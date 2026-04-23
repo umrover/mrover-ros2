@@ -1,5 +1,5 @@
 <template>
-  <div class="position-relative w-100 h-100 map">
+  <div class="relative w-full h-full map">
     <l-map
       @ready="handleMapReady"
       ref="mapRef"
@@ -10,6 +10,7 @@
     >
       <l-control-scale :imperial="false" />
       <l-tile-layer
+        :key="online ? 'online' : 'offline'"
         ref="tileLayer"
         :url="online ? onlineUrl : offlineUrl"
         :attribution="attribution"
@@ -19,7 +20,7 @@
       <l-marker ref="roverRef" :lat-lng="odomLatLng" :icon="locationIcon" />
       <l-marker ref="droneRef" :lat-lng="droneLatLng" :icon="droneIcon" />
 
-      <div v-for="(waypoint, index) in waypointList" :key="index">
+      <div v-for="(waypoint, index) in waypointListForMap" :key="index">
         <l-marker
           :lat-lng="waypoint.latLng"
           :icon="getWaypointIcon(waypoint, index)"
@@ -30,30 +31,14 @@
         </l-marker>
       </div>
 
-      <l-polyline :lat-lngs="[...odomPath]" :color="'blue'" />
-      <l-polyline :lat-lngs="[...dronePath]" :color="'green'" />
+      <l-polyline :lat-lngs="odomPath" :color="'blue'" />
+      <l-polyline :lat-lngs="dronePath" :color="'green'" />
     </l-map>
-    <div class="controls px-2 py-2 position-absolute d-flex flex-column gap-2 top-0 end-0 m-2 rounded border shadow-sm" style="background-color: rgba(255, 255, 255, 0.9)">
-      <div class="d-flex align-items-center gap-2">
-        <input
-          v-model="online"
-          type="checkbox"
-          class="form-check-input p-0"
-        />
-        <p class="mb-0 text-body" style="font-size: 14px; line-height: 18px">
-          Online
-        </p>
-      </div>
-      <button @click="centerOnRover" class="btn btn-sm btn-light border" style="font-size: 14px; padding: 4px 8px">
-        Center
+    <div class="overlay-toolbar right-0">
+      <button class="overlay-toolbar-btn" :class="{ 'overlay-toolbar-btn-active': online }" @click="online = !online">
+        Online
       </button>
-    </div>
-
-    <div class="odometry" v-if="odom">
-      <p>
-        Lat: {{ odom.latitude_deg.toFixed(6) }} N, Lon:
-        {{ odom.longitude_deg.toFixed(6) }} E
-      </p>
+      <button @click="centerOnRover" class="overlay-toolbar-btn">Center</button>
     </div>
   </div>
 </template>
@@ -73,14 +58,14 @@ import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import 'leaflet-rotatedmarker'
 import type { LeafletMouseEvent } from 'leaflet'
-import type { StoreWaypoint } from '@/types/waypoints'
-import type { Odom, NavMessage } from '@/types/coordinates'
-import { ref, computed, watch } from 'vue'
+import type { MapWaypoint } from '@/types/waypoints'
+import type { DroneWaypointMessage } from '@/types/coordinates'
+import { ref, shallowRef, triggerRef, computed, watch } from 'vue'
 import { useRoverMap } from '@/composables/useRoverMap'
+import { useWebsocketStore } from '@/stores/websocket'
 
 const erdStore = useErdStore()
-const { waypointList, highlightedWaypoint, searchWaypoint } = storeToRefs(erdStore)
-const { setClickPoint } = erdStore
+const { waypointListForMap, highlightedWaypoint, searchWaypoint } = storeToRefs(erdStore)
 
 const {
   center,
@@ -89,9 +74,6 @@ const {
   roverRef,
   odomPath,
   odomLatLng,
-  rover_latitude_deg,
-  rover_longitude_deg,
-  rover_bearing_deg,
   onlineUrl,
   offlineUrl,
   onlineTileOptions,
@@ -102,7 +84,6 @@ const {
   onMapReady,
   centerOnRover,
   getMap,
-  navMessage,
 } = useRoverMap({
   maxOdomCount: 1000,
   drawFrequency: 1,
@@ -113,15 +94,8 @@ const drone_latitude_deg = ref(0)
 const drone_longitude_deg = ref(0)
 const droneRef = ref<{ leafletObject: L.Marker } | null>(null)
 let droneMarker: L.Marker | null = null
-const droneCount = ref(0)
-const dronePath = ref<L.LatLng[]>([])
+const dronePath = shallowRef<L.LatLng[]>([])
 const circle = ref<L.Circle | null>(null)
-
-const odom = computed<Odom>(() => ({
-  latitude_deg: rover_latitude_deg.value,
-  longitude_deg: rover_longitude_deg.value,
-  bearing_deg: rover_bearing_deg.value,
-}))
 
 const droneIcon = L.icon({
   iconUrl: '/drone_marker.svg',
@@ -154,14 +128,13 @@ const handleMapReady = () => {
 }
 
 const getClickedLatLon = (e: LeafletMouseEvent) => {
-  console.log(e)
-  setClickPoint({
+  erdStore.clickPoint = {
     lat: e.latlng.lat,
     lon: e.latlng.lng,
-  })
+  }
 }
 
-const getWaypointIcon = (waypoint: StoreWaypoint, index: number) => {
+const getWaypointIcon = (waypoint: MapWaypoint, index: number) => {
   if (index === highlightedWaypoint.value) {
     return highlightedWaypointIcon
   } else if (waypoint.drone) {
@@ -171,13 +144,10 @@ const getWaypointIcon = (waypoint: StoreWaypoint, index: number) => {
   }
 }
 
-watch(navMessage, (msg) => {
-  if (!msg) return
-  const navMsg = msg as NavMessage
-  if (navMsg.type === 'drone_waypoint') {
-    drone_latitude_deg.value = navMsg.latitude
-    drone_longitude_deg.value = navMsg.longitude
-  }
+const websocketStore = useWebsocketStore()
+websocketStore.onMessage<DroneWaypointMessage>('nav', 'drone_waypoint', (msg) => {
+  drone_latitude_deg.value = msg.latitude
+  drone_longitude_deg.value = msg.longitude
 })
 
 watch([drone_latitude_deg, drone_longitude_deg], () => {
@@ -186,15 +156,11 @@ watch([drone_latitude_deg, drone_longitude_deg], () => {
     droneMarker.setLatLng(latLng)
   }
 
-  droneCount.value++
-  if (droneCount.value % 1 === 0) {
-    if (dronePath.value.length > 1000) {
-      dronePath.value = [...dronePath.value.slice(1), latLng]
-    } else {
-      dronePath.value = [...dronePath.value, latLng]
-    }
-    droneCount.value = 0
+  if (dronePath.value.length > 1000) {
+    dronePath.value.shift()
   }
+  dronePath.value.push(latLng)
+  triggerRef(dronePath)
 })
 
 watch(searchWaypoint, (newIndex) => {
@@ -206,7 +172,7 @@ watch(searchWaypoint, (newIndex) => {
     circle.value = null
     return
   }
-  const waypoint = waypointList.value[newIndex]
+  const waypoint = waypointListForMap.value[newIndex]
   if (!waypoint) return
 
   if (!circle.value) {

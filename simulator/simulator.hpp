@@ -94,6 +94,7 @@ namespace mrover {
             boost::container::small_vector<Uniform<ModelUniforms>, 2> visualUniforms;
             boost::container::small_vector<Uniform<ModelUniforms>, 2> collisionUniforms;
             Clock::time_point lastUpdate = Clock::now();
+            bool isHolding = false;
         };
 
         // Bullet Resources
@@ -271,8 +272,8 @@ namespace mrover {
 
         bool mPublishIk = true;
         bool mIkMode = true; // true = position control, false = velocity control
-        Eigen::Vector3f mIkTarget{0.31, 0.0f, -0.139};
-        float mIkPitch{1.077};
+        Eigen::Vector3f mIkTarget{0.293, 0.0f, -0.331};
+        float mIkPitch{0.970};
         float mIkRoll{0};
         // TODO: switch this to a twist
         Eigen::Vector3f mIkVel{0, 0, 0};

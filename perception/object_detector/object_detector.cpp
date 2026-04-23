@@ -13,7 +13,7 @@ namespace mrover {
                 {"decrement_weight", mObjDecrementWeight, 1},
                 {"hitcount_threshold", mObjHitThreshold, 5},
                 {"hitcount_max", mObjMaxHitcount, 10},
-                {"model_name", modelName, "Large-Dataset"},
+                {"model_name", modelName, "mock-mission"},
                 {"model_score_threshold", mModelScoreThreshold, 0.75},
                 {"model_nms_threshold", mModelNMSThreshold, 0.5},
                 {"object_detector_debug", mDebug, true}};
@@ -41,7 +41,7 @@ namespace mrover {
     StereoObjectDetector::StereoObjectDetector(rclcpp::NodeOptions const& options) : ObjectDetectorBase(options) {
         RCLCPP_INFO_STREAM(get_logger(), "Creating Stereo Object Detector...");
 
-        mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("/stereo_object_detector/debug_img", 1);
+        mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("/stereo_object_detector/annotated_img", 1);
 
         mSensorSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
             StereoObjectDetector::pointCloudCallback(msg);
@@ -56,7 +56,7 @@ namespace mrover {
 
         ParameterWrapper::declareParameters(this, params);
 
-        mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("/long_range_object_detector/debug_img", 1);
+        mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("/long_range_object_detector/annotated_img", 1);
 
         mSensorSub = create_subscription<sensor_msgs::msg::Image>("/long_range_cam/image", 1, [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
             ImageObjectDetector::imageCallback(msg);
