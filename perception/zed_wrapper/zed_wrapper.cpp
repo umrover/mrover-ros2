@@ -1,4 +1,5 @@
 #include "zed_wrapper.hpp"
+#include <rclcpp/logging.hpp>
 #include <stdexcept>
 
 namespace mrover {
@@ -41,17 +42,21 @@ namespace mrover {
                     {"depth_maximum_distance", mDepthMaximumDistance, 12.0},
                     {"use_builtin_visual_odom", mUseBuiltinPosTracking, false},
                     {"use_pose_smoothing", mUsePoseSmoothing, true},
+                    {"publish_right_frame", mPublishRight, false},
                     {"use_area_memory", mUseAreaMemory, true}};
 
             ParameterWrapper::declareParameters(this, params);
 
             // Publishers
-            mRightImgPub = create_publisher<sensor_msgs::msg::Image>(std::format("/{}/right/image", mDeviceName), 1);
+            if (mPublishRight) {
+                mRightImgPub = create_publisher<sensor_msgs::msg::Image>(std::format("/{}/right/image", mDeviceName), 1);
+                mRightCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>(std::format("/{}/right/camera_info", mDeviceName), 1); 
+            }
+
             mLeftImgPub = create_publisher<sensor_msgs::msg::Image>(std::format("/{}/left/image", mDeviceName), 1);
             mImuPub = create_publisher<sensor_msgs::msg::Imu>(std::format("/{}_imu/data_raw", mDeviceName), 1);
             mMagPub = create_publisher<sensor_msgs::msg::MagneticField>(std::format("/{}_imu/mag", mDeviceName), 1);
             mPcPub = create_publisher<sensor_msgs::msg::PointCloud2>(std::format("/{}/left/points", mDeviceName), 1);
-            mRightCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>(std::format("/{}/right/camera_info", mDeviceName), 1);
             mLeftCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>(std::format("/{}/left/camera_info", mDeviceName), 1);
             mMagHeadingPub = create_publisher<mrover::msg::Heading>(std::format("/{}_imu/mag_heading", mDeviceName), 1);
 
@@ -143,10 +148,12 @@ namespace mrover {
                 mLoopProfilerGrab.measureEvent(std::format("{}_grab", mDeviceName));
 
                 // Retrieval has to happen on the same thread as grab so that the image and point cloud are synced
-                if (mZed.retrieveImage(mGrabMeasures.rightImage, sl::VIEW::RIGHT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
-                    throw std::runtime_error(std::format("{} failed to retrieve right image", mDeviceName));
+                if (mPublishRight) {
+                    if (mZed.retrieveImage(mGrabMeasures.rightImage, sl::VIEW::RIGHT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
+                        throw std::runtime_error(std::format("{} failed to retrieve right image", mDeviceName));
 
-                mLoopProfilerGrab.measureEvent(std::format("{}_retrieve_right_image", mDeviceName));
+                    mLoopProfilerGrab.measureEvent(std::format("{}_retrieve_right_image", mDeviceName));
+                }
 
                 // Only left set is used for processing
                 if (mDepthEnabled) {
@@ -265,12 +272,14 @@ namespace mrover {
                     mLeftImgPub->publish(std::move(leftImgMsg));
                     mLoopProfilerUpdate.measureEvent("pub_left");
 
-                    auto rightImgMsg = std::make_unique<sensor_msgs::msg::Image>();
-                    fillImageMessage(mPcMeasures.rightImage, rightImgMsg);
-                    rightImgMsg->header.frame_id = std::format("{}_right_camera_optical_frame", mDeviceName);
-                    rightImgMsg->header.stamp = mPcMeasures.time;
-                    mRightImgPub->publish(std::move(rightImgMsg));
-                    mLoopProfilerUpdate.measureEvent("pub_right");
+                    if (mPublishRight) {
+                        auto rightImgMsg = std::make_unique<sensor_msgs::msg::Image>();
+                        fillImageMessage(mPcMeasures.rightImage, rightImgMsg);
+                        rightImgMsg->header.frame_id = std::format("{}_right_camera_optical_frame", mDeviceName);
+                        rightImgMsg->header.stamp = mPcMeasures.time;
+                        mRightImgPub->publish(std::move(rightImgMsg));
+                        mLoopProfilerUpdate.measureEvent("pub_right");
+                    }
                 }
 
                 if (mDepthEnabled) {
@@ -284,10 +293,14 @@ namespace mrover {
                 fillCameraInfoMessages(calibration, mImageResolution, leftCamInfoMsg, rightCamInfoMsg);
                 leftCamInfoMsg.header.frame_id = std::format("{}_left_camera_optical_frame", mDeviceName);
                 leftCamInfoMsg.header.stamp = mPcMeasures.time;
-                rightCamInfoMsg.header.frame_id = std::format("{}_right_camera_optical_frame", mDeviceName);
-                rightCamInfoMsg.header.stamp = mPcMeasures.time;
                 mLeftCamInfoPub->publish(leftCamInfoMsg);
-                mRightCamInfoPub->publish(rightCamInfoMsg);
+
+                if (mPublishRight) {
+                    rightCamInfoMsg.header.frame_id = std::format("{}_right_camera_optical_frame", mDeviceName);
+                    rightCamInfoMsg.header.stamp = mPcMeasures.time;
+                    mRightCamInfoPub->publish(rightCamInfoMsg);
+                }
+                
                 mLoopProfilerUpdate.measureEvent("pub_camera_info");
             }
 

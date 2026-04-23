@@ -46,6 +46,7 @@ namespace mrover {
         bool mUseBuiltinPosTracking{};
         bool mUsePoseSmoothing{};
         bool mUseAreaMemory{};
+        bool mPublishRight{};
 
         double mDepthMaximumDistance{};
 

@@ -21,4 +21,5 @@
     depth_maximum_distance: 12.0
     use_builtin_visual_odom: false
     use_pose_smoothing: true
+    publish_right_frame: false
     use_area_memory: true
