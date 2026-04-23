@@ -129,12 +129,15 @@ class WaypointState(State):
             # distance_from_center, direction_from_center, and closest_radius_point
             center = context.course.current_waypoint_pose_in_map().translation()[0:2]
 
-            if context.rover.get_pose_in_map() is None or context.course.current_waypoint() is None:
+            current_pose_in_map = context.rover.get_pose_in_map()
+            current_wp = context.course.current_waypoint()
+
+            if current_wp is None or current_pose_in_map is None:
                 context.node.get_logger().warn("Rover waypoint not set properly, waiting...")
                 context.rover.send_drive_command(Twist())
                 return self
 
-            rover_position = context.rover.get_pose_in_map().translation()[0:2]
+            rover_position = current_pose_in_map.translation()[0:2]
             distance_from_center = np.linalg.norm(rover_position[0:2] - center[0:2])
             direction_from_center = rover_position[0:2] - center
 
@@ -143,7 +146,7 @@ class WaypointState(State):
             # inward_value is set to 0 if there is no inward start radius set
             # if set to 0, this means that we should do an outward spiral
             # in addition, we also would only want to do an inward spiral if the rover is outside half the inward start radius value
-            inward_value = context.course.current_waypoint().coverage_radius
+            inward_value = current_wp.coverage_radius
 
             if inward_value > 0 and distance_from_center > 0.5 * inward_value:
                 context.node.get_logger().info("Travelling to inward spiral beginning at radius " + str(inward_value))

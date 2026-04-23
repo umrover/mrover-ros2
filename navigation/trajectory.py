@@ -5,6 +5,7 @@ import numpy as np
 
 # inward spiral search trajectory implemented
 
+
 @dataclass
 class Trajectory:
     # Coordinates of the trajectory
@@ -100,11 +101,11 @@ class SearchTrajectory(Trajectory):
         if inward_spiral:
             angles = np.linspace(start_angle, 2 * np.pi * num_spirals, num_points)
             radii = np.linspace(start_radius, 0.0, num_points)
-        
+
         else:
             angles = np.linspace(start_angle, 2 * np.pi * num_spirals, num_points)
             radii = np.linspace(0, coverage_radius, num_points)
-            
+
         x_coords = np.cos(angles) * radii
         y_coords = np.sin(angles) * radii
 
@@ -197,7 +198,6 @@ class SearchTrajectory(Trajectory):
                 distance_from_center,
                 starting_angle,
             )
-
 
         # numpy broadcasting magic to add center to each row of the spiral coordinates
         spiral_coordinates_r2 = zero_centered_spiral_r2 + center
