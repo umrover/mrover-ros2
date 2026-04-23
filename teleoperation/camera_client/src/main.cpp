@@ -2,17 +2,19 @@
 
 #include "CameraClientMainWindow.hpp"
 #include "CameraClientNode.hpp"
+#include "CameraConfigWidget.hpp"
 
 auto main(int argc, char** argv) -> int {
     QApplication app(argc, argv);
 
     rclcpp::init(argc, argv);
 
+    auto node = std::make_shared<mrover::CameraClientNode>();
+
     auto mainWindow = std::make_shared<mrover::CameraClientMainWindow>();
+
     mainWindow->setWindowTitle("MRover Cameras");
     mainWindow->setMinimumSize(1280, 720);
-
-    auto node = std::make_shared<mrover::CameraClientNode>();
 
     QObject::connect(node.get(), &mrover::CameraClientNode::cameraDiscovered,
                      mainWindow.get(), [mainWindow, node](mrover::CameraInfo const& info) {
@@ -43,7 +45,9 @@ auto main(int argc, char** argv) -> int {
     QObject::connect(node.get(), &mrover::CameraClientNode::imageCaptured,
                      mainWindow.get(), &mrover::CameraClientMainWindow::showImagePreview);
 
-    node->discoverCameras();
+    auto configs = node->loadCameraConfigs();
+
+    mainWindow->setConfigs(std::move(configs));
 
     QObject::connect(mainWindow.get(), &mrover::CameraClientMainWindow::closed, []() {
         rclcpp::shutdown();
