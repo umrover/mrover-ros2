@@ -1,18 +1,15 @@
-import asyncio
 from enum import Enum
 import threading
 
-from rclpy.node import Node
 from rclpy.publisher import Publisher
 
 from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
 from backend.mappings import ControllerAxis, ControllerButton
 from backend.managers.ros import get_service_client
+from backend.utils.ros_service import call_service_async
 from mrover.msg import Throttle, IK
 from mrover.srv import IkMode
 from geometry_msgs.msg import Twist
-
-from tf2_ros.buffer import Buffer
 
 ra_mode = "disabled"
 ra_mode_lock = threading.Lock()
@@ -25,45 +22,23 @@ def get_ra_mode() -> str:
 
 async def set_ra_mode(new_ra_mode: str):
     global ra_mode
+    if new_ra_mode == "ik-pos":
+        if not await call_ik_mode_service(IK_MODE_POSITION_CONTROL):
+            return
+    elif new_ra_mode == "ik-vel":
+        if not await call_ik_mode_service(IK_MODE_VELOCITY_CONTROL):
+            return
+
     with ra_mode_lock:
         ra_mode = new_ra_mode
-
-    if new_ra_mode == "ik-pos":
-        await call_ik_mode_service(IK_MODE_POSITION_CONTROL)
-    elif new_ra_mode == "ik-vel":
-        await call_ik_mode_service(IK_MODE_VELOCITY_CONTROL)
 
 
 async def call_ik_mode_service(mode: int) -> bool:
     client = get_service_client(IkMode, "/ik_mode")
-
-    try:
-        service_ready = await asyncio.wait_for(
-            asyncio.get_event_loop().run_in_executor(
-                None, lambda: client.wait_for_service(timeout_sec=0.1)
-            ),
-            timeout=1.0
-        )
-        if not service_ready:
-            return False
-    except asyncio.TimeoutError:
-        return False
-
     request = IkMode.Request()
     request.mode = mode
-
-    future = client.call_async(request)
-    try:
-        await asyncio.wait_for(
-            asyncio.get_event_loop().run_in_executor(None, future.result),
-            timeout=5.0
-        )
-        result = future.result()
-        return result.success if result else False
-    except asyncio.TimeoutError:
-        return False
-    except Exception:
-        return False
+    result = await call_service_async(client, request, timeout=5.0)
+    return result.success if result else False
 
 
 IK_MODE_POSITION_CONTROL = 0
@@ -89,7 +64,7 @@ JOINT_NAMES = [
     "joint_c",
     "joint_de_pitch",
     "joint_de_roll",
-    "cam",
+    "pusher",
     "gripper",
 ]
 
@@ -99,7 +74,7 @@ JOINT_SCALES = [
     1.0,
     -1.0,
     1.0,
-    1.0,
+    0.4,
     1.0,
 ]
 
@@ -133,11 +108,11 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
             deadzone=CONTROLLER_STICK_DEADZONE,
         ),
         filter_input(
-            simulated_axis(controller.axes, ControllerAxis.RIGHT_TRIGGER, ControllerAxis.LEFT_TRIGGER),
+            simulated_axis(controller.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER),
             scale=JOINT_SCALES[Joint.DE_PITCH.value],
         ),
         filter_input(
-            simulated_axis(controller.buttons, ControllerButton.RIGHT_BUMPER, ControllerButton.LEFT_BUMPER),
+            simulated_axis(controller.buttons, ControllerButton.LEFT_BUMPER, ControllerButton.RIGHT_BUMPER),
             scale=JOINT_SCALES[Joint.DE_ROLL.value],
         ),
         filter_input(
@@ -145,19 +120,18 @@ def compute_manual_joint_controls(controller: DeviceInputs) -> list[float]:
             scale=JOINT_SCALES[Joint.CAM.value],
         ),
         filter_input(
-            simulated_axis(controller.buttons, ControllerButton.B, ControllerButton.X),
+            simulated_axis(controller.buttons, ControllerButton.X, ControllerButton.B),
             scale=JOINT_SCALES[Joint.GRIPPER.value],
         ),
     ]
 
 
 def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[list[str], list[float]]:
-    filtered_joints = [j for j in joints]
-    return [names[i.value] for i in filtered_joints], [values[i.value] for i in filtered_joints]
+    return [names[i.value] for i in joints], [values[i.value] for i in joints]
 
 
 def send_ra_controls(
-    inputs: DeviceInputs, node: Node, thr_pub: Publisher, ee_pos_pub: Publisher, ee_vel_pub: Publisher, buffer: Buffer
+    inputs: DeviceInputs, thr_pub: Publisher, ee_pos_pub: Publisher, ee_vel_pub: Publisher,
 ) -> None:
     current_mode = get_ra_mode()
     match current_mode:
@@ -176,7 +150,7 @@ def send_ra_controls(
                     ik_pos_msg.pos.x = (-1.0) * safe_index(inputs.axes, ControllerAxis.LEFT_Y)
                     ik_pos_msg.pos.y = (-1.0) * safe_index(inputs.axes, ControllerAxis.LEFT_X)
                     ik_pos_msg.pos.z = (-1.0) * safe_index(inputs.axes, ControllerAxis.RIGHT_Y)
-                    ik_pos_msg.pitch = 1.0 * simulated_axis(inputs.axes, ControllerAxis.RIGHT_TRIGGER, ControllerAxis.LEFT_TRIGGER)
+                    ik_pos_msg.pitch = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER)
                     ik_pos_msg.roll = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_BUMPER, ControllerButton.LEFT_BUMPER)
                     ee_pos_pub.publish(ik_pos_msg)
                 case "ik-vel":
@@ -185,12 +159,14 @@ def send_ra_controls(
                     ik_vel_msg.linear.y = (-1.0) * filter_input(safe_index(inputs.axes, ControllerAxis.LEFT_X), deadzone=CONTROLLER_STICK_DEADZONE)
                     ik_vel_msg.linear.z = (-1.0) * filter_input(safe_index(inputs.axes, ControllerAxis.RIGHT_Y), deadzone=CONTROLLER_STICK_DEADZONE)
                     ik_vel_msg.angular.y = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_BUMPER, ControllerButton.LEFT_BUMPER)
-                    ik_vel_msg.angular.x = 1.0 * simulated_axis(inputs.axes, ControllerAxis.RIGHT_TRIGGER, ControllerAxis.LEFT_TRIGGER)
+                    ik_vel_msg.angular.x = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER)
                     ee_vel_pub.publish(ik_vel_msg)
 
-                    manual_controls = compute_manual_joint_controls(inputs)
+                    cam_throttle = filter_input(
+                        simulated_axis(inputs.buttons, ControllerButton.Y, ControllerButton.A),
+                        scale=JOINT_SCALES[Joint.CAM.value],
+                    )
                     throttle_msg = Throttle()
-                    joint_names, throttle_values = subset(JOINT_NAMES, manual_controls, set(Joint))
                     throttle_msg.names = ["cam"]
-                    throttle_msg.throttles = [throttle_values[joint_names.index("cam")]]
+                    throttle_msg.throttles = [cam_throttle]
                     thr_pub.publish(throttle_msg)

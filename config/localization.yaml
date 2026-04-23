@@ -25,9 +25,13 @@ rover_gps_driver:
 heading_filter:
   ros__parameters:
     imu_watchdog_timeout: 1.0
-    mag_heading_noise: 1.0
-    rtk_heading_noise: 0.01
+    mag_heading_noise: 10.0
+    rtk_heading_noise: 0.00001
+    drive_forward_heading_noise: 0.0001
     process_noise: 0.000001
+    minimum_linear_speed: 0.4
+    rover_heading_change_threshold: 0.05
+    use_mag: false
 
 pose_filter:
   ros__parameters:

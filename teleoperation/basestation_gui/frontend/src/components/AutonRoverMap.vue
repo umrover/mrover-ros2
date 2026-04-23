@@ -1,5 +1,5 @@
 <template>
-  <div class="position-relative w-100 h-100">
+  <div class="relative w-full h-full">
     <l-map
       @ready="handleMapReady"
       ref="mapRef"
@@ -10,6 +10,7 @@
     >
       <l-control-scale :imperial="false" />
       <l-tile-layer
+        :key="online ? 'online' : 'offline'"
         ref="tileLayer"
         :url="online ? onlineUrl : offlineUrl"
         :attribution="attribution"
@@ -22,7 +23,7 @@
         :icon="basestationIcon"
       />
       <l-marker
-        v-for="(waypoint, index) in waypointList"
+        v-for="(waypoint, index) in waypointListForMap"
         :key="index"
         :lat-lng="waypoint.latLng"
         :icon="waypointIcon"
@@ -36,26 +37,15 @@
         :color="'red'"
         :dash-array="'5, 5'"
       />
-      <l-polyline :lat-lngs="[...odomPath]" :color="'blue'" :dash-array="'5, 5'" />
+      <l-polyline :lat-lngs="odomPath" :color="'blue'" :dash-array="'5, 5'" />
     </l-map>
 
-    <div class="controls px-2 py-2 position-absolute d-flex flex-column gap-2 top-0 end-0 m-2 rounded border shadow-sm bg-theme-card">
-      <div class="d-flex align-items-center gap-2">
-        <input
-        v-model="online"
-          type="checkbox"
-          class="form-check-input p-0"
-        />
-        <p class="mb-0 text-body" style="font-size: 14px; line-height: 18px">
-          Online
-        </p>
-      </div>
-      <button @click="centerOnRover" class="btn btn-sm btn-light border" style="font-size: 14px; padding: 4px 8px">
-        Center on Rover
+    <div class="overlay-toolbar right-0">
+      <button class="overlay-toolbar-btn" :class="{ 'overlay-toolbar-btn-active': online }" @click="online = !online">
+        Online
       </button>
-      <button @click="centerOnBasestation" class="btn btn-sm btn-light border" style="font-size: 14px; padding: 4px 8px">
-        Center on Base
-      </button>
+      <button @click="centerOnRover" class="overlay-toolbar-btn">Center on Rover</button>
+      <button @click="centerOnBasestation" class="overlay-toolbar-btn">Center on Base</button>
     </div>
   </div>
 </template>
@@ -73,13 +63,13 @@ import { useAutonomyStore } from '@/stores/autonomy'
 import { storeToRefs } from 'pinia'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoverMap } from '@/composables/useRoverMap'
-import type { NavMessage } from '@/types/coordinates'
+import { useWebsocketStore } from '@/stores/websocket'
+import type { BasestationPositionMessage } from '@/types/coordinates'
 
 const autonomyStore = useAutonomyStore()
-const { route, waypointList } = storeToRefs(autonomyStore)
-const { setClickPoint } = autonomyStore
+const { routeForMap, waypointListForMap } = storeToRefs(autonomyStore)
 
 const {
   center,
@@ -98,12 +88,11 @@ const {
   onMapReady,
   centerOnRover,
   getMap,
-  navMessage,
 } = useRoverMap({
-  maxOdomCount: 10,
-  drawFrequency: 10,
+  maxOdomCount: 100,
+  drawFrequency: 1,
   initialCenter: [38.4071654, -110.7923927],
-  offlineUrl: 'map/urc/{z}/{x}/{y}.jpg',
+  offlineUrl: '/map/{z}/{x}/{y}.png',
 })
 
 const basestation_latitude_deg = ref(0)
@@ -121,7 +110,7 @@ const basestationLatLng = computed(() => {
 
 const polylinePath = computed(() => {
   return [odomLatLng.value].concat(
-    route.value.map((waypoint) => waypoint.latLng),
+    routeForMap.value.map((waypoint) => waypoint.latLng),
   )
 })
 
@@ -137,18 +126,15 @@ const centerOnBasestation = () => {
 }
 
 const getClickedLatLon = (e: { latlng: { lat: number; lng: number } }) => {
-  setClickPoint({
+  autonomyStore.clickPoint = {
     lat: e.latlng.lat,
     lon: e.latlng.lng,
-  })
+  }
 }
 
-watch(navMessage, (msg) => {
-  if (!msg) return
-  const navMsg = msg as NavMessage
-  if (navMsg.type === 'basestation_position') {
-    basestation_latitude_deg.value = navMsg.latitude
-    basestation_longitude_deg.value = navMsg.longitude
-  }
+const websocketStore = useWebsocketStore()
+websocketStore.onMessage<BasestationPositionMessage>('nav', 'basestation_position', (msg) => {
+  basestation_latitude_deg.value = msg.latitude
+  basestation_longitude_deg.value = msg.longitude
 })
 </script>

@@ -1,11 +1,23 @@
 import asyncio
+import math
 import threading
 import time
 import msgpack
 from fastapi import WebSocket
 from rclpy.qos import qos_profile_sensor_data
 from rosidl_runtime_py.convert import message_to_ordereddict
-from backend.managers.ros import get_node
+from backend.managers.ros import get_node, get_logger
+
+
+def sanitize_floats(obj):
+    if isinstance(obj, float) and not math.isfinite(obj):
+        return None
+    if isinstance(obj, dict):
+        return {k: sanitize_floats(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [sanitize_floats(v) for v in obj]
+    return obj
+
 
 FORWARD_RATE_HZ = 30
 FORWARD_INTERVAL_SEC = 1.0 / FORWARD_RATE_HZ
@@ -28,10 +40,10 @@ class WebSocketHandler:
         if self.closed:
             return
         try:
-            packed = msgpack.packb(data, use_bin_type=True)
+            packed = msgpack.packb(sanitize_floats(data), use_bin_type=True)
             await self.websocket.send_bytes(packed)
-        except Exception as e:
-            print(f"Error sending message on {self.endpoint}: {e}")
+        except Exception as exc:
+            get_logger().debug(f"Send failed on {self.endpoint}: {exc}")
 
     def schedule_send(self, data):
         if self.closed:
@@ -62,7 +74,7 @@ class WebSocketHandler:
         self.subscriptions.append(sub)
 
     async def cleanup(self):
-        print(f"Cleaning up {self.endpoint} WebSocket handler...")
+        get_logger().info(f"Cleaning up {self.endpoint} WebSocket handler...")
         with self.callback_lock:
             self.closed = True
 
