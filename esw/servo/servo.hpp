@@ -275,6 +275,7 @@ namespace mrover {
             double velocityLimit;
             double profileAcceleration;
             double profileVelocity;
+            double bootPosition;
 
             std::vector<ParameterWrapper> parameters = {
                     {std::format("{}.mode", mServoName), modeString, std::string("optimal")},
@@ -290,7 +291,8 @@ namespace mrover {
                     {std::format("{}.current_limit", mServoName), currentLimit, 1750.0},
                     {std::format("{}.velocity_limit", mServoName), velocityLimit, 445.0},
                     {std::format("{}.profile_acceleration", mServoName), profileAcceleration, 100.0},
-                    {std::format("{}.profile_velocity", mServoName), profileVelocity, 100.0}};
+                    {std::format("{}.profile_velocity", mServoName), profileVelocity, 100.0},
+                    {std::format("{}.boot_position", mServoName), bootPosition, 0.0}};
 
             ParameterWrapper::declareParameters(mNode.get(), parameters);
 
@@ -328,6 +330,9 @@ namespace mrover {
 
             mAdjustedReverseLimit = static_cast<int64_t>((reverseLimit / TAU) * SERVO_TICKS);
             mAdjustedForwardLimit = static_cast<int64_t>((forwardLimit / TAU) * SERVO_TICKS);
+
+            // set current position after boot
+            setCurrentPosition(bootPosition);
         }
 
         [[nodiscard]] auto isWithinLimits(int64_t targetTicks) const -> bool {

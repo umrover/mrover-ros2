@@ -13,6 +13,7 @@ science_hw_bridge:
       current_limit: 1750.0
       profile_acceleration: 60.0
       profile_velocity: 500.0
+      boot_position: 0.0
     brush:
       id: 6
       mode: "optimal"
@@ -27,3 +28,4 @@ science_hw_bridge:
       current_limit: 1750.0
       profile_acceleration: 10.0
       profile_velocity: 60.0
+      boot_position: 0.0
