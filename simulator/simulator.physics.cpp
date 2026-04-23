@@ -40,7 +40,7 @@ namespace mrover {
         mDynamicsWorld = std::make_unique<btMultiBodyDynamicsWorld>(mDispatcher.get(), mBroadphase.get(), mSolver.get(), mCollisionConfig.get());
         // mDynamicsWorld->getSolverInfo().m_minimumSolverBatchSize = 1;
         // This seems to significantly mitigate the rover's turning issues
-        mDynamicsWorld->getSolverInfo().m_frictionCFM = 0.0015;
+        mDynamicsWorld->getSolverInfo().m_frictionCFM = 0.001;
     }
 
     auto Simulator::physicsUpdate(Clock::duration dt) -> void {
