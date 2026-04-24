@@ -20,7 +20,7 @@ from mrover.msg import (
     ImageTarget,
     ImageTargets,
 )
-from mrover.srv import MoveCostMap, DilateCostMap, EnableAuton, ToggleImageObjectDetector, ToggleStereoObjectDetector
+from mrover.srv import MoveCostMap, DilateCostMap, EnableAuton, ToggleObjectDetector
 from nav_msgs.msg import Path, OccupancyGrid
 from visualization_msgs.msg import Marker
 from std_srvs.srv import SetBool
@@ -466,8 +466,8 @@ class Context:
             while not self.dilate_cli.wait_for_service(timeout_sec=1.0):
                 node.get_logger().info("Waiting for dilate_cost service...")
 
-        self.stereo_cli = node.create_client(ToggleStereoObjectDetector, "toggle_stereo_object_detector")
-        self.image_cli = node.create_client(ToggleImageObjectDetector, "toggle_image_object_detector")
+        self.stereo_cli = node.create_client(ToggleObjectDetector, "toggle_stereo_object_detector")
+        self.image_cli = node.create_client(ToggleObjectDetector, "toggle_image_object_detector")
         self.stereo_future = None
         self.image_future = None
 
@@ -492,22 +492,20 @@ class Context:
         response.success = True
         return response
 
-    def toggle_object_detector(self, objectType: ToggleImageObjectDetector.Request.mode) -> bool:
+    def toggle_object_detector(self, waypointType: WaypointType.val) -> bool:
         # Ensure the object detector services are still running
         while not self.stereo_cli.wait_for_service(timeout_sec=1.0):
             self.node.get_logger().info("Waiting for stereo_object_detector service...")
         while not self.image_cli.wait_for_service(timeout_sec=1.0):
             self.node.get_logger().info("Waiting for image_object_detector service...")
 
-        stereoRequest = ToggleStereoObjectDetector.Request()
-        stereoRequest.mode = objectType
-        imageRequest = ToggleImageObjectDetector.Request()
-        imageRequest.mode = objectType
+        objRequest = ToggleObjectDetector.Request()
+        objRequest.waypoint.val = waypointType
 
         self.node.get_logger().info("Toggling Object Detector")
 
-        self.stereo_future = self.stereo_cli.call_async(stereoRequest)
-        self.image_future = self.image_cli.call_async(imageRequest)
+        self.stereo_future = self.stereo_cli.call_async(objRequest)
+        self.image_future = self.image_cli.call_async(objRequest)
 
         return True
 
