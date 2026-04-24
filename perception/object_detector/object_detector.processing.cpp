@@ -271,11 +271,12 @@ namespace mrover {
 
             resizeBoundingBoxes(mRgbImage.size(), detections);
             drawDetectionBoxes(mRgbImage, detections);
-            if (mDebug) {
-                publishDetectedObjects(mRgbImage);
-            }
 
             mLoopProfiler.measureEvent("Publication");
+        }
+        
+        if (mDebug) {
+            publishDetectedObjects(mRgbImage);
         }
     }
 
