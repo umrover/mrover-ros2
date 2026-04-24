@@ -179,8 +179,7 @@ class Panorama(Node):
                 self.img_list.append(copy.deepcopy(self.current_img))
                 self.img_dirs.append(pos)
                 self.headings.append((self.cur_heading + pos) % (2 * np.pi))
-                # self.recorded_one_image = True
-                self.img_rate.sleep()
+                self.recorded_one_image = True
 
     def heading_callback(self, heading: Heading):
         self.get_logger().info("Heading is {heading.heading}")
@@ -223,36 +222,34 @@ class Panorama(Node):
     def start_callback(self, _, response):
         self.get_logger().info('Starting Pano...')
 
-        self.stitcher = cv2.Stitcher_create(cv2.Stitcher_PANORAMA)
-        self.recorded_one_image = True
-        self.recorded_one_pc = True
-
-        # if self.img_sub is None:
-        #     self.img_sub = self.create_subscription(Image, f"/{self.zed_version}/left/image", self.image_callback, 1)
-
-        if self.pc_sub is None and self.imu_sub is None: 
+        if self.pc_sub is None and self.img_sub is None: 
             self.pc_sub = message_filters.Subscriber(self, PointCloud2, f"/{self.zed_version}/left/points")
             self.imu_sub = message_filters.Subscriber(self, Imu, f"/{self.zed_version}_imu/data_raw")
-            self.img_sub = message_filters.Subscriber(self, Image, f"/{self.zed_version}/left/image")
             self.sync = message_filters.ApproximateTimeSynchronizer([self.pc_sub, self.imu_sub], 10, 1)
             self.sync.registerCallback(self.synced_gps_pc_callback)
 
             self.gimbal_sub = message_filters.Subscriber(self, ControllerState, "/gimbal_controller_state")
-            self.img_sync = message_filters.ApproximateTimeSynchronizer([self.img_sub, self.gimbal_sub])
+            self.img_sub = message_filters.Subscriber(self, Image, f"/{self.zed_version}/left/image")
+            self.img_sync = message_filters.ApproximateTimeSynchronizer([self.img_sub, self.gimbal_sub], 10, 0.1)
             self.img_sync.registerCallback(self.synced_img_gimbal_callback)
 
         if self.heading_sub is not None:
             self.destroy_subscription(self.heading_sub)
             self.heading_sub = None
-
-        # START SPINNING THE MAST GIMBAL 
+        
         req = ServoPosition.Request()
         req.header = Header()
         req.name = ["gimbal_yaw"]
-        req.position = [2*np.pi] # TODO is 90 correct?? 0?
-        self.gimbal_client.call_async(req)
+        req.position = [2*np.pi]
+        self.gimbal_future = self.gimbal_client.call_async(req)
+        self.gimbal_future.add_done_callback(self.gimbal_loop_callback)
 
-        return response
+        self.recorded_one_image = False
+        self.recorded_one_pc = False
+
+    def gimbal_loop_callback(future: Future):
+        pass
+
 
     def end_callback(self, _, response):
         self.get_logger().info('Ending Pano...')
