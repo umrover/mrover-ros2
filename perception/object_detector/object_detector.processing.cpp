@@ -2,22 +2,26 @@
 
 namespace mrover {
 
-    auto StereoObjectDetector::toggleStereoMode(mrover::srv::ToggleStereoObjectDetector::Request::ConstSharedPtr& request, mrover::srv::ToggleStereoObjectDetector::Response::SharedPtr& response) -> void {
-        auto setMode = request->mode;
+    auto ObjectDetectorBase::toggleMode(mrover::srv::ToggleObjectDetector::Request::ConstSharedPtr& request, mrover::srv::ToggleObjectDetector::Response::SharedPtr& response) -> void {
+        auto setMode = request->waypoint.val;
         switch (setMode) {
-            case srv::ToggleStereoObjectDetector::Request::OFF:
+            case msg::WaypointType::NO_SEARCH:
                 currentModel = nullptr;
                 currentTensorRT = nullptr;
                 break;
-            case srv::ToggleStereoObjectDetector::Request::WATER_BOTTLE:
+            case msg::WaypointType::POST:
+                currentModel = nullptr;
+                currentTensorRT = nullptr;
+                break;
+            case msg::WaypointType::WATER_BOTTLE:
                 currentModel = &mBottleModel;
                 currentTensorRT = &mBottleTensorRT;
                 break;
-            case srv::ToggleStereoObjectDetector::Request::MALLET:
+            case msg::WaypointType::MALLET:
                 currentModel = &mMalletModel;
                 currentTensorRT = &mMalletTensorRT;
                 break;
-            case srv::ToggleStereoObjectDetector::Request::ROCK_PICK:
+            case msg::WaypointType::ROCK_PICK:
                 currentModel = &mPickModel;
                 currentTensorRT = &mPickTensorRT;
                 break;
@@ -201,34 +205,6 @@ namespace mrover {
             pixel[1] = pointPtr[i].g;
             pixel[2] = pointPtr[i].b;
         });
-    }
-
-    auto ImageObjectDetector::toggleImageMode(mrover::srv::ToggleImageObjectDetector::Request::ConstSharedPtr& request, mrover::srv::ToggleImageObjectDetector::Response::SharedPtr& response) -> void {
-        auto setMode = request->mode;
-        switch (setMode) {
-            case srv::ToggleImageObjectDetector::Request::OFF:
-                currentModel = nullptr;
-                currentTensorRT = nullptr;
-                break;
-            case srv::ToggleImageObjectDetector::Request::WATER_BOTTLE:
-                currentModel = &mBottleModel;
-                currentTensorRT = &mBottleTensorRT;
-                break;
-            case srv::ToggleImageObjectDetector::Request::MALLET:
-                currentModel = &mMalletModel;
-                currentTensorRT = &mMalletTensorRT;
-                break;
-            case srv::ToggleImageObjectDetector::Request::ROCK_PICK:
-                currentModel = &mPickModel;
-                currentTensorRT = &mPickTensorRT;
-                break;
-            default:
-                response->success = false;
-                RCLCPP_INFO_STREAM(get_logger(), "Received malformed service call");
-                return;
-        }
-        response->success = true;
-        RCLCPP_INFO_STREAM(get_logger(), std::format("Set image object detector to {}", setMode));
     }
 
     auto ImageObjectDetector::imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {

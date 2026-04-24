@@ -57,8 +57,8 @@ namespace mrover {
             StereoObjectDetector::pointCloudCallback(msg);
         });
 
-        mServer = create_service<mrover::srv::ToggleStereoObjectDetector>("toggle_stereo_object_detector", [this](mrover::srv::ToggleStereoObjectDetector::Request::ConstSharedPtr request, mrover::srv::ToggleStereoObjectDetector::Response::SharedPtr response) {
-            toggleStereoMode(request, response);
+        mServer = create_service<mrover::srv::ToggleObjectDetector>("toggle_stereo_object_detector", [this](mrover::srv::ToggleObjectDetector::Request::ConstSharedPtr request, mrover::srv::ToggleObjectDetector::Response::SharedPtr response) {
+            toggleMode(request, response);
         });
     }
 
@@ -78,8 +78,8 @@ namespace mrover {
 
         mTargetsPub = create_publisher<mrover::msg::ImageTargets>("objects", 1);
 
-        mServer = create_service<mrover::srv::ToggleImageObjectDetector>("toggle_image_object_detector", [this](mrover::srv::ToggleImageObjectDetector::Request::ConstSharedPtr request, mrover::srv::ToggleImageObjectDetector::Response::SharedPtr response) {
-            toggleImageMode(request, response);
+        mServer = create_service<mrover::srv::ToggleObjectDetector>("toggle_image_object_detector", [this](mrover::srv::ToggleObjectDetector::Request::ConstSharedPtr request, mrover::srv::ToggleObjectDetector::Response::SharedPtr response) {
+            toggleMode(request, response);
         });
     }
 } // namespace mrover
