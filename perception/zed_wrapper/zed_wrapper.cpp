@@ -51,8 +51,8 @@ namespace mrover {
             mImuPub = create_publisher<sensor_msgs::msg::Imu>(std::format("/{}_imu/data_raw", mDeviceName), 1);
             mMagPub = create_publisher<sensor_msgs::msg::MagneticField>(std::format("/{}_imu/mag", mDeviceName), 1);
             mPcPub = create_publisher<sensor_msgs::msg::PointCloud2>(std::format("/{}/left/points", mDeviceName), 1);
-            mRightCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>(std::format("/{}/right/camera_info", mDeviceName), 1);
-            mLeftCamInfoPub = create_publisher<sensor_msgs::msg::CameraInfo>(std::format("/{}/left/camera_info", mDeviceName), 1);
+            mRightCamInfoPub = create_publisher<mrover::msg::CameraInfo>(std::format("/{}/right/camera_info", mDeviceName), 1);
+            mLeftCamInfoPub = create_publisher<mrover::msg::CameraInfo>(std::format("/{}/left/camera_info", mDeviceName), 1);
             mMagHeadingPub = create_publisher<mrover::msg::Heading>(std::format("/{}_imu/mag_heading", mDeviceName), 1);
 
             mSvoPath = svoFile.c_str();
@@ -279,13 +279,15 @@ namespace mrover {
                 mLoopProfilerUpdate.measureEvent("pub_pc");
 
                 sl::CalibrationParameters calibration = mZedInfo.camera_configuration.calibration_parameters;
-                auto leftCamInfoMsg = sensor_msgs::msg::CameraInfo();
-                auto rightCamInfoMsg = sensor_msgs::msg::CameraInfo();
+                auto leftCamInfoMsg = mrover::msg::CameraInfo();
+                auto rightCamInfoMsg = mrover::msg::CameraInfo();
                 fillCameraInfoMessages(calibration, mImageResolution, leftCamInfoMsg, rightCamInfoMsg);
-                leftCamInfoMsg.header.frame_id = std::format("{}_left_camera_optical_frame", mDeviceName);
-                leftCamInfoMsg.header.stamp = mPcMeasures.time;
-                rightCamInfoMsg.header.frame_id = std::format("{}_right_camera_optical_frame", mDeviceName);
-                rightCamInfoMsg.header.stamp = mPcMeasures.time;
+                leftCamInfoMsg.info.header.frame_id = std::format("{}_left_camera_optical_frame", mDeviceName);
+                leftCamInfoMsg.info.header.stamp = mPcMeasures.time;
+                leftCamInfoMsg.fov = calibration.left_cam.h_fov;
+                rightCamInfoMsg.info.header.frame_id = std::format("{}_right_camera_optical_frame", mDeviceName);
+                rightCamInfoMsg.info.header.stamp = mPcMeasures.time;
+                rightCamInfoMsg.fov = calibration.right_cam.h_fov;
                 mLeftCamInfoPub->publish(leftCamInfoMsg);
                 mRightCamInfoPub->publish(rightCamInfoMsg);
                 mLoopProfilerUpdate.measureEvent("pub_camera_info");

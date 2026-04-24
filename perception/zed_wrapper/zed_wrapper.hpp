@@ -68,8 +68,8 @@ namespace mrover {
         rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr mImuPub;
         rclcpp::Publisher<sensor_msgs::msg::MagneticField>::SharedPtr mMagPub;
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr mPcPub;
-        rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr mLeftCamInfoPub;
-        rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr mRightCamInfoPub;
+        rclcpp::Publisher<mrover::msg::CameraInfo>::SharedPtr mLeftCamInfoPub;
+        rclcpp::Publisher<mrover::msg::CameraInfo>::SharedPtr mRightCamInfoPub;
         rclcpp::Publisher<mrover::msg::Heading>::SharedPtr mMagHeadingPub;
 
         // Thread

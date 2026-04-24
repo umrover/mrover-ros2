@@ -7,6 +7,7 @@
 #include <mrover/msg/fix_status.hpp>
 #include <mrover/msg/fix_type.hpp>
 #include <mrover/msg/heading.hpp>
+#include <mrover/msg/camera_info.hpp>
 #include <sensor_msgs/distortion_models.hpp>
 #include <sensor_msgs/image_encodings.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>

@@ -2,13 +2,14 @@
 
 import rclpy
 from rclpy.node import Node
+from rclpy.task import Future
 from ament_index_python import get_package_share_directory
 
 from sensor_msgs.msg import PointCloud2, Image
 from std_msgs.msg import Header
 from sensor_msgs.msg import Imu
 from mrover.srv import PanoramaStart, PanoramaEnd, ServoPosition
-from mrover.msg import Heading, ControllerState
+from mrover.msg import Heading, ControllerState, CameraInfo
 
 import cv2
 import time
@@ -68,8 +69,7 @@ class Panorama(Node):
 
         # Variable for the ZED you'd like to use (zed or zed_mini)
         self.zed_version= "zed_mini"
-        self.zed_fov_deg = 85
-        self.zed_fov_rad = self.zed_fov_deg * (np.pi / 180)
+        self.zed_fov_rad = None
         self.zed_image_width_pixels = 1280
 
         # Pano Action Server
@@ -80,6 +80,7 @@ class Panorama(Node):
         # Start the panorama
         self.recorded_one_image = False
         self.recorded_one_pc = False
+        self.fov_sub = self.create_subscription(CameraInfo, f"/{self.zed_version}/left/camera_info", self.fov_callback)
 
         # Heading variables
         self.heading_sub = self.create_subscription(Heading, "/heading/fix", self.heading_callback, 1)
@@ -123,12 +124,21 @@ class Panorama(Node):
         rotated_points = np.matmul(trans_mat, points.T).T
         pc[:, 0:3] = np.delete(rotated_points, 3, 1)
         return pc
+    
+    def fov_callback(self, info_msg: CameraInfo):
+        self.get_logger().info("Updated FOV to {info_msg.fov}")
+        self.zed_fov_rad = info_msg.fov * (np.pi / 180)
+        self.destroy_subscription(self.fov_sub)
 
     def synced_gps_pc_callback(self, pc_msg: PointCloud2, imu_msg: Imu):
         # extract xyzrgb fields
         # get every tenth point to make the pc sparser
         # TODO: dtype hard-coded to float32
         if self.recorded_one_pc:
+            if self.zed_fov_rad == None:
+                self.get_logger().warn("Wait for FOV to be set")
+                return 
+            
             self.get_logger().info("Grabbing a PC")
             self.current_pc = pc_msg
             self.arr_pc = np.frombuffer(bytearray(pc_msg.data), dtype=np.float32).reshape(
@@ -150,11 +160,14 @@ class Panorama(Node):
 
             rotated_pc = self.rotate_pc(rotation, self.arr_pc)
             self.stitched_pc = np.vstack((self.stitched_pc, rotated_pc))
+            self.recorded_one_pc = True
 
-            self.pc_rate.sleep()
-
-    def synced_img_gimbal_callback(self, img: Image, gimbal: ControllerState):
+    def synced_img_gimbal_callback(self, img: Image, gimbal: ControllerState):       
         if self.recorded_one_image:
+            if self.zed_fov_rad == None:
+                self.get_logger().warn("Wait for FOV to be set")
+                return 
+            
             self.current_img = cv2.cvtColor(
                 np.frombuffer(img.data, dtype=np.uint8).reshape(img.height, img.width, 4), cv2.COLOR_RGBA2RGB
             )
@@ -254,7 +267,7 @@ class Panorama(Node):
         req.position = [0.0] # TODO is 90 correct?? 0?
         self.gimbal_client.call_async(req)
 
-        if self.pc_sub is not None and self.imu_sub is not None:
+        if self.pc_sub is not None and self.img_sub is not None:
             self.destroy_subscription(self.pc_sub.sub)
             self.destroy_subscription(self.imu_sub.sub)
             self.destroy_subscription(self.img_sub.sub)
