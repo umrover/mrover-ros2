@@ -273,7 +273,6 @@ class ApproachTargetState(State):
         if self.target_position is None:
             return self
 
-
         arrived = False
         cmd_vel = Twist()
         cmd_vel, arrived = context.drive.get_drive_command(
@@ -354,18 +353,20 @@ class ApproachTargetState(State):
             return costmap_search.CostmapSearchState()
 
         if self.self_in_distance_threshold(context, self.looking_for_object):
-            #If we are looking for post or in no_search state or looking at an object, we can enter the done state
-            if(not self.looking_for_object or self.looking_at_object(context)):
+            # If we are looking for post or in no_search state or looking at an object, we can enter the done state
+            if not self.looking_for_object or self.looking_at_object(context):
                 context.node.get_logger().info("Exited through distance threshold")
                 return self.next_state(context, True)
-            #else we are not looking at the object, so we want to spin the rover
+            # else we are not looking at the object, so we want to spin the rover
             else:
                 context.node.get_logger().info("Within distance but not looking at object")
-                cmd_vel, arrived = context.drive.spin_rover(context.rover.get_pose_in_map(), self.target_position)
-                #If we have finished spinning and haven't moved onto a different state, we want to enter the costmap search state
-                if(arrived):
+                cmd_vel, arrived = context.drive.spin_rover(
+                    context.rover.get_pose_in_map(), self.target_position, self.DISTANCE_THRESHOLD
+                )
+                # If we have finished spinning and haven't moved onto a different state, we want to enter the costmap search state
+                if arrived:
                     return costmap_search.CostmapSearchState()
-                #else we want to have the spin drive command applied to the rover 
+                # else we want to have the spin drive command applied to the rover
                 else:
                     context.rover.send_drive_command(cmd_vel)
                     return self
@@ -394,7 +395,6 @@ class ApproachTargetState(State):
                 points=np.array([self.target_position]), color=[1.0, 1.0, 0.0], ns=str(type(self))
             )
 
-
     def self_in_distance_threshold(self, context: Context, is_object: bool) -> bool:
         rover_SE3 = context.rover.get_pose_in_map()
         if rover_SE3 is None:
@@ -414,9 +414,7 @@ class ApproachTargetState(State):
         time_diff = context.env.current_time_diff()
         if time_diff is None:
             return False
-        return time_diff < Duration(
-                nanoseconds=self.CHECK_UPDATE_TIME * 10**9)
-
+        return time_diff < Duration(nanoseconds=self.CHECK_UPDATE_TIME * 10**9)
 
     def point_in_distance_threshold(self, context: Context, point):
         if point is None:
