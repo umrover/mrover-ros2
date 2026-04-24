@@ -219,6 +219,7 @@ class DriveController:
     def spin_rover(self, rover_pose: SE3, target_pos: np.ndarray | None, distance_thresh: float) -> tuple[Twist, bool]:
         if target_pos is None:
             return Twist(), True
+        #Use the get_drive_command to spin the rover by setting the angle threshold to a tiny value
         cmd_vel, arrived = self.get_drive_command(target_pos, rover_pose, distance_thresh, 1e-8)
         return cmd_vel, arrived
 

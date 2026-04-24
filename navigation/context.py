@@ -110,8 +110,9 @@ class Environment:
         return target_pose.translation()
 
     def get_time_diff(self, frame: str) -> None | Duration:
+        #Try to get message from TF tree with associated time
         try:
-            waste, t = SE3.from_tf_tree_with_time(self.ctx.tf_buffer, frame, self.ctx.world_frame)
+            _, t = SE3.from_tf_tree_with_time(self.ctx.tf_buffer, frame, self.ctx.world_frame)
         except (
             tf2_ros.LookupException,
             tf2_ros.ConnectivityException,
@@ -120,6 +121,7 @@ class Environment:
             return None
 
         now = self.ctx.node.get_clock().now()
+        #Calculate difference between current time and TF tree time
         time = Time.from_msg(t)
         return now - time
 
@@ -140,7 +142,7 @@ class Environment:
 
     def current_time_diff(self):
         assert self.ctx.course is not None
-
+        #Return the time difference with an associated target frame
         match self.ctx.course.current_waypoint():
             case Waypoint(type=WaypointType(val=WaypointType.POST), tag_id=tag_id):
                 return self.get_time_diff(f"tag{tag_id}")
@@ -148,6 +150,8 @@ class Environment:
                 return self.get_time_diff("hammer")
             case Waypoint(type=WaypointType(val=WaypointType.WATER_BOTTLE)):
                 return self.get_time_diff("bottle")
+            case Waypoint(type=WaypointType(val=WaypointType.ROCK_PICK)):
+                return self.get_target_position("pick")
             case _:
                 return None
 
