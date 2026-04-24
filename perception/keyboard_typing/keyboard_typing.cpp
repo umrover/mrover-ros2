@@ -56,6 +56,7 @@ namespace mrover {
         // mImageSub = create_subscription<sensor_msgs::msg::Image>("/video4/image", rclcpp::QoS(1), [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
         //     yawCallback(msg);
         // });
+
         mImageSub = create_subscription<sensor_msgs::msg::Image>("/finger_camera/image", rclcpp::QoS(1), [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
             yawCallback(msg);
         });
@@ -148,76 +149,41 @@ namespace mrover {
     }
 
     auto KeyboardTypingNode::estimatePose(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> std::optional<pose_output> {
-        // Read in images
+        // Read in image
         cv::Mat bgraImage{static_cast<int>(msg->height), static_cast<int>(msg->width), CV_8UC4, const_cast<uint8_t*>(msg->data.data())};
 
         // For debugging image
-        cv::Mat bgrImage;
-        cv::cvtColor(bgraImage, bgrImage, cv::COLOR_BGRA2BGR);
+        // cv::Mat bgrImage;
+        // cv::cvtColor(bgraImage, bgrImage, cv::COLOR_BGRA2BGR);
 
         // convert to gray for estimation
         cv::Mat grayImage;
         cv::cvtColor(bgraImage, grayImage, cv::COLOR_BGRA2GRAY);
+
         // Optional: enhance contrast
         // cv::equalizeHist(grayImage, grayImage);
 
+        // Optional: apply Gaussian blur to reduce noise
+        // cv::GaussianBlur(grayImage, grayImage, cv::Size(5,5), 0);
+
+        // Adaptive contrasting to improve detection reliability
         cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
         clahe->setClipLimit(2.0);
         clahe->setTilesGridSize(cv::Size(8, 8));
 
         clahe->apply(grayImage, grayImage);
 
-        // Optional: apply Gaussian blur to reduce noise
-        // cv::GaussianBlur(grayImage, grayImage, cv::Size(5,5), 0);
-
-        // Define variables
-
         std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
         std::vector<int> ids;
         cv::Ptr<cv::aruco::DetectorParameters> detectorParams = cv::aruco::DetectorParameters::create();
 
-        // Could potentially run a mild gaussian blur plus sharpening kernel if instability is encountered
-
-        // detectorParams->adaptiveThreshWinSizeMin = 3;
-        // detectorParams->adaptiveThreshWinSizeMax = 23;
-        // detectorParams->adaptiveThreshWinSizeStep = 2;
-
-        // detectorParams->adaptiveThreshConstant = 7;
-
-        // detectorParams->perspectiveRemovePixelPerCell = 3;
-
-        // detectorParams->minDistanceToBorder = 1;   // default is 3
-        // detectorParams->minMarkerPerimeterRate = 0.05;   // default ~0.03
-
         detectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
-
-        // detectorParams->polygonalApproxAccuracyRate = 0.05;
-
-        // detectorParams->cornerRefinementWinSize = 3;
-
-        // detectorParams->cornerRefinementMaxIterations = 20;
-
-        // detectorParams->errorCorrectionRate = 0.8;
-
-        // detectorParams->maxErroneousBitsInBorderRate = 0.5;
-
-        // detectorParams->minCornerDistanceRate = 0.05;
-
-        // Define coordinate system
-        float markerLength = 0.019; // meters
-        std::vector<cv::Point3f> objPoints = {
-                {-markerLength / 2.f, markerLength / 2.f, 0},
-                {markerLength / 2.f, markerLength / 2.f, 0},
-                {markerLength / 2.f, -markerLength / 2.f, 0},
-                {-markerLength / 2.f, -markerLength / 2.f, 0}};
 
         // Detect Markers
         cv::aruco::detectMarkers(grayImage, dictionary, markerCorners, ids, detectorParams, rejectedCandidates);
 
-        size_t nMarkers = markerCorners.size();
-
         // Estimate pose
-        cv::Vec3d combined_tvec, combined_rvec;
+        std::optional<cv::Vec3d> combined_tvec, combined_rvec;
         if (!ids.empty()) {
             std::vector<int> valid_indices;
             for (size_t i = 0; i < ids.size(); ++i) {
@@ -228,8 +194,7 @@ namespace mrover {
 
             int validcnt = valid_indices.size();
 
-            float tag_size = 0.02f;
-            float half_size = tag_size / 2.0f;
+            float half_size = mTagSize / 2.0f;
 
             std::vector<cv::Point3f> all_objPoints;
             std::vector<cv::Point2f> all_imgPoints;
@@ -248,42 +213,44 @@ namespace mrover {
                         all_imgPoints.push_back(markerCorners.at(idx)[i]);
                     }
                 }
-                cv::solvePnP(all_objPoints, all_imgPoints, mCameraMatrix, mDistCoeffs, combined_rvec, combined_tvec, false, cv::SOLVEPNP_ITERATIVE);
+                cv::Vec3d rvec, tvec;
+                cv::solvePnP(all_objPoints, all_imgPoints, mCameraMatrix, mDistCoeffs, rvec, tvec, false, cv::SOLVEPNP_ITERATIVE);
+                combined_rvec = rvec;
+                combined_tvec = tvec;
             }
         }
 
-        // Rotation and translation vectors
-        std::vector<cv::Vec3d> rvecs(nMarkers), tvecs(nMarkers);
-        // populate rvecs and tvecs
-        if (!ids.empty()) {
-            for (size_t i = 0; i < nMarkers; ++i) {
-                cv::solvePnP(objPoints, markerCorners.at(i), mCameraMatrix, mDistCoeffs, rvecs.at(i), tvecs.at(i), false, cv::SOLVEPNP_IPPE_SQUARE);
-            }
-        }
+        // Grab rvecs and tvecs for each individual marker for debugging
+        // std::vector<cv::Vec3d> rvecs(nMarkers), tvecs(nMarkers);
+        // // populate rvecs and tvecs
+        // if (!ids.empty()) {
+        //     for (size_t i = 0; i < nMarkers; ++i) {
+        //         cv::solvePnP(objPoints, markerCorners.at(i), mCameraMatrix, mDistCoeffs, rvecs.at(i), tvecs.at(i), false, cv::SOLVEPNP_IPPE_SQUARE);
+        //     }
+        // }
 
         // draw results for debugging
-        if (!ids.empty()) {
-            cv::aruco::drawDetectedMarkers(bgrImage, markerCorners, ids);
-            for (size_t i = 0; i < ids.size(); ++i) {
-                cv::drawFrameAxes(bgrImage, mCameraMatrix, mDistCoeffs, rvecs[i], tvecs[i], markerLength * 1.5f, 2);
-            }
-        }
+        // if (!ids.empty()) {
+        //     cv::aruco::drawDetectedMarkers(bgrImage, markerCorners, ids);
+        //     for (size_t i = 0; i < ids.size(); ++i) {
+        //         cv::drawFrameAxes(bgrImage, mCameraMatrix, mDistCoeffs, rvecs[i], tvecs[i], markerLength * 1.5f, 2);
+        //     }
+        // }
 
-        if (!tvecs.empty()) {
-            // Pass all vectors and the current ROS time
-            // Returns the filtered pose
+        if (combined_tvec.has_value() && combined_rvec.has_value()) {
             geometry_msgs::msg::Pose finalestimation;
 
-            std::tie(combined_tvec, combined_rvec) = vectorMedianFilter(combined_tvec, combined_rvec);
+            std::tie(combined_tvec, combined_rvec) = vectorMedianFilter(*combined_tvec, *combined_rvec);
 
-            RCLCPP_INFO_STREAM(get_logger(), "X: " << combined_tvec[0]);
-            RCLCPP_INFO_STREAM(get_logger(), "Y: " << combined_tvec[1]);
-            RCLCPP_INFO_STREAM(get_logger(), "Z: " << combined_tvec[2]);
+            // Debugging statements
+            // RCLCPP_INFO_STREAM(get_logger(), "X: " << (*combined_tvec)[0]);
+            // RCLCPP_INFO_STREAM(get_logger(), "Y: " << (*combined_tvec)[1]);
+            // RCLCPP_INFO_STREAM(get_logger(), "Z: " << (*combined_tvec)[2]);
 
             Eigen::Vector3d rvec(
-                    combined_rvec[0],
-                    combined_rvec[1],
-                    combined_rvec[2]);
+                    (*combined_rvec)[0],
+                    (*combined_rvec)[1],
+                    (*combined_rvec)[2]);
 
             double angle = rvec.norm();
             Eigen::Quaterniond q;
@@ -300,48 +267,43 @@ namespace mrover {
             finalestimation.orientation.z = q.z();
             finalestimation.orientation.w = q.w();
 
-            finalestimation.position.x = combined_tvec[0];
-            finalestimation.position.y = combined_tvec[1];
-            finalestimation.position.z = combined_tvec[2];
+            finalestimation.position.x = (*combined_tvec)[0];
+            finalestimation.position.y = (*combined_tvec)[1];
+            finalestimation.position.z = (*combined_tvec)[2];
 
-            double siny = 2.0 * (q.w() * q.y() - q.z() * q.x());
-            double yaw_rad;
-            if (std::abs(siny) >= 1)
-                yaw_rad = std::copysign(M_PI / 2, siny);
-            else
-                yaw_rad = std::asin(siny);
+            Eigen::Vector3d ypr = q.toRotationMatrix().eulerAngles(2, 1, 0);
 
-            double yaw_deg = yaw_rad * 180.0 / M_PI;
+            double yaw_deg = ypr[0] * 180.0 / M_PI;
+            double pitch_deg = ypr[1] * 180.0 / M_PI;
 
-            // Draw after kalman filter
-            // cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, combined_rvec, combined_tvec, markerLength * 3.0f, 4);
-            cv::drawFrameAxes(bgrImage, mCameraMatrix, mDistCoeffs, combined_rvec, combined_tvec, markerLength * 1.5f, 2);
+            // Draw axes for debugging
+            // cv::drawFrameAxes(bgrImage, mCameraMatrix, mDistCoeffs, combined_rvec, combined_tvec, markerLength * 1.5f, 2);
 
             // Draw circle for debugging
-            int cx = grayImage.cols / 2;
-            int cy = grayImage.rows / 2;
+            // int cx = grayImage.cols / 2;
+            // int cy = grayImage.rows / 2;
 
-            cv::circle(
-                    bgrImage,
-                    cv::Point(cx, cy),
-                    2,                     // radius
-                    cv::Scalar(0, 0, 255), // BGR: red
-                    cv::FILLED);
+            // cv::circle(
+            //         bgrImage,
+            //         cv::Point(cx, cy),
+            //         2,                     // radius
+            //         cv::Scalar(0, 0, 255), // BGR: red
+            //         cv::FILLED);
 
             // Draw axes for debugging
             // cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, final_rvec, final_tvec, markerLength * 1.5f, 2);
-            cv::imshow("out1", bgrImage);
+            // cv::imshow("out1", bgrImage);
             // cv::imshow("out", grayImage);
-            int key = cv::waitKey(1) & 0xFF;
-            if (key == 'r') {
-                // logPose = !logPose;
-                // RCLCPP_INFO_STREAM(get_logger(), "Toggled logPose: " << (logPose ? "ON" : "OFF"));
-                align_arm();
-                // send_z_key_command();
-            }
-            if (key == 't') {
-                align_to_z();
-            }
+            // int key = cv::waitKey(1) & 0xFF;
+            // if (key == 'r') {
+            //     // logPose = !logPose;
+            //     // RCLCPP_INFO_STREAM(get_logger(), "Toggled logPose: " << (logPose ? "ON" : "OFF"));
+            //     align_arm();
+            //     // send_z_key_command();
+            // }
+            // if (key == 't') {
+            //     align_to_z();
+            // }
 
             return pose_output{finalestimation, yaw_deg};
         } else {
@@ -490,41 +452,6 @@ namespace mrover {
         RCLCPP_INFO(get_logger(), "Published IK Command {x=%.3f, y=%.3f, z=%.3f, p=%.3f, r=%.3f}", x, message.pos.y, message.pos.z, message.pitch, message.roll);
     }
 
-    // auto KeyboardTypingNode::outputToCSV(cv::Vec3d& tvec, cv::Vec3d& rvec) -> void {
-    //     static bool is_first_run = true; // Runs only once per program execution
-    //     std::string path = "perception/keyboard_typing/csv_camera_output/test.csv";
-
-    //     if (is_first_run) {
-    //         std::string header;
-    //         std::fstream fin(path, std::ios::in);
-    //         if (fin.is_open()) {
-    //             std::getline(fin, header);
-    //             fin.close();
-    //         }
-
-    //         std::fstream freset(path, std::ios::out | std::ios::trunc);
-    //         if (freset.is_open()) {
-    //             if (!header.empty()) freset << header << std::endl;
-    //             freset.close();
-    //         }
-    //         is_first_run = false;
-    //     }
-
-    //     std::fstream fout(path, std::ios::out | std::ios::app);
-    //     if (fout.is_open()) {
-    //         double x = tvec[0];
-    //         double y = tvec[1];
-    //         double z = tvec[2];
-    //         double roll = rvec[0] * 180.0 / M_PI;
-    //         double pitch = rvec[1] * 180.0 / M_PI;
-    //         double yaw = rvec[2] * 180.0 / M_PI;
-
-    //         fout << x << "," << y << "," << z << ","
-    //              << roll << "," << pitch << "," << yaw << "," << std::endl;
-    //         fout.close();
-    //     }
-    // }
-
     // ----------------------- ACTION SERVER/CLIENT ---------------------------
     // Typing IK action client functions (communication with Nav)
     auto KeyboardTypingNode::send_goal(float x_delta, float y_delta) -> bool {
@@ -619,7 +546,22 @@ namespace mrover {
             // Align arm over z key
             RCLCPP_INFO_STREAM(this->get_logger(), "Aligning to z key");
 
-            align_to_z();
+            if (align) {
+                align_to_z();
+            } else {
+                // grab roll of keyboard
+                try {
+                    SE3d armbase_to_z = SE3Conversions::fromTfTree(tf_buffer, "keyboard_z", "arm_base_link");
+
+                    double r21 = armbase_to_z.transform()(2, 1);
+                    double r22 = armbase_to_z.transform()(2, 2);
+
+                    keyboard_roll = std::atan2(r21, r22);
+
+                } catch (tf2::TransformException const& e) {
+                    RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
+                }
+            }
 
             // Activate typing mode
             RCLCPP_INFO_STREAM(this->get_logger(), "Sending ik mode request");
@@ -652,7 +594,6 @@ namespace mrover {
                 RCLCPP_INFO_STREAM(this->get_logger(), "y_pos = " << y_pos);
                 RCLCPP_INFO_STREAM(this->get_logger(), "rolled_x_pos = " << rolled_x_pos);
                 RCLCPP_INFO_STREAM(this->get_logger(), "rolled_y_pos = " << rolled_y_pos);
-
                 send_goal(-rolled_x_pos, rolled_y_pos);
 
                 if (goal_handle->is_canceling()) {

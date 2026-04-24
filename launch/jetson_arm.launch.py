@@ -96,6 +96,6 @@ def generate_launch_description():
             ee3_streamer_node,
             joint_a_streamer_node,
             keyboard_typing_node,
-            arm_e_link_to_cam
+            arm_e_link_to_cam,
         ]
     )

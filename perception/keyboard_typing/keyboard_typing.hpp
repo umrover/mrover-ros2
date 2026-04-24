@@ -41,6 +41,8 @@ namespace mrover {
 
         double keyboard_roll;
 
+        bool align = false;
+
         // Params
         int mMinCodeLength{}, mMaxCodeLength{};
         cv::Mat mCameraMatrix;

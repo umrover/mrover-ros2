@@ -2,6 +2,9 @@
   ros__parameters:
     tag_size: 0.02
     # Format: [id, x, y, z]
+
+    # Distance of each tag to bottom left tag, probably wont be needed but change if necessary
+    # Will need to change tag id on day of comp
     tag_offsets: [
       4.0, 0.0,     0.0,      0.0, # Bottom-left
       5.0, 0.41407, 0.0,      0.0, # Bottom-right
@@ -25,7 +28,10 @@
                               0.00023247660995265573,
                               0.018284177139663432]
     
-    z_key_transform: [0.031575+0.01, 0.05495+0.01, 0.0303784]
+    # Add vertical and horizontal dist from tag center to keyboard as needed
+    # vertical z key from keyboard corner = 0.031575
+    # horizontal z key from keyboard corner 0.05495
+    z_key_transform: [0.041575, 0.06495, 0.0303784]
     
 
 
