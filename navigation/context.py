@@ -151,7 +151,7 @@ class Environment:
             case Waypoint(type=WaypointType(val=WaypointType.WATER_BOTTLE)):
                 return self.get_time_diff("bottle")
             case Waypoint(type=WaypointType(val=WaypointType.ROCK_PICK)):
-                return self.get_target_position("pick")
+                return self.get_time_diff("pick")
             case _:
                 return None
 
