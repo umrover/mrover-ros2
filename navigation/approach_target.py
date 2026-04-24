@@ -252,7 +252,6 @@ class ApproachTargetState(State):
                             # Fully dilated and still failed, go to next state
                             context.node.get_logger().info("Exited without distance threshold")
                             return self.next_state(context, is_finished=True)
-                            # return self.next_state(context=context, is_finished=True)
                         return self
 
         else:
