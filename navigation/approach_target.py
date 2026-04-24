@@ -1,6 +1,4 @@
 import numpy as np
-import math
-from typing import Any, Literal
 from navigation.trajectory import Trajectory
 from navigation.astar import AStar, NoPath, OutOfBounds
 from . import costmap_search, stuck_recovery, waypoint, backup, state
@@ -217,8 +215,6 @@ class ApproachTargetState(State):
                         context.node.get_logger().info("Found low-cost point")
                         return self
 
-        # If we are within the distance threshold of the target we have finished
-
         arrived = False
         cmd_vel = Twist()
         if not self.astar_traj.done():
@@ -360,7 +356,7 @@ class ApproachTargetState(State):
             # else we are not looking at the object, so we want to spin the rover
             else:
                 context.node.get_logger().info("Within distance but not looking at object")
-                #Use the spin rover function in drive.py
+                # Use the spin rover function in drive.py
                 cmd_vel, arrived = context.drive.spin_rover(
                     context.rover.get_pose_in_map(), self.target_position, self.DISTANCE_THRESHOLD
                 )
@@ -405,16 +401,16 @@ class ApproachTargetState(State):
         if target_pos is None:
             return False
         rover_translation = rover_SE3.translation()[0:2]
-        #Calculate the distance from the rover to the target
+        # Calculate the distance from the rover to the target
         distance_to_target = d_calc(rover_translation, tuple(target_pos))
-        #If the target isn't an object, use a smaller distance
+        # If the target isn't an object, use a smaller distance
         if is_object:
             return distance_to_target < self.LOOK_DISTANCE_THRESHOLD
         else:
             return distance_to_target < self.DISTANCE_THRESHOLD
 
     def looking_at_object(self, context: Context) -> bool:
-        #Figure out how long its been since the TF tree published last
+        # Figure out how long its been since the TF tree published last
         time_diff = context.env.current_time_diff()
         if time_diff is None:
             return False
