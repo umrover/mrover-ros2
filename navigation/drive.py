@@ -185,17 +185,17 @@ class DriveController:
 
         angular_error: float = abs(angle_to_rotate_2d(target_dir[:2], rover_dir[:2]))
         if(angular_error < completion_thresh):
-            return True, Twist()
+            return Twist(), True
 
-        return False, Twist(
+        return Twist(
             angular=Vector3(
                 z=np.clip(
-                    angular_error * turning_p,
+                    -angular_error * turning_p,
                     min_turning_effort,
                     max_turning_effort,
                     )
                 )
-            )
+            ), False
 
         
 

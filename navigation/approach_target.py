@@ -364,7 +364,6 @@ class ApproachTargetState(State):
                 
                 turn_cmd, looking = context.drive.get_turn_command(target_dir, rover_in_map, context.node.get_parameter("search.angle_thresh").value)
                 if not looking:
-                    context.node.get_logger().log("Turning towards target")
                     context.rover.send_drive_command(twist=turn_cmd)
                 else:
                     context.node.get_logger().warn("Not looking at target but are facing the direction of it")

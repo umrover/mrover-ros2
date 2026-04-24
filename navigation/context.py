@@ -158,7 +158,6 @@ class Environment:
         target_dir = target_pose.translation()[:2] - rover_pose.translation()[:2]
 
         dir_diff = abs(angle_to_rotate_2d(rover_dir[:2], target_dir[:2]))
-        self.ctx.node.get_logger().info(f"Angle difference from target {frame}: {dir_diff * 180 / np.pi} degrees")
 
         return now - time < object_expiration_duration and dir_diff < zed_fov / 2
 
