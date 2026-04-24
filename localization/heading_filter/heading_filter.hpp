@@ -59,7 +59,7 @@ namespace mrover {
         std::vector<geometry_msgs::msg::Twist> twists;
         std::deque<geometry_msgs::msg::Vector3Stamped> position_window;    
         static constexpr std::size_t DRIVE_FORWARD_CAP = 3;
-        static constexpr double DRIVE_FORWARD_TIMER_S = 1.25;
+        static constexpr double DRIVE_FORWARD_TIMER_S = 0.10;
         static constexpr std::size_t TWISTS_CAP = 50;
         static constexpr std::size_t IMU_STUCK_THRESHOLD = 10;
         static constexpr std::size_t IMU_UNSTUCK_THRESHOLD = 10;
