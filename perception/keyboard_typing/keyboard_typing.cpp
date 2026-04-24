@@ -307,8 +307,9 @@ namespace mrover {
 
             return pose_output{finalestimation, yaw_deg};
         } else {
-            cv::imshow("out1", bgraImage);
-            cv::waitKey(1);
+            // debug image
+            // cv::imshow("out1", bgraImage);
+            // cv::waitKey(1);
             return std::nullopt;
         }
     }
