@@ -74,9 +74,9 @@ namespace mrover {
             // Draw the bounding boxes on the image
             resizeBoundingBoxes(mRgbImage.size(), detections);
             drawDetectionBoxes(mRgbImage, detections);
-            if (mDebug) {
-                publishDetectedObjects(mRgbImage);
-            }
+        }
+        if (mDebug) {
+            publishDetectedObjects(mRgbImage);
         }
     }
 
