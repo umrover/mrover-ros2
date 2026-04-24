@@ -510,7 +510,9 @@ class Context:
         return True
 
     def obj_detector_service_is_done(self) -> bool:
-        return (self.image_future is None or self.stereo_future is None) or (self.image_future.done() and self.stereo_future.done())
+        return (self.image_future is None or self.stereo_future is None) or (
+            self.image_future.done() and self.stereo_future.done()
+        )
 
     def toggle_path_relaxation(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
         self.node.set_parameters([Parameter("smoothing.use_relaxation", Parameter.Type.BOOL, request.data)])
