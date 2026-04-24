@@ -165,15 +165,11 @@
 
                       <l-polyline :lat-lngs="pathLatLngs" :color="'var(--accent)'" :weight="4" :opacity="0.8" />
                       
-                      <!-- Start/End markers -->
                       <l-marker :lat-lng="startLatLng" :icon="startIcon"><l-tooltip>Start</l-tooltip></l-marker>
                       <l-marker :lat-lng="endLatLng" :icon="endIcon"><l-tooltip>End</l-tooltip></l-marker>
-                      
-                      <!-- Playback Current Location Marker (Dot for both) -->
-                      <l-marker 
-                        :lat-lng="currentLatLng" 
+                      <l-marker
+                        :lat-lng="currentLatLng"
                         :icon="activeTab === 'drone' ? droneDotIcon : roverDotIcon"
-                        :rotation-angle="currentBearing"
                       />
                     </l-map>
                   </div>
@@ -367,10 +363,6 @@ const currentLatLng = computed<[number, number]>(() => {
   return [wp.lat, wp.lon]
 })
 
-const currentBearing = computed(() => {
-  const wp = waypoints.value[currentWaypointIndex.value]
-  return wp?.bearing ?? 0
-})
 
 const currentTimestamp = computed(() => {
   const wp = waypoints.value[currentWaypointIndex.value]
