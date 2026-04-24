@@ -10,8 +10,6 @@ namespace mrover {
         using TypingPosition = mrover::action::TypingPosition;
         using GoalHandleTypingPosition = rclcpp_action::ClientGoalHandle<action::TypingPosition>;
 
-        using PusherSrv = srv::Pusher;
-
         rclcpp_action::Client<action::TypingPosition>::SharedPtr mTypingClient;
 
         // Ik mode client

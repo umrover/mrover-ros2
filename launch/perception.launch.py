@@ -84,21 +84,6 @@ def generate_launch_description():
         extra_arguments=[{"use_intra_process_comms": True}],
     )
 
-    # keyboard typing node
-    keyboard_typing = Node(
-        package="mrover",
-        executable="keyboard_typing",
-        name="keyboard_typing",
-        parameters=[Path(get_package_share_directory("mrover"), "config", "keyboard_typing.yaml")],
-        respawn=False,
-    )
-
-    arm_e_link_to_cam = Node(
-        package="tf2_ros",
-        executable="static_transform_publisher",
-        arguments=["0.03713988", "0", "-0.0945642", "0", "-1.134", "0", "arm_fk_de", "finger_camera_frame"],
-    )
-
     long_range_streamer_annotated_composable_node = ComposableNode(
         package="mrover",
         plugin="mrover::GstCameraServer",
