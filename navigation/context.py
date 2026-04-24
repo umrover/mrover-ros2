@@ -24,9 +24,6 @@ from mrover.srv import MoveCostMap, DilateCostMap, EnableAuton, ToggleImageObjec
 from nav_msgs.msg import Path, OccupancyGrid
 from visualization_msgs.msg import Marker
 from std_srvs.srv import SetBool
-from nav_msgs.msg import Path
-from nav_msgs.msg import OccupancyGrid
-from visualization_msgs.msg import Marker, MarkerArray
 from rclpy import Parameter
 from rclpy.duration import Duration
 from rclpy.node import Node
@@ -496,6 +493,12 @@ class Context:
         return response
 
     def toggle_object_detector(self, objectType: ToggleImageObjectDetector.Request.mode) -> bool:
+        # Ensure the object detector services are still running
+        while not self.stereo_cli.wait_for_service(timeout_sec=1.0):
+            self.node.get_logger().info("Waiting for stereo_object_detector service...")
+        while not self.image_cli.wait_for_service(timeout_sec=1.0):
+            self.node.get_logger().info("Waiting for image_object_detector service...")
+
         stereoRequest = ToggleStereoObjectDetector.Request()
         stereoRequest.mode = objectType
         imageRequest = ToggleImageObjectDetector.Request()
@@ -508,10 +511,8 @@ class Context:
 
         return True
 
-    def futures_done(self) -> bool:
-        if self.image_future is None or self.stereo_future is None:
-            return True
-        return self.image_future.done() and self.stereo_future.done()
+    def obj_detector_service_is_done(self) -> bool:
+        return (self.image_future is None or self.stereo_future is None) or (self.image_future.done() and self.stereo_future.done())
 
     def toggle_path_relaxation(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
         self.node.set_parameters([Parameter("smoothing.use_relaxation", Parameter.Type.BOOL, request.data)])
