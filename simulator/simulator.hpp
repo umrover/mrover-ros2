@@ -266,9 +266,9 @@ namespace mrover {
 
         rclcpp::Publisher<msg::ImageTargets>::SharedPtr mImageTargetsPub;
 
-        rclcpp::Service<mrover::srv::ToggleStereoObjectDetector>::SharedPtr dummyStereoToggleServer;
+        rclcpp::Service<mrover::srv::ToggleObjectDetector>::SharedPtr dummyStereoToggleServer;
 
-        rclcpp::Service<mrover::srv::ToggleImageObjectDetector>::SharedPtr dummyImageToggleServer;
+        rclcpp::Service<mrover::srv::ToggleObjectDetector>::SharedPtr dummyImageToggleServer;
 
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};

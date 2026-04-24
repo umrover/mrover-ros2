@@ -45,7 +45,7 @@ namespace mrover {
         mMalletModel = Model(malletModelName, {0}, {"mallet"}, {cv::Scalar{232, 115, 5}}, mMalletTensorRT.getInputTensorSize(), mPickTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv8Output(model, output, detections); });
         mPickModel = Model(pickModelName, {0}, {"pick"}, {cv::Scalar{5, 225, 5}}, mPickTensorRT.getInputTensorSize(), mMalletTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv8Output(model, output, detections); });
 
-        RCLCPP_INFO_STREAM(get_logger(), std::format("Object detector initialized with models: {}, {}, {} and thresholds: {} and {}",  mBottleModel.modelName, mMalletModel.modelName, mPickModel.modelName, mModelScoreThreshold, mModelNMSThreshold));
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Object detector initialized with models: {}, {}, {} and thresholds: {} and {}", mBottleModel.modelName, mMalletModel.modelName, mPickModel.modelName, mModelScoreThreshold, mModelNMSThreshold));
     }
 
     StereoObjectDetector::StereoObjectDetector(rclcpp::NodeOptions const& options) : ObjectDetectorBase(options) {
@@ -57,8 +57,8 @@ namespace mrover {
             StereoObjectDetector::pointCloudCallback(msg);
         });
 
-        mServer = create_service<mrover::srv::ToggleStereoObjectDetector>("toggle_stereo_object_detector", [this](mrover::srv::ToggleStereoObjectDetector::Request::ConstSharedPtr request, mrover::srv::ToggleStereoObjectDetector::Response::SharedPtr response) {
-            toggleStereoMode(request, response);
+        mServer = create_service<mrover::srv::ToggleObjectDetector>("toggle_stereo_object_detector", [this](mrover::srv::ToggleObjectDetector::Request::ConstSharedPtr request, mrover::srv::ToggleObjectDetector::Response::SharedPtr response) {
+            toggleMode(request, response);
         });
     }
 
@@ -78,8 +78,8 @@ namespace mrover {
 
         mTargetsPub = create_publisher<mrover::msg::ImageTargets>("objects", 1);
 
-        mServer = create_service<mrover::srv::ToggleImageObjectDetector>("toggle_image_object_detector", [this](mrover::srv::ToggleImageObjectDetector::Request::ConstSharedPtr request, mrover::srv::ToggleImageObjectDetector::Response::SharedPtr response) {
-            toggleImageMode(request, response);
+        mServer = create_service<mrover::srv::ToggleObjectDetector>("toggle_image_object_detector", [this](mrover::srv::ToggleObjectDetector::Request::ConstSharedPtr request, mrover::srv::ToggleObjectDetector::Response::SharedPtr response) {
+            toggleMode(request, response);
         });
     }
 } // namespace mrover

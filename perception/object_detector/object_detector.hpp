@@ -98,6 +98,11 @@ namespace mrover {
 
         auto resizeBoundingBoxes(cv::Size const& outputSpace, std::vector<Detection>& detections) const -> void;
 
+        // Mode switching server and function
+        rclcpp::Service<mrover::srv::ToggleObjectDetector>::SharedPtr mServer;
+
+        auto toggleMode(mrover::srv::ToggleObjectDetector::Request::ConstSharedPtr& request, mrover::srv::ToggleObjectDetector::Response::SharedPtr& response) -> void;
+
     public:
         explicit ObjectDetectorBase(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
@@ -114,11 +119,6 @@ namespace mrover {
         static auto convertPointCloudToRGB(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg, cv::Mat const& image) -> void;
 
         auto pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void;
-
-        // Mode switching server and function
-        rclcpp::Service<mrover::srv::ToggleStereoObjectDetector>::SharedPtr mServer;
-
-        auto toggleStereoMode(mrover::srv::ToggleStereoObjectDetector::Request::ConstSharedPtr& request, mrover::srv::ToggleStereoObjectDetector::Response::SharedPtr& response) -> void;
     };
 
     class ImageObjectDetector final : public ObjectDetectorBase {
@@ -135,10 +135,5 @@ namespace mrover {
         auto getObjectBearing(cv::InputArray const& image, cv::Rect const& box) const -> float;
 
         auto imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
-
-        // Mode switching server and function
-        rclcpp::Service<mrover::srv::ToggleImageObjectDetector>::SharedPtr mServer;
-
-        auto toggleImageMode(mrover::srv::ToggleImageObjectDetector::Request::ConstSharedPtr& request, mrover::srv::ToggleImageObjectDetector::Response::SharedPtr& response) -> void;
     };
 } // namespace mrover
