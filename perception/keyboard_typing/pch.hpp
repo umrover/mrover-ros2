@@ -40,7 +40,6 @@
 #include <sensor_msgs/msg/image.hpp>
 
 #include <mrover/action/typing_code.hpp>
-#include <mrover/action/typing_deltas.hpp>
 #include <mrover/action/typing_position.hpp>
 #include <mrover/msg/ik.hpp>
 #include <mrover/msg/keyboard_yaw.hpp>
