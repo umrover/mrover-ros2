@@ -78,8 +78,8 @@ class Panorama(Node):
         self.gimbal_client = self.create_client(ServoPosition, "gimbal_servo")
 
         # Start the panorama
-        self.recorded_one_image = False
-        self.recorded_one_pc = False
+        self.record_image = False
+        self.record_pc = False
         self.fov_sub = self.create_subscription(CameraInfo, f"/{self.zed_version}/left/camera_info", self.fov_callback)
 
         # Heading variables
@@ -134,7 +134,7 @@ class Panorama(Node):
         # extract xyzrgb fields
         # get every tenth point to make the pc sparser
         # TODO: dtype hard-coded to float32
-        if self.recorded_one_pc:
+        if self.record_pc:
             if self.zed_fov_rad == None:
                 self.get_logger().warn("Wait for FOV to be set")
                 return 
@@ -160,10 +160,10 @@ class Panorama(Node):
 
             rotated_pc = self.rotate_pc(rotation, self.arr_pc)
             self.stitched_pc = np.vstack((self.stitched_pc, rotated_pc))
-            self.recorded_one_pc = True
+            self.pc_rate.sleep()
 
     def synced_img_gimbal_callback(self, img: Image, gimbal: ControllerState):       
-        if self.recorded_one_image:
+        if self.record_image:
             if self.zed_fov_rad == None:
                 self.get_logger().warn("Wait for FOV to be set")
                 return 
@@ -179,7 +179,6 @@ class Panorama(Node):
                 self.img_list.append(copy.deepcopy(self.current_img))
                 self.img_dirs.append(pos)
                 self.headings.append((self.cur_heading + pos) % (2 * np.pi))
-                # self.recorded_one_image = True
                 self.img_rate.sleep()
 
     def heading_callback(self, heading: Heading):
@@ -223,21 +222,17 @@ class Panorama(Node):
     def start_callback(self, _, response):
         self.get_logger().info('Starting Pano...')
 
-        self.stitcher = cv2.Stitcher_create(cv2.Stitcher_PANORAMA)
-        self.recorded_one_image = True
-        self.recorded_one_pc = True
+        self.record_image = True
+        self.record_pc = True
 
-        # if self.img_sub is None:
-        #     self.img_sub = self.create_subscription(Image, f"/{self.zed_version}/left/image", self.image_callback, 1)
-
-        if self.pc_sub is None and self.imu_sub is None: 
+        if self.pc_sub is None and self.img_sub is None: 
             self.pc_sub = message_filters.Subscriber(self, PointCloud2, f"/{self.zed_version}/left/points")
             self.imu_sub = message_filters.Subscriber(self, Imu, f"/{self.zed_version}_imu/data_raw")
-            self.img_sub = message_filters.Subscriber(self, Image, f"/{self.zed_version}/left/image")
             self.sync = message_filters.ApproximateTimeSynchronizer([self.pc_sub, self.imu_sub], 10, 1)
             self.sync.registerCallback(self.synced_gps_pc_callback)
 
             self.gimbal_sub = message_filters.Subscriber(self, ControllerState, "/gimbal_controller_state")
+            self.img_sub = message_filters.Subscriber(self, Image, f"/{self.zed_version}/left/image")
             self.img_sync = message_filters.ApproximateTimeSynchronizer([self.img_sub, self.gimbal_sub])
             self.img_sync.registerCallback(self.synced_img_gimbal_callback)
 
@@ -257,8 +252,8 @@ class Panorama(Node):
     def end_callback(self, _, response):
         self.get_logger().info('Ending Pano...')
 
-        self.recorded_one_image = False
-        self.recorded_one_pc = False
+        self.record_image = False
+        self.record_pc = False
 
         # Return Mast Gimbal to original position
         req = ServoPosition.Request()
