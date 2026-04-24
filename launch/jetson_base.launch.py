@@ -23,6 +23,16 @@ def generate_launch_description():
         parameters=[Path(get_package_share_directory("mrover"), "config", "esw.yaml")],
     )
 
+    u2d2_bridge = Node(
+        package="mrover",
+        executable="u2d2_bridge",
+        name="u2d2_bridge",
+        parameters=[
+            Path(get_package_share_directory("mrover"), "config", "esw.yaml"),
+            Path(get_package_share_directory("mrover"), "config", "u2d2.yaml"),
+        ],
+    )
+
     superstructure_node = Node(
         package="mrover",
         executable="superstructure.py",
@@ -112,10 +122,12 @@ def generate_launch_description():
         [
             launch_include_can,
             diff_drive_controller_node,
+            u2d2_bridge,
             superstructure_node,
             drive_hw_bridge_node,
             mob_streamer_node,
             zed_mini_container,
             zed_container,
+            mast_gimbal_hw_bridge,
         ]
     )
