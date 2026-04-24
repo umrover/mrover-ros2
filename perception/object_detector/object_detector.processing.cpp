@@ -250,7 +250,7 @@ namespace mrover {
 
             mLoopProfiler.measureEvent("Publication");
         }
-        
+
         if (mDebug) {
             publishDetectedObjects(mRgbImage);
         }

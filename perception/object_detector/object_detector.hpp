@@ -97,11 +97,12 @@ namespace mrover {
         static auto preprocessYOLOv8Input(Model const& model, cv::Mat const& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) -> void;
 
         auto resizeBoundingBoxes(cv::Size const& outputSpace, std::vector<Detection>& detections) const -> void;
-        
+
         // Mode switching server and function
         rclcpp::Service<mrover::srv::ToggleObjectDetector>::SharedPtr mServer;
 
         auto toggleMode(mrover::srv::ToggleObjectDetector::Request::ConstSharedPtr& request, mrover::srv::ToggleObjectDetector::Response::SharedPtr& response) -> void;
+
     public:
         explicit ObjectDetectorBase(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
