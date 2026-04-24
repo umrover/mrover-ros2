@@ -1,5 +1,11 @@
 <template>
-  <div class="flex flex-col gap-2 h-full">
+  <div class="flex flex-col gap-1 h-full">
+    <div class="flex justify-between items-center pr-2 py-0">
+      <h4 class="component-header">Science State</h4>
+      <button class="btn btn-icon-sm !h-6 !w-6 btn-outline-info" @click="legendModal?.open()">
+        <i class="bi bi-info-circle"></i>
+      </button>
+    </div>
     <div class="overflow-x-auto scroll flex-1">
       <table class="table compact-table w-full">
         <thead>
@@ -24,11 +30,16 @@
         </tbody>
       </table>
     </div>
+    <StateMappingModal ref="legendModal" />
   </div>
 </template>
 
 <script lang="ts" setup>
+import { ref } from 'vue'
 import { useControllerMessage, formatState, formatNumber, formatLimit, formatError, stateRowClass } from '@/composables/useControllerState'
+import StateMappingModal from '@/components/StateMappingModal.vue'
+
+const legendModal = ref<InstanceType<typeof StateMappingModal> | null>(null)
 
 const { stale, data } = useControllerMessage({
   topic: 'science',

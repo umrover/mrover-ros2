@@ -61,8 +61,60 @@ export function useControllerMessage(options: ControllerMessageOptions) {
   return { stale, data }
 }
 
+export const MOTEUS_MAP: Record<string, string> = {
+  'Motor Stopped': 'STOP',
+  'Motor Fault': 'FAULT',
+  'Motor Enabling': 'ENBL',
+  'Motor Calibrating': 'CAL',
+  'Motor Calibration Complete': 'DONE',
+  'Motor Pwm': 'PWM',
+  'Voltage Operating Mode': 'VOLT',
+  'Voltage FOC Operating Mode': 'FOC',
+  'Voltage DQ Operating Mode': 'DQ',
+  'Current Operating Mode': 'CURR',
+  'Position Operating Mode': 'POS',
+  'Position Timeout': 'TMOUT',
+  'Zero Velocity': 'ZERO',
+  'Motor Stay Within': 'STAY',
+  'Measure Ind': 'MEAS',
+  'Motor Brake': 'BRAKE',
+}
+
+export const BMC_MAP: Record<string, string> = {
+  'Running': 'RUN',
+  'Fault': 'FLT',
+}
+
+export const SERVO_MAP: Record<string, string> = {
+  'Active': 'ACT',
+  'HardwareFailure': 'HW_FLT',
+  'Success': 'OK',
+  'FailedToOpenPort': 'PORT_ERR',
+  'FailedToSetBaud': 'BAUD_ERR',
+  'CommPortBusy': 'BUSY',
+  'CommTxFail': 'TX_FAIL',
+  'CommRxFail': 'RX_FAIL',
+  'CommTxError': 'TX_ERR',
+  'CommRxWaiting': 'WAIT',
+  'CommRxTimeout': 'RX_TMOUT',
+  'CommRxCorrupt': 'CORR',
+  'CommNotAvailable': 'N/A',
+}
+
+export const SIM_MAP: Record<string, string> = {
+  'Armed': 'ARMED',
+}
+
+export const STATE_MAP: Record<string, string> = {
+  ...MOTEUS_MAP,
+  ...BMC_MAP,
+  ...SERVO_MAP,
+  ...SIM_MAP,
+}
+
 export function formatState(v: string | undefined): string {
-  return v || '---'
+  if (!v) return '---'
+  return STATE_MAP[v] || v
 }
 
 export { formatNumber } from '@/utils/formatNumber'
@@ -79,12 +131,17 @@ export function formatError(v: string | undefined): string {
 }
 
 function hasError(v: string | undefined): boolean {
-  return !!v && v !== 'None'
+  if (!v) return false
+  const normalized = v.toLowerCase()
+  return normalized !== 'none' && normalized !== 'no error' && normalized !== 'success' && normalized !== ''
 }
 
 export function stateRowClass(state: string | undefined, error?: string | undefined): string {
   if (!state) return 'row-no-data'
-  if (hasError(error)) return 'bg-danger-subtle'
-  if (state === 'ARMED') return 'bg-success-subtle'
+
+  // Turn red if there is an explicit error or if the state itself indicates a fault
+  const isFaultState = state.toLowerCase().includes('fault') || state.toLowerCase().includes('failure')
+  if (isFaultState || hasError(error)) return 'bg-danger-subtle'
+
   return ''
 }
