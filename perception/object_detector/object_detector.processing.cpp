@@ -48,9 +48,9 @@ namespace mrover {
             return;
         }
 
+        convertPointCloudToRGB(msg, mRgbImage);
         // if object detector is not OFF
         if (currentModel && currentTensorRT) {
-            convertPointCloudToRGB(msg, mRgbImage);
 
             // Convert the RGB Image into the blob Image format
             cv::Mat blobSizedImage;
