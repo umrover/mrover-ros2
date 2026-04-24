@@ -9,10 +9,11 @@ namespace mrover {
         struct Detection {
             int classId{};
             std::string className;
+            cv::Scalar fontColor{};
             float confidence{};
             cv::Rect box;
 
-            Detection(int _classId, std::string _className, float _confidence, cv::Rect _box) : classId{_classId}, className{_className}, confidence{_confidence}, box{_box} {}
+            Detection(int _classId, std::string _className, cv::Scalar _fontColor, float _confidence, cv::Rect _box) : classId{_classId}, className{std::move(_className)}, fontColor{std::move(_fontColor)}, confidence{_confidence}, box{std::move(_box)} {}
         };
 
         struct Model {
@@ -21,6 +22,8 @@ namespace mrover {
             std::vector<int> objectHitCounts;
 
             std::vector<std::string> classes;
+
+            std::vector<cv::Scalar> colors;
 
             std::vector<int64_t> inputTensorSize;
 
@@ -34,7 +37,7 @@ namespace mrover {
 
             Model() = default;
 
-            Model(std::string _modelName, std::vector<int> _objectHitCounts, std::vector<std::string> _classes, std::vector<int64_t> _inputTensorSize, std::vector<int64_t> _outputTensorSize, std::function<void(Model const&, cv::Mat&, cv::Mat&, cv::Mat&)> _rbgImageToBlob, std::function<void(Model const&, cv::Mat&, std::vector<Detection>&)> _outputTensorToDetections) : modelName{std::move(_modelName)}, objectHitCounts(std::move(_objectHitCounts)), classes(std::move(_classes)), inputTensorSize(std::move(_inputTensorSize)), outputTensorSize(std::move(_outputTensorSize)), rgbImageToBlob{std::move(_rbgImageToBlob)}, outputTensorToDetections{std::move(_outputTensorToDetections)} {}
+            Model(std::string _modelName, std::vector<int> _objectHitCounts, std::vector<std::string> _classes, std::vector<cv::Scalar> _colors, std::vector<int64_t> _inputTensorSize, std::vector<int64_t> _outputTensorSize, std::function<void(Model const&, cv::Mat&, cv::Mat&, cv::Mat&)> _rbgImageToBlob, std::function<void(Model const&, cv::Mat&, std::vector<Detection>&)> _outputTensorToDetections) : modelName{std::move(_modelName)}, objectHitCounts(std::move(_objectHitCounts)), classes(std::move(_classes)), colors(std::move(_colors)), inputTensorSize(std::move(_inputTensorSize)), outputTensorSize(std::move(_outputTensorSize)), rgbImageToBlob{std::move(_rbgImageToBlob)}, outputTensorToDetections{std::move(_outputTensorToDetections)} {}
         };
 
 

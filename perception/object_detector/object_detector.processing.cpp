@@ -83,7 +83,7 @@ namespace mrover {
     auto ObjectDetectorBase::updateHitsObject(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg, std::span<Detection const> detections, cv::Size const& imageSize) -> void {
         // Set of flags indicating if the given object has been seen
         std::vector<bool> seenObjects(currentModel->classes.size(), false);
-        for (auto const& [classId, className, confidence, box]: detections) {
+        for (auto const& [classId, className, fontColor, confidence, box]: detections) {
             // Resize from blob space to image space
             cv::Point2f centerInBlob = cv::Point2f{box.tl()} + cv::Point2f{box.size()} / 2;
             float xRatio = static_cast<float>(msg->width) / static_cast<float>(imageSize.width);
@@ -166,17 +166,15 @@ namespace mrover {
 
     auto ObjectDetectorBase::drawDetectionBoxes(cv::InputOutputArray image, std::span<Detection const> detections) -> void {
         // Draw the detected object's bounding boxes on the image for each of the objects detected
-        std::array const fontColors{cv::Scalar{232, 115, 5}};
         for (std::size_t i = 0; i < detections.size(); i++) {
             // Font color will change for each different detection
-            cv::Scalar const& fontColor = fontColors.at(detections[i].classId);
-            cv::rectangle(image, detections[i].box, fontColor, 1, cv::LINE_8, 0);
+            cv::rectangle(image, detections[i].box, detections[i].fontColor, 1, cv::LINE_8, 0);
 
             // Put the text on the image
             cv::Point textPosition(80, static_cast<int>(80 * (i + 1)));
             constexpr int fontSize = 1;
             constexpr int fontWeight = 2;
-            putText(image, detections[i].className, textPosition, cv::FONT_HERSHEY_COMPLEX, fontSize, fontColor, fontWeight); // Putting the text in the matrix
+            putText(image, detections[i].className, textPosition, cv::FONT_HERSHEY_COMPLEX, fontSize, detections[i].fontColor, fontWeight); // Putting the text in the matrix
         }
     }
 
@@ -262,7 +260,7 @@ namespace mrover {
             mLoopProfiler.measureEvent("Execution");
 
             mrover::msg::ImageTargets targets{};
-            for (auto const& [classId, className, confidence, box]: detections) {
+            for (auto const& [classId, className, fontColor, confidence, box]: detections) {
                 mrover::msg::ImageTarget target;
                 target.name = className;
                 target.bearing = getObjectBearing(blobSizedImage, box);
