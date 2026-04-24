@@ -7,44 +7,54 @@ namespace mrover {
     CameraClientNode::CameraClientNode()
         : QObject(nullptr),
           Node("camera_client") {
-
-        RCLCPP_INFO(get_logger(), "Camera client initialized");
     }
 
-    auto CameraClientNode::discoverCameras() -> void {
-        declare_parameter("cameras", rclcpp::ParameterType::PARAMETER_STRING_ARRAY);
-        auto cameraNames = get_parameter("cameras").as_string_array();
+    auto CameraClientNode::loadCameraConfigs() -> std::unordered_map<std::string, std::vector<std::string>> {
+        std::unordered_map<std::string, std::vector<std::string>> configs;
 
+        // declare jitter
         declare_parameter("rtp_jitter_ms", 100);
         auto rtpJitterMs = std::chrono::milliseconds(get_parameter("rtp_jitter_ms").as_int());
 
-        for (auto const& cameraName: cameraNames) {
-            RCLCPP_INFO(get_logger(), "cameraName: %s", cameraName.c_str());
+        for (unsigned char i = 0; i < CAMERA_CONFIG::COUNT; i++) {
+            std::string configName = CAMERA_CONFIGS[i];
+            std::string cameraConfigName = std::format("{}.cameras", configName);
 
-            if (mMediaControlClients.contains(cameraName)) {
-                RCLCPP_WARN(get_logger(), "Camera %s already exists, skipping", cameraName.c_str());
-                continue;
+            declare_parameter(cameraConfigName, rclcpp::ParameterType::PARAMETER_STRING_ARRAY);
+            auto cameraNames = get_parameter(cameraConfigName).as_string_array();
+
+            configs[configName] = cameraNames;
+
+            for (auto const& cameraName: cameraNames) {
+                if (mMediaControlClients.contains(cameraName)) {
+                    RCLCPP_WARN(get_logger(), "Camera %s already exists, skipping", cameraName.c_str());
+                    continue;
+                }
+
+                RCLCPP_INFO(get_logger(), "cameraName: %s", cameraName.c_str());
+                declare_parameter(std::format("{}.port", cameraName), rclcpp::ParameterType::PARAMETER_INTEGER);
+                declare_parameter(std::format("{}.stream.codec", cameraName), rclcpp::ParameterType::PARAMETER_STRING);
+
+                auto const port = static_cast<std::uint16_t>(get_parameter(std::format("{}.port", cameraName)).as_int());
+
+                std::string const codec = get_parameter(std::format("{}.stream.codec", cameraName)).as_string();
+
+                std::string const pipeline = createRtpToRawSrc(port, gst::video::getCodecFromStringView(codec), rtpJitterMs);
+
+                mMediaControlClients.emplace(cameraName, create_client<srv::MediaControl>(std::format("{}_media_control", cameraName)));
+                mImageCaptureClients.emplace(cameraName, create_client<std_srvs::srv::Trigger>(std::format("{}_image_capture", cameraName)));
+                mImageCaptureSubscribers.emplace(cameraName, create_subscription<sensor_msgs::msg::Image>(
+                                                                     std::format("{}_image", cameraName), 1,
+                                                                     [this, cameraName](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+                                                                         imageCaptureCallback(cameraName, msg);
+                                                                     }));
+
+                // emit signal for GUI to handle camera setup
+                emit cameraDiscovered(CameraInfo{.name = cameraName, .pipeline = pipeline});
             }
-
-            declare_parameter(std::format("{}.port", cameraName), rclcpp::ParameterType::PARAMETER_INTEGER);
-            auto const port = static_cast<std::uint16_t>(get_parameter(std::format("{}.port", cameraName)).as_int());
-
-            declare_parameter(std::format("{}.stream.codec", cameraName), rclcpp::ParameterType::PARAMETER_STRING);
-            std::string const codec = get_parameter(std::format("{}.stream.codec", cameraName)).as_string();
-
-            std::string const pipeline = createRtpToRawSrc(port, gst::video::getCodecFromStringView(codec), rtpJitterMs);
-
-            mMediaControlClients.emplace(cameraName, create_client<srv::MediaControl>(std::format("{}_media_control", cameraName)));
-            mImageCaptureClients.emplace(cameraName, create_client<std_srvs::srv::Trigger>(std::format("{}_image_capture", cameraName)));
-            mImageCaptureSubscribers.emplace(cameraName, create_subscription<sensor_msgs::msg::Image>(
-                                                                 std::format("{}_image", cameraName), 1,
-                                                                 [this, cameraName](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
-                                                                     imageCaptureCallback(cameraName, msg);
-                                                                 }));
-
-            // emit signal for GUI to handle camera setup
-            emit cameraDiscovered(CameraInfo{.name = cameraName, .pipeline = pipeline});
         }
+
+        return configs;
     }
 
     auto CameraClientNode::sendMediaControlRequest(std::string const& cameraName, std::uint8_t command) -> bool {

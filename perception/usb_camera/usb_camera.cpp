@@ -99,20 +99,20 @@ namespace mrover {
             GstMapInfo map;
             gst_buffer_map(buffer, &map, GST_MAP_READ);
 
-            sensor_msgs::msg::Image image;
-            image.header.stamp = get_clock()->now();
-            image.encoding = sensor_msgs::image_encodings::BGRA8;
-            image.is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-            image.height = mHeight;
-            image.width = mWidth;
-            image.step = mWidth * 4;
-            image.data.resize(image.step * mHeight);
+            auto image = std::make_unique<sensor_msgs::msg::Image>();
+            image->header.stamp = get_clock()->now();
+            image->encoding = sensor_msgs::image_encodings::BGRA8;
+            image->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
+            image->height = mHeight;
+            image->width = mWidth;
+            image->step = mWidth * 4;
+            image->data.resize(image->step * mHeight);
             // These do not clone the data (due to passing the pointer), just provide a way for OpenCV to access it
             // We are converting directly from GStreamer YUV2 memory to the ROS image BGRA memory
             cv::Mat yuvView{mHeight, mWidth, CV_8UC2, map.data};
-            cv::Mat bgraView{mHeight, mWidth, CV_8UC4, image.data.data()};
+            cv::Mat bgraView{mHeight, mWidth, CV_8UC4, image->data.data()};
             cv::cvtColor(yuvView, bgraView, cv::COLOR_YUV2BGRA_YUY2);
-            mImgPub->publish(image);
+            mImgPub->publish(std::move(image));
 
             gst_buffer_unmap(buffer, &map);
             gst_sample_unref(sample);
@@ -176,9 +176,5 @@ namespace mrover {
 
 } // namespace mrover
 
-auto main(int argc, char** argv) -> int {
-    rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<mrover::UsbCamera>());
-    rclcpp::shutdown();
-    return EXIT_SUCCESS;
-}
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(mrover::UsbCamera)
