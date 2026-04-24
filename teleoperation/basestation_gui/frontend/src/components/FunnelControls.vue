@@ -215,7 +215,7 @@ async function sendPosition(index: number) {
 
   try {
     const radians = ((site.radians + offsetDeg.value * DEG_TO_RAD) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI)
-    await scienceAPI.setGearDiffPosition(radians, false)
+    await scienceAPI.setFunnelPosition(radians, false)
   } catch {
     currentSite.value = previousSite
   } finally {
