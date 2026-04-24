@@ -360,6 +360,41 @@ namespace mrover {
 
         traverse(traverse, model.getRoot());
 
+        // add point to point link for arm linear actuator
+        if (uri.find("rover.urdf.xacro") != std::string_view::npos) {
+            int pistonLink = linkNameToMeta.at("arm_la_piston_link").index;
+            int bcLink = linkNameToMeta.at("arm_b_link").index;
+            auto* p2p = simulator.makeBulletObject<btMultiBodyPoint2Point>(simulator.mMultibodyConstraints, multiBody, pistonLink, multiBody, bcLink, btVector3(0, 0, 0), btVector3(0.43190, 0, 0.03997));
+            mConstraints.push_back(p2p);
+        }
+
+        // Add point to point constraints to close suspension
+        // TODO(neven): make these constraints more rigid?
+        if (uri.find("rover.urdf.xacro") != std::string_view::npos) {
+            static constexpr std::array<std::tuple<std::string_view, std::string_view, float, float>, 4> crank_links{{
+                    {"right", "rear", -1, -1},
+                    {"left", "rear", -1, 1},
+                    {"right", "front", 1, 1},
+                    {"left", "front", 1, -1},
+            }};
+            for (auto const& [side, pos, frontRearSign, inOutSign]: crank_links) {
+                int crankLink = linkNameToMeta.at(std::format("{}_lambda_crank_{}_link", side, pos)).index;
+                int lambdaLink = linkNameToMeta.at(std::format("{}_lambda_{}_link", side, pos)).index;
+                auto* p2p = simulator.makeBulletObject<btMultiBodyPoint2Point>(simulator.mMultibodyConstraints, multiBody, crankLink, multiBody, lambdaLink, btVector3(frontRearSign * 0.07078f, -0.05856, 0), btVector3(frontRearSign * -0.08668f, -0.14353, inOutSign * 0.005f));
+                mConstraints.push_back(p2p);
+            }
+        }
+
+        // add point to point links for diff bar
+        if (uri.find("rover.urdf.xacro") != std::string_view::npos) {
+            for (int side = 0; side < 2; ++side) {
+                int rockerLink = linkNameToMeta.at(std::format("{}_rocker_link", side ? "left" : "right")).index;
+                int diffBarConnectorLink = linkNameToMeta.at(std::format("{}_diff_bar_connector_link", side ? "left" : "right")).index;
+                auto* p2p = simulator.makeBulletObject<btMultiBodyPoint2Point>(simulator.mMultibodyConstraints, multiBody, rockerLink, multiBody, diffBarConnectorLink, btVector3(-0.38765, 0.09797, ((side * 2) - 1) * 0.05642f), btVector3(0, 0, -0.09210));
+                mConstraints.push_back(p2p);
+            }
+        }
+
         multiBody->finalizeMultiDof();
         btAlignedObjectArray<btQuaternion> q;
         btAlignedObjectArray<btVector3> m;

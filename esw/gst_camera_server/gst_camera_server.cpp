@@ -85,6 +85,9 @@ namespace mrover {
                         pipeline.pushBack(std::format("videocrop left={} right={} top={} bottom={}", mCropLeft, mCropRight, mCropTop, mCropBottom));
                     }
 
+                    pipeline.pushBack("videoconvert");
+                    pipeline.pushBack("video/x-raw,format=I420");
+
                     pipeline.pushBack("nvvidconv");
                     pipeline.pushBack("video/x-raw(memory:NVMM),format=NV12");
                     break;
@@ -103,28 +106,21 @@ namespace mrover {
                 case gst::video::Codec::H265: {
                     pipeline.pushBack("nvv4l2h265enc",
                                       gst::addProperty("bitrate", mBitrate),
-                                      gst::addProperty("iframeinterval", 300),
-                                      gst::addProperty("vbv-size", 33333),
-                                      gst::addProperty("insert-sps-pps", true),
-                                      gst::addProperty("control-rate", "constant_bitrate"),
-                                      gst::addProperty("profile", "main"),
-                                      gst::addProperty("num-B-Frames", 0),
-                                      gst::addProperty("ratecontrol-enable", true),
-                                      gst::addProperty("preset-level", "UltraFastPreset"),
-                                      gst::addProperty("EnableTwopassCBR", false),
-                                      gst::addProperty("maxperf-enable", true));
+                                      gst::addProperty("insert-sps-pps", true));
                     pipeline.pushBack("h265parse");
                     break;
                 }
                 case gst::video::Codec::H264: {
-                    pipeline.pushBack("nvv4l2h265enc",
-                                      gst::addProperty("bitrate", mBitrate));
+                    pipeline.pushBack("nvv4l2h264enc",
+                                      gst::addProperty("bitrate", mBitrate),
+                                      gst::addProperty("insert-sps-pps", true));
                     pipeline.pushBack("h264parse");
                     break;
                 }
                 case gst::video::Codec::AV1: {
                     pipeline.pushBack("nvv4l2av1enc",
-                                      gst::addProperty("bitrate", mBitrate));
+                                      gst::addProperty("bitrate", mBitrate),
+                                      gst::addProperty("insert-sps-pps", true));
                     break;
                 }
                 default: {
