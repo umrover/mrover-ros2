@@ -8,10 +8,10 @@
       <div class="sensor-modal-header">
         <h4 class="component-header">All Sensor Charts</h4>
         <div class="flex gap-2">
-          <button class="btn btn-sm btn-outline-secondary" @click="$emit('reset')">
+          <button class="btn btn-sm btn-outline-danger" @click="$emit('reset')">
             <i class="bi bi-arrow-counterclockwise"></i> Reset
           </button>
-          <button class="btn btn-sm btn-outline-secondary close-btn" @click="$emit('close')">
+          <button class="btn btn-sm btn-outline-danger close-btn" @click="$emit('close')">
             <i class="bi bi-x-lg"></i>
           </button>
         </div>
@@ -321,10 +321,6 @@ onMounted(() => {
 
 .sensor-chart-sidebar .btn {
   font-size: 0.6875rem;
-}
-
-.sensor-modal-content .btn:hover {
-  background-color: var(--table-header-bg);
 }
 
 .sensor-chart-canvas {
