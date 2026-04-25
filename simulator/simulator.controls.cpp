@@ -20,17 +20,9 @@ namespace mrover {
 
     void Simulator::velocitiesCallback(msg::Velocity::ConstSharedPtr const& msg) {
         forEachMotor(msg->names, msg->velocities, [&](btMultiBodyJointMotor* motor, float velocity) {
-            if (std::abs(velocity) < 1e-4) {
-                btMultiBody* body = motor->getMultiBodyA();
-                int linkIndex = motor->getLinkA();
-                float currPos = body->getJointPos(linkIndex);
-                motor->setVelocityTarget(0, 1);
-                motor->setPositionTarget(currPos, 1);
-            } else {
-                motor->setMaxAppliedImpulse(0.5);
-                motor->setPositionTarget(0, 0);
-                motor->setVelocityTarget(velocity, 0.5);
-            }
+            motor->setMaxAppliedImpulse(0.5);
+            motor->setPositionTarget(0, 0);
+            motor->setVelocityTarget(velocity, 0.5);
         });
     }
 

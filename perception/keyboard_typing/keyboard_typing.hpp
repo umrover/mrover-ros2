@@ -2,6 +2,47 @@
 
 #include "pch.hpp"
 
+constexpr double key_length = 0.01905;
+constexpr double secondRowX = -0.0095;
+constexpr double thirdRowX = -0.01345;
+constexpr double fourthRowX = -0.009525;
+constexpr double secondRowZ = 0.0007112;
+constexpr double thirdRowZ = 0.0017272;
+constexpr double fourthRowZ = 0.0048514;
+
+inline std::unordered_map<char, cv::Vec3d> const keyboard_offset = {
+        {'Z', cv::Vec3d{0, 0, 0}},
+        {'X', cv::Vec3d{key_length, 0, 0}},
+        {'C', cv::Vec3d{2 * key_length, 0, 0}},
+        {'V', cv::Vec3d{3 * key_length, 0, 0}},
+        {'B', cv::Vec3d{4 * key_length, 0, 0}},
+        {'N', cv::Vec3d{5 * key_length, 0, 0}},
+        {'M', cv::Vec3d{6 * key_length, 0, 0}},
+
+        {'A', cv::Vec3d{secondRowX, key_length, secondRowZ}},
+        {'S', cv::Vec3d{secondRowX + key_length, key_length, secondRowZ}},
+        {'D', cv::Vec3d{secondRowX + 2 * key_length, key_length, secondRowZ}},
+        {'F', cv::Vec3d{secondRowX + 3 * key_length, key_length, secondRowZ}},
+        {'G', cv::Vec3d{secondRowX + 4 * key_length, key_length, secondRowZ}},
+        {'H', cv::Vec3d{secondRowX + 5 * key_length, key_length, secondRowZ}},
+        {'J', cv::Vec3d{secondRowX + 6 * key_length, key_length, secondRowZ}},
+        {'K', cv::Vec3d{secondRowX + 7 * key_length, key_length, secondRowZ}},
+        {'L', cv::Vec3d{secondRowX + 8 * key_length, key_length, secondRowZ}},
+
+        {'Q', cv::Vec3d{thirdRowX, 2 * key_length, thirdRowZ}},
+        {'W', cv::Vec3d{thirdRowX + key_length, 2 * key_length, thirdRowZ}},
+        {'E', cv::Vec3d{thirdRowX + 2 * key_length, 2 * key_length, thirdRowZ}},
+        {'R', cv::Vec3d{thirdRowX + 3 * key_length, 2 * key_length, thirdRowZ}},
+        {'T', cv::Vec3d{thirdRowX + 4 * key_length, 2 * key_length, thirdRowZ}},
+        {'Y', cv::Vec3d{thirdRowX + 5 * key_length, 2 * key_length, thirdRowZ}},
+        {'U', cv::Vec3d{thirdRowX + 6 * key_length, 2 * key_length, thirdRowZ}},
+        {'I', cv::Vec3d{thirdRowX + 7 * key_length, 2 * key_length, thirdRowZ}},
+        {'O', cv::Vec3d{thirdRowX + 8 * key_length, 2 * key_length, thirdRowZ}},
+        {'P', cv::Vec3d{thirdRowX + 9 * key_length, 2 * key_length, thirdRowZ}},
+
+        // backspace
+        {'-', cv::Vec3d{fourthRowX + 11 * key_length + 0.028575, 3 * key_length, fourthRowZ}}};
+
 // #include "constants.h"
 namespace mrover {
     class KeyboardTypingNode : public rclcpp::Node {
@@ -41,7 +82,7 @@ namespace mrover {
 
         double keyboard_roll;
 
-        bool align = false;
+        bool mAlignArm = false;
 
         // Params
         int mMinCodeLength{}, mMaxCodeLength{};
@@ -88,7 +129,7 @@ namespace mrover {
         cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);
 
         // Layout map (ID -> Bottom-Left Corner Position)
-        std::map<int, cv::Vec3d> layout;
+        std::map<int, cv::Vec3d> mTagLayout;
 
         auto outputToCSV(cv::Vec3d& tvec, cv::Vec3d& rvec) -> void;
 
@@ -99,11 +140,6 @@ namespace mrover {
 
         // Change the function signature to accept vectors
         auto updateKalmanFilter(cv::Vec3d& tvec, cv::Vec3d& rvec) -> geometry_msgs::msg::Pose;
-
-        // auto getKeyToCameraTransform(cv::Vec3d const& rvec,
-        //                              cv::Vec3d const& tvec,
-        //                              cv::Vec3d const& tag_offset_key) -> cv::Mat;
-
 
         auto sendIKCommand(float x, float y, float z, float pitch, float roll) -> void;
 
@@ -129,5 +165,3 @@ namespace mrover {
         explicit KeyboardTypingNode(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
     };
 } // namespace mrover
-
-extern std::unordered_map<char, cv::Vec3d> keyboard_offset;

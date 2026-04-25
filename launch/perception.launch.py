@@ -106,4 +106,4 @@ def generate_launch_description():
         output="screen",
     )
 
-    return launch.LaunchDescription([loaded_container, long_range_container, keyboard_typing, arm_e_link_to_cam])
+    return launch.LaunchDescription([loaded_container, long_range_container])

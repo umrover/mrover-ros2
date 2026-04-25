@@ -49,8 +49,6 @@
 
 #include <manif/impl/se3/SE3.h>
 
-#include "constants.hpp"
-#include "keyboard_typing/constants.hpp"
 #include "lie.hpp"
 #include <loop_profiler.hpp>
 #include <parameter.hpp>

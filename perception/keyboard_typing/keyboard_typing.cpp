@@ -39,7 +39,7 @@ namespace mrover {
             float y = static_cast<float>(offset_raw[i + 2]);
             float z = static_cast<float>(offset_raw[i + 3]);
 
-            layout[id] = cv::Vec3d(x, y, z);
+            mTagLayout[id] = cv::Vec3d(x, y, z);
         }
 
         // Set up action server
@@ -187,7 +187,7 @@ namespace mrover {
         if (!ids.empty()) {
             std::vector<int> valid_indices;
             for (size_t i = 0; i < ids.size(); ++i) {
-                if (layout.count(ids[i]) > 0) {
+                if (mTagLayout.count(ids[i]) > 0) {
                     valid_indices.push_back(i);
                 }
             }
@@ -202,7 +202,7 @@ namespace mrover {
                 for (int idx: valid_indices) {
                     int id = ids[idx];
 
-                    cv::Point3f tag_center(layout[id][0], layout[id][1], layout[id][2]);
+                    cv::Point3f tag_center(mTagLayout[id][0], mTagLayout[id][1], mTagLayout[id][2]);
 
                     all_objPoints.push_back(tag_center + cv::Point3f(-half_size, half_size, 0));  // Top-Left
                     all_objPoints.push_back(tag_center + cv::Point3f(half_size, half_size, 0));   // Top-Right
@@ -547,7 +547,7 @@ namespace mrover {
             // Align arm over z key
             RCLCPP_INFO_STREAM(this->get_logger(), "Aligning to z key");
 
-            if (align) {
+            if (mAlignArm) {
                 align_to_z();
             } else {
                 // grab roll of keyboard
@@ -581,8 +581,8 @@ namespace mrover {
                 float x_pos = 0;
                 float y_pos = 0;
 
-                x_pos = keyboard_offset[launchCode[i]][0];
-                y_pos = keyboard_offset[launchCode[i]][1];
+                x_pos = keyboard_offset.at(launchCode[i])[0];
+                y_pos = keyboard_offset.at(launchCode[i])[1];
 
                 double rolled_x_pos = (x_pos * std::cos(keyboard_roll)) - (y_pos * std::sin(keyboard_roll));
 
