@@ -14,13 +14,13 @@ namespace mrover {
 
         Radians mPosition{0.0f};
         RadiansPerSecond mVelocity{0.0f};
+
     public:
         AbsoluteEncoder(rclcpp::Node::SharedPtr node, std::string masterName, std::string deviceName, bool invert = false)
             : mNode{std::move(node)},
               mDevice{mNode, std::move(masterName), std::move(deviceName),
                       [this](CANMsg_t const& msg) -> void { processMessage(msg); }},
               mInvert{invert} {
-
         }
 
         void processMessage(CANMsg_t const& msg) {
@@ -43,7 +43,7 @@ namespace mrover {
             return mPosition;
         }
 
-        [[nodiscard]] auto getVelocity() const -> RadiansPerSecond{
+        [[nodiscard]] auto getVelocity() const -> RadiansPerSecond {
             return mVelocity;
         }
     };

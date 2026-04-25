@@ -21,9 +21,9 @@
 #include <mrover/msg/velocity.hpp>
 #include <mrover/srv/pusher.hpp>
 
+#include <abs.hpp>
 #include <brushed.hpp>
 #include <brushless.hpp>
-#include <abs.hpp>
 
 
 namespace mrover {
@@ -523,10 +523,10 @@ namespace mrover {
             mJointDEPitchRoll = {currentPitch, currentRoll};
 
             Vector2<Radians> motorPositionsRad = PITCH_ROLL_TO_01_SCALE * (PITCH_ROLL_TO_0_1 * mJointDEPitchRoll.value());
-            Revolutions const motor0Pos{motorPositionsRad[0]}; 
+            Revolutions const motor0Pos{motorPositionsRad[0]};
             Revolutions const motor1Pos{motorPositionsRad[1]};
 
-            mJointDE0->adjust(motor0Pos); 
+            mJointDE0->adjust(motor0Pos);
             mJointDE1->adjust(motor1Pos);
         }
 
