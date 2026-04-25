@@ -17,9 +17,9 @@
     </div>
 
     <div class="flex gap-1">
-      <button class="btn btn-success btn-sm flex-1" @click="$emit('find', { index: index })">Find</button>
-      <button class="btn btn-success btn-sm flex-1" @click="$emit('search', {index: index})">Search</button>
-      <button class="btn btn-sm btn-outline-primary flex-1" @click="$emit('delete', { index: index })">Delete</button>
+      <button class="btn btn-primary btn-sm flex-1" @click="$emit('find', { index: index })">Find</button>
+      <button class="btn btn-info btn-sm flex-1" @click="$emit('search', {index: index})">Search</button>
+      <button class="btn btn-danger btn-sm flex-1" @click="$emit('delete', { index: index })">Delete</button>
     </div>
   </div>
 </template>

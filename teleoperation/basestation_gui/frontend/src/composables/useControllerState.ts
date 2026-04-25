@@ -138,10 +138,7 @@ function hasError(v: string | undefined): boolean {
 
 export function stateRowClass(state: string | undefined, error?: string | undefined): string {
   if (!state) return 'row-no-data'
-
-  // Turn red if there is an explicit error or if the state itself indicates a fault
   const isFaultState = state.toLowerCase().includes('fault') || state.toLowerCase().includes('failure')
   if (isFaultState || hasError(error)) return 'bg-danger-subtle'
-
   return ''
 }

@@ -8,10 +8,10 @@
       <div class="sensor-modal-header">
         <h4 class="component-header">All Sensor Charts</h4>
         <div class="flex gap-2">
-          <button class="btn btn-sm btn-outline-secondary" @click="$emit('reset')">
+          <button class="btn btn-sm btn-outline-danger" @click="$emit('reset')">
             <i class="bi bi-arrow-counterclockwise"></i> Reset
           </button>
-          <button class="btn btn-sm btn-outline-secondary close-btn" @click="$emit('close')">
+          <button class="btn btn-sm btn-outline-danger close-btn" @click="$emit('close')">
             <i class="bi bi-x-lg"></i>
           </button>
         </div>
@@ -51,6 +51,7 @@
 import { onMounted, onUnmounted } from 'vue'
 import Chart from 'chart.js/auto'
 import type { Chart as ChartType } from 'chart.js/auto'
+import { currentTimestamp } from '@/utils/formatNumber'
 
 interface ChartDataset {
   label: string
@@ -113,6 +114,7 @@ const sanitizeFilename = (title: string): string => {
   return title.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '')
 }
 
+
 const downloadPNG = (chartIndex: number): void => {
   const chart = charts[chartIndex]
   const config = chartConfigs[chartIndex]
@@ -122,7 +124,7 @@ const downloadPNG = (chartIndex: number): void => {
   const url = canvas.toDataURL('image/png')
   const anchor = document.createElement('a')
   anchor.href = url
-  anchor.download = `${sanitizeFilename(config.title)}.png`
+  anchor.download = `${sanitizeFilename(config.title)}_${currentTimestamp()}.png`
   anchor.click()
 }
 
@@ -141,7 +143,7 @@ const downloadCSV = (chartIndex: number): void => {
 
   const anchor = document.createElement('a')
   anchor.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv)
-  anchor.download = `${sanitizeFilename(config.title)}.csv`
+  anchor.download = `${sanitizeFilename(config.title)}_${currentTimestamp()}.csv`
   anchor.click()
 }
 
@@ -319,10 +321,6 @@ onMounted(() => {
 
 .sensor-chart-sidebar .btn {
   font-size: 0.6875rem;
-}
-
-.sensor-modal-content .btn:hover {
-  background-color: var(--table-header-bg);
 }
 
 .sensor-chart-canvas {

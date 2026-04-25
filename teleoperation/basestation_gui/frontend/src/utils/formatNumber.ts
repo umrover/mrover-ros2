@@ -32,3 +32,7 @@ export function formatError(v: string | undefined): string {
   if (v === '') return 'None'
   return v
 }
+
+export function currentTimestamp(): string {
+  return new Date().toTimeString().slice(0, 8).replace(/:/g, '-')
+}
