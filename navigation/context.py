@@ -109,6 +109,22 @@ class Environment:
 
         return target_pose.translation()
 
+    def get_time_diff(self, frame: str) -> None | Duration:
+        # Try to get message from TF tree with associated time
+        try:
+            _, t = SE3.from_tf_tree_with_time(self.ctx.tf_buffer, frame, self.ctx.world_frame)
+        except (
+            tf2_ros.LookupException,
+            tf2_ros.ConnectivityException,
+            tf2_ros.ExtrapolationException,
+        ):
+            return None
+
+        now = self.ctx.node.get_clock().now()
+        # Calculate difference between current time and TF tree time
+        time = Time.from_msg(t)
+        return now - time
+
     def current_target_pos(self) -> np.ndarray | None:
         assert self.ctx.course is not None
 
@@ -121,6 +137,21 @@ class Environment:
                 return self.get_target_position("bottle")
             case Waypoint(type=WaypointType(val=WaypointType.ROCK_PICK)):
                 return self.get_target_position("pick")
+            case _:
+                return None
+
+    def current_time_diff(self):
+        assert self.ctx.course is not None
+        # Return the time difference with an associated target frame
+        match self.ctx.course.current_waypoint():
+            case Waypoint(type=WaypointType(val=WaypointType.POST), tag_id=tag_id):
+                return self.get_time_diff(f"tag{tag_id}")
+            case Waypoint(type=WaypointType(val=WaypointType.MALLET)):
+                return self.get_time_diff("hammer")
+            case Waypoint(type=WaypointType(val=WaypointType.WATER_BOTTLE)):
+                return self.get_time_diff("bottle")
+            case Waypoint(type=WaypointType(val=WaypointType.ROCK_PICK)):
+                return self.get_time_diff("pick")
             case _:
                 return None
 
@@ -257,7 +288,7 @@ class Course:
     def look_for_object(self) -> bool:
         """
         :return: Whether the currently active waypoint is an object (if it exists).
-                 Either the mallet or the water bottle.
+                 Either the mallet, water bottle, or the rock pick.
         """
         current_waypoint = self.current_waypoint()
         return current_waypoint is not None and current_waypoint.type.val in {
