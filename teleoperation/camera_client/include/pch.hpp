@@ -13,7 +13,9 @@
 #include <QDockWidget>
 #include <QFileDialog>
 #include <QFormLayout>
+#include <QFrame>
 #include <QGridLayout>
+#include <QHBoxLayout>
 #include <QImage>
 #include <QLabel>
 #include <QLineEdit>

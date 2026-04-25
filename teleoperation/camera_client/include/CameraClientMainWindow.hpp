@@ -18,6 +18,17 @@ namespace mrover {
         QDockWidget* mGstRtpVideoCreatorDock;
         GstRtpVideoCreatorWidget* mGstRtpVideoCreatorWidget;
 
+        QDockWidget* mColorPickerDock = nullptr;
+        QLabel* mColorCameraLabel = nullptr;
+        QFrame* mColorSwatchFrame = nullptr;
+        QLabel* mColorRLabel = nullptr;
+        QLabel* mColorGLabel = nullptr;
+        QLabel* mColorBLabel = nullptr;
+        QLabel* mColorHexLabel = nullptr;
+
+        void buildColorPickerDock();
+        void onColorPicked(QString const& cameraName, QColor const& color);
+
     public:
         explicit CameraClientMainWindow(QWidget* parent = nullptr);
 

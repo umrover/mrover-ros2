@@ -27,7 +27,9 @@ namespace mrover {
 
         QColor mLastPickedColor;
         QPoint mLastCursorPos;
-        bool mShowColorOverlay = false;
+        bool mMouseInWidget = false;
+
+        void sampleColorAtCursor();
 
     public:
         explicit GstVideoWidget(QWidget* parent = nullptr);
@@ -42,7 +44,6 @@ namespace mrover {
         auto pause() -> void;
         auto stop() -> void;
 
-        void setShowColorOverlay(bool show) { mShowColorOverlay = show; }
         void updateFrame(const QImage& frame);
 
     protected:
@@ -52,10 +53,7 @@ namespace mrover {
         void paintEvent(QPaintEvent* event) override;
 
     signals:
-        void colorPicked(QPoint pos, QColor color);
-
-    public:
-        QImage getLastFrame() const { return mLastFrame; }
+        void colorPicked(QColor color);
     };
 
     class GstVideoGridWidget : public QWidget {
@@ -100,5 +98,8 @@ namespace mrover {
         [[nodiscard]] auto error() const -> GstVideoGridWidget::Error;
         [[nodiscard]] auto errorString() const -> QString;
         [[nodiscard]] auto isError() const -> bool;
+
+    signals:
+        void colorPicked(QString cameraName, QColor color);
     };
 } // namespace mrover

@@ -1,5 +1,4 @@
 #include "GstVideoWidgets.hpp"
-#include <QDebug>
 
 using namespace mrover;
 
@@ -23,13 +22,11 @@ bool VideoSurface::present(const QVideoFrame& frame) {
     if (frame.isValid()) {
         QVideoFrame cloneFrame(frame);
         if (cloneFrame.map(QAbstractVideoBuffer::ReadOnly)) {
-            QImage image(cloneFrame.bits(), cloneFrame.width(), cloneFrame.height(), 
+            QImage image(cloneFrame.bits(), cloneFrame.width(), cloneFrame.height(),
                          cloneFrame.bytesPerLine(), QVideoFrame::imageFormatFromPixelFormat(cloneFrame.pixelFormat()));
-            // We must copy the image because cloneFrame.bits() will be invalid after unmap
+            // image.copy() is required: cloneFrame.bits() becomes invalid after unmap
             mWidget->updateFrame(image.copy());
             cloneFrame.unmap();
-        } else {
-            qDebug() << "Failed to map video frame! Handle type:" << cloneFrame.handleType() << "Pixel format:" << cloneFrame.pixelFormat();
         }
     }
     return true;
@@ -40,15 +37,12 @@ GstVideoWidget::GstVideoWidget(QWidget* parent) : QWidget(parent) {
     mSurface = new VideoSurface(this, this);
     mPlayer->setVideoOutput(mSurface);
     setMouseTracking(true);
-    mLastPickedColor = QColor(Qt::white); // Initialize with something valid for testing
 }
 
 auto GstVideoWidget::setGstPipeline(std::string const& pipeline) -> void {
-    // When using setVideoOutput with a custom surface, we should ideally let QMediaPlayer handle the sink.
-    // However, with gst-pipeline, we often need to provide a sink named qtvideosink.
-    QString pipelineStr = QString::fromStdString(std::format("gst-pipeline: {} ! videoconvert ! qtvideosink name=\"qtvideosink\" sync=false", pipeline));
-    qDebug() << "Setting pipeline:" << pipelineStr;
-    mPlayer->setMedia(QUrl(pipelineStr));
+    // qtvideosink is required here (not xvimagesink) so VideoSurface::present receives frames
+    mPlayer->setMedia(QUrl(QString::fromStdString(
+        std::format("gst-pipeline: {} ! videoconvert ! qtvideosink name=\"qtvideosink\" sync=false", pipeline))));
     play();
 }
 
@@ -76,26 +70,27 @@ auto GstVideoWidget::stop() -> void {
     mPlayer->stop();
 }
 
+void GstVideoWidget::sampleColorAtCursor() {
+    if (mLastFrame.isNull() || width() == 0 || height() == 0) return;
+
+    QPoint framePos(mLastCursorPos.x() * mLastFrame.width() / width(),
+                    mLastCursorPos.y() * mLastFrame.height() / height());
+    if (!mLastFrame.rect().contains(framePos)) return;
+
+    mLastPickedColor = mLastFrame.pixelColor(framePos);
+    emit colorPicked(mLastPickedColor);
+}
+
 void GstVideoWidget::updateFrame(const QImage& frame) {
     mLastFrame = frame;
-    // Update the picked color if mouse is currently over the widget
-    if (mShowColorOverlay && !mLastFrame.isNull()) {
-        if (width() > 0 && height() > 0) {
-            QPoint framePos(mLastCursorPos.x() * mLastFrame.width() / width(),
-                            mLastCursorPos.y() * mLastFrame.height() / height());
-            if (mLastFrame.rect().contains(framePos)) {
-                mLastPickedColor = mLastFrame.pixelColor(framePos);
-                emit colorPicked(mLastCursorPos, mLastPickedColor);
-            }
-        }
-    }
+    if (mMouseInWidget) sampleColorAtCursor();
     update();
 }
 
 void GstVideoWidget::paintEvent(QPaintEvent* event) {
     Q_UNUSED(event);
     QPainter painter(this);
-    
+
     if (!mLastFrame.isNull()) {
         painter.drawImage(rect(), mLastFrame);
     } else {
@@ -104,71 +99,41 @@ void GstVideoWidget::paintEvent(QPaintEvent* event) {
         painter.drawText(rect(), Qt::AlignCenter, "No Video Frame Received");
     }
 
-    // Draw RGB overlay if enabled
-    if (mShowColorOverlay && mLastPickedColor.isValid()) {
-        QString rgbText = QString("R:%1 G:%2 B:%3")
-                              .arg(mLastPickedColor.red())
-                              .arg(mLastPickedColor.green())
-                              .arg(mLastPickedColor.blue());
-        
-        painter.setPen(Qt::white);
-        painter.setFont(QFont("Monospace", 10, QFont::Bold));
+    if (mMouseInWidget) {
+        int x = mLastCursorPos.x();
+        int y = mLastCursorPos.y();
+        constexpr int arm = 8;
 
-        QRect textRect = painter.boundingRect(QRect(), Qt::AlignLeft, rgbText);
-        textRect.adjust(-4, -2, 4, 2); // Padding
-        
-        QPoint drawPos = mLastCursorPos + QPoint(15, 15);
-        
-        // Ensure the overlay stays within widget bounds
-        if (drawPos.x() + textRect.width() > width())
-            drawPos.setX(mLastCursorPos.x() - textRect.width() - 5);
-        if (drawPos.y() + textRect.height() > height())
-            drawPos.setY(mLastCursorPos.y() - textRect.height() - 5);
-        
-        textRect.moveTopLeft(drawPos);
+        painter.setPen(QPen(QColor(0, 0, 0, 180), 3));
+        painter.drawLine(x - arm, y, x + arm, y);
+        painter.drawLine(x, y - arm, x, y + arm);
 
-        painter.setBrush(QColor(0, 0, 0, 160));
-        painter.setPen(Qt::NoPen);
-        painter.drawRoundedRect(textRect, 4, 4);
-
-        painter.setPen(Qt::white);
-        painter.drawText(textRect, Qt::AlignCenter, rgbText);
+        painter.setPen(QPen(Qt::white, 1));
+        painter.drawLine(x - arm, y, x + arm, y);
+        painter.drawLine(x, y - arm, x, y + arm);
     }
 }
 
 void GstVideoWidget::mouseMoveEvent(QMouseEvent* event) {
     mLastCursorPos = event->pos();
-    if (mShowColorOverlay && !mLastFrame.isNull()) {
-        if (width() > 0 && height() > 0) {
-            QPoint framePos(mLastCursorPos.x() * mLastFrame.width() / width(),
-                            mLastCursorPos.y() * mLastFrame.height() / height());
-            if (mLastFrame.rect().contains(framePos)) {
-                mLastPickedColor = mLastFrame.pixelColor(framePos);
-                emit colorPicked(mLastCursorPos, mLastPickedColor);
-                
-                // Debug log to confirm we are getting colors
-                qDebug() << "Mouse Move:" << mLastCursorPos << "RGB:" 
-                         << mLastPickedColor.red() << mLastPickedColor.green() << mLastPickedColor.blue();
-            }
-        }
-    } else {
-        qDebug() << "Mouse Move blocked - mShowColorOverlay:" << mShowColorOverlay << "mLastFrame.isNull():" << mLastFrame.isNull();
-    }
+    if (mMouseInWidget) sampleColorAtCursor();
     update();
     QWidget::mouseMoveEvent(event);
 }
 
 void GstVideoWidget::enterEvent(QEvent* event) {
-    mShowColorOverlay = true;
+    mMouseInWidget = true;
     update();
     QWidget::enterEvent(event);
 }
 
 void GstVideoWidget::leaveEvent(QEvent* event) {
-    mShowColorOverlay = false;
+    mMouseInWidget = false;
     update();
     QWidget::leaveEvent(event);
 }
+
+// --------------------------------------------
 
 GstVideoGridWidget::GstVideoGridWidget(QWidget* parent)
     : QWidget(parent), mError(NoError) {
@@ -200,10 +165,14 @@ auto GstVideoGridWidget::addGstVideoWidget(std::string const& name, std::string 
         return false;
     }
 
+    connect(gstVideoBoxGstVideoWidget, &GstVideoWidget::colorPicked,
+            this, [this, name](QColor color) {
+                emit colorPicked(QString::fromStdString(name), color);
+            });
+
     gstVideoBoxLayout->addWidget(gstVideoBoxLabel, 0);
     gstVideoBoxLayout->addWidget(gstVideoBoxGstVideoWidget, 1);
     gstVideoBoxWidget->setLayout(gstVideoBoxLayout);
-
 
     int const index = static_cast<int>(mGstVideoBoxes.size());
     mMainLayout->addWidget(gstVideoBoxWidget, index / 2, index % 2, Qt::AlignCenter);
