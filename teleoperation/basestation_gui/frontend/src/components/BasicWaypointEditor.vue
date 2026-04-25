@@ -23,7 +23,6 @@
         </div>
 
         <div class="flex flex-col gap-3 p-3 border rounded">
-          <div class="data-label">Manual Entry</div>
           <div class="flex items-center gap-2">
             <label for="waypointname" class="data-label m-0">Name:</label>
             <input class="form-control form-control-sm grow" id="waypointname" data-testid="pw-basic-wp-name" v-model="name" />
