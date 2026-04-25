@@ -50,9 +50,9 @@
                 </select>
               </div>
               <div class="col-span-2">
-                <label for="coverage_radius" class="cmd-form-label">Coverage Radius (0 for default):</label>
+                <label for="coverage_radius" class="form-label">Coverage Radius (0 for default):</label>
                 <input
-                  class="cmd-form-control"
+                  class="form-control"
                   id="coverage_radius"
                   v-model.number="form.coverage_radius"
                   type="number"
