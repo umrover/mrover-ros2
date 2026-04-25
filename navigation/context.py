@@ -505,9 +505,19 @@ class Context:
         return True
 
     def obj_detector_service_is_done(self) -> bool:
-        return (self.image_future is None or self.stereo_future is None) or (
-            self.image_future.done() and self.stereo_future.done()
-        )
+        # Ensure a service request has been called before
+        if (self.image_future is None or self.stereo_future is None):
+            return True
+        # Check to see if the futures have finished
+        if (self.image_future.done() and self.stereo_future.done()):
+            # If futures have finished, ensure request was not malformed
+            if (not self.image_future.result() or not self.stereo_future.result()):
+                self.node.get_logger().warn("Object Detector Service Request Failed", throttle_duration_sec=2.0)
+            else:
+                return True
+        else:
+            self.node.get_logger().info("Waiting for Object Detector Service to Complete", throttle_duration_sec=2.0)
+        return False
 
     def toggle_path_relaxation(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
         self.node.set_parameters([Parameter("smoothing.use_relaxation", Parameter.Type.BOOL, request.data)])
