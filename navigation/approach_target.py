@@ -8,7 +8,6 @@ from state_machine.state import State
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Path
 from visualization_msgs.msg import Marker
-from mrover.msg import WaypointType
 from rclpy.publisher import Publisher
 from rclpy.time import Time
 from rclpy.timer import Timer
