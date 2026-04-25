@@ -38,8 +38,13 @@
 #include <QStandardPaths>
 #include <QTimer>
 #include <QToolBar>
+#include <QAbstractVideoSurface>
+#include <QFrame>
+#include <QHBoxLayout>
+#include <QPainter>
 #include <QVBoxLayout>
-#include <QVideoWidget>
+#include <QVideoFrame>
+#include <QVideoSurfaceFormat>
 #include <QWidget>
 
 #include <opencv2/core.hpp>

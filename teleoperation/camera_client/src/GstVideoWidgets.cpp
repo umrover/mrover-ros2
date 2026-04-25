@@ -47,16 +47,54 @@ void DraggableVideoFrame::mouseMoveEvent(QMouseEvent* event) {
 }
 
 // --------------------------------------------
+// VideoSurface
+// --------------------------------------------
+
+VideoSurface::VideoSurface(GstVideoWidget* widget, QObject* parent)
+    : QAbstractVideoSurface(parent), mWidget(widget) {}
+
+QList<QVideoFrame::PixelFormat> VideoSurface::supportedPixelFormats(QAbstractVideoBuffer::HandleType handleType) const {
+    if (handleType == QAbstractVideoBuffer::NoHandle) {
+        return {
+            QVideoFrame::Format_RGB32,
+            QVideoFrame::Format_ARGB32,
+            QVideoFrame::Format_RGB24,
+            QVideoFrame::Format_BGR32,
+            QVideoFrame::Format_BGR24
+        };
+    }
+    return {};
+}
+
+bool VideoSurface::present(const QVideoFrame& frame) {
+    if (frame.isValid()) {
+        QVideoFrame cloneFrame(frame);
+        if (cloneFrame.map(QAbstractVideoBuffer::ReadOnly)) {
+            QImage image(cloneFrame.bits(), cloneFrame.width(), cloneFrame.height(),
+                         cloneFrame.bytesPerLine(), QVideoFrame::imageFormatFromPixelFormat(cloneFrame.pixelFormat()));
+            // image.copy() is required: cloneFrame.bits() becomes invalid after unmap
+            mWidget->updateFrame(image.copy());
+            cloneFrame.unmap();
+        }
+    }
+    return true;
+}
+
+// --------------------------------------------
 // GstVideoWidget
 // --------------------------------------------
 
-GstVideoWidget::GstVideoWidget(QWidget* parent) : QVideoWidget(parent) {
+GstVideoWidget::GstVideoWidget(QWidget* parent) : QWidget(parent) {
     mPlayer = new QMediaPlayer(this);
-    mPlayer->setVideoOutput(this);
+    mSurface = new VideoSurface(this, this);
+    mPlayer->setVideoOutput(mSurface);
+    setMouseTracking(true);
 }
 
 auto GstVideoWidget::setGstPipeline(std::string const& pipeline) -> void {
-    mPlayer->setMedia(QUrl(std::format("gst-pipeline: {} ! videoconvert ! xvimagesink name=\"qtvideosink\" sync=false", pipeline).c_str()));
+    // qtvideosink is required here (not xvimagesink) so VideoSurface::present receives frames
+    mPlayer->setMedia(QUrl(QString::fromStdString(
+        std::format("gst-pipeline: {} ! videoconvert ! qtvideosink name=\"qtvideosink\" sync=false", pipeline))));
     play();
 }
 
@@ -82,6 +120,69 @@ auto GstVideoWidget::pause() -> void {
 
 auto GstVideoWidget::stop() -> void {
     mPlayer->stop();
+}
+
+void GstVideoWidget::sampleColorAtCursor() {
+    if (mLastFrame.isNull() || width() == 0 || height() == 0) return;
+
+    QPoint framePos(mLastCursorPos.x() * mLastFrame.width() / width(),
+                    mLastCursorPos.y() * mLastFrame.height() / height());
+    if (!mLastFrame.rect().contains(framePos)) return;
+
+    mLastPickedColor = mLastFrame.pixelColor(framePos);
+    emit colorPicked(mLastPickedColor);
+}
+
+void GstVideoWidget::updateFrame(const QImage& frame) {
+    mLastFrame = frame;
+    if (mMouseInWidget) sampleColorAtCursor();
+    update();
+}
+
+void GstVideoWidget::paintEvent(QPaintEvent* event) {
+    Q_UNUSED(event);
+    QPainter painter(this);
+
+    if (!mLastFrame.isNull()) {
+        painter.drawImage(rect(), mLastFrame);
+    } else {
+        painter.fillRect(rect(), Qt::black);
+        painter.setPen(Qt::white);
+        painter.drawText(rect(), Qt::AlignCenter, "No Video Frame Received");
+    }
+
+    if (mMouseInWidget) {
+        int x = mLastCursorPos.x();
+        int y = mLastCursorPos.y();
+        constexpr int arm = 8;
+
+        painter.setPen(QPen(QColor(0, 0, 0, 180), 3));
+        painter.drawLine(x - arm, y, x + arm, y);
+        painter.drawLine(x, y - arm, x, y + arm);
+
+        painter.setPen(QPen(Qt::white, 1));
+        painter.drawLine(x - arm, y, x + arm, y);
+        painter.drawLine(x, y - arm, x, y + arm);
+    }
+}
+
+void GstVideoWidget::mouseMoveEvent(QMouseEvent* event) {
+    mLastCursorPos = event->pos();
+    if (mMouseInWidget) sampleColorAtCursor();
+    update();
+    QWidget::mouseMoveEvent(event);
+}
+
+void GstVideoWidget::enterEvent(QEvent* event) {
+    mMouseInWidget = true;
+    update();
+    QWidget::enterEvent(event);
+}
+
+void GstVideoWidget::leaveEvent(QEvent* event) {
+    mMouseInWidget = false;
+    update();
+    QWidget::leaveEvent(event);
 }
 
 // --------------------------------------------
@@ -129,6 +230,11 @@ auto GstVideoGridWidget::addGstVideoWidget(std::string const& name, std::string 
         delete gstVideoBoxWidget;
         return false;
     }
+
+    connect(gstVideoBoxGstVideoWidget, &GstVideoWidget::colorPicked,
+            this, [this, name](QColor const& color) {
+                emit colorPicked(QString::fromStdString(name), color);
+            });
 
     gstVideoBoxLayout->addWidget(gstVideoBoxLabel, 0);
     gstVideoBoxLayout->addWidget(gstVideoBoxGstVideoWidget, 1);
