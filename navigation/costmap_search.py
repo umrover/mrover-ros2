@@ -298,18 +298,40 @@ class CostmapSearchState(State):
             return
 
         search_center = context.course.current_waypoint()
-        if search_center is None:
+        pose_in_map = context.rover.get_pose_in_map()
+        current_waypoint_pose = context.course.current_waypoint_pose_in_map()
+
+        if search_center is None or pose_in_map is None or current_waypoint_pose is None:
             return
+
+        center_r = current_waypoint_pose.translation()[0:2]
+        rover_position_r = pose_in_map.translation()[0:2]
+        distance_from_center = np.linalg.norm(rover_position_r[0:2] - center_r[0:2])
+
+        enable_inward = False
+
+        # we set coverage_radius_in to the default parameter value from navigation.yaml
+        coverage_radius_in = context.node.get_parameter("search.coverage_radius").value
+
+        if search_center.coverage_radius > 0 and distance_from_center > 0.5 * search_center.coverage_radius:
+            enable_inward = True
+
+        if search_center.coverage_radius > 0:
+            # we override coverage_radius_in to be the waypoint's inward spiral coverage radius
+            coverage_radius_in = search_center.coverage_radius
 
         if not self.is_recovering:
             self.spiral_traj = SearchTrajectory.spiral_traj(
-                center=context.course.current_waypoint_pose_in_map().translation()[0:2],
-                coverage_radius=context.node.get_parameter("search.coverage_radius").value,
+                center=center_r,
+                coverage_radius=coverage_radius_in,
                 distance_between_spirals=context.node.get_parameter("search.distance_between_spirals").value,
                 segments_per_rotation=context.node.get_parameter("search.segments_per_rotation").value,
-                max_segment_length=context.node.get_parameter("search.max_segment_length").value,
+                # max_segment_length=context.node.get_parameter("search.max_segment_length").value,
                 tag_id=search_center.tag_id,
                 insert_extra=True,
+                rover_position=pose_in_map.translation()[0:2],
+                # the below two parameters are used in trajectory.py for generating inward spirals
+                enable_inward=enable_inward,
             )
 
         self.spiral_traj.cur_pt = context.course.last_spiral_point
