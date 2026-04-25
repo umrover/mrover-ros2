@@ -29,6 +29,15 @@
       <span class="spacer"></span>
       <span class="yaw-label">YAW</span>
       <span class="data-value">{{ yawAngle.toFixed(3) }}</span><span class="data-unit">rad</span>
+      <button
+        class="btn btn-sm"
+        :class="alignmentEnabled ? 'btn-success' : 'btn-danger'"
+        data-testid="pw-alignment-toggle"
+        :disabled="codeSent"
+        @click.prevent="toggleAlignment()"
+      >
+        Align {{ alignmentEnabled ? 'ON' : 'OFF' }}
+      </button>
     </div>
     <table class="feedback-table" data-testid="pw-typing-feedback">
       <tbody>
@@ -49,6 +58,7 @@
 <script lang="ts" setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
+import { useNotificationsStore } from '@/stores/notifications'
 
 interface TypingFeedbackMessage {
   type: 'typing_feedback'
@@ -65,7 +75,13 @@ interface KeyboardYawMessage {
   yaw: number
 }
 
+interface AlignmentErrorMessage {
+  type: 'alignment_error'
+  error: string
+}
+
 const websocketStore = useWebsocketStore()
+const notificationsStore = useNotificationsStore()
 
 const typingMessage = ref('')
 const codeSent = ref(false)
@@ -73,6 +89,7 @@ const currentIndex = ref(0)
 const currentState = ref('')
 const letterStates = ref<string[]>(Array(6).fill('notTyped'))
 const yawAngle = ref(0)
+const alignmentEnabled = ref(true)
 
 onMounted(() => {
   websocketStore.setupWebSocket('auton')
@@ -101,11 +118,29 @@ websocketStore.onMessage<KeyboardYawMessage>('auton', 'keyboard_yaw', (msg) => {
   yawAngle.value = msg.yaw
 })
 
+websocketStore.onMessage<AlignmentErrorMessage>('auton', 'alignment_error', (msg) => {
+  alignmentEnabled.value = !alignmentEnabled.value
+  notificationsStore.addNotification({
+    component: 'Alignment',
+    message: msg.error,
+    fullData: msg,
+  })
+})
+
 websocketStore.onMessage<TypingCancelledMessage>('auton', 'typing_cancelled', () => {
   codeSent.value = false
   typingMessage.value = ''
   letterStates.value = Array(6).fill('notTyped')
 })
+
+function toggleAlignment() {
+  const nextState = !alignmentEnabled.value
+  websocketStore.sendMessage('auton', {
+    type: 'toggle_alignment',
+    enable: nextState,
+  })
+  alignmentEnabled.value = nextState
+}
 
 function submitMessage() {
   if (!codeSent.value) {
