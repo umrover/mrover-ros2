@@ -471,11 +471,6 @@ class Context:
         self.stereo_future = None
         self.image_future = None
 
-        while not self.stereo_cli.wait_for_service(timeout_sec=1.0):
-            node.get_logger().info("Waiting for stereo_object_detector service...")
-        while not self.image_cli.wait_for_service(timeout_sec=1.0):
-            node.get_logger().info("Waiting for image_object_detector service...")
-
     def enable_auton(self, request: EnableAuton.Request, response: EnableAuton.Response) -> EnableAuton.Response:
         self.node.get_logger().info("Received new course to navigate!")
         if request.enable:
