@@ -45,3 +45,7 @@ state_machine/state_log.txt
 
 data/*.png
 data/raw-pano-images
+
+# Dynamixel Ignores
+.catkin_tools/
+.dynamixel_sdk/

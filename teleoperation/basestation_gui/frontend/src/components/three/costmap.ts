@@ -11,6 +11,7 @@ export interface CostmapRenderer {
   reset: () => void
   toggleVisibility: () => void
   setVisibility: (visible: boolean) => void
+<<<<<<< HEAD
   setRotation: (radians: number) => void
 }
 
@@ -23,6 +24,14 @@ export function createCostmap(scene: THREE.Scene): CostmapRenderer {
   anchor.add(container)
 
   // Color plane via DataTexture
+=======
+}
+
+export function createCostmap(scene: THREE.Scene): CostmapRenderer {
+  const container = new THREE.Group()
+  scene.add(container)
+
+>>>>>>> origin/main
   const textureData = new Uint8Array(GRID_SIZE * 4)
   const texture = new THREE.DataTexture(
     textureData,
@@ -42,6 +51,7 @@ export function createCostmap(scene: THREE.Scene): CostmapRenderer {
   colorPlane.rotation.x = -Math.PI / 2
   container.add(colorPlane)
 
+<<<<<<< HEAD
   // Text overlay via CanvasTexture
   const textCanvas = document.createElement('canvas')
   textCanvas.width = SIDE_LENGTH
@@ -107,6 +117,40 @@ export function createCostmap(scene: THREE.Scene): CostmapRenderer {
   }
 
   function update(gridData: number[]) {
+=======
+  const unavailableCanvas = document.createElement('canvas')
+  unavailableCanvas.width = SIDE_LENGTH
+  unavailableCanvas.height = SIDE_LENGTH
+  const unavailableCtx = unavailableCanvas.getContext('2d')!
+  unavailableCtx.fillStyle = 'white'
+  unavailableCtx.font = 'bold 48px Arial'
+  unavailableCtx.textAlign = 'center'
+  unavailableCtx.textBaseline = 'middle'
+  unavailableCtx.fillText('This Side North', SIDE_LENGTH / 2, SIDE_LENGTH / 2 - 50)
+  unavailableCtx.fillText('Costmap Not Available', SIDE_LENGTH / 2, SIDE_LENGTH / 2 + 80)
+
+  const unavailableTexture = new THREE.CanvasTexture(unavailableCanvas)
+  const unavailablePlane = new THREE.Mesh(
+    new THREE.PlaneGeometry(SIDE_LENGTH, SIDE_LENGTH),
+    new THREE.MeshBasicMaterial({ map: unavailableTexture, transparent: true }),
+  )
+  unavailablePlane.position.set(-BLOCK_WIDTH / 2, -49, -BLOCK_WIDTH / 2)
+  unavailablePlane.lookAt(-BLOCK_WIDTH / 2, 50, -BLOCK_WIDTH / 2)
+  container.add(unavailablePlane)
+
+  for (let i = 0; i < GRID_SIZE; i++) {
+    const idx = i * 4
+    textureData[idx] = 80
+    textureData[idx + 1] = 80
+    textureData[idx + 2] = 80
+    textureData[idx + 3] = 120
+  }
+  texture.needsUpdate = true
+
+  function update(gridData: number[]) {
+    if (unavailablePlane.visible) unavailablePlane.visible = false
+
+>>>>>>> origin/main
     for (let i = 0; i < GRID_SIZE; i++) {
       const val = gridData[i] ?? -1
       const idx = i * 4
@@ -126,10 +170,13 @@ export function createCostmap(scene: THREE.Scene): CostmapRenderer {
       textureData[idx + 3] = 255
     }
     texture.needsUpdate = true
+<<<<<<< HEAD
 
     ctx.clearRect(0, 0, SIDE_LENGTH, SIDE_LENGTH)
     fillText(gridData)
     textTexture.needsUpdate = true
+=======
+>>>>>>> origin/main
   }
 
   function reset() {
@@ -141,19 +188,27 @@ export function createCostmap(scene: THREE.Scene): CostmapRenderer {
       textureData[idx + 3] = 255
     }
     texture.needsUpdate = true
+<<<<<<< HEAD
 
     ctx.clearRect(0, 0, SIDE_LENGTH, SIDE_LENGTH)
     fillText(new Array(GRID_SIZE).fill(-100))
     textTexture.needsUpdate = true
+=======
+>>>>>>> origin/main
   }
 
   function toggleVisibility() {
     colorPlane.visible = !colorPlane.visible
+<<<<<<< HEAD
     textPlane.visible = !textPlane.visible
+=======
+    if (unavailablePlane.visible) unavailablePlane.visible = false
+>>>>>>> origin/main
   }
 
   function setVisibility(visible: boolean) {
     colorPlane.visible = visible
+<<<<<<< HEAD
     textPlane.visible = visible
   }
 
@@ -162,4 +217,10 @@ export function createCostmap(scene: THREE.Scene): CostmapRenderer {
   }
 
   return { update, reset, toggleVisibility, setVisibility, setRotation }
+=======
+    if (!visible) unavailablePlane.visible = false
+  }
+
+  return { update, reset, toggleVisibility, setVisibility }
+>>>>>>> origin/main
 }

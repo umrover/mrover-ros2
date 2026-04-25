@@ -11,12 +11,17 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
   const scene = new THREE.Scene()
   scene.background = new THREE.Color(0x87ceeb)
 
+<<<<<<< HEAD
   // Lighting
+=======
+  // lighting
+>>>>>>> origin/main
   const ambientLight = new THREE.AmbientLight(0x808080, 1)
   scene.add(ambientLight)
 
   const directionalLight = new THREE.DirectionalLight(0xffffff, 1)
   directionalLight.position.set(2, 3, 2)
+<<<<<<< HEAD
   directionalLight.castShadow = true
   scene.add(directionalLight)
 
@@ -33,6 +38,22 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
   const resizeObserver = new ResizeObserver(() => {
     renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+=======
+  directionalLight.castShadow = false
+  scene.add(directionalLight)
+
+  // renderer
+  const renderer = new THREE.WebGLRenderer({ antialias: false, canvas })
+  renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
+  renderer.setPixelRatio(1)
+  renderer.shadowMap.enabled = false
+  renderer.toneMapping = THREE.ACESFilmicToneMapping
+  renderer.toneMappingExposure = 2.5
+
+  // resize handling
+  const resizeObserver = new ResizeObserver(() => {
+    renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
+>>>>>>> origin/main
   })
   resizeObserver.observe(canvas.parentElement!)
 

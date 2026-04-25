@@ -1,4 +1,5 @@
 <template>
+<<<<<<< HEAD
   <div class="flex items-center gap-2 mb-2">
     <h4 class="component-header">Sensor<br>Data</h4>
     <div class="flex flex-col gap-1">
@@ -67,6 +68,76 @@
         <span class="cmd-data-label mb-1">Pressure (Pa)</span>
         <div class="grow min-h-0">
           <canvas ref="chartRef3"></canvas>
+=======
+  <div class="flex gap-2 h-full min-h-0">
+    <div class="flex flex-col gap-1 w-52 flex-shrink-0">
+      <h4 class="component-header">Sensor Data</h4>
+      <div class="flex gap-1">
+        <button class="btn btn-outline-control btn-sm flex-1" data-testid="pw-sensor-view-all" @click="showModal = true">View All</button>
+        <button class="btn btn-outline-secondary btn-sm flex-1" data-testid="pw-sensor-csv-btn" @click="downloadCSV">
+          <i class="bi bi-download"></i> CSV
+        </button>
+      </div>
+      <div class="grid grid-cols-2 gap-1 flex-1 mt-1">
+        <div class="flex flex-col items-center justify-center rounded p-1" :class="sensor_data.sensor_states.oxygen_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
+          <span class="font-semibold uppercase text-muted text-[0.6rem] tracking-[0.05em]">Oxygen</span>
+          <span class="font-bold text-sm">{{ sensor_data.sp_oxygen.toFixed(2) }}<span class="text-muted ml-1 text-xs">%</span></span>
+        </div>
+        <div class="flex flex-col items-center justify-center rounded p-1" :class="sensor_data.sensor_states.uv_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
+          <span class="font-semibold uppercase text-muted text-[0.6rem] tracking-[0.05em]">UV</span>
+          <span class="font-bold text-sm">{{ sensor_data.sp_uv.toFixed(2) }}<span class="text-muted ml-1 text-xs">idx</span></span>
+        </div>
+        <div class="flex flex-col items-center justify-center rounded p-1" :class="sensor_data.sensor_states.thp_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
+          <span class="font-semibold uppercase text-muted text-[0.6rem] tracking-[0.05em]">Humidity</span>
+          <span class="font-bold text-sm">{{ sensor_data.sp_humidity.toFixed(2) }}<span class="text-muted ml-1 text-xs">%</span></span>
+        </div>
+        <div class="flex flex-col items-center justify-center rounded p-1" :class="sensor_data.sensor_states.thp_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
+          <span class="font-semibold uppercase text-muted text-[0.6rem] tracking-[0.05em]">Temp</span>
+          <span class="font-bold text-sm">{{ sensor_data.sp_temp.toFixed(2) }}<span class="text-muted ml-1 text-xs">&deg;C</span></span>
+        </div>
+        <div class="flex flex-col items-center justify-center rounded p-1" :class="sensor_data.sensor_states.ozone_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
+          <span class="font-semibold uppercase text-muted text-[0.6rem] tracking-[0.05em]">Ozone</span>
+          <span class="font-bold text-sm">{{ sensor_data.sp_ozone.toFixed(2) }}<span class="text-muted ml-1 text-xs">ppb</span></span>
+        </div>
+        <div class="flex flex-col items-center justify-center rounded p-1" :class="sensor_data.sensor_states.co2_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
+          <span class="font-semibold uppercase text-muted text-[0.6rem] tracking-[0.05em]">CO2</span>
+          <span class="font-bold text-sm">{{ sensor_data.sp_co2.toFixed(2) }}<span class="text-muted ml-1 text-xs">ppm</span></span>
+        </div>
+        <div class="col-span-2 flex flex-col items-center justify-center rounded p-1" :class="sensor_data.sensor_states.thp_state ? 'bg-theme-view' : 'bg-yellow-500/50'">
+          <span class="font-semibold uppercase text-muted text-[0.6rem] tracking-[0.05em]">Pressure</span>
+          <span class="font-bold text-sm">{{ sensor_data.sp_pressure.toFixed(0) }}<span class="text-muted ml-1 text-xs">Pa</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-2 flex-1 min-h-0 min-w-0">
+      <div class="flex gap-2 flex-1 min-h-0">
+        <div class="panel flex flex-col flex-1 min-w-0 p-1!">
+          <span class="data-label">Humidity (%)</span>
+          <div class="grow min-h-0">
+            <canvas ref="chartRef0"></canvas>
+          </div>
+        </div>
+        <div class="panel flex flex-col flex-1 min-w-0 p-1!">
+          <span class="data-label">UV Index</span>
+          <div class="grow min-h-0">
+            <canvas ref="chartRef1"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="flex gap-2 flex-1 min-h-0">
+        <div class="panel flex flex-col flex-1 min-w-0 p-1!">
+          <span class="data-label">Ozone (ppb)</span>
+          <div class="grow min-h-0">
+            <canvas ref="chartRef2"></canvas>
+          </div>
+        </div>
+        <div class="panel flex flex-col flex-1 min-w-0 p-1!">
+          <span class="data-label">Pressure (Pa)</span>
+          <div class="grow min-h-0">
+            <canvas ref="chartRef3"></canvas>
+          </div>
+>>>>>>> origin/main
         </div>
       </div>
     </div>
@@ -82,16 +153,22 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
-import { storeToRefs } from 'pinia'
 import Chart from 'chart.js/auto'
 import type { SensorData } from '../types/sensors'
-import type { ScienceMessage } from '@/types/websocket'
+import type {
+  SPOxygenMessage,
+  SPUVMessage,
+  SPTemperatureMessage,
+  SPHumidityMessage,
+  SPOzoneMessage,
+  SPCO2Message,
+  SPPressureMessage,
+} from '@/types/websocket'
 import SensorModal from '@/components/SensorModal.vue'
 
 const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
 
 const showModal = ref(false)
 
@@ -112,6 +189,7 @@ const sensor_data = ref<SensorData>({
   },
 })
 const sensor_history = ref<number[][]>([
+<<<<<<< HEAD
   Array(20).fill(0),
   Array(20).fill(0),
   Array(20).fill(0),
@@ -159,17 +237,49 @@ watch(scienceMessage, (msg) => {
       }
       break
   }
+=======
+  Array(30).fill(0),
+  Array(30).fill(0),
+  Array(30).fill(0),
+  Array(30).fill(0),
+  Array(30).fill(0),
+  Array(30).fill(0),
+  Array(30).fill(0),
+])
+const timeCounter = ref(0)
+
+websocketStore.onMessage<SPOxygenMessage>('science', 'sp_oxygen', (msg) => {
+  sensor_data.value.sp_oxygen = msg.percent
+})
+websocketStore.onMessage<SPUVMessage>('science', 'sp_uv', (msg) => {
+  sensor_data.value.sp_uv = msg.uv_index
+})
+websocketStore.onMessage<SPTemperatureMessage>('science', 'sp_temp', (msg) => {
+  sensor_data.value.sp_temp = msg.temperature
+})
+websocketStore.onMessage<SPHumidityMessage>('science', 'sp_humidity', (msg) => {
+  sensor_data.value.sp_humidity = msg.relative_humidity
+})
+websocketStore.onMessage<SPOzoneMessage>('science', 'sp_ozone', (msg) => {
+  sensor_data.value.sp_ozone = msg.ppb
+})
+websocketStore.onMessage<SPCO2Message>('science', 'sp_co2', (msg) => {
+  sensor_data.value.sp_co2 = msg.percent
+})
+websocketStore.onMessage<SPPressureMessage>('science', 'sp_pressure', (msg) => {
+  sensor_data.value.sp_pressure = msg.pressure
+>>>>>>> origin/main
 })
 
 const resetHistory = () => {
   sensor_history.value = [
-    Array(20).fill(0),
-    Array(20).fill(0),
-    Array(20).fill(0),
-    Array(20).fill(0),
-    Array(20).fill(0),
-    Array(20).fill(0),
-    Array(20).fill(0),
+    Array(30).fill(0),
+    Array(30).fill(0),
+    Array(30).fill(0),
+    Array(30).fill(0),
+    Array(30).fill(0),
+    Array(30).fill(0),
+    Array(30).fill(0),
   ]
   timeCounter.value = 0
 }
@@ -208,7 +318,7 @@ const chartConfigs = [
   { title: 'Pressure (Pa)', datasets: [{ label: 'Pressure', color: '#26A69A', historyIndex: 6 }] },
 ]
 
-const maxHistory = 20
+const maxHistory = 30
 
 onMounted(() => {
   for (let i = 0; i < chartConfigs.length; ++i) {
@@ -219,7 +329,11 @@ onMounted(() => {
 
     const datasets = config.datasets.map(ds => ({
       label: ds.label,
+<<<<<<< HEAD
       data: Array(20).fill(0),
+=======
+      data: Array(30).fill(0),
+>>>>>>> origin/main
       fill: false,
       borderColor: ds.color,
       tension: 0.1,
@@ -228,7 +342,11 @@ onMounted(() => {
     charts[i] = new Chart(canvasElement, {
       type: 'line',
       data: {
+<<<<<<< HEAD
         labels: Array.from({ length: 20 }, (_, i) => i),
+=======
+        labels: Array.from({ length: 30 }, (_, i) => i),
+>>>>>>> origin/main
         datasets: datasets,
       },
       options: {

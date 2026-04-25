@@ -52,9 +52,16 @@ namespace mrover {
                 {"gripper", {.limits = {.minPos = 0, .maxPos = 0.1, .minVel = -1, .maxVel = 1}, .pos = 0}},
         };
 
-        [[maybe_unused]] rclcpp::Subscription<msg::IK>::SharedPtr mIkSub;
-        [[maybe_unused]] rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr mVelSub;
-        [[maybe_unused]] rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr mJointSub;
+        rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr mVelSub;
+        rclcpp::Subscription<msg::ControllerState>::SharedPtr mJointSub;
+        rclcpp::Subscription<msg::IK>::SharedPtr mIkSub;
+        rclcpp::Client<srv::Pusher>::SharedPtr mPusherCli;
+
+        rclcpp_action::Server<action::TypingPosition>::SharedPtr mTypingServer;
+        auto handleTypingGoal(const rclcpp_action::GoalUUID & uuid, const std::shared_ptr<const action::TypingPosition_Goal> &typingGoal) -> rclcpp_action::GoalResponse;
+        auto handleTypingCancel(const std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingPosition>> &typingGoalHandle) -> rclcpp_action::CancelResponse;
+        auto handleTypingAccepted(const std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingPosition>> &typingGoalHandle) -> void;
+        std::optional<rclcpp_action::GoalUUID> mTypingGoalID;
 
         rclcpp::Publisher<msg::Position>::SharedPtr mPosPub;
         rclcpp::Publisher<msg::Velocity>::SharedPtr mVelPub;
@@ -69,7 +76,6 @@ namespace mrover {
         auto timerCallback() -> void;
 
         ArmPos mArmPos, mTypingOrigin, mPosTarget;
-        std::optional<msg::Position> mPosFallback;
         geometry_msgs::msg::Twist mVelTarget;
         rclcpp::Time mLastUpdate;
 
@@ -97,7 +103,7 @@ namespace mrover {
 
         void posCallback(msg::IK::ConstSharedPtr const& ik_target);
         void velCallback(geometry_msgs::msg::Twist::ConstSharedPtr const& ik_vel);
-        void fkCallback(sensor_msgs::msg::JointState::ConstSharedPtr const& joint_state);
+        void fkCallback(msg::ControllerState::ConstSharedPtr const& joint_state);
         auto modeCallback(srv::IkMode::Request::ConstSharedPtr const& req, srv::IkMode::Response::SharedPtr const& resp) -> void;
     };
 

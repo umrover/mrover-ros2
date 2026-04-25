@@ -1,7 +1,11 @@
 <template>
   <div class="relative flex self-stretch">
     <button
+<<<<<<< HEAD
       class="notification-btn border border-2 rounded"
+=======
+      class="notification-btn border-2 rounded"
+>>>>>>> origin/main
       data-testid="pw-notification-bell"
       @click="togglePanel"
     >
@@ -14,19 +18,31 @@
       </span>
     </button>
 
+<<<<<<< HEAD
     <div v-if="showPanel" class="notification-panel cmd-panel" data-testid="pw-notification-panel">
+=======
+    <div v-if="showPanel" class="notification-panel panel" data-testid="pw-notification-panel">
+>>>>>>> origin/main
       <div class="flex justify-between items-center p-4 border-b border-2">
         <h4 class="component-header">Notifications</h4>
         <div class="flex gap-2">
           <button
             v-if="notifications.length > 0"
+<<<<<<< HEAD
             class="cmd-btn cmd-btn-sm cmd-btn-outline-primary"
+=======
+            class="btn btn-sm btn-outline-primary"
+>>>>>>> origin/main
             data-testid="pw-notification-clear-all"
             @click="clearAll"
           >
             Clear All
           </button>
+<<<<<<< HEAD
           <button class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary cmd-btn-icon-sm" @click="showPanel = false">
+=======
+          <button class="btn btn-sm btn-outline-secondary btn-icon-sm" @click="showPanel = false">
+>>>>>>> origin/main
             <i class="bi bi-x-lg"></i>
           </button>
         </div>
@@ -51,7 +67,11 @@
               <p class="mt-2 mb-1">{{ notification.message }}</p>
             </div>
             <button
+<<<<<<< HEAD
               class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary cmd-btn-icon-sm"
+=======
+              class="btn btn-sm btn-outline-secondary btn-icon-sm"
+>>>>>>> origin/main
               @click="removeNotification(notification.id)"
               title="Remove"
             >
@@ -61,7 +81,11 @@
 
           <div class="mt-2">
             <button
+<<<<<<< HEAD
               class="cmd-btn cmd-btn-sm cmd-btn-outline-control"
+=======
+              class="btn btn-sm btn-outline-control"
+>>>>>>> origin/main
               @click="toggleDetails(notification.id)"
             >
               <i :class="expandedNotifications.includes(notification.id) ? 'bi bi-chevron-up' : 'bi bi-chevron-down'"></i>
@@ -182,9 +206,15 @@ export default defineComponent({
   font-size: 0.6875rem;
   font-weight: 600;
   line-height: 18px;
+<<<<<<< HEAD
   color: #fff;
   text-align: center;
   background-color: var(--cmd-status-error);
+=======
+  color: var(--text-on-status);
+  text-align: center;
+  background-color: var(--status-error);
+>>>>>>> origin/main
   border-radius: 50rem;
 }
 
@@ -195,7 +225,11 @@ export default defineComponent({
   z-index: 1051;
   width: 500px;
   margin-top: 0.5rem;
+<<<<<<< HEAD
   box-shadow: var(--cmd-shadow-md);
+=======
+  box-shadow: var(--shadow-md);
+>>>>>>> origin/main
 }
 
 .notification-list {
@@ -207,7 +241,11 @@ export default defineComponent({
 }
 
 .notification-item:last-child {
+<<<<<<< HEAD
   border-bottom: none !important;
+=======
+  border-bottom: none;
+>>>>>>> origin/main
 }
 
 .notification-component {
@@ -223,6 +261,10 @@ export default defineComponent({
   max-height: 300px;
   font-size: 0.75rem;
   background-color: var(--view-bg);
+<<<<<<< HEAD
   border: 2px solid var(--cmd-panel-border);
+=======
+  border: 2px solid var(--panel-border);
+>>>>>>> origin/main
 }
 </style>

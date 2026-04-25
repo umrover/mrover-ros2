@@ -9,6 +9,7 @@ export interface JointUpdate {
   position: number
 }
 
+<<<<<<< HEAD
 export interface Position3D {
   x: number
   y: number
@@ -19,6 +20,10 @@ export interface RoverModel {
   updateJoints: (joints: JointUpdate[]) => void
   updateIKTarget: (position: Position3D | null) => void
   setHeading: (radians: number) => void
+=======
+export interface RoverModel {
+  updateJoints: (joints: JointUpdate[]) => void
+>>>>>>> origin/main
 }
 
 const DEFAULT_JOINT_VALUES: Record<string, number> = {
@@ -30,6 +35,7 @@ const DEFAULT_JOINT_VALUES: Record<string, number> = {
   gripper_link: 0,
 }
 
+<<<<<<< HEAD
 export function loadRover(scene: THREE.Scene): RoverModel {
   let rover: THREE.Object3D | null = null
 
@@ -48,6 +54,11 @@ export function loadRover(scene: THREE.Scene): RoverModel {
   ikSphere.visible = false
   scene.add(ikSphere)
 
+=======
+export function loadRover(parent: THREE.Group): RoverModel {
+  let rover: THREE.Object3D | null = null
+
+>>>>>>> origin/main
   // Debug GUI (hidden by default)
   const gui = new GUI({ width: 400 })
   gui.hide()
@@ -79,6 +90,7 @@ export function loadRover(scene: THREE.Scene): RoverModel {
     (robot: THREE.Object3D) => {
       rover = robot
 
+<<<<<<< HEAD
       // ROS Z-up to Three.js Y-up frame conversion
       const roverContainer = new THREE.Group()
       roverContainer.position.set(0, -50, 0)
@@ -88,6 +100,17 @@ export function loadRover(scene: THREE.Scene): RoverModel {
       robot.updateMatrixWorld()
 
       // Set initial joint positions (separated from GUI)
+=======
+      // ROS Z-up to Three.js Y-up conversion
+      const roverContainer = new THREE.Group()
+      roverContainer.position.set(0, -50, 0)
+      roverContainer.rotation.set(-Math.PI / 2, 0, 0)
+      parent.add(roverContainer)
+      roverContainer.add(robot)
+      robot.updateMatrixWorld()
+
+      // parse joints and initial positions
+>>>>>>> origin/main
       robot.traverse((obj: THREE.Object3D) => {
         const joint = obj as THREE.Object3D & {
           jointType?: string
@@ -111,7 +134,11 @@ export function loadRover(scene: THREE.Scene): RoverModel {
         }
       })
 
+<<<<<<< HEAD
       // Debug GUI sliders (decoupled from initial joint setup)
+=======
+      // debug sliders
+>>>>>>> origin/main
       robot.traverse((obj: THREE.Object3D) => {
         const joint = obj as THREE.Object3D & {
           jointType?: string
@@ -159,6 +186,7 @@ export function loadRover(scene: THREE.Scene): RoverModel {
     })
   }
 
+<<<<<<< HEAD
   function updateIKTarget(position: Position3D | null) {
     if (!position) {
       ikSphere.visible = false
@@ -173,4 +201,7 @@ export function loadRover(scene: THREE.Scene): RoverModel {
   }
 
   return { updateJoints, updateIKTarget, setHeading }
+=======
+  return { updateJoints }
+>>>>>>> origin/main
 }

@@ -1,230 +1,217 @@
-#include <cstdint>
+#include <cstddef>
 #include <cstring>
 #include <memory>
 
 #include <rclcpp/node.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/relative_humidity.hpp>
-#include <sensor_msgs/msg/temperature.hpp>
 
-#include <can_device.hpp>
-#include <messaging_science.hpp>
-#include <parameter.hpp>
-#include <units.hpp>
+#include <mrover/msg/controller_state.hpp>
+#include <mrover/msg/throttle.hpp>
+#include <mrover/srv/servo_position.hpp>
 
-#include <mrover/msg/can.hpp>
-#include <mrover/msg/heater_data.hpp>
-#include <mrover/msg/oxygen.hpp>
-#include <mrover/msg/science_thermistors.hpp>
-#include <mrover/msg/uv.hpp>
-#include <mrover/srv/enable_bool.hpp>
+#include <brushed.hpp>
+#include <science.hpp>
+#include <servo.hpp>
+#include <u2d2.hpp>
 
 
 namespace mrover {
+    class ScienceHWBridge : public rclcpp::Node {
 
-    enum ScienceBoard {
-        A = 0,
-        B = 1,
-    };
-
-    class ScienceHWBridge final : public rclcpp::Node {
-
-    private:
-        static constexpr std::uint8_t NUM_HEATERS = 4;
-        static constexpr std::uint8_t NUM_THERMISTORS = 2;
-        bool mUVSensorOnA;
-        bool mTempHumiditySensorOnA;
-        bool mOxygenSensorOnA;
-        std::array<std::uint8_t, NUM_HEATERS> mHeaterStates;
-        std::array<float, NUM_THERMISTORS> mThermistorTemps;
-
-        rclcpp::Publisher<sensor_msgs::msg::Temperature>::SharedPtr mTemperaturePub;
-        rclcpp::Publisher<sensor_msgs::msg::RelativeHumidity>::SharedPtr mHumidityPub;
-        rclcpp::Publisher<msg::Oxygen>::SharedPtr mOxygenPub;
-        rclcpp::Publisher<msg::UV>::SharedPtr mUVPub;
-        rclcpp::Publisher<msg::ScienceThermistors>::SharedPtr mThermistorsPub;
-        rclcpp::Publisher<msg::HeaterData>::SharedPtr mHeaterPub;
-
-        rclcpp::Service<srv::EnableBool>::SharedPtr mHeaterAutoShutoffSrv;
-
-        rclcpp::Service<srv::EnableBool>::SharedPtr mScienceEnableSrvHA0;
-        rclcpp::Service<srv::EnableBool>::SharedPtr mScienceEnableSrvHB0;
-        rclcpp::Service<srv::EnableBool>::SharedPtr mScienceEnableSrvHA1;
-        rclcpp::Service<srv::EnableBool>::SharedPtr mScienceEnableSrvHB1;
-        rclcpp::Service<srv::EnableBool>::SharedPtr mScienceEnableSrvWLA;
-        rclcpp::Service<srv::EnableBool>::SharedPtr mScienceEnableSrvWLB;
-
-        rclcpp::Subscription<msg::CAN>::ConstSharedPtr mCANSubA;
-        rclcpp::Subscription<msg::CAN>::ConstSharedPtr mCANSubB;
-
-        CanDevice mCANDeviceA;
-        CanDevice mCANDeviceB;
-
-        ScienceBoard prevScienceMessage;
-
-        void processHeaterAutoShutoff(std::shared_ptr<srv::EnableBool::Request> const& request, std::shared_ptr<srv::EnableBool::Response>& response) {
-            mCANDeviceA.publish_message(InBoundScienceMessage{HeaterAutoShutOffCommand{.enable_auto_shutoff = request->enable}});
-            mCANDeviceB.publish_message(InBoundScienceMessage{HeaterAutoShutOffCommand{.enable_auto_shutoff = request->enable}});
-            response->success = true;
-            response->message = request->enable ? "Enabled" : "Disabled";
-        }
-
-        void processScienceEnable(ScienceBoard scienceBoard, ScienceDevice const dev, std::shared_ptr<srv::EnableBool::Request> const& request, std::shared_ptr<srv::EnableBool::Response>& response) {
-            if (scienceBoard == ScienceBoard::A)
-                mCANDeviceA.publish_message(InBoundScienceMessage{EnableScienceDeviceCommand{.science_device = dev, .enable = request->enable}});
-            else
-                mCANDeviceB.publish_message(InBoundScienceMessage{EnableScienceDeviceCommand{.science_device = dev, .enable = request->enable}});
-
-            response->success = true;
-            response->message = request->enable ? "Enabled" : "Disabled";
-        }
-
-        void processMessage(mrover::HeaterStateData const& message) {
-            msg::HeaterData heaterData;
-            heaterData.state.resize(NUM_HEATERS);
-
-            for (int i = 0; i < NUM_HEATERS; i++) {
-                heaterData.state.at(i) = mHeaterStates[i];
-            }
-
-            for (int i = 0; i < NUM_THERMISTORS; i++) {
-                int h = prevScienceMessage == ScienceBoard::A ? i : i + NUM_THERMISTORS;
-                heaterData.state.at(h) = GET_BIT_AT_INDEX(message.heater_state_info.on, i);
-                mHeaterStates[h] = GET_BIT_AT_INDEX(message.heater_state_info.on, i);
-            }
-
-            mHeaterPub->publish(heaterData);
-        }
-
-        void processMessage(mrover::ThermistorData const& message) {
-            msg::ScienceThermistors scienceThermistors;
-            scienceThermistors.temps.resize(NUM_HEATERS);
-
-            for (int i = 0; i < NUM_HEATERS; i++) {
-                scienceThermistors.temps.at(i).temperature = mThermistorTemps[i / 2];
-            }
-
-            for (int i = 0; i < NUM_THERMISTORS; i++) {
-                int t = prevScienceMessage == ScienceBoard::A ? i : i + NUM_THERMISTORS;
-                scienceThermistors.temps.at(t).temperature = message.temps[i];
-                mThermistorTemps[i] = message.temps[i];
-            }
-
-            mThermistorsPub->publish(scienceThermistors);
-        }
-
-        void processMessage(mrover::SensorData const& message) {
-            switch (static_cast<ScienceDataID>(message.id)) {
-                case ScienceDataID::TEMPERATURE: {
-                    if ((prevScienceMessage == ScienceBoard::A && mTempHumiditySensorOnA) || (prevScienceMessage == ScienceBoard::B && !mTempHumiditySensorOnA)) {
-                        sensor_msgs::msg::Temperature msg;
-                        msg.temperature = message.data;
-                        msg.variance = 0;
-                        mTemperaturePub->publish(msg);
-                        break;
-                    }
-                }
-
-                case ScienceDataID::HUMIDITY: {
-                    if ((prevScienceMessage == ScienceBoard::A && mTempHumiditySensorOnA) || (prevScienceMessage == ScienceBoard::B && !mTempHumiditySensorOnA)) {
-                        sensor_msgs::msg::RelativeHumidity msg;
-                        msg.relative_humidity = message.data;
-                        msg.variance = 0;
-                        mHumidityPub->publish(msg);
-                        break;
-                    }
-                }
-
-                case ScienceDataID::OXYGEN: {
-                    if ((prevScienceMessage == ScienceBoard::A && mOxygenSensorOnA) || (prevScienceMessage == ScienceBoard::B && !mOxygenSensorOnA)) {
-                        msg::Oxygen msg;
-                        msg.percent = message.data;
-                        msg.variance = 0;
-                        mOxygenPub->publish(msg);
-                        break;
-                    }
-                }
-
-                case ScienceDataID::UV: {
-                    if ((prevScienceMessage == ScienceBoard::A && mUVSensorOnA) || (prevScienceMessage == ScienceBoard::B && !mUVSensorOnA)) {
-                        msg::UV msg;
-                        msg.uv_index = message.data;
-                        msg.variance = 0;
-                        mUVPub->publish(msg);
-                        break;
-                    }
-                }
-            }
-        }
-
-        void processCANData(msg::CAN::ConstSharedPtr const& msg) {
-            if (msg->source == "science_a")
-                prevScienceMessage = ScienceBoard::A;
-            else if (msg->source == "science_b")
-                prevScienceMessage = ScienceBoard::B;
-
-            OutBoundScienceMessage const& message = *reinterpret_cast<OutBoundScienceMessage const*>(msg->data.data());
-            std::visit([&](auto const& messageAlternative) { processMessage(messageAlternative); }, message);
-        }
+        using Controller = std::variant<
+                std::shared_ptr<BrushedController<Meters>>,
+                std::shared_ptr<BrushedController<Radians>>>;
 
     public:
         ScienceHWBridge() : Node{"science_hw_bridge"} {}
 
-        void init() {
-            std::vector<ParameterWrapper> parameters = {{"uv_sensor_on_a", mUVSensorOnA, true},
-                                                        {"temperature_humidity_sensor_on_a", mTempHumiditySensorOnA, true},
-                                                        {"oxygen_sensor_on_a", mOxygenSensorOnA, true}};
+        auto init() -> void {
+            // parse parameters
+            std::vector<ParameterWrapper> parameters = {
+                    {"u2d2_device", mU2D2DeviceName, "/dev/u2d2"},
+            };
+            ParameterWrapper::declareParameters(this, parameters);
 
-            ParameterWrapper::declareParameters(rclcpp::Node::shared_from_this().get(), parameters);
+            mScienceBoard = std::make_shared<ScienceBoard>(shared_from_this(), "jetson", "science");
+            mAuger = std::make_shared<BrushedController<Radians>>(shared_from_this(), "jetson", "auger");
+            mLinearActuator = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "linear_actuator");
+            mFunnelServo = std::make_shared<Servo>(shared_from_this(), "funnel");
+            mBrushServo = std::make_shared<Servo>(shared_from_this(), "brush");
 
-            for (int i = 0; i < NUM_HEATERS; i++) {
-                mHeaterStates[i] = 0;
-                mThermistorTemps[i] = 0;
+            mServiceGroup = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+
+            auto subOptions = rclcpp::SubscriptionOptions();
+            subOptions.callback_group = mServiceGroup;
+
+            mFunnelPositionService = this->create_service<srv::ServoPosition>(
+                    "sp_funnel_servo",
+                    [this](srv::ServoPosition::Request::SharedPtr const& req, srv::ServoPosition::Response::SharedPtr const& res) -> void {
+                        servoPositionCallback(req, res);
+                    },
+                    rmw_qos_profile_services_default,
+                    mServiceGroup);
+
+            mSPThrottleSub = create_subscription<msg::Throttle>("sp_thr_cmd", 1, [this](msg::Throttle::ConstSharedPtr const& msg) -> void { processThrottleCmd(msg); });
+
+            mPublishDataTimer = create_wall_timer(
+                    std::chrono::milliseconds(100),
+                    [this]() -> void { publishDataCallback(); });
+            mControllerStatePub = create_publisher<msg::ControllerState>("sp_controller_state", 1);
+
+            mControllerState.names = mActuatorNames;
+            mControllerState.states.resize(mActuatorNames.size());
+            mControllerState.errors.resize(mActuatorNames.size());
+            mControllerState.limits_hit.resize(mActuatorNames.size());
+
+            mControllerState.header.stamp = now();
+            mControllerState.header.frame_id = "";
+            mControllerState.names = mActuatorNames;
+            mControllerState.states.resize(mActuatorNames.size());
+            mControllerState.errors.resize(mActuatorNames.size());
+            mControllerState.positions.resize(mActuatorNames.size());
+            mControllerState.velocities.resize(mActuatorNames.size());
+            mControllerState.currents.resize(mActuatorNames.size());
+            mControllerState.limits_hit.resize(mActuatorNames.size());
+        }
+
+    private:
+        std::vector<std::string> const mActuatorNames{"auger", "linear_actuator", "funnel", "brush"};
+
+        std::shared_ptr<ScienceBoard> mScienceBoard;
+        std::shared_ptr<BrushedController<Radians>> mAuger;
+        std::shared_ptr<BrushedController<Meters>> mLinearActuator;
+        std::shared_ptr<Servo> mFunnelServo;
+        std::shared_ptr<Servo> mBrushServo;
+
+        std::string mU2D2DeviceName;
+
+        rclcpp::CallbackGroup::SharedPtr mServiceGroup;
+        rclcpp::Service<srv::ServoPosition>::SharedPtr mFunnelPositionService;
+        rclcpp::TimerBase::SharedPtr mPublishDataTimer;
+        rclcpp::Subscription<msg::Throttle>::SharedPtr mSPThrottleSub;
+        rclcpp::Publisher<msg::ControllerState>::SharedPtr mControllerStatePub;
+        msg::ControllerState mControllerState;
+
+        auto processThrottleCmd(msg::Throttle::ConstSharedPtr const& msg) const -> void {
+            if (msg->names.size() != msg->throttles.size()) {
+                RCLCPP_ERROR(get_logger(), "Name count and value count mismatched!");
+                return;
             }
 
-            mTemperaturePub = create_publisher<sensor_msgs::msg::Temperature>("science_temperature_data", 10);
-            mHumidityPub = create_publisher<sensor_msgs::msg::RelativeHumidity>("science_humidity_data", 10);
-            mOxygenPub = create_publisher<msg::Oxygen>("science_oxygen_data", 10);
-            mUVPub = create_publisher<msg::UV>("science_uv_data", 10);
-            mThermistorsPub = create_publisher<msg::ScienceThermistors>("science_thermistors", 10);
-            mHeaterPub = create_publisher<msg::HeaterData>("science_heater_state", 10);
+            for (std::size_t i = 0; i < msg->names.size(); ++i) {
+                std::string const& name = msg->names[i];
+                Dimensionless const& throttle = msg->throttles[i];
 
-            mHeaterAutoShutoffSrv = create_service<srv::EnableBool>("science_change_heater_auto_shutoff_state",
-                                                                    [this](srv::EnableBool::Request::SharedPtr const& req, srv::EnableBool::Response::SharedPtr& res) { processHeaterAutoShutoff(req, res); });
+                // Silly little thing to save some speed. Could easily just do the straight up string comparision
+                switch (name.front() + name.back()) {
+                    case 'a' + 'r':
+                        mAuger->setDesiredThrottle(throttle);
+                        break;
+                    case 'l' + 'r':
+                        mLinearActuator->setDesiredThrottle(throttle);
+                        break;
+                    case 'b' + 'h':
+                        mBrushServo->setVelocityTarget(static_cast<double>(throttle.get()) * mBrushServo->getVelocityLimitRadPerSec());
+                        break;
+                }
+            }
+        }
 
-            mScienceEnableSrvHA0 = create_service<srv::EnableBool>("science_enable_heater_a0",
-                                                                   [this](srv::EnableBool::Request::SharedPtr const& req, srv::EnableBool::Response::SharedPtr& res) { processScienceEnable(ScienceBoard::A, ScienceDevice::HEATER_0, req, res); });
+        auto servoPositionCallback(srv::ServoPosition::Request::SharedPtr const& req, srv::ServoPosition::Response::SharedPtr const& res) const -> void {
+            if (req->names.size() != 1 || req->names.at(0) != "funnel") return;
 
-            mScienceEnableSrvHB0 = create_service<srv::EnableBool>("science_enable_heater_b0",
-                                                                   [this](srv::EnableBool::Request::SharedPtr const& req, srv::EnableBool::Response::SharedPtr& res) { processScienceEnable(ScienceBoard::B, ScienceDevice::HEATER_0, req, res); });
+            auto const pos = req->positions[0];
+            mFunnelServo->setPosition(pos);
+            res->at_tgts.resize(1);
 
-            mScienceEnableSrvHA1 = create_service<srv::EnableBool>("science_enable_heater_a1",
-                                                                   [this](srv::EnableBool::Request::SharedPtr const& req, srv::EnableBool::Response::SharedPtr& res) { processScienceEnable(ScienceBoard::A, ScienceDevice::HEATER_1, req, res); });
+            auto const start = this->now();
+            auto const timeout = rclcpp::Duration::from_seconds(3);
+            rclcpp::Rate loop_rate(10);
 
-            mScienceEnableSrvHB1 = create_service<srv::EnableBool>("science_enable_heater_b1",
-                                                                   [this](srv::EnableBool::Request::SharedPtr const& req, srv::EnableBool::Response::SharedPtr& res) { processScienceEnable(ScienceBoard::B, ScienceDevice::HEATER_1, req, res); });
+            while ((this->now() - start) < timeout) {
+                auto const status = mFunnelServo->getTargetStatus();
+                bool const reached = status == U2D2::Status::Success;
+                res->at_tgts[0] = reached;
 
-            mScienceEnableSrvWLA = create_service<srv::EnableBool>("science_enable_white_led_a",
-                                                                   [this](srv::EnableBool::Request::SharedPtr const& req, srv::EnableBool::Response::SharedPtr& res) { processScienceEnable(ScienceBoard::A, ScienceDevice::WHITE_LED, req, res); });
+                if (reached) return;
+                loop_rate.sleep();
+            }
 
-            mScienceEnableSrvWLB = create_service<srv::EnableBool>("science_enable_white_led_b",
-                                                                   [this](srv::EnableBool::Request::SharedPtr const& req, srv::EnableBool::Response::SharedPtr& res) { processScienceEnable(ScienceBoard::B, ScienceDevice::WHITE_LED, req, res); });
+            RCLCPP_WARN(this->get_logger(), "servo position timeout reached!");
+        }
 
-            mCANSubA = create_subscription<msg::CAN>("/can/science_a/in", 10, [this](msg::CAN::ConstSharedPtr const& msg) { processCANData(msg); });
-            mCANSubB = create_subscription<msg::CAN>("/can/science_b/in", 10, [this](msg::CAN::ConstSharedPtr const& msg) { processCANData(msg); });
+        auto publishDataCallback() -> void {
+            mControllerState.header.stamp = now();
 
-            mCANDeviceA = CanDevice(rclcpp::Node::shared_from_this(), "jetson", "science_a");
-            mCANDeviceB = CanDevice(rclcpp::Node::shared_from_this(), "jetson", "science_b");
+            for (std::size_t i = 0; i < mActuatorNames.size(); ++i) {
+                std::string_view const name = mActuatorNames[i];
+
+                switch (name.front() + name.back()) {
+                    case 'a' + 'r':
+                        mControllerState.names[i] = name;
+                        mControllerState.states[i] = mAuger->getState();
+                        mControllerState.errors[i] = mAuger->getError();
+                        mControllerState.positions[i] = mAuger->getPosition();
+                        mControllerState.velocities[i] = mAuger->getVelocity();
+                        mControllerState.currents[i] = mAuger->getCurrent();
+                        mControllerState.limits_hit[i] = mAuger->getLimitsHitBits();
+                        break;
+                    case 'l' + 'r':
+                        mControllerState.names[i] = name;
+                        mControllerState.states[i] = mLinearActuator->getState();
+                        mControllerState.errors[i] = mLinearActuator->getError();
+                        mControllerState.positions[i] = mLinearActuator->getPosition();
+                        mControllerState.velocities[i] = mLinearActuator->getVelocity();
+                        mControllerState.currents[i] = mLinearActuator->getCurrent();
+                        mControllerState.limits_hit[i] = mLinearActuator->getLimitsHitBits();
+                        break;
+                    case 'f' + 'l': {
+                        double pos, vel, cur;
+                        U2D2::Status const status = mFunnelServo->getPosition(pos);
+                        mFunnelServo->getVelocity(vel);
+                        mFunnelServo->getCurrent(cur);
+                        mControllerState.names[i] = name;
+                        mControllerState.states[i] = U2D2::stringifyStatus(mFunnelServo->getTargetStatus());
+                        mControllerState.errors[i] = U2D2::stringifyStatus(status);
+                        mControllerState.positions[i] = static_cast<float>(pos);
+                        mControllerState.velocities[i] = static_cast<float>(vel);
+                        mControllerState.currents[i] = static_cast<float>(cur);
+                        mControllerState.limits_hit[i] = mFunnelServo->getLimitStatus();
+                        break;
+                    }
+                    case 'b' + 'h': {
+                        double pos, vel, cur;
+                        U2D2::Status const status = mBrushServo->getPosition(pos);
+                        mBrushServo->getVelocity(vel);
+                        mBrushServo->getCurrent(cur);
+                        mControllerState.names[i] = name;
+                        mControllerState.states[i] = U2D2::stringifyStatus(mBrushServo->getTargetStatus());
+                        mControllerState.errors[i] = U2D2::stringifyStatus(status);
+                        mControllerState.positions[i] = static_cast<float>(pos);
+                        mControllerState.velocities[i] = static_cast<float>(vel);
+                        mControllerState.currents[i] = static_cast<float>(cur);
+                        mControllerState.limits_hit[i] = mBrushServo->getLimitStatus();
+                        break;
+                    }
+                }
+            }
+
+            mControllerStatePub->publish(mControllerState);
         }
     };
 
 } // namespace mrover
 
-auto main(int argc, char** argv) -> int {
+
+auto main(int const argc, char** argv) -> int {
     rclcpp::init(argc, argv);
-    auto scienceBridge = std::make_shared<mrover::ScienceHWBridge>();
+    auto const scienceBridge = std::make_shared<mrover::ScienceHWBridge>();
     scienceBridge->init();
-    rclcpp::spin(scienceBridge);
+
+    rclcpp::executors::MultiThreadedExecutor executor;
+    executor.add_node(scienceBridge);
+    executor.spin();
+
     rclcpp::shutdown();
     return EXIT_SUCCESS;
 }

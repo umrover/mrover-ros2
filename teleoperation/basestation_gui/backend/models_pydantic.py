@@ -12,7 +12,7 @@ class BasicWaypointList(BaseModel):
 
 class AutonWaypoint(BaseModel):
     name: str
-    tag_id: int = -1
+    tag_id: int | None = None
     type: int = 0
     lat: float = Field(default=0.0, ge=-90.0, le=90.0)
     lon: float = Field(default=0.0, ge=-180.0, le=180.0)
@@ -25,7 +25,11 @@ class AutonWaypointList(BaseModel):
 
 class CreateAutonWaypoint(BaseModel):
     name: str
+<<<<<<< HEAD
     tag_id: int = -1
+=======
+    tag_id: int | None = None
+>>>>>>> origin/main
     type: int = 0
     lat: float = Field(default=0.0, ge=-90.0, le=90.0)
     lon: float = Field(default=0.0, ge=-180.0, le=180.0)
@@ -48,7 +52,11 @@ class UpdateBasicWaypoint(BaseModel):
 class AutonEnableWaypoint(BaseModel):
     latitude_degrees: float = Field(ge=-90.0, le=90.0)
     longitude_degrees: float = Field(ge=-180.0, le=180.0)
+<<<<<<< HEAD
     tag_id: int = -1
+=======
+    tag_id: int | None = None
+>>>>>>> origin/main
     type: int = 0
     enable_costmap: bool = True
 
@@ -68,8 +76,13 @@ class GimbalAdjustRequest(BaseModel):
     adjustment: float = Field(ge=-3.14159, le=3.14159)
     absolute: bool = False
 
+<<<<<<< HEAD
 class GearDiffRequest(BaseModel):
     position: float = Field(ge=-3.14159, le=3.14159)
+=======
+class ServoPositionCommand(BaseModel):
+    position: float = Field(ge=0.0, le=6.28318)
+>>>>>>> origin/main
     is_counterclockwise: bool = False
 
 class RecordingCreateRequest(BaseModel):

@@ -1,11 +1,22 @@
 import { defineStore } from 'pinia'
+<<<<<<< HEAD
 import { ref, shallowRef, computed, watch, onBeforeUnmount, getCurrentInstance } from 'vue'
+=======
+import { ref, shallowRef, onBeforeUnmount, getCurrentInstance } from 'vue'
+>>>>>>> origin/main
 import { encode, decode } from '@msgpack/msgpack'
 
 interface TypedMessage {
   type: string
 }
 
+<<<<<<< HEAD
+=======
+type MessageCallback = (msg: unknown) => void
+const messageHandlers: Map<string, Map<string, Set<MessageCallback>>> = new Map()
+
+
+>>>>>>> origin/main
 const webSockets: Record<string, WebSocket> = {}
 const refCounts: Record<string, number> = {}
 const flashTimersIn: Record<string, ReturnType<typeof setTimeout>> = {}
@@ -163,6 +174,13 @@ export const useWebsocketStore = defineStore('websocket', () => {
   const connectionStatus = ref<Record<string, string>>({})
 
   function setMessage(id: string, message: unknown) {
+<<<<<<< HEAD
+=======
+    const type = (message as Record<string, unknown>)?.type as string | undefined
+    if (type) {
+      messageHandlers.get(id)?.get(type)?.forEach(h => h(message))
+    }
+>>>>>>> origin/main
     messages.value = { ...messages.value, [id]: message }
   }
 
@@ -290,6 +308,7 @@ export const useWebsocketStore = defineStore('websocket', () => {
     }
   }
 
+<<<<<<< HEAD
   function onMessage<T extends TypedMessage>(
     topic: string,
     messageType: T['type'],
@@ -306,6 +325,21 @@ export const useWebsocketStore = defineStore('websocket', () => {
         callback(msg as T)
       }
     })
+=======
+  function onMessage<T extends TypedMessage = TypedMessage>(
+    topic: string,
+    messageType: string,
+    callback: (msg: T) => void,
+  ) {
+    if (!messageHandlers.has(topic)) messageHandlers.set(topic, new Map())
+    const topicHandlers = messageHandlers.get(topic)!
+    if (!topicHandlers.has(messageType)) topicHandlers.set(messageType, new Set())
+    topicHandlers.get(messageType)!.add(callback as MessageCallback)
+
+    const stop = () => {
+      topicHandlers.get(messageType)?.delete(callback as MessageCallback)
+    }
+>>>>>>> origin/main
     if (getCurrentInstance()) {
       onBeforeUnmount(stop)
     }

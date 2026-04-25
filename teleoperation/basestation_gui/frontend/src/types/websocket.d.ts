@@ -18,7 +18,7 @@ export interface RootState {
 }
 
 export interface ControllerStateMessage {
-  type: 'arm_state' | 'sp_state' | 'drive_left_state' | 'drive_right_state' | 'gimbal_state' | 'sp_controller_state' | 'gimbal_controller_state';
+  type: 'arm_state' | 'sp_state' | 'drive_state' | 'gimbal_state' | 'sp_controller_state' | 'gimbal_controller_state';
   header?: {
     stamp: { sec: number; nanosec: number };
     frame_id: string;
@@ -87,26 +87,6 @@ export interface CmdVelMessage {
   angular: { x: number; y: number; z: number };
 }
 
-export interface OxygenMessage {
-  type: 'oxygen';
-  percent: number;
-}
-
-export interface UVMessage {
-  type: 'uv';
-  uv_index: number;
-}
-
-export interface TemperatureMessage {
-  type: 'temperature';
-  temperature: number;
-}
-
-export interface HumidityMessage {
-  type: 'humidity';
-  relative_humidity: number;
-}
-
 export interface SPHumidityMessage {
   type: 'sp_humidity';
   relative_humidity: number;
@@ -151,6 +131,7 @@ export interface SPSensorStateMessage {
   co2_state: boolean;
 }
 
+<<<<<<< HEAD
 // export interface VelocityMessage {
 //   header?: {
 //     stamp: { sec: number; nanosec: number };
@@ -160,6 +141,8 @@ export interface SPSensorStateMessage {
 //   velocities: number[];
 // }
 
+=======
+>>>>>>> origin/main
 export interface ThrottleMessage {
   header?: {
     stamp: { sec: number; nanosec: number };
@@ -169,6 +152,7 @@ export interface ThrottleMessage {
   throttles: number[];
 }
 
+<<<<<<< HEAD
 export interface IkFeedbackMessage {
   type: 'ik_feedback';
   pos: {
@@ -178,4 +162,6 @@ export interface IkFeedbackMessage {
   };
 }
 
+=======
+>>>>>>> origin/main
 export type ScienceMessage = OxygenMessage | UVMessage | TemperatureMessage | HumidityMessage | SPHumidityMessage | SPTemperatureMessage | SPOxygenMessage | SPUVMessage | SPOzoneMessage | SPCO2Message | SPPressureMessage | SPSensorStateMessage;

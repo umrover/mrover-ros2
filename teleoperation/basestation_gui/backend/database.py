@@ -1,45 +1,45 @@
 import logging
 import sqlite3
-import os
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
+<<<<<<< HEAD
 
 BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../..')
+=======
+>>>>>>> origin/main
 
-# Ensure base directory exists
-os.makedirs(BASE_DIR, exist_ok=True)
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BASE_DIR.mkdir(parents=True, exist_ok=True)
 
-WAYPOINTS_DB = os.path.join(BASE_DIR, 'waypoints.db')
-RECORDINGS_DB = os.path.join(BASE_DIR, 'recordings.db')
+WAYPOINTS_DB = BASE_DIR / 'waypoints.db'
+RECORDINGS_DB = BASE_DIR / 'recordings.db'
 
 def init_waypoints_db():
     try:
         conn = sqlite3.connect(WAYPOINTS_DB)
         cursor = conn.cursor()
 
-        # Enable foreign keys
         cursor.execute("PRAGMA foreign_keys = ON;")
 
-        # Auton Waypoints Table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS auton_waypoints (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
-                tag_id INTEGER DEFAULT -1,
+                tag_id INTEGER DEFAULT NULL,
                 type INTEGER DEFAULT 0,
                 latitude REAL DEFAULT 0.0,
                 longitude REAL DEFAULT 0.0,
-                enable_costmap BOOLEAN DEFAULT 1,
-                deletable BOOLEAN DEFAULT 1
+                deletable BOOLEAN DEFAULT 1,
+                enable_costmap BOOLEAN DEFAULT 1
             )
         ''')
 
-        # Current Auton Course Table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS current_auton_course (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
-                tag_id INTEGER DEFAULT -1,
+                tag_id INTEGER DEFAULT NULL,
                 type INTEGER DEFAULT 0,
                 latitude REAL DEFAULT 0.0,
                 longitude REAL DEFAULT 0.0,
@@ -48,7 +48,6 @@ def init_waypoints_db():
             )
         ''')
 
-        # Basic Waypoints Table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS basic_waypoints (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -59,10 +58,10 @@ def init_waypoints_db():
             )
         ''')
 
-        # Seed default data if table is empty
         cursor.execute("SELECT count(*) FROM auton_waypoints")
         if cursor.fetchone()[0] == 0:
             defaults = [
+<<<<<<< HEAD
                 ("No Search 1", 0, 0, 0.0, 0.0, 1, 0),
                 ("No Search 2", 1, 0, 0.0, 0.0, 1, 0),
                 ("Post 1", 2, 1, 0.0, 0.0, 1, 0),
@@ -71,13 +70,22 @@ def init_waypoints_db():
                 ("Mallet", 5, 2, 0.0, 0.0, 1, 0),
                 ("Water Bottle", 6, 3, 0.0, 0.0, 1, 0),
                 ("Rock Pick", 7, 4, 0.0, 0.0, 1, 0),
+=======
+                ("No Search 1", None, 0, 0.0, 0.0, 0, 1),
+                ("No Search 2", None, 0, 0.0, 0.0, 0, 1),
+                ("Post 1", 1, 1, 0.0, 0.0, 0, 1),
+                ("Post 2", 2, 1, 0.0, 0.0, 0, 1),
+                ("Post 3", 3, 1, 0.0, 0.0, 0, 1),
+                ("Mallet", None, 2, 0.0, 0.0, 0, 1),
+                ("Water Bottle", None, 3, 0.0, 0.0, 0, 1),
+                ("Rock Pick", None, 4, 0.0, 0.0, 0, 1),
+>>>>>>> origin/main
             ]
             cursor.executemany('''
-                INSERT INTO auton_waypoints (name, tag_id, type, latitude, longitude, enable_costmap, deletable)
+                INSERT INTO auton_waypoints (name, tag_id, type, latitude, longitude, deletable, enable_costmap)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             ''', defaults)
 
-            # Set auto-increment to 8
             cursor.execute('DELETE FROM sqlite_sequence WHERE name = "auton_waypoints"')
             cursor.execute('INSERT INTO sqlite_sequence (name, seq) VALUES ("auton_waypoints", 8)')
 
@@ -93,10 +101,8 @@ def init_recordings_db():
         conn = sqlite3.connect(RECORDINGS_DB)
         cursor = conn.cursor()
 
-        # Enable foreign keys
         cursor.execute("PRAGMA foreign_keys = ON;")
 
-        # Recordings Table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS recordings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -106,7 +112,6 @@ def init_recordings_db():
             )
         ''')
 
-        # Recorded Waypoints Table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS recorded_waypoints (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -136,7 +141,6 @@ def get_recordings_db():
     conn.row_factory = sqlite3.Row
     return conn
 
-# For backwards compatibility
 def get_db_connection():
     return get_waypoints_db()
 

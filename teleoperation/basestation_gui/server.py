@@ -1,6 +1,6 @@
 import argparse
 import sys
-import os
+from pathlib import Path
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,7 +10,7 @@ import msgpack
 import traceback
 
 # Import Singleton ROS Manager
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, str(Path(__file__).parent))
 from backend.managers.ros import get_node, get_logger
 from backend.logging_config import LOGGING_CONFIG
 
@@ -111,6 +111,7 @@ if __name__ == "__main__":
     ensure_initialized()
 
     if args.serve_static:
+<<<<<<< HEAD
         frontend_dist = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend/dist")
         real_frontend_dist = os.path.realpath(frontend_dist)
         app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
@@ -123,5 +124,17 @@ if __name__ == "__main__":
             if os.path.exists(file_path) and os.path.isfile(file_path):
                 return FileResponse(file_path)
             return FileResponse(os.path.join(frontend_dist, "index.html"))
+=======
+        dist = Path(__file__).resolve().parent / "frontend" / "dist"
+        index = dist / "index.html"
+        app.mount("/assets", StaticFiles(directory=dist / "assets"), name="assets")
+
+        @app.get("/{full_path:path}")
+        async def serve_spa(full_path: str):
+            requested = (dist / full_path).resolve()
+            if requested.is_relative_to(dist) and requested.is_file():
+                return FileResponse(requested)
+            return FileResponse(index)
+>>>>>>> origin/main
 
     uvicorn.run(app, host="0.0.0.0", port=args.port, log_config=LOGGING_CONFIG)

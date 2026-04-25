@@ -1,8 +1,20 @@
 <template>
+<<<<<<< HEAD
   <div class="flex flex-col gap-2 h-full">
     <h4 class="component-header">SP</h4>
     <div class="overflow-x-auto cmd-scroll flex-1">
       <table class="cmd-table compact-table w-full">
+=======
+  <div class="flex flex-col gap-1 h-full">
+    <div class="flex justify-between items-center pr-2 py-0">
+      <h4 class="component-header">Science State</h4>
+      <button class="btn btn-icon-sm !h-6 !w-6 btn-outline-info" @click="legendModal?.open()">
+        <i class="bi bi-info-circle"></i>
+      </button>
+    </div>
+    <div class="overflow-x-auto scroll flex-1">
+      <table class="table compact-table w-full">
+>>>>>>> origin/main
         <thead>
           <tr>
             <th>Motor</th>
@@ -14,6 +26,7 @@
           </tr>
         </thead>
         <tbody>
+<<<<<<< HEAD
           <tr v-for="(name, i) in names" :key="i" :class="stale ? 'row-no-data' : stateRowClass(states[i], errors[i])">
             <td class="font-bold">{{ name }}</td>
             <td>{{ formatState(states[i]) }}</td>
@@ -21,14 +34,28 @@
             <td class="numeric-col">{{ formatNumber(positions[i]) }}</td>
             <td class="numeric-col">{{ formatNumber(currents[i]) }}</td>
             <td>{{ formatLimit(limitHits[i]) }}</td>
+=======
+          <tr v-for="(name, i) in data.names" :key="i" :class="stale ? 'row-no-data' : stateRowClass(data.states[i], data.errors[i])">
+            <td class="font-bold">{{ name }}</td>
+            <td>{{ formatState(data.states[i]) }}</td>
+            <td>{{ formatError(data.errors[i]) }}</td>
+            <td class="numeric-col"><span v-html="formatNumber(data.positions[i], 3, 2, true)"></span></td>
+            <td class="numeric-col"><span v-html="formatNumber(data.currents[i], 3, 2, true)"></span></td>
+            <td>{{ formatLimit(data.limitsHit[i]) }}</td>
+>>>>>>> origin/main
           </tr>
         </tbody>
       </table>
     </div>
+<<<<<<< HEAD
+=======
+    <StateMappingModal ref="legendModal" />
+>>>>>>> origin/main
   </div>
 </template>
 
 <script lang="ts" setup>
+<<<<<<< HEAD
 import { ref, computed, watch } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
@@ -59,5 +86,16 @@ watch(scienceMessage, (msg) => {
   positions.value = typed.positions
   currents.value = typed.currents
   limitHits.value = typed.limits_hit
+=======
+import { ref } from 'vue'
+import { useControllerMessage, formatState, formatNumber, formatLimit, formatError, stateRowClass } from '@/composables/useControllerState'
+import StateMappingModal from '@/components/StateMappingModal.vue'
+
+const legendModal = ref<InstanceType<typeof StateMappingModal> | null>(null)
+
+const { stale, data } = useControllerMessage({
+  topic: 'science',
+  messageType: 'sp_controller_state',
+>>>>>>> origin/main
 })
 </script>

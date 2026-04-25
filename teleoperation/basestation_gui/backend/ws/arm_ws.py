@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import rclpy.time
 import tf2_ros
 from tf2_ros import LookupException, ConnectivityException, ExtrapolationException
@@ -11,6 +12,15 @@ from geometry_msgs.msg import Twist
 from rclpy.publisher import Publisher
 
 
+=======
+from backend.ws.base_ws import WebSocketHandler
+from backend.managers.ros import get_logger
+from backend.input import DeviceInputs
+from backend.ra_controls import send_ra_controls
+from mrover.msg import Throttle, IK, ControllerState
+from geometry_msgs.msg import Twist
+from rclpy.publisher import Publisher
+>>>>>>> origin/main
 class ArmHandler(WebSocketHandler):
     arm_thr_pub: Publisher
     ik_pos_pub: Publisher
@@ -18,10 +28,14 @@ class ArmHandler(WebSocketHandler):
     keyboard_yaw_pub: Publisher
 
     def __init__(self, websocket):
+<<<<<<< HEAD
         super().__init__(websocket, 'arm')
         self.buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.buffer, self.node, spin_thread=False)
 
+=======
+        super().__init__(websocket, "arm")
+>>>>>>> origin/main
     async def setup(self):
         self.arm_thr_pub = self.node.create_publisher(Throttle, "/arm_thr_cmd", 1)
         self.ik_pos_pub = self.node.create_publisher(IK, "/ik_pos_cmd", 1)
@@ -29,7 +43,9 @@ class ArmHandler(WebSocketHandler):
         self.publishers.extend([self.arm_thr_pub, self.ik_pos_pub, self.ik_vel_pub])
         register_ik_pos_pub(self.ik_pos_pub)
 
+
         self.forward_ros_topic("/arm_controller_state", ControllerState, "arm_state")
+<<<<<<< HEAD
         self.forward_ros_topic("/arm_ik", IK, "ik_target")
         self.forward_ros_topic("/arm_thr_cmd", Throttle, "arm_throttle_command")
         self.forward_ros_topic("/keyboard_yaw_cmd", KeyboardYaw, "keyboard_yaw_command")
@@ -57,13 +73,15 @@ class ArmHandler(WebSocketHandler):
             pass
         except Exception as e:
             get_logger().error(f"ArmHandler feedback error: {e}")
+=======
+>>>>>>> origin/main
 
     async def handle_message(self, data):
-        msg_type = data.get('type')
+        msg_type = data.get("type")
 
-        if msg_type == 'ra_controller':
-            axes = data.get('axes', [])
-            buttons = data.get('buttons', [])
+        if msg_type == "ra_controller":
+            axes = data.get("axes", [])
+            buttons = data.get("buttons", [])
             device_input = DeviceInputs(axes, buttons)
             send_ra_controls(
                 device_input,
@@ -73,6 +91,7 @@ class ArmHandler(WebSocketHandler):
             )
         else:
             get_logger().warning(f"Unhandled ARM message: {msg_type}")
+<<<<<<< HEAD
 
     async def trigger_stow(self):
         send_ra_controls(
@@ -81,3 +100,5 @@ class ArmHandler(WebSocketHandler):
             self.ik_pos_pub,
             self.ik_vel_pub,
         )
+=======
+>>>>>>> origin/main

@@ -4,7 +4,11 @@
       <h5 class="font-semibold">Latency Benchmark</h5>
       <div
         class="flex items-center gap-2 px-2 py-1 rounded"
+<<<<<<< HEAD
         :class="connectionStatus === 'connected' ? 'bg-cmd-success-subtle' : 'bg-cmd-danger-subtle'"
+=======
+        :class="connectionStatus === 'connected' ? 'bg-success-subtle' : 'bg-danger-subtle'"
+>>>>>>> origin/main
       >
         <span
           class="rounded-full inline-block"
@@ -13,29 +17,46 @@
         ></span>
         <span
           class="text-sm font-medium"
+<<<<<<< HEAD
           :class="connectionStatus === 'connected' ? 'text-cmd-success' : 'text-cmd-danger'"
+=======
+          :class="connectionStatus === 'connected' ? 'text-success' : 'text-danger'"
+>>>>>>> origin/main
         >{{ connectionStatus }}</span>
       </div>
     </div>
 
     <div class="flex gap-2 items-center flex-wrap">
       <button
+<<<<<<< HEAD
         class="cmd-btn cmd-btn-sm flex items-center gap-1"
         :class="isRunning ? 'cmd-btn-danger' : 'cmd-btn-success'"
+=======
+        class="btn btn-sm flex items-center gap-1"
+        :class="isRunning ? 'btn-danger' : 'btn-success'"
+>>>>>>> origin/main
         data-testid="pw-latency-start"
         @click="toggleBenchmark"
       >
         <i :class="isRunning ? 'bi bi-stop-fill' : 'bi bi-play-fill'"></i>
         {{ isRunning ? 'Stop' : 'Start' }}
       </button>
+<<<<<<< HEAD
       <button class="cmd-btn cmd-btn-sm cmd-btn-secondary flex items-center gap-1" data-testid="pw-latency-reset" @click="resetStats">
+=======
+      <button class="btn btn-sm btn-secondary flex items-center gap-1" data-testid="pw-latency-reset" @click="resetStats">
+>>>>>>> origin/main
         <i class="bi bi-arrow-counterclockwise"></i> Reset
       </button>
       <div class="flex items-center gap-1">
         <input
           v-model.number="frequency"
           type="number"
+<<<<<<< HEAD
           class="cmd-form-control cmd-form-control-sm text-center"
+=======
+          class="form-control form-control-sm text-center"
+>>>>>>> origin/main
           data-testid="pw-latency-freq"
           style="width: 65px"
           min="1"
@@ -45,10 +66,17 @@
       </div>
     </div>
 
+<<<<<<< HEAD
     <div class="cmd-panel">
       <div class="p-4">
         <div class="uppercase text-muted font-semibold text-sm mb-2">Latency</div>
         <div class="flex justify-between py-1 bg-cmd-primary-subtle rounded px-2 mb-1">
+=======
+    <div class="panel">
+      <div class="p-4">
+        <div class="uppercase text-muted font-semibold text-sm mb-2">Latency</div>
+        <div class="flex justify-between py-1 bg-primary-subtle rounded px-2 mb-1">
+>>>>>>> origin/main
           <span>Current RTT</span>
           <span class="font-mono font-medium">{{ currentLatency }} ms</span>
         </div>
@@ -71,7 +99,11 @@
       </div>
     </div>
 
+<<<<<<< HEAD
     <div class="cmd-panel">
+=======
+    <div class="panel">
+>>>>>>> origin/main
       <div class="p-4">
         <div class="uppercase text-muted font-semibold text-sm mb-2">Throughput</div>
         <div class="flex justify-between py-1">
@@ -97,7 +129,11 @@
       </div>
     </div>
 
+<<<<<<< HEAD
     <div class="cmd-panel">
+=======
+    <div class="panel">
+>>>>>>> origin/main
       <div class="p-4">
         <div class="uppercase text-muted font-semibold text-sm mb-2">Reliability</div>
         <div class="flex justify-between py-1">
@@ -106,13 +142,21 @@
         </div>
         <div class="flex justify-between py-1">
           <span>Lost</span>
+<<<<<<< HEAD
           <span class="font-mono" :class="packetsLost > 0 ? 'text-cmd-danger' : 'text-cmd-success'">
+=======
+          <span class="font-mono" :class="packetsLost > 0 ? 'text-danger' : 'text-success'">
+>>>>>>> origin/main
             {{ packetsLost }} ({{ packetLossRate }}%)
           </span>
         </div>
         <div class="flex justify-between py-1">
           <span>Out of Order</span>
+<<<<<<< HEAD
           <span class="font-mono" :class="outOfOrderCount > 0 ? 'text-cmd-warning' : ''">
+=======
+          <span class="font-mono" :class="outOfOrderCount > 0 ? 'text-warning' : ''">
+>>>>>>> origin/main
             {{ outOfOrderCount }}
           </span>
         </div>

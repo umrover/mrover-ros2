@@ -1,5 +1,6 @@
 <template>
   <Teleport to="body">
+<<<<<<< HEAD
     <div v-if="isOpen" class="cmd-modal-backdrop" @click.self="close">
       <div class="cmd-modal-dialog">
         <div class="cmd-modal-content">
@@ -8,16 +9,35 @@
             <button type="button" class="cmd-btn-close" @click="close"><i class="bi bi-x-lg"></i></button>
           </div>
           <div class="cmd-modal-body">
+=======
+    <div v-if="isOpen" class="modal-backdrop" @click.self="close">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">{{ title }}</h5>
+            <button type="button" class="btn-close" @click="close"><i class="bi bi-x-lg"></i></button>
+          </div>
+          <div class="modal-body">
+>>>>>>> origin/main
             <slot>
               <p class="mb-0">{{ message }}</p>
             </slot>
           </div>
+<<<<<<< HEAD
           <div class="cmd-modal-footer">
             <button type="button" class="cmd-btn cmd-btn-secondary cmd-btn-sm" @click="close">Cancel</button>
             <button
               type="button"
               class="cmd-btn cmd-btn-sm"
               :class="`cmd-btn-${confirmVariant}`"
+=======
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm" @click="close">Cancel</button>
+            <button
+              type="button"
+              class="btn btn-sm"
+              :class="`btn-${confirmVariant}`"
+>>>>>>> origin/main
               @click="confirm"
             >{{ confirmText }}</button>
           </div>

@@ -5,11 +5,12 @@
       ref="mapRef"
       class="map z-0"
       :zoom="22"
-      :center="center"
+    :center="center"
       @click="getClickedLatLon($event)"
     >
       <l-control-scale :imperial="false" />
       <l-tile-layer
+        :key="online ? 'online' : 'offline'"
         ref="tileLayer"
         :url="online ? onlineUrl : offlineUrl"
         :attribution="attribution"
@@ -34,10 +35,43 @@
       <l-polyline :lat-lngs="dronePath" :color="'green'" />
     </l-map>
     <div class="overlay-toolbar right-0">
+<<<<<<< HEAD
       <button class="overlay-toolbar-btn" :class="{ 'overlay-toolbar-btn-active': online }" @click="online = !online">
         Online
       </button>
       <button @click="centerOnRover" class="overlay-toolbar-btn">Center</button>
+=======
+      <button class="overlay-toolbar-btn" @click="online = !online">
+        Online <i :class="online ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
+      </button>
+      <button class="overlay-toolbar-btn" @click="followRover = !followRover">
+        Follow Rover <i :class="followRover ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
+      </button>
+      <div class="overlay-dropdown">
+        <button class="overlay-toolbar-btn" :disabled="followRover" @click="centerOpen = !centerOpen; zoomOpen = false">
+          Center <i class="bi bi-chevron-down"></i>
+        </button>
+        <div v-if="centerOpen" class="overlay-dropdown-menu">
+          <button class="overlay-dropdown-item" @click="centerOnRover(); centerOpen = false">Rover</button>
+          <button class="overlay-dropdown-item" @click="centerOnDrone(); centerOpen = false">Drone</button>
+        </div>
+      </div>
+      <div class="overlay-dropdown">
+        <button class="overlay-toolbar-btn" @click="zoomOpen = !zoomOpen; centerOpen = false">
+          Zoom <i class="bi bi-chevron-down"></i>
+        </button>
+        <div v-if="zoomOpen" class="overlay-dropdown-menu">
+          <button
+            v-for="z in zoomLevels"
+            :key="z"
+            class="overlay-dropdown-item"
+            @click="setZoom(z); zoomOpen = false"
+          >
+            {{ z }}
+          </button>
+        </div>
+      </div>
+>>>>>>> origin/main
     </div>
   </div>
 </template>
@@ -58,8 +92,12 @@ import L from 'leaflet'
 import 'leaflet-rotatedmarker'
 import type { LeafletMouseEvent } from 'leaflet'
 import type { MapWaypoint } from '@/types/waypoints'
+<<<<<<< HEAD
 import type { NavMessage } from '@/types/coordinates'
 import { ref, shallowRef, triggerRef, computed, watch } from 'vue'
+=======
+import { ref, watch } from 'vue'
+>>>>>>> origin/main
 import { useRoverMap } from '@/composables/useRoverMap'
 
 const erdStore = useErdStore()
@@ -68,6 +106,7 @@ const { waypointListForMap, highlightedWaypoint, searchWaypoint } = storeToRefs(
 const {
   center,
   online,
+  followRover,
   mapRef,
   roverRef,
   odomPath,
@@ -79,16 +118,25 @@ const {
   attribution,
   locationIcon,
   waypointIcon,
+  droneRef,
+  dronePath,
+  droneLatLng,
+  droneIcon,
   onMapReady,
   centerOnRover,
+  centerOnDrone,
+  centerOpen,
+  zoomOpen,
+  zoomLevels,
+  setZoom,
   getMap,
-  navMessage,
 } = useRoverMap({
   maxOdomCount: 1000,
   drawFrequency: 1,
   initialCenter: [38.4225202, -110.7844653],
 })
 
+<<<<<<< HEAD
 const drone_latitude_deg = ref(0)
 const drone_longitude_deg = ref(0)
 const droneRef = ref<{ leafletObject: L.Marker } | null>(null)
@@ -101,6 +149,9 @@ const droneIcon = L.icon({
   iconSize: [64, 64],
   iconAnchor: [32, 32],
 })
+=======
+const circle = ref<L.Circle | null>(null)
+>>>>>>> origin/main
 const droneWaypointIcon = L.icon({
   iconUrl: '/waypoint_marker_drone.svg',
   iconSize: [64, 64],
@@ -114,16 +165,8 @@ const highlightedWaypointIcon = L.icon({
   popupAnchor: [0, -32],
 })
 
-const droneLatLng = computed(() => {
-  return L.latLng(drone_latitude_deg.value, drone_longitude_deg.value)
-})
-
 const handleMapReady = () => {
-  onMapReady(() => {
-    if (droneRef.value) {
-      droneMarker = droneRef.value.leafletObject as L.Marker
-    }
-  })
+  onMapReady()
 }
 
 const getClickedLatLon = (e: LeafletMouseEvent) => {
@@ -143,6 +186,7 @@ const getWaypointIcon = (waypoint: MapWaypoint, index: number) => {
   }
 }
 
+<<<<<<< HEAD
 watch(navMessage, (msg) => {
   if (!msg) return
   const navMsg = msg as NavMessage
@@ -165,6 +209,8 @@ watch([drone_latitude_deg, drone_longitude_deg], () => {
   triggerRef(dronePath)
 })
 
+=======
+>>>>>>> origin/main
 watch(searchWaypoint, (newIndex) => {
   const map = getMap()
   if (newIndex === -1) {

@@ -34,12 +34,18 @@ body {
 }
 
 #app {
+<<<<<<< HEAD
   /* stylelint-disable declaration-property-value-disallowed-list */
+=======
+>>>>>>> origin/main
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+<<<<<<< HEAD
   /* stylelint-enable declaration-property-value-disallowed-list */
+=======
+>>>>>>> origin/main
   font-family: Avenir, Helvetica, Arial, sans-serif;
 }
 
@@ -48,14 +54,21 @@ body {
   flex: 1;
   width: 100%;
   min-height: 0;
+<<<<<<< HEAD
   /* stylelint-disable-next-line declaration-property-value-disallowed-list */
+=======
+>>>>>>> origin/main
   overflow: hidden;
   background-color: var(--view-bg);
 }
 
 .island {
   background-color: var(--island-bg);
+<<<<<<< HEAD
   border-radius: var(--cmd-radius-md);
+=======
+  border-radius: var(--radius-md);
+>>>>>>> origin/main
 }
 
 h1, h2, h3, h4, h5, h6 {

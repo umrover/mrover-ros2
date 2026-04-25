@@ -21,13 +21,15 @@
     "bootstrap-icons": "^1.13.1",
     "chart.js": "^4.5.1",
     "gamepad-display": "^1.1.0",
+    "html-to-image": "^1.11.13",
     "leaflet": "^1.9.4",
     "leaflet-rotatedmarker": "^0.2.0",
     "lil-gui": "^0.21.0",
     "pinia": "^3.0.4",
-    "three": "^0.181.2",
+    "three": "^0.183.2",
     "urdf-loader": "^0.12.6",
     "vue": "^3.5.30",
+<<<<<<< HEAD
     "vue-flight-indicators": "^0.1.1",
     "vue-grid-layout-v3": "^3.1.2",
     "vue-router": "^4.6.4",
@@ -45,6 +47,26 @@
     "@vue/eslint-config-prettier": "^10.2.0",
     "@vue/tsconfig": "^0.8.1",
     "eslint": "^9.39.4",
+=======
+    "vue-draggable-plus": "^0.6.1",
+    "vue-flight-indicators": "^0.1.1",
+    "vue-grid-layout-v3": "^3.1.2",
+    "vue-router": "^5.0.4",
+    "vuedraggable": "^2.24.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.2",
+    "@tsconfig/node24": "^24.0.4",
+    "@types/leaflet": "^1.9.21",
+    "@types/node": "^25.5.0",
+    "@types/three": "^0.183.1",
+    "@typescript-eslint/eslint-plugin": "^8.57.2",
+    "@typescript-eslint/parser": "^8.57.2",
+    "@vitejs/plugin-vue": "^6.0.5",
+    "@vue/eslint-config-prettier": "^10.2.0",
+    "@vue/tsconfig": "^0.9.0",
+    "eslint": "^10.1.0",
+>>>>>>> origin/main
     "eslint-plugin-vue": "^10.8.0",
     "prettier": "^3.8.1",
     "stylelint": "^17.4.0",
@@ -52,8 +74,13 @@
     "stylelint-config-standard-vue": "^1.0.0",
     "tailwindcss": "^4.2.1",
     "typescript": "^5.9.3",
+<<<<<<< HEAD
     "typescript-eslint": "^8.57.0",
     "vite": "^7.3.1",
+=======
+    "typescript-eslint": "^8.57.2",
+    "vite": "^7",
+>>>>>>> origin/main
     "vue-grid-layout-v3-types": "^1.0.5",
     "vue-tsc": "^3.2.5"
   }

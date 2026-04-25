@@ -3,6 +3,10 @@ from backend.ws.base_ws import WebSocketHandler
 from backend.managers.ros import get_logger
 from rclpy.action import ActionClient
 from mrover.action import TypingCode
+<<<<<<< HEAD
+=======
+from mrover.msg import KeyboardYaw
+>>>>>>> origin/main
 
 
 class AutonHandler(WebSocketHandler):
@@ -12,6 +16,10 @@ class AutonHandler(WebSocketHandler):
 
     async def setup(self):
         self.action_client = ActionClient(self.node, TypingCode, '/es_typing_code')
+<<<<<<< HEAD
+=======
+        self.forward_ros_topic('/keyboard/yaw', KeyboardYaw, 'keyboard_yaw')
+>>>>>>> origin/main
 
     async def handle_message(self, data):
         msg_type = data.get('type')

@@ -1,9 +1,16 @@
 <template>
   <div class="flex justify-center items-center p-6 flex-1 min-h-screen bg-theme-view">
+<<<<<<< HEAD
     <div class="w-full bg-theme-card border rounded-sm shadow-lg" style="max-width: 600px; border-color: var(--cmd-panel-border) !important;">
       <div class="p-6" style="font-family: var(--cmd-font-mono);">
         <div class="flex items-center flex-wrap mb-4">
           <span class="text-cmd-success">rover@basestation</span><span>:</span><span class="text-muted">~</span><span class="mr-2">$</span>
+=======
+    <div class="w-full bg-theme-card border rounded-sm shadow-lg" style="max-width: 600px; border-color: var(--panel-border);">
+      <div class="p-6">
+        <div class="flex items-center flex-wrap mb-4">
+          <span class="text-success">rover@basestation</span><span>:</span><span class="text-muted">~</span><span class="mr-2">$</span>
+>>>>>>> origin/main
           <span>./select_mission</span><span class="font-bold">_</span>
         </div>
 

@@ -4,6 +4,7 @@
       class="modal-backdrop flex justify-center items-center"
       @click.self="$emit('close')"
     >
+<<<<<<< HEAD
       <div class="sensor-modal-content cmd-panel">
       <div class="sensor-modal-header">
         <h4 class="component-header">All Sensor Charts</h4>
@@ -12,6 +13,16 @@
             <i class="bi bi-arrow-counterclockwise"></i> Reset
           </button>
           <button class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary close-btn" @click="$emit('close')">
+=======
+      <div class="sensor-modal-content panel">
+      <div class="sensor-modal-header">
+        <h4 class="component-header">All Sensor Charts</h4>
+        <div class="flex gap-2">
+          <button class="btn btn-sm btn-outline-danger" @click="$emit('reset')">
+            <i class="bi bi-arrow-counterclockwise"></i> Reset
+          </button>
+          <button class="btn btn-sm btn-outline-danger close-btn" @click="$emit('close')">
+>>>>>>> origin/main
             <i class="bi bi-x-lg"></i>
           </button>
         </div>
@@ -26,10 +37,17 @@
           <div class="sensor-chart-sidebar">
             <h5 class="sensor-chart-title">{{ config.title }}</h5>
             <div class="flex flex-col gap-1">
+<<<<<<< HEAD
               <button class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary" @click="downloadPNG(index)">
                 <i class="bi bi-download"></i> PNG
               </button>
               <button class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary" @click="downloadCSV(index)">
+=======
+              <button class="btn btn-sm btn-outline-secondary" @click="downloadPNG(index)">
+                <i class="bi bi-download"></i> PNG
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" @click="downloadCSV(index)">
+>>>>>>> origin/main
                 <i class="bi bi-download"></i> CSV
               </button>
             </div>
@@ -51,6 +69,7 @@
 import { onMounted, onUnmounted } from 'vue'
 import Chart from 'chart.js/auto'
 import type { Chart as ChartType } from 'chart.js/auto'
+import { currentTimestamp } from '@/utils/formatNumber'
 
 interface ChartDataset {
   label: string
@@ -98,8 +117,13 @@ const chartConfigs: readonly ChartConfig[] = [
     datasets: [{ label: 'Ozone', color: '#F9A825', historyIndex: 4 }],
   },
   {
+<<<<<<< HEAD
     title: 'CO2 (ppm)',
     datasets: [{ label: 'CO2', color: '#8D6E63', historyIndex: 5 }],
+=======
+    title: 'CO₂ (Rel. %)',
+    datasets: [{ label: 'CO₂', color: '#8D6E63', historyIndex: 5 }],
+>>>>>>> origin/main
   },
   {
     title: 'Pressure (Pa)',
@@ -113,6 +137,7 @@ const sanitizeFilename = (title: string): string => {
   return title.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '')
 }
 
+
 const downloadPNG = (chartIndex: number): void => {
   const chart = charts[chartIndex]
   const config = chartConfigs[chartIndex]
@@ -122,7 +147,7 @@ const downloadPNG = (chartIndex: number): void => {
   const url = canvas.toDataURL('image/png')
   const anchor = document.createElement('a')
   anchor.href = url
-  anchor.download = `${sanitizeFilename(config.title)}.png`
+  anchor.download = `${sanitizeFilename(config.title)}_${currentTimestamp()}.png`
   anchor.click()
 }
 
@@ -141,7 +166,7 @@ const downloadCSV = (chartIndex: number): void => {
 
   const anchor = document.createElement('a')
   anchor.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv)
-  anchor.download = `${sanitizeFilename(config.title)}.csv`
+  anchor.download = `${sanitizeFilename(config.title)}_${currentTimestamp()}.csv`
   anchor.click()
 }
 
@@ -178,7 +203,6 @@ const handleEscape = (event: KeyboardEvent): void => {
 }
 
 onMounted(() => {
-  console.log()
   window.addEventListener('keydown', handleEscape)
 
   const firstHistory = props.sensorHistory[0]
@@ -255,7 +279,11 @@ onMounted(() => {
   z-index: 1000;
   width: 100%;
   height: 100%;
+<<<<<<< HEAD
   background-color: var(--cmd-backdrop);
+=======
+  background-color: var(--backdrop);
+>>>>>>> origin/main
 }
 
 .sensor-modal-content {
@@ -273,7 +301,11 @@ onMounted(() => {
   justify-content: space-between;
   padding-bottom: 0.5rem;
   margin-bottom: 0.5rem;
+<<<<<<< HEAD
   border-bottom: 2px solid var(--cmd-panel-border);
+=======
+  border-bottom: 2px solid var(--panel-border);
+>>>>>>> origin/main
 }
 
 .close-btn {
@@ -296,8 +328,13 @@ onMounted(() => {
   gap: 0.75rem;
   min-height: 0;
   padding: 0.5rem;
+<<<<<<< HEAD
   border: var(--cmd-border-width) solid var(--cmd-panel-border);
   border-radius: var(--cmd-radius-sm);
+=======
+  border: var(--border-width) solid var(--panel-border);
+  border-radius: var(--radius-sm);
+>>>>>>> origin/main
 }
 
 .sensor-chart-sidebar {
@@ -318,6 +355,7 @@ onMounted(() => {
   white-space: nowrap;
 }
 
+<<<<<<< HEAD
 .sensor-chart-sidebar .cmd-btn {
   font-size: 0.6875rem;
 }
@@ -326,6 +364,12 @@ onMounted(() => {
   background-color: var(--table-header-bg);
 }
 
+=======
+.sensor-chart-sidebar .btn {
+  font-size: 0.6875rem;
+}
+
+>>>>>>> origin/main
 .sensor-chart-canvas {
   display: flex;
   flex: 1;

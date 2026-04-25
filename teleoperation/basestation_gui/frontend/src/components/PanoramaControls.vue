@@ -1,10 +1,17 @@
 <template>
   <div class="flex flex-col gap-2 w-full h-full">
     <h4 class="component-header">Panorama</h4>
+<<<<<<< HEAD
     <button :class="['cmd-btn', buttonClass]" :disabled="loading" data-testid="pw-panorama-toggle" @click="toggle">
       <span class="inline-flex items-center gap-2">
         <span>{{ buttonText }}</span>
         <span v-if="loading" class="cmd-spinner cmd-spinner-sm"></span>
+=======
+    <button :class="['btn', buttonClass]" :disabled="loading" data-testid="pw-panorama-toggle" @click="toggle">
+      <span class="inline-flex items-center gap-2">
+        <span>{{ buttonText }}</span>
+        <span v-if="loading" class="spinner spinner-sm"></span>
+>>>>>>> origin/main
       </span>
     </button>
   </div>
@@ -28,8 +35,13 @@ const buttonText = computed(() => {
 })
 
 const buttonClass = computed(() => {
+<<<<<<< HEAD
   if (loading.value) return 'cmd-btn-warning'
   return capturing.value ? 'cmd-btn-danger' : 'cmd-btn-primary'
+=======
+  if (loading.value) return 'btn-warning'
+  return capturing.value ? 'btn-danger' : 'btn-primary'
+>>>>>>> origin/main
 })
 
 async function toggle() {

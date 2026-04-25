@@ -17,10 +17,17 @@
             {{ viewLabels[viewMode] }}
             <i class="bi bi-chevron-down"></i>
           </button>
+<<<<<<< HEAD
           <ul class="cmd-dropdown-menu left-0 right-auto" :class="{ show: viewDropdownOpen }">
             <li v-for="(label, key) in viewLabels" :key="key">
               <button
                 class="cmd-dropdown-item"
+=======
+          <ul class="dropdown-menu left-0 right-auto" :class="{ show: viewDropdownOpen }">
+            <li v-for="(label, key) in viewLabels" :key="key">
+              <button
+                class="dropdown-item"
+>>>>>>> origin/main
                 :class="{ active: viewMode === key }"
                 @click="switchView(key); viewDropdownOpen = false">
                 {{ label }}
@@ -38,10 +45,17 @@
               {{ rotationLabels[rotationMode] }}
               <i class="bi bi-chevron-down"></i>
             </button>
+<<<<<<< HEAD
             <ul class="cmd-dropdown-menu left-0 right-auto" :class="{ show: rotationDropdownOpen }">
               <li v-for="(label, key) in rotationLabels" :key="key">
                 <button
                   class="cmd-dropdown-item"
+=======
+            <ul class="dropdown-menu left-0 right-auto" :class="{ show: rotationDropdownOpen }">
+              <li v-for="(label, key) in rotationLabels" :key="key">
+                <button
+                  class="dropdown-item"
+>>>>>>> origin/main
                   :class="{ active: rotationMode === key }"
                   @click="setRotationMode(key); rotationDropdownOpen = false">
                   {{ label }}
@@ -75,9 +89,15 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
+<<<<<<< HEAD
 import type { ControllerStateMessage, IkFeedbackMessage, OccupancyGridMessage } from '@/types/websocket'
 import type { OrientationMessage } from '@/types/coordinates'
 import { quaternionToMapAngle } from '@/utils/map'
+=======
+import type { ControllerStateMessage, OccupancyGridMessage } from '@/types/websocket'
+import type { OrientationMessage } from '@/types/coordinates'
+import { quaternionToYaw } from '@/utils/map'
+>>>>>>> origin/main
 import { useRoverScene, CameraType, NUM_COSTMAP_BLOCKS } from '@/composables/useRoverScene'
 
 const { onMessage, setupWebSocket, closeWebSocket } = useWebsocketStore()
@@ -91,9 +111,13 @@ const {
   updateCostMap,
   toggleCostMapVisibility,
   setCostMapVisibility,
+<<<<<<< HEAD
   setCostMapRotation,
   updateJoints,
   updateIKTarget,
+=======
+  updateJoints,
+>>>>>>> origin/main
   setRoverHeading,
 } = useRoverScene()
 
@@ -147,6 +171,14 @@ const showReset = computed(() => {
 })
 
 let manualAzimuth = 0
+<<<<<<< HEAD
+=======
+let roverMapPos = { x: 0, y: 0 }
+let roverHeadingRad = 0
+let dragStartX = 0
+let dragStartAzimuth = 0
+let isDragging = false
+>>>>>>> origin/main
 
 const viewToCameraType: Record<ViewMode, CameraType> = {
   [ViewMode.Orbit]: CameraType.Orbit,
@@ -166,9 +198,14 @@ function switchView(mode: ViewMode) {
     if (rotationMode.value === RotationMode.Manual) {
       manualAzimuth = 0
       setNavAzimuth(0)
+<<<<<<< HEAD
       setCostMapRotation(-Math.PI / 2)
     } else {
       applyCostmapRotation()
+=======
+    } else {
+      updateTopDownCamera()
+>>>>>>> origin/main
     }
   } else {
     setCostMapRotation(0)
@@ -179,7 +216,10 @@ function handleReset() {
   if (isTopMode.value && rotationMode.value === RotationMode.Manual) {
     manualAzimuth = 0
     setNavAzimuth(0)
+<<<<<<< HEAD
     setCostMapRotation(-Math.PI / 2)
+=======
+>>>>>>> origin/main
   } else {
     resetCamera()
   }
@@ -190,11 +230,14 @@ function closeDropdowns() {
   rotationDropdownOpen.value = false
 }
 
+<<<<<<< HEAD
 // Manual rotation via pointer drag
 let dragStartX = 0
 let dragStartAzimuth = 0
 let isDragging = false
 
+=======
+>>>>>>> origin/main
 function onPointerDown(e: PointerEvent) {
   if (!isTopMode.value || rotationMode.value !== RotationMode.Manual) return
   if (e.button !== 0) return
@@ -225,6 +268,11 @@ const jointNameMap: Record<string, string> = {
   gripper: 'gripper_link',
 }
 
+<<<<<<< HEAD
+=======
+const lastKnownPositions: Record<string, number> = {}
+
+>>>>>>> origin/main
 const COSTMAP_VISIBLE_KEY = 'rover3d.costmapVisible'
 const costmapVisible = ref(localStorage.getItem(COSTMAP_VISIBLE_KEY) !== 'false')
 
@@ -252,17 +300,29 @@ onBeforeUnmount(() => {
 onMessage<ControllerStateMessage>('arm', 'arm_state', (msg) => {
   const joints = msg.names.map((name: string, index: number) => {
     const urdfName = jointNameMap[name] || name
+<<<<<<< HEAD
     const rawPosition: number = msg.positions[index] ?? 0
     const position = urdfName === 'chassis_to_arm_a'
       ? rawPosition * -100 + 40
       : rawPosition
 
+=======
+    const incoming: number | null = (msg.positions as (number | null)[])[index] ?? null
+
+    if (incoming !== null) {
+      const mapped = urdfName === 'chassis_to_arm_a' ? incoming * -100 + 40 : incoming
+      lastKnownPositions[urdfName] = mapped
+    }
+
+    const position = lastKnownPositions[urdfName] ?? 0
+>>>>>>> origin/main
     return { name: urdfName, position }
   })
 
   updateJoints(joints)
 })
 
+<<<<<<< HEAD
 onMessage<IkFeedbackMessage>('arm', 'ik_feedback', (msg) => {
   updateIKTarget({
     x: msg.pos.x * 100,
@@ -273,6 +333,9 @@ onMessage<IkFeedbackMessage>('arm', 'ik_feedback', (msg) => {
 
 let roverMapPos = { x: 0, y: 0 }
 const roverBearingDeg = ref(0)
+=======
+
+>>>>>>> origin/main
 
 function setRotationMode(mode: RotationMode) {
   rotationMode.value = mode
@@ -281,6 +344,7 @@ function setRotationMode(mode: RotationMode) {
   if (mode === RotationMode.Manual) {
     manualAzimuth = 0
     setNavAzimuth(0)
+<<<<<<< HEAD
     setCostMapRotation(-Math.PI / 2)
   } else {
     applyCostmapRotation()
@@ -298,6 +362,19 @@ function applyCostmapRotation() {
   } else if (mode === RotationMode.FollowHeading) {
     setCostMapRotation(-Math.PI / 2)
     setNavAzimuth(roverHeadingRad + Math.PI / 2)
+=======
+  } else {
+    updateTopDownCamera()
+  }
+}
+
+function updateTopDownCamera() {
+  if (!isTopMode.value) return
+  if (rotationMode.value === RotationMode.North) {
+    setNavAzimuth(0)
+  } else if (rotationMode.value === RotationMode.FollowHeading) {
+    setNavAzimuth(roverHeadingRad - Math.PI / 2)
+>>>>>>> origin/main
   }
 }
 
@@ -325,6 +402,7 @@ onMessage<OccupancyGridMessage>('drive', 'costmap', (msg) => {
   }
 
   updateCostMap(processedData)
+<<<<<<< HEAD
   applyCostmapRotation()
 })
 
@@ -336,6 +414,18 @@ onMessage<OrientationMessage>('nav', 'orientation', (msg) => {
   roverHeadingRad = -(Math.PI * roverBearingDeg.value / 180 + Math.PI / 2)
   setRoverHeading(roverHeadingRad)
   applyCostmapRotation()
+=======
+  updateTopDownCamera()
+})
+
+onMessage<OrientationMessage>('nav', 'orientation', (msg) => {
+  if (msg.position) {
+    roverMapPos = { x: msg.position.x, y: msg.position.y }
+  }
+  roverHeadingRad = -quaternionToYaw(msg.orientation)
+  setRoverHeading(roverHeadingRad)
+  updateTopDownCamera()
+>>>>>>> origin/main
 })
 </script>
 

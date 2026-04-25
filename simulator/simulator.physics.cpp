@@ -40,7 +40,11 @@ namespace mrover {
         mDynamicsWorld = std::make_unique<btMultiBodyDynamicsWorld>(mDispatcher.get(), mBroadphase.get(), mSolver.get(), mCollisionConfig.get());
         // mDynamicsWorld->getSolverInfo().m_minimumSolverBatchSize = 1;
         // This seems to significantly mitigate the rover's turning issues
+<<<<<<< HEAD
         mDynamicsWorld->getSolverInfo().m_frictionCFM = 0.0015;
+=======
+        mDynamicsWorld->getSolverInfo().m_frictionCFM = 0.001;
+>>>>>>> origin/main
     }
 
     auto Simulator::physicsUpdate(Clock::duration dt) -> void {
@@ -49,19 +53,26 @@ namespace mrover {
         // Make the rocker and bogie try to always return to their initial positions
         // They can still move, so they act as a suspension system
         if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
-            URDF const& rover = it->second;
+            URDF& rover = it->second;
 
             // check if arm motor commands have expired
             // TODO: fix hard-coded names?
             for (auto const& name: {"arm_a_link", "arm_b_link", "arm_c_link", "arm_d_link", "arm_e_link", "arm_gripper_link"}) {
                 bool expired = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - rover.linkNameToMeta.at(name).lastUpdate).count() > mMotorTimeoutMs;
+                auto& linkMeta = rover.linkNameToMeta.at(name);
                 if (expired) {
-                    int linkIndex = rover.linkNameToMeta.at(name).index;
-                    auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkIndex).m_userPtr);
-                    assert(motor);
-                    motor->setVelocityTarget(0, 1);
-                    // set p gain to 0 to stop position control
-                    motor->setPositionTarget(0, 0);
+                    if (!linkMeta.isHolding) {
+                        int linkIndex = linkMeta.index;
+                        auto* motor = std::bit_cast<btMultiBodyJointMotor*>(rover.physics->getLink(linkIndex).m_userPtr);
+                        assert(motor);
+                        linkMeta.isHolding = true;
+
+                        btScalar currPos = rover.physics->getJointPos(linkIndex);
+                        motor->setVelocityTarget(0, 1);
+                        motor->setPositionTarget(currPos, 1);
+                    }
+                } else {
+                    linkMeta.isHolding = false;
                 }
             }
         }

@@ -1,28 +1,37 @@
 from fastapi import APIRouter, HTTPException
 
 from backend.managers.ros import get_node, get_logger, get_service_client
+<<<<<<< HEAD
 from backend.models_pydantic import GearDiffRequest
+=======
+from backend.models_pydantic import ServoPositionCommand
+>>>>>>> origin/main
 from backend.utils.ros_service import call_service_async
 from mrover.srv import ServoPosition
 
 router = APIRouter(prefix="/api", tags=["science"])
 
 
+<<<<<<< HEAD
 @router.post("/science/gear-diff/position/")
 async def gear_diff_position(data: GearDiffRequest):
+=======
+@router.post("/science/funnel-servo/position/")
+async def funnel_servo_position(data: ServoPositionCommand):
+>>>>>>> origin/main
     try:
         node = get_node()
         client = get_service_client(ServoPosition, "/sp_funnel_servo")
 
-        sp_funnel_request = ServoPosition.Request()
-        sp_funnel_request.header.stamp = node.get_clock().now().to_msg()
-        sp_funnel_request.header.frame_id = ""
-        sp_funnel_request.names = ["funnel"]
-        sp_funnel_request.positions = [data.position]
+        request = ServoPosition.Request()
+        request.header.stamp = node.get_clock().now().to_msg()
+        request.header.frame_id = ""
+        request.names = ["funnel"]
+        request.positions = [data.position]
 
-        result = await call_service_async(client, sp_funnel_request)
+        result, err = await call_service_async(client, request)
         if result is None:
-            raise HTTPException(status_code=500, detail="Service call failed")
+            raise HTTPException(status_code=500, detail=err or "Service call failed")
 
         at_tgt = result.at_tgts[0] if result.at_tgts else False
         return {'status': 'success', 'position': data.position, 'at_tgt': at_tgt}
@@ -30,5 +39,5 @@ async def gear_diff_position(data: GearDiffRequest):
     except HTTPException:
         raise
     except Exception as e:
-        get_logger().error(f"gear_diff_position error: {e}")
+        get_logger().error(f"funnel_servo_position error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
