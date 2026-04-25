@@ -78,7 +78,7 @@ namespace mrover {
         current_key = "";
 
         // create publisher
-        mYawPub = this->create_publisher<msg::KeyboardYaw>("/Keyboard/Yaw", rclcpp::QoS(1));
+        mYawPub = this->create_publisher<msg::KeyboardYaw>("/keyboard/yaw", rclcpp::QoS(1));
 
         mIKPub = this->create_publisher<msg::IK>("ik_pos_cmd", rclcpp::QoS(1));
     }
