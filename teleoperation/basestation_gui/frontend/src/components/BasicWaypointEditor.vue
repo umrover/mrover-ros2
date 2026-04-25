@@ -59,13 +59,13 @@
             </div>
           </div>
         </div>
-        
+
         <div class="grid grid-cols-1 gap-3">
           <div class="flex items-center justify-between p-2 border rounded">
             <span class="data-label">Rover Telemetry</span>
-            <button 
-              v-if="!isRecordingRover" 
-              class="btn btn-success btn-sm w-20" 
+            <button
+              v-if="!isRecordingRover"
+              class="btn btn-success btn-sm w-20"
               @click="startRecording(false)"
               :disabled="isRecordingDrone"
             >
@@ -73,12 +73,12 @@
             </button>
             <button v-else class="btn btn-danger btn-sm w-20" @click="stopRecording">Stop</button>
           </div>
-          
+
           <div v-if="enableDrone" class="flex items-center justify-between p-2 border rounded">
             <span class="data-label">Drone Telemetry</span>
-            <button 
-              v-if="!isRecordingDrone" 
-              class="btn btn-success btn-sm w-20" 
+            <button
+              v-if="!isRecordingDrone"
+              class="btn btn-success btn-sm w-20"
               @click="startRecording(true)"
               :disabled="isRecordingRover"
             >
@@ -88,9 +88,9 @@
           </div>
         </div>
 
-        <button 
-          class="btn btn-primary btn-sm w-full" 
-          data-testid="pw-basic-wp-recordings-btn" 
+        <button
+          class="btn btn-primary btn-sm w-full"
+          data-testid="pw-basic-wp-recordings-btn"
           @click="showRecordingsModal = true"
         >
           View Recordings
@@ -111,6 +111,7 @@
         data-testid="pw-basic-wp-list"
       >
         <div v-if="erdStore.waypoints.length === 0" class="course-empty-state">
+          <i class="bi bi-signpost-split"></i>
           <span>No waypoints in course</span>
         </div>
         <WaypointItem
