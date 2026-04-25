@@ -30,12 +30,6 @@ namespace mrover {
             };
             ParameterWrapper::declareParameters(this, parameters);
 
-            mU2D2 = U2D2::getSharedInstance();
-            if (mU2D2->init(mU2D2DeviceName) != U2D2::Status::Success) {
-                RCLCPP_FATAL(this->get_logger(), "failed to initialize U2D2 on %s", mU2D2DeviceName.c_str());
-                rclcpp::shutdown();
-            }
-
             for (std::string const& servoName: mServoNames) {
                 auto servo = std::make_shared<Servo>(shared_from_this(), servoName);
                 mServos.insert_or_assign(servoName, servo);
@@ -50,7 +44,7 @@ namespace mrover {
 
             mPositionService = this->create_service<srv::ServoPosition>(
                     "gimbal_servo",
-                    [this](srv::ServoPosition::Request::SharedPtr const& req, srv::ServoPosition::Response::SharedPtr const& res) {
+                    [this](srv::ServoPosition::Request::SharedPtr const& req, srv::ServoPosition::Response::SharedPtr const& res) -> void {
                         servoPositionCallback(req, res);
                     },
                     rmw_qos_profile_services_default,
@@ -58,7 +52,7 @@ namespace mrover {
 
             mPublishTimer = this->create_wall_timer(
                     std::chrono::milliseconds(100),
-                    [this]() { publishDataCallback(); },
+                    [this]() -> void { publishDataCallback(); },
                     mTimerGroup);
 
             mGimbalStatePub = this->create_publisher<msg::ControllerState>("gimbal_controller_state", 10);
@@ -68,7 +62,6 @@ namespace mrover {
         std::vector<std::string> mServoNames = {"gimbal_pitch", "gimbal_yaw"};
         std::unordered_map<std::string, std::shared_ptr<Servo>> mServos;
 
-        std::shared_ptr<U2D2> mU2D2;
         std::string mU2D2DeviceName;
 
         rclcpp::CallbackGroup::SharedPtr mServiceGroup;
@@ -85,7 +78,7 @@ namespace mrover {
 
             for (size_t i = 0; i < n; ++i) {
                 if (auto const it = mServos.find(req->names[i]); it != mServos.end()) {
-                    it->second->setPosition(req->positions[i], Servo::ServoMode::Limited);
+                    it->second->setPosition(req->positions[i]);
                 }
             }
 
@@ -122,6 +115,8 @@ namespace mrover {
             mControllerState.errors.clear();
             mControllerState.states.clear();
             mControllerState.limits_hit.clear();
+
+            mControllerState.header.stamp = now();
 
             for (auto const& [name, servo]: mServos) {
                 double pos, vel, cur;
