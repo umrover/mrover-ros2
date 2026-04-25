@@ -12,11 +12,14 @@ class DoneState(State):
     def on_exit(self, context) -> None:
         pass
 
-    def on_loop(self, context: Context) -> State:
+    def on_loop(self, context) -> State:
         # Check if we have a course to traverse
         if context.course and not context.course.is_complete():
             return waypoint.WaypointState()
-        
+
+        # Stop rover
+        cmd_vel = Twist()
+        context.rover.send_drive_command(cmd_vel)
         return self
 
 
@@ -27,10 +30,10 @@ class OffState(State):
     def on_exit(self, context) -> None:
         pass
 
-    def on_loop(self, context: Context) -> State:
+    def on_loop(self, context) -> State:
         if context.course and (not context.course.is_complete()):
             return waypoint.WaypointState()
-        
+
         return self
 
 
