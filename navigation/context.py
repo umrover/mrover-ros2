@@ -506,12 +506,12 @@ class Context:
 
     def obj_detector_service_is_done(self) -> bool:
         # Ensure a service request has been called before
-        if (self.image_future is None or self.stereo_future is None):
+        if self.image_future is None or self.stereo_future is None:
             return True
         # Check to see if the futures have finished
-        if (self.image_future.done() and self.stereo_future.done()):
+        if self.image_future.done() and self.stereo_future.done():
             # If futures have finished, ensure request was not malformed
-            if (not self.image_future.result() or not self.stereo_future.result()):
+            if not self.image_future.result() or not self.stereo_future.result():
                 self.node.get_logger().warn("Object Detector Service Request Failed", throttle_duration_sec=2.0)
             else:
                 return True
