@@ -45,7 +45,7 @@ namespace mrover {
     // Maps pitch and roll values to the DE0 and DE1 motors outputs
     // For example when only pitching the motor, both controllers should be moving in the same direction
     // When rolling, the controllers should move in opposite directions
-    auto static const PITCH_ROLL_TO_0_1 = (Matrix2<Dimensionless>{} << -1, -1, -1, 1).finished();
+    auto static const PITCH_ROLL_TO_0_1 = (Matrix2<Dimensionless>{} << 1, -1, 1, 1).finished();
     Dimensionless static constexpr PITCH_ROLL_TO_01_SCALE{40};
 
     auto static constexpr PROBE_INTERVAL_MS = 100;
@@ -111,8 +111,8 @@ namespace mrover {
             mJointDE1 = std::make_shared<BrushlessController<Revolutions>>(shared_from_this(), "jetson", "joint_de_1");
             mGripper = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "gripper");
             mPusher = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "pusher");
-            mAbsDEPitch = std::make_shared<AbsoluteEncoder>(shared_from_this(), "jetson", "abs_de_pitch");
-            mAbsDERoll = std::make_shared<AbsoluteEncoder>(shared_from_this(), "jetson", "abs_de_roll");
+            mAbsDEPitch = std::make_shared<AbsoluteEncoder>(shared_from_this(), "jetson", "abs_de_pitch", true);
+            mAbsDERoll = std::make_shared<AbsoluteEncoder>(shared_from_this(), "jetson", "abs_de_roll", true);
 
             mArmThrottleSub = create_subscription<msg::Throttle>("arm_thr_cmd", 1, [this](msg::Throttle::ConstSharedPtr const& msg) -> void { processThrottleCmd(msg); });
             mArmVelocitySub = create_subscription<msg::Velocity>("arm_vel_cmd", 1, [this](msg::Velocity::ConstSharedPtr const& msg) -> void { processVelocityCmd(msg); });
@@ -235,13 +235,10 @@ namespace mrover {
 
             if (brushless_meters && *brushless_meters) {
                 (*brushless_meters)->sendQuery();
-                (*brushless_meters)->getPressedLimitSwitchInfo();
             } else if (brushless_revs && *brushless_revs) {
                 (*brushless_revs)->sendQuery();
-                (*brushless_revs)->getPressedLimitSwitchInfo();
             } else if (brushless_rads && *brushless_rads) {
                 (*brushless_rads)->sendQuery();
-                (*brushless_rads)->getPressedLimitSwitchInfo();
             }
         }
 
@@ -367,12 +364,10 @@ namespace mrover {
                 if (mJointDEPitchRoll.has_value()) {
                     if ((*jointDePitchThrottle > Dimensionless{0} && (*mJointDEPitchRoll)[0] >= mJointDEPitchMaxPosition) ||
                         (*jointDePitchThrottle < Dimensionless{0} && (*mJointDEPitchRoll)[0] <= mJointDEPitchMinPosition)) {
-                        RCLCPP_INFO(get_logger(), "Joint DE Pitch limit hit!");
                         jointDePitchThrottle = Dimensionless{0};
                     }
                     if ((*jointDeRollThrottle > Dimensionless{0} && (*mJointDEPitchRoll)[1] >= mJointDERollMaxPosition) ||
                         (*jointDeRollThrottle < Dimensionless{0} && (*mJointDEPitchRoll)[1] <= mJointDERollMinPosition)) {
-                        RCLCPP_INFO(get_logger(), "Joint DE Roll limit hit!");
                         jointDeRollThrottle = Dimensionless{0};
                     }
                 } else {
@@ -437,12 +432,10 @@ namespace mrover {
                 if (mJointDEPitchRoll.has_value()) {
                     if ((*jointDEPitchVelocity > RadiansPerSecond{0} && (*mJointDEPitchRoll)[0] >= mJointDEPitchMaxPosition) ||
                         (*jointDEPitchVelocity < RadiansPerSecond{0} && (*mJointDEPitchRoll)[0] <= mJointDEPitchMinPosition)) {
-                        RCLCPP_INFO(get_logger(), "Joint DE Pitch limit hit!");
                         jointDEPitchVelocity = RadiansPerSecond{0};
                     }
                     if ((*jointDeRollVelocity > RadiansPerSecond{0} && (*mJointDEPitchRoll)[1] >= mJointDERollMaxPosition) ||
                         (*jointDeRollVelocity < RadiansPerSecond{0} && (*mJointDEPitchRoll)[1] <= mJointDERollMinPosition)) {
-                        RCLCPP_INFO(get_logger(), "Joint DE Roll limit hit!");
                         jointDeRollVelocity = RadiansPerSecond{0};
                     }
                 } else {
@@ -508,11 +501,9 @@ namespace mrover {
                 }
 
                 if ((*jointDEPitchPosition >= mJointDEPitchMaxPosition) || (*jointDEPitchPosition <= mJointDEPitchMinPosition)) {
-                    RCLCPP_INFO(get_logger(), "Joint DE Pitch limit hit!");
                     jointDEPitchPosition = (*mJointDEPitchRoll)[0];
                 }
                 if ((*jointDERollPosition >= mJointDERollMaxPosition) || (*jointDERollPosition <= mJointDERollMinPosition)) {
-                    RCLCPP_INFO(get_logger(), "Joint DE Roll limit hit!");
                     jointDERollPosition = (*mJointDEPitchRoll)[1];
                 }
 

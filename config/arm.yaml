@@ -3,8 +3,8 @@ arm_hw_bridge:
     joint_a:
       min_velocity: -0.08
       max_velocity: 0.08
-      min_position: 0.0
-      max_position: 0.35
+      #min_position: 0.0
+      #max_position: 0.35
       max_torque: 30.0
       limit_switch_0_present: true
       limit_switch_0_enabled: true
@@ -28,17 +28,17 @@ arm_hw_bridge:
     joint_b_offset: -0.07754990  # radians
     joint_b_mount_theta: 1.25499645 # radians
     joint_b_segment_offset_theta: 0.09384635 # radians
-    joint_c_offset_theta: 3.5222 # radians
+    joint_c_offset_theta: 0.059 # radians
     joint_c:
       min_velocity: -0.377
       max_velocity: 0.377
-      min_position: -0.60 # radians
+      min_position: -0.45 # radians
       max_position: 2.80 # radians
       max_torque: 200.0
     # Offsets are subtracted from the absolute encoder readings for pitch and roll
     # In order to zero, move the joint to the zero position and read the unadjusted positions. These should be the set to the offsets
-    joint_de_pitch_offset: 0.00 #0.130767 # radians
-    joint_de_roll_offset: 0.00 #0.4271226 # radians
+    joint_de_pitch_offset: -1.788 # radians
+    joint_de_roll_offset: -3.134 # radians
     joint_de_pitch_max_position: 1.39 # radians
     joint_de_pitch_min_position: -1.00 # radians
     joint_de_roll_max_position: 2.00 # radians
@@ -57,18 +57,3 @@ arm_hw_bridge:
       max_torque: 20.0
     pusher_throttle: 1.0
     pusher_wait_duration: 5.0
-    # TODO(eric): configure and enable DE limits
-#      limit_switch_0_present: true
-#      limit_switch_0_enabled: true
-#      limit_switch_0_limits_forward: true
-#      limit_switch_0_active_high: false
-#      limit_switch_0_used_for_readjustment: false
-#      limit_switch_0_aux_number: 1
-#      limit_switch_0_aux_pin: 0
-#      limit_switch_1_present: true
-#      limit_switch_1_enabled: true
-#      limit_switch_1_limits_forward: false
-#      limit_switch_1_active_high: false
-#      limit_switch_1_used_for_readjustment: false
-#      limit_switch_1_aux_number: 1
-#      limit_switch_1_aux_pin: 2
