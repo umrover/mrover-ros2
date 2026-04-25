@@ -78,7 +78,7 @@
                         <span class="data-label">{{ formatDate(recording.created_at) }}</span>
                       </div>
                       <button
-                        class="btn btn-sm btn-danger btn-icon flex-shrink-0 !bg-theme-danger"
+                        class="btn btn-sm btn-danger btn-icon shrink-0 bg-theme-danger!"
                         @click.stop="deleteRecording(recording.id)"
                       >
                         <i class="bi bi-trash-fill"></i>
@@ -177,7 +177,7 @@
                   <!-- Playback Panel -->
                   <div
                     v-if="selectedRecording && waypoints.length > 0 && !isLoadingWaypoints"
-                    class="list-item !m-0 shadow-sm"
+                    class="list-item m-0! shadow-sm"
                   >
                     <div class="flex items-center gap-3 mb-3">
                       <button
@@ -211,7 +211,7 @@
                       </div>
                       <div class="flex flex-col">
                         <span class="data-label text-primary text-[0.6rem]">Current Time</span>
-                        <span class="text-xs font-mono font-bold bg-primary-subtle p-1 rounded border border-primary/20 text-center text-primary">{{ formatTimestamp(currentTimestamp) }}</span>
+                        <span class="text-xs font-mono font-bold bg-primary-subtle p-1 rounded border border-primary/20 text-center text-primary">{{ formatTimestamp(currentWaypointTimestamp) }}</span>
                       </div>
                       <div class="flex flex-col">
                         <span class="data-label text-[0.6rem]">Session End</span>
@@ -251,6 +251,7 @@ import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import 'leaflet-rotatedmarker'
 import { recordingAPI } from '@/utils/api'
+import { currentTimestamp } from '@/utils/formatNumber'
 import type { Recording, RecordedWaypoint } from '@/utils/apiTypes'
 import { useRoverMap } from '@/composables/useRoverMap'
 import { useErdStore } from '@/stores/erd'
@@ -364,7 +365,7 @@ const currentLatLng = computed<[number, number]>(() => {
 })
 
 
-const currentTimestamp = computed(() => {
+const currentWaypointTimestamp = computed(() => {
   const wp = waypoints.value[currentWaypointIndex.value]
   return wp?.timestamp ?? ''
 })
@@ -515,17 +516,16 @@ const sanitizeFilename = (title: string): string => {
 
 const downloadMapPNG = async () => {
   if (!mapCaptureRef.value || !selectedRecording.value) return
-  
+
   isDownloading.value = true
   try {
-    // Small delay to ensure everything is rendered
     await nextTick()
     const dataUrl = await toPng(mapCaptureRef.value, {
       cacheBust: true,
-      backgroundColor: '#dddddd', // Matches var(--view-bg) in light theme
+      backgroundColor: '#dddddd',
     })
     const link = document.createElement('a')
-    link.download = `${sanitizeFilename(selectedRecording.value.name)}.png`
+    link.download = `${sanitizeFilename(selectedRecording.value.name)}_${currentTimestamp()}.png`
     link.href = dataUrl
     link.click()
   } catch (err) {
