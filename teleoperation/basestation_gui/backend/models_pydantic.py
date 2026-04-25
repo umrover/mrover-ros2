@@ -12,7 +12,7 @@ class BasicWaypointList(BaseModel):
 
 class AutonWaypoint(BaseModel):
     name: str
-    tag_id: int = -1
+    tag_id: int | None = None
     type: int = 0
     lat: float = Field(default=0.0, ge=-90.0, le=90.0)
     lon: float = Field(default=0.0, ge=-180.0, le=180.0)
@@ -25,7 +25,7 @@ class AutonWaypointList(BaseModel):
 
 class CreateAutonWaypoint(BaseModel):
     name: str
-    tag_id: int = -1
+    tag_id: int | None = None
     type: int = 0
     lat: float = Field(default=0.0, ge=-90.0, le=90.0)
     lon: float = Field(default=0.0, ge=-180.0, le=180.0)
@@ -48,7 +48,7 @@ class UpdateBasicWaypoint(BaseModel):
 class AutonEnableWaypoint(BaseModel):
     latitude_degrees: float = Field(ge=-90.0, le=90.0)
     longitude_degrees: float = Field(ge=-180.0, le=180.0)
-    tag_id: int = -1
+    tag_id: int | None = None
     type: int = 0
     enable_costmap: bool = True
 

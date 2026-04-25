@@ -358,6 +358,10 @@ mrover_add_node(arm_controller navigation/arm_controller/arm_controller.cpp navi
 target_link_libraries(arm_controller lie)
 ament_target_dependencies(arm_controller rclcpp)
 
+mrover_add_node(u2d2_bridge esw/u2d2_bridge.cpp)
+ament_target_dependencies(u2d2_bridge rclcpp std_msgs std_srvs dynamixel_sdk)
+target_link_libraries(u2d2_bridge servo)
+
 if (Gst_FOUND AND GstApp_FOUND)
     if (LibUdev_FOUND)
         mrover_add_component(gst_camera_server esw/gst_camera_server/*.c* esw/gst_camera_server/pch.hpp GstCameraServer)
