@@ -19,7 +19,7 @@ const DEFAULT_JOINT_VALUES: Record<string, number> = {
   arm_b_to_arm_c: 1.91,
   arm_c_to_arm_d: -1,
   arm_d_to_arm_e: -1.57,
-  gripper_link: 0,
+  arm_e_to_arm_gripper: 0,
 }
 
 export function loadRover(parent: THREE.Group): RoverModel {
