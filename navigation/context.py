@@ -4,7 +4,6 @@ from dataclasses import dataclass
 
 import numpy as np
 import pymap3d
-import math
 import rclpy
 from lie import angle_to_rotate_2d
 from scipy import ndimage
