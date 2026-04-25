@@ -60,12 +60,12 @@ def init_waypoints_db():
             defaults = [
                 ("No Search 1", None, 0, 0.0, 0.0, 1, 0.0, 0),
                 ("No Search 2", None, 0, 0.0, 0.0, 1, 0.0, 0),
-                ("Post 1", 1, 1, 0.0, 0.0, 1, 0.0, 0),
-                ("Post 2", 2, 1, 0.0, 0.0, 1, 0.0, 0),
+                ("Post 1", 1, 1, 0.0, 0.0, 1, 10.0, 0),
+                ("Post 2", 2, 1, 0.0, 0.0, 1, 20.0, 0),
                 ("Post 3", 3, 1, 0.0, 0.0, 1, 0.0, 0),
-                ("Mallet", None, 2, 0.0, 0.0, 1, 0.0, 0),
-                ("Water Bottle", None, 3, 0.0, 0.0, 1, 0.0, 0),
-                ("Rock Pick", None, 4, 0.0, 0.0, 1, 0.0, 0),
+                ("Mallet", None, 2, 0.0, 0.0, 1, 3.0, 0),
+                ("Water Bottle", None, 3, 0.0, 0.0, 1, 10.0, 0),
+                ("Rock Pick", None, 4, 0.0, 0.0, 1, 3.0, 0),
             ]
             cursor.executemany('''
                 INSERT INTO auton_waypoints (name, tag_id, type, latitude, longitude, enable_costmap, coverage_radius, deletable)
