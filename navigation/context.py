@@ -124,7 +124,7 @@ class Environment:
                 return self.get_target_position("pick")
             case _:
                 return None
-    
+
     def viewing_target(self, frame: str) -> bool:
         """
         :param frame:   Target frame name. Could be for a tag, the hammer, rock pick, or the water bottle.
@@ -134,7 +134,7 @@ class Environment:
         if rover_pose is None:
             self.ctx.node.get_logger().info(f"Rover has no pose")
             return False
-        
+
         try:
             target_pose, t = SE3.from_tf_tree_with_time(self.ctx.tf_buffer, frame, self.ctx.world_frame)
         except (
@@ -147,7 +147,7 @@ class Environment:
         now = self.ctx.node.get_clock().now()
         time = Time.from_msg(t)  # have to convert because time from message is a different type
         object_detector_period: float = 1.0 / self.ctx.node.get_parameter("object_detector_frequency").value
-        object_expiration_duration = Duration(nanoseconds = object_detector_period * 1e9)
+        object_expiration_duration = Duration(nanoseconds=object_detector_period * 1e9)
 
         zed_fov: float = self.ctx.node.get_parameter("zed_fov").value
 
@@ -174,7 +174,6 @@ class Environment:
                 return self.viewing_target("pick")
             case _:
                 return False
-    
 
 
 class ImageTargetsStore:

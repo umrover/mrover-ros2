@@ -80,7 +80,7 @@ class ApproachTargetState(State):
             return state.DoneState()
 
         return self
-    
+
     def low_cost_point(self, context: Context, check_astar=False) -> bool:
         """
         Calculate the nearest low-cost point to the target.
@@ -348,7 +348,7 @@ class ApproachTargetState(State):
             # Otherwise, if we lost sight of the target, but were in the regular state it means we were pretty
             # close so we should just return to spiral searching
             return costmap_search.CostmapSearchState()
-        
+
         # If we are within the distance threshold of the target we have finished
         if self.self_in_stop_threshold(context):
             assert context.course is not None
@@ -356,19 +356,19 @@ class ApproachTargetState(State):
             # if we are seeking for the post or we are actually looking at the target, we can move on
             if context.course.look_for_post() or context.env.viewing_current_target():
                 return self.next_state(context=context, is_finished=True)
-            
+
             # we are seeking an object but aren't looking at it
             else:
                 target_dir: np.ndarray = self.target_position[:2] - rover_in_map.translation()[:2]
-                
-                turn_cmd, looking = context.drive.get_turn_command(target_dir, rover_in_map, context.node.get_parameter("search.angle_thresh").value)
+
+                turn_cmd, looking = context.drive.get_turn_command(
+                    target_dir, rover_in_map, context.node.get_parameter("search.angle_thresh").value
+                )
                 if not looking:
                     context.rover.send_drive_command(twist=turn_cmd)
                 else:
                     context.node.get_logger().warn("Not looking at target but are facing the direction of it")
             return self
-
-    
 
         if self.USE_COSTMAP:
             return self.on_loop_costmap_enabled(context=context)
