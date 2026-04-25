@@ -30,14 +30,18 @@ namespace mrover {
         mCentralScrollArea->setWidgetResizable(true);
         setCentralWidget(mCentralScrollArea);
 
+        buildColorPickerDock();
+
         addDockWidget(Qt::LeftDockWidgetArea, mCameraSelectorDock);
         splitDockWidget(mCameraSelectorDock, mGstRtpVideoCreatorDock, Qt::Vertical);
-        splitDockWidget(mCameraSelectorDock, mCameraConfigDock, Qt::Vertical);
+        splitDockWidget(mGstRtpVideoCreatorDock, mColorPickerDock, Qt::Vertical);
+        splitDockWidget(mColorPickerDock, mCameraConfigDock, Qt::Vertical);
+
+        connect(mCameraGridWidget, &GstVideoGridWidget::colorPicked,
+                this, &CameraClientMainWindow::onColorPicked);
 
         connect(mGstRtpVideoCreatorWidget, &GstRtpVideoCreatorWidget::createRequested,
                 this, [this](std::string const& name, std::string const& pipeline) {
-                    qDebug() << "Creating camera with name:" << QString::fromStdString(name) << "and pipeline:" << QString::fromStdString(pipeline);
-
                     CameraCallbacks callbacks{
                             .onHide = [this, name]() {
                                 mCameraGridWidget->hideVideo(name);
@@ -107,4 +111,58 @@ namespace mrover {
         mConfigs = configs;
         loadCameraConfigSlot(CAMERA_CONFIGS[CAMERA_CONFIG::ARM]);
     }
+
+    void CameraClientMainWindow::buildColorPickerDock() {
+        mColorPickerDock = new QDockWidget("Color Picker", this);
+
+        auto* panel = new QWidget();
+        auto* panelLayout = new QVBoxLayout(panel);
+        panelLayout->setAlignment(Qt::AlignTop);
+        panelLayout->setSpacing(8);
+
+        mColorSwatchFrame = new QFrame();
+        mColorSwatchFrame->setFixedSize(60, 60);
+        mColorSwatchFrame->setFrameShape(QFrame::Box);
+        mColorSwatchFrame->setStyleSheet("background-color: #000000; border: 1px solid gray;");
+
+        mColorCameraLabel = new QLabel("--");
+        mColorCameraLabel->setWordWrap(true);
+        mColorHexLabel = new QLabel("--");
+
+        auto* middleCol = new QVBoxLayout();
+        middleCol->setAlignment(Qt::AlignVCenter);
+        middleCol->addWidget(mColorCameraLabel);
+        middleCol->addWidget(mColorHexLabel);
+
+        mColorRLabel = new QLabel("--");
+        mColorGLabel = new QLabel("--");
+        mColorBLabel = new QLabel("--");
+
+        auto* rgbForm = new QFormLayout();
+        rgbForm->addRow("R:", mColorRLabel);
+        rgbForm->addRow("G:", mColorGLabel);
+        rgbForm->addRow("B:", mColorBLabel);
+
+        auto* row = new QHBoxLayout();
+        row->addWidget(mColorSwatchFrame, 1, Qt::AlignCenter);
+        row->addLayout(middleCol, 1);
+        row->addLayout(rgbForm, 1);
+
+        panelLayout->addLayout(row);
+
+        panel->setLayout(panelLayout);
+        mColorPickerDock->setWidget(panel);
+        addDockWidget(Qt::LeftDockWidgetArea, mColorPickerDock);
+    }
+
+    void CameraClientMainWindow::onColorPicked(QString const& cameraName, QColor const& color) {
+        mColorCameraLabel->setText(QString("Camera: %1").arg(cameraName));
+        mColorSwatchFrame->setStyleSheet(
+                QString("background-color: %1; border: 1px solid gray;").arg(color.name()));
+        mColorRLabel->setText(QString::number(color.red()));
+        mColorGLabel->setText(QString::number(color.green()));
+        mColorBLabel->setText(QString::number(color.blue()));
+        mColorHexLabel->setText(color.name().toUpper());
+    }
+
 } // namespace mrover
