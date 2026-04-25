@@ -27,7 +27,6 @@
           </div>
 
           <div class="modal-body p-3 flex flex-col flex-1 min-h-0">
-            <!-- Tab Navigation -->
             <div class="flex gap-2 mb-4">
               <button
                 class="nav-tab-btn"
@@ -46,7 +45,6 @@
             </div>
 
             <div class="flex flex-1 gap-4 min-h-0">
-              <!-- Sidebar Column -->
               <div class="flex flex-col w-80 min-w-0">
                 <div class="p-2 flex justify-between items-center">
                   <h4 class="component-header">Sessions</h4>
@@ -91,7 +89,6 @@
                 </div>
               </div>
 
-              <!-- Content Column -->
               <div class="flex flex-col flex-1 min-w-0">
                 <div class="p-2 flex justify-between items-center">
                   <h4 class="component-header">Path Visualization</h4>
@@ -151,7 +148,6 @@
                     >
                       <l-tile-layer :url="onlineUrl" :options="onlineTileOptions" />
                       
-                      <!-- Course Waypoints Overlay -->
                       <template v-if="showCourseWaypoints">
                         <l-marker
                           v-for="wp in erdStore.waypoints"
@@ -174,7 +170,6 @@
                     </l-map>
                   </div>
 
-                  <!-- Playback Panel -->
                   <div
                     v-if="selectedRecording && waypoints.length > 0 && !isLoadingWaypoints"
                     class="list-item m-0! shadow-sm"

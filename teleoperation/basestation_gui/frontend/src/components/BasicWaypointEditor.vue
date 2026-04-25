@@ -1,14 +1,11 @@
 <template>
   <div class="flex m-0 p-0 h-full w-full gap-6">
     <div class="flex flex-col w-full gap-4">
-      <!-- Section 1: Course Planning -->
       <div class="flex flex-col gap-2">
         <div class="p-1 border-b-2 flex justify-between items-center h-[var(--btn-height-md)]">
           <h4 class="component-header">Course Planning</h4>
           <div class="h-[var(--btn-height-sm)]"></div> <!-- Spacer to match button height -->
         </div>
-        
-        <!-- Quick Add Actions -->
         <div class="grid grid-cols-1 gap-2">
           <button 
             class="btn btn-success btn-sm w-full" 
@@ -25,7 +22,6 @@
           </button>
         </div>
 
-        <!-- Manual Entry -->
         <div class="flex flex-col gap-3 p-3 border rounded">
           <div class="data-label">Manual Entry</div>
           <div class="flex items-center gap-2">
@@ -48,7 +44,6 @@
         </div>
       </div>
 
-      <!-- Section 2: Path Recording -->
       <div class="flex flex-col gap-2">
         <div class="p-1 border-b-2 flex justify-between items-center h-[var(--btn-height-md)]">
           <h4 class="component-header">Path Recording</h4>
