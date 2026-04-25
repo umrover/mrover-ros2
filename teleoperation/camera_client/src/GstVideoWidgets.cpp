@@ -56,17 +56,16 @@ VideoSurface::VideoSurface(GstVideoWidget* widget, QObject* parent)
 QList<QVideoFrame::PixelFormat> VideoSurface::supportedPixelFormats(QAbstractVideoBuffer::HandleType handleType) const {
     if (handleType == QAbstractVideoBuffer::NoHandle) {
         return {
-            QVideoFrame::Format_RGB32,
-            QVideoFrame::Format_ARGB32,
-            QVideoFrame::Format_RGB24,
-            QVideoFrame::Format_BGR32,
-            QVideoFrame::Format_BGR24
-        };
+                QVideoFrame::Format_RGB32,
+                QVideoFrame::Format_ARGB32,
+                QVideoFrame::Format_RGB24,
+                QVideoFrame::Format_BGR32,
+                QVideoFrame::Format_BGR24};
     }
     return {};
 }
 
-bool VideoSurface::present(const QVideoFrame& frame) {
+bool VideoSurface::present(QVideoFrame const& frame) {
     if (frame.isValid()) {
         QVideoFrame cloneFrame(frame);
         if (cloneFrame.map(QAbstractVideoBuffer::ReadOnly)) {
@@ -94,7 +93,7 @@ GstVideoWidget::GstVideoWidget(QWidget* parent) : QWidget(parent) {
 auto GstVideoWidget::setGstPipeline(std::string const& pipeline) -> void {
     // qtvideosink is required here (not xvimagesink) so VideoSurface::present receives frames
     mPlayer->setMedia(QUrl(QString::fromStdString(
-        std::format("gst-pipeline: {} ! videoconvert ! qtvideosink name=\"qtvideosink\" sync=false", pipeline))));
+            std::format("gst-pipeline: {} ! videoconvert ! qtvideosink name=\"qtvideosink\" sync=false", pipeline))));
     play();
 }
 
@@ -133,7 +132,7 @@ void GstVideoWidget::sampleColorAtCursor() {
     emit colorPicked(mLastPickedColor);
 }
 
-void GstVideoWidget::updateFrame(const QImage& frame) {
+void GstVideoWidget::updateFrame(QImage const& frame) {
     mLastFrame = frame;
     if (mMouseInWidget) sampleColorAtCursor();
     update();

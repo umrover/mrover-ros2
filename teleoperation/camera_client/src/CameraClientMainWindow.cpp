@@ -158,7 +158,7 @@ namespace mrover {
     void CameraClientMainWindow::onColorPicked(QString const& cameraName, QColor const& color) {
         mColorCameraLabel->setText(QString("Camera: %1").arg(cameraName));
         mColorSwatchFrame->setStyleSheet(
-            QString("background-color: %1; border: 1px solid gray;").arg(color.name()));
+                QString("background-color: %1; border: 1px solid gray;").arg(color.name()));
         mColorRLabel->setText(QString::number(color.red()));
         mColorGLabel->setText(QString::number(color.green()));
         mColorBLabel->setText(QString::number(color.blue()));

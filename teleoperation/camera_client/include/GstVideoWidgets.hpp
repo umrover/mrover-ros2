@@ -30,9 +30,9 @@ namespace mrover {
         explicit VideoSurface(GstVideoWidget* widget, QObject* parent = nullptr);
 
         QList<QVideoFrame::PixelFormat> supportedPixelFormats(
-            QAbstractVideoBuffer::HandleType handleType) const override;
+                QAbstractVideoBuffer::HandleType handleType) const override;
 
-        bool present(const QVideoFrame& frame) override;
+        bool present(QVideoFrame const& frame) override;
     };
 
     class GstVideoWidget : public QWidget {
@@ -61,7 +61,7 @@ namespace mrover {
         auto pause() -> void;
         auto stop() -> void;
 
-        void updateFrame(const QImage& frame);
+        void updateFrame(QImage const& frame);
 
     protected:
         void mouseMoveEvent(QMouseEvent* event) override;
