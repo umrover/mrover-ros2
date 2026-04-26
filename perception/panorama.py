@@ -177,8 +177,10 @@ class Panorama(Node):
             pos = gimbal.positions[idx]
 
             if pos == self.last_pos:
+                self.record_pc = False
                 return
             
+            self.record_pc = True
             if self.current_img is not None:
                 self.last_pos = pos
                 self.img_list.append(copy.deepcopy(self.current_img))
