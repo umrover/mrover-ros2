@@ -161,7 +161,7 @@ namespace mrover {
             };
 
             if (mPublishBottleDistanceThreshold > 0) publishModel("bottle", mPublishBottleDistanceThreshold);
-            if (mPublishHammerDistanceThreshold > 0) publishModel("hammer", mPublishHammerDistanceThreshold);
+            if (mPublishMalletDistanceThreshold > 0) publishModel("mallet", mPublishMalletDistanceThreshold);
 
             mImageTargetsPub->publish(targets);
         }
