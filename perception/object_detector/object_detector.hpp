@@ -9,10 +9,11 @@ namespace mrover {
         struct Detection {
             int classId{};
             std::string className;
+            cv::Scalar fontColor{};
             float confidence{};
             cv::Rect box;
 
-            Detection(int _classId, std::string _className, float _confidence, cv::Rect _box) : classId{_classId}, className{_className}, confidence{_confidence}, box{_box} {}
+            Detection(int _classId, std::string _className, cv::Scalar _fontColor, float _confidence, cv::Rect _box) : classId{_classId}, className{std::move(_className)}, fontColor{std::move(_fontColor)}, confidence{_confidence}, box{std::move(_box)} {}
         };
 
         struct Model {
@@ -21,6 +22,8 @@ namespace mrover {
             std::vector<int> objectHitCounts;
 
             std::vector<std::string> classes;
+
+            std::vector<cv::Scalar> colors;
 
             std::vector<int64_t> inputTensorSize;
 
@@ -34,7 +37,7 @@ namespace mrover {
 
             Model() = default;
 
-            Model(std::string _modelName, std::vector<int> _objectHitCounts, std::vector<std::string> _classes, std::vector<int64_t> _inputTensorSize, std::vector<int64_t> _outputTensorSize, std::function<void(Model const&, cv::Mat&, cv::Mat&, cv::Mat&)> _rbgImageToBlob, std::function<void(Model const&, cv::Mat&, std::vector<Detection>&)> _outputTensorToDetections) : modelName{std::move(_modelName)}, objectHitCounts(std::move(_objectHitCounts)), classes(std::move(_classes)), inputTensorSize(std::move(_inputTensorSize)), outputTensorSize(std::move(_outputTensorSize)), rgbImageToBlob{std::move(_rbgImageToBlob)}, outputTensorToDetections{std::move(_outputTensorToDetections)} {}
+            Model(std::string _modelName, std::vector<int> _objectHitCounts, std::vector<std::string> _classes, std::vector<cv::Scalar> _colors, std::vector<int64_t> _inputTensorSize, std::vector<int64_t> _outputTensorSize, std::function<void(Model const&, cv::Mat&, cv::Mat&, cv::Mat&)> _rbgImageToBlob, std::function<void(Model const&, cv::Mat&, std::vector<Detection>&)> _outputTensorToDetections) : modelName{std::move(_modelName)}, objectHitCounts(std::move(_objectHitCounts)), classes(std::move(_classes)), colors(std::move(_colors)), inputTensorSize(std::move(_inputTensorSize)), outputTensorSize(std::move(_outputTensorSize)), rgbImageToBlob{std::move(_rbgImageToBlob)}, outputTensorToDetections{std::move(_outputTensorToDetections)} {}
         };
 
 
@@ -44,7 +47,9 @@ namespace mrover {
         std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
         std::shared_ptr<tf2_ros::TransformListener> mTfListener = std::make_shared<tf2_ros::TransformListener>(*mTfBuffer);
 
-        Model mModel;
+        Model mBottleModel;
+        Model mMalletModel;
+        Model mPickModel;
 
         std::string mCameraFrame;
         std::string mWorldFrame;
@@ -53,7 +58,9 @@ namespace mrover {
 
         LoopProfiler mLoopProfiler;
 
-        TensortRT mTensorRT;
+        TensortRT mBottleTensorRT;
+        TensortRT mMalletTensorRT;
+        TensortRT mPickTensorRT;
 
         sensor_msgs::msg::Image mDetectionsImageMessage;
 
@@ -66,6 +73,10 @@ namespace mrover {
         float mModelScoreThreshold{};
         float mModelNMSThreshold{};
         bool mDebug{};
+
+        // nullptr = OFF
+        Model* currentModel = nullptr;
+        TensortRT* currentTensorRT = nullptr;
 
         auto spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr,
                                        std::size_t u, std::size_t v,
@@ -86,6 +97,11 @@ namespace mrover {
         static auto preprocessYOLOv8Input(Model const& model, cv::Mat const& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) -> void;
 
         auto resizeBoundingBoxes(cv::Size const& outputSpace, std::vector<Detection>& detections) const -> void;
+
+        // Mode switching server and function
+        rclcpp::Service<mrover::srv::ToggleObjectDetector>::SharedPtr mServer;
+
+        auto toggleMode(mrover::srv::ToggleObjectDetector::Request::ConstSharedPtr& request, mrover::srv::ToggleObjectDetector::Response::SharedPtr& response) -> void;
 
     public:
         explicit ObjectDetectorBase(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());

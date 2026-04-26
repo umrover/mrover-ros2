@@ -6,7 +6,7 @@ from . import (
     stuck_recovery,
 )
 from mrover.msg import WaypointType
-from mrover.srv import MoveCostMap
+from mrover.srv import MoveCostMap, ToggleObjectDetector
 from .context import Context
 import rclpy
 from .context import Context
@@ -87,6 +87,9 @@ class WaypointState(State):
         if self.USE_COSTMAP:
             context.node.get_logger().info("Resetting costmap dilation")
             context.reset_dilation()
+
+        # Switch Object Detector to Type requested
+        context.toggle_object_detector(current_waypoint.type.val)
 
         context.node.get_logger().info("On Enter finished")
 
@@ -233,6 +236,10 @@ class WaypointState(State):
         :param context: Context object
         :return:        Next state
         """
+
+        # Ensure Object Detector service has finished
+        if not context.obj_detector_service_is_done():
+            return self
 
         if context.course is None:
             return state.DoneState()
