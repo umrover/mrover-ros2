@@ -80,6 +80,7 @@ class Panorama(Node):
         # Start the panorama
         self.record_image = False
         self.record_pc = False
+        self.last_pos = -1
         self.fov_sub = self.create_subscription(CameraInfo, f"/{self.zed_version}/left/camera_info", self.fov_callback)
 
         # Heading variables
@@ -100,7 +101,7 @@ class Panorama(Node):
 
         self.gimbal_sub = message_filters.Subscriber(self, ControllerState, "/gimbal_controller_state")
         self.img_sub = message_filters.Subscriber(self, Image, f"/{self.zed_version}/left/image")
-        self.img_sync = message_filters.ApproximateTimeSynchronizer([self.img_sub, self.gimbal_sub], 10, 0.1)
+        self.img_sync = message_filters.ApproximateTimeSynchronizer([self.img_sub, self.gimbal_sub], 10, 0.09)
         self.img_sync.registerCallback(self.synced_img_gimbal_callback)
         self.img_list = [] # list of images
         self.img_dirs = [] # list of imu values per image
@@ -126,9 +127,9 @@ class Panorama(Node):
         return pc
     
     def fov_callback(self, info_msg: CameraInfo):
-        self.get_logger().info("Updated FOV to {info_msg.fov}")
-        self.zed_fov_rad = info_msg.fov * (np.pi / 180)
-        self.destroy_subscription(self.fov_sub)
+        if self.zed_fov_rad is None:
+            self.get_logger().info("Updated FOV to {info_msg.fov}")
+            self.zed_fov_rad = info_msg.fov * (np.pi / 180)
 
     def synced_gps_pc_callback(self, pc_msg: PointCloud2, imu_msg: Imu):
         # extract xyzrgb fields
@@ -175,7 +176,11 @@ class Panorama(Node):
             idx = gimbal.names.index("gimbal_yaw")
             pos = gimbal.positions[idx]
 
+            if pos == self.last_pos:
+                return
+            
             if self.current_img is not None:
+                self.last_pos = pos
                 self.img_list.append(copy.deepcopy(self.current_img))
                 self.img_dirs.append(pos)
                 self.headings.append((self.cur_heading + pos) % (2 * np.pi))
@@ -254,6 +259,7 @@ class Panorama(Node):
 
         self.record_image = False
         self.record_pc = False
+        self.last_pos = -1
 
         # Return Mast Gimbal to original position
         req = ServoPosition.Request()
@@ -325,6 +331,7 @@ class Panorama(Node):
             # order = self.stitcher.component()
             # self.label_pano(order, pano)
             cv2.imwrite(f"{new_path}/pano.png", pano)
+            pano = cv2.cvtColor(pano, cv2.COLOR_RGB2BGR)
             
             # convert the panorama to bgra for transport through ROS
             bgra_pano = cv2.cvtColor(pano, cv2.COLOR_BGR2BGRA)
