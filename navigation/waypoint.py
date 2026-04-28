@@ -6,7 +6,7 @@ from . import (
     stuck_recovery,
 )
 from mrover.msg import WaypointType
-from mrover.srv import MoveCostMap, ToggleObjectDetector
+from mrover.srv import MoveCostMap
 from .context import Context
 import rclpy
 from .context import Context

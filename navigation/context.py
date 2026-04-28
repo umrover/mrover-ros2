@@ -497,7 +497,18 @@ class Context:
         objRequest = ToggleObjectDetector.Request()
         objRequest.waypoint.val = waypointType
 
-        self.node.get_logger().info("Toggling Object Detector")
+        toggleType = ""
+        match waypointType:
+            case WaypointType.MALLET:
+                toggleType = "Mallet"
+            case WaypointType.WATER_BOTTLE:
+                toggleType = "Water Bottle"
+            case WaypointType.ROCK_PICK:
+                toggleType = "Rock Pick"
+            case _:
+                toggleType = "Off"
+
+        self.node.get_logger().info(f"Toggling Object Detector to {toggleType}")
 
         self.stereo_future = self.stereo_cli.call_async(objRequest)
         self.image_future = self.image_cli.call_async(objRequest)
