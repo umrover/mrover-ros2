@@ -34,7 +34,7 @@ def generate_launch_description():
         package="mrover",
         plugin="mrover::ImageObjectDetector",
         name="image_object_detector",
-        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+        parameters=[Path(get_package_share_directory("mrover"), "config", "object_detector.yaml")],
         extra_arguments=[{"use_intra_process_comms": True}],
     )
 
@@ -43,7 +43,7 @@ def generate_launch_description():
         package="mrover",
         plugin="mrover::StereoObjectDetector",
         name="stereo_object_detector",
-        parameters=[Path(get_package_share_directory("mrover"), "config", "perception.yaml")],
+        parameters=[Path(get_package_share_directory("mrover"), "config", "object_detector.yaml")],
         extra_arguments=[{"use_intra_process_comms": True}],
     )
 

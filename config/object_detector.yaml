@@ -5,14 +5,35 @@
 # Angle:    radian
 # Distance: meter
 
-/object_detector:
+stereo_object_detector:
   ros__parameters:
     camera_frame: "zed_left_camera_frame"
     world_frame: "map"
     increment_weight: 2
     decrement_weight: 1
-    hitcount_threshold: 5
     hitcount_max: 10
-    model_name: "Large-Dataset"
+    bottle_model_name: "bottle"
+    mallet_model_name: "mallet"
+    pick_model_name: "pick"
+    bottle_threshold: 5
+    mallet_threshold: 5
+    pick_threshold: 5
     model_score_threshold: 0.75
     model_nms_threshold: 0.5
+
+image_object_detector:
+  ros__parameters:
+    camera_frame: "zed_left_camera_frame"
+    world_frame: "map"
+    increment_weight: 2
+    decrement_weight: 1
+    hitcount_max: 10
+    bottle_model_name: "bottle"
+    mallet_model_name: "mallet"
+    pick_model_name: "pick"
+    bottle_threshold: 5
+    mallet_threshold: 5
+    pick_threshold: 5
+    model_score_threshold: 0.75
+    model_nms_threshold: 0.5
+    long_range_camera/fov: 10.0

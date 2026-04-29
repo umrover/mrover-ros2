@@ -108,11 +108,13 @@ namespace mrover {
                     // Since the object is seen we need to increment the hit counter
                     currentModel->objectHitCounts[classId] = std::min(mObjMaxHitcount, currentModel->objectHitCounts[classId] + mObjIncrementWeight);
 
-                    // Only publish to permament if we are confident in the object
-                    if (currentModel->objectHitCounts[classId] > mObjHitThreshold) {
+                    // Only publish to permanent if we are confident in the object
+                    if (currentModel->objectHitCounts[classId] > currentModel->hitThreshold) {
                         std::string objectPermanentFrame = className;
                         // Grab the object inside of the camera frame and push it into the map frame
                         SE3d objectInMap = SE3Conversions::fromTfTree(*mTfBuffer, objectImmediateFrame, mWorldFrame);
+
+                        RCLCPP_INFO_STREAM(get_logger(), "Detected " << className << " at x: " << objectInMap.x() << " y: " << objectInMap.y() << " z: " << objectInMap.z());
                         SE3Conversions::pushToTfTree(*mTfBroadcaster, objectPermanentFrame, mWorldFrame, objectInMap, get_clock()->now());
                     }
 

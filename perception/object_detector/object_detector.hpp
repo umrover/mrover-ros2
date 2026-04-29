@@ -21,6 +21,8 @@ namespace mrover {
 
             std::vector<int> objectHitCounts;
 
+            int hitThreshold{};
+
             std::vector<std::string> classes;
 
             std::vector<cv::Scalar> colors;
@@ -37,11 +39,11 @@ namespace mrover {
 
             Model() = default;
 
-            Model(std::string _modelName, std::vector<int> _objectHitCounts, std::vector<std::string> _classes, std::vector<cv::Scalar> _colors, std::vector<int64_t> _inputTensorSize, std::vector<int64_t> _outputTensorSize, std::function<void(Model const&, cv::Mat&, cv::Mat&, cv::Mat&)> _rbgImageToBlob, std::function<void(Model const&, cv::Mat&, std::vector<Detection>&)> _outputTensorToDetections) : modelName{std::move(_modelName)}, objectHitCounts(std::move(_objectHitCounts)), classes(std::move(_classes)), colors(std::move(_colors)), inputTensorSize(std::move(_inputTensorSize)), outputTensorSize(std::move(_outputTensorSize)), rgbImageToBlob{std::move(_rbgImageToBlob)}, outputTensorToDetections{std::move(_outputTensorToDetections)} {}
+            Model(std::string _modelName, std::vector<int> _objectHitCounts, int _hitThreshold, std::vector<std::string> _classes, std::vector<cv::Scalar> _colors, std::vector<int64_t> _inputTensorSize, std::vector<int64_t> _outputTensorSize, std::function<void(Model const&, cv::Mat&, cv::Mat&, cv::Mat&)> _rbgImageToBlob, std::function<void(Model const&, cv::Mat&, std::vector<Detection>&)> _outputTensorToDetections) : modelName{std::move(_modelName)}, objectHitCounts(std::move(_objectHitCounts)), hitThreshold(_hitThreshold), classes(std::move(_classes)), colors(std::move(_colors)), inputTensorSize(std::move(_inputTensorSize)), outputTensorSize(std::move(_outputTensorSize)), rgbImageToBlob{std::move(_rbgImageToBlob)}, outputTensorToDetections{std::move(_outputTensorToDetections)} {}
         };
 
 
-        static constexpr char const* NODE_NAME = "object_detector";
+        //static constexpr char const* NODE_NAME = "object_detector";
 
         std::unique_ptr<tf2_ros::Buffer> mTfBuffer = std::make_unique<tf2_ros::Buffer>(get_clock());
         std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
@@ -68,7 +70,6 @@ namespace mrover {
 
         int mObjIncrementWeight{};
         int mObjDecrementWeight{};
-        int mObjHitThreshold{};
         int mObjMaxHitcount{};
         float mModelScoreThreshold{};
         float mModelNMSThreshold{};
@@ -104,7 +105,7 @@ namespace mrover {
         auto toggleMode(mrover::srv::ToggleObjectDetector::Request::ConstSharedPtr& request, mrover::srv::ToggleObjectDetector::Response::SharedPtr& response) -> void;
 
     public:
-        explicit ObjectDetectorBase(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
+        explicit ObjectDetectorBase(std::string const& name, rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
         ~ObjectDetectorBase() override = default;
     };

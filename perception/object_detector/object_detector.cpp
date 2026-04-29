@@ -3,21 +3,27 @@
 
 namespace mrover {
 
-    ObjectDetectorBase::ObjectDetectorBase(rclcpp::NodeOptions const& options) : rclcpp::Node(NODE_NAME, options), mLoopProfiler{get_logger()} {
+    ObjectDetectorBase::ObjectDetectorBase(std::string const& name, rclcpp::NodeOptions const& options) : rclcpp::Node(name, options), mLoopProfiler{get_logger()} {
         std::string bottleModelName;
         std::string malletModelName;
         std::string pickModelName;
+
+        int mBottleThreshold;
+        int mMalletThreshold;
+        int mPickThreshold;
 
         std::vector<ParameterWrapper> params{
                 {"camera_frame", mCameraFrame, "zed_left_camera_frame"},
                 {"world_frame", mWorldFrame, "map"},
                 {"increment_weight", mObjIncrementWeight, 2},
                 {"decrement_weight", mObjDecrementWeight, 1},
-                {"hitcount_threshold", mObjHitThreshold, 5},
                 {"hitcount_max", mObjMaxHitcount, 10},
                 {"bottle_model_name", bottleModelName, "bottle"},
                 {"mallet_model_name", malletModelName, "mallet"},
                 {"pick_model_name", pickModelName, "pick"},
+                {"bottle_threshold", mBottleThreshold, 5},
+                {"mallet_threshold", mMalletThreshold, 5},
+                {"pick_threshold", mPickThreshold, 5},
                 {"model_score_threshold", mModelScoreThreshold, 0.75},
                 {"model_nms_threshold", mModelNMSThreshold, 0.5},
                 {"object_detector_debug", mDebug, true}};
@@ -41,14 +47,14 @@ namespace mrover {
 
         // initialize model data structure for each object
 
-        mBottleModel = Model(bottleModelName, {0}, {"bottle"}, {cv::Scalar{0, 4, 227}}, mBottleTensorRT.getInputTensorSize(), mBottleTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv8Output(model, output, detections); });
-        mMalletModel = Model(malletModelName, {0}, {"mallet"}, {cv::Scalar{232, 115, 5}}, mMalletTensorRT.getInputTensorSize(), mPickTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv8Output(model, output, detections); });
-        mPickModel = Model(pickModelName, {0}, {"pick"}, {cv::Scalar{5, 225, 5}}, mPickTensorRT.getInputTensorSize(), mMalletTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv8Output(model, output, detections); });
+        mBottleModel = Model(bottleModelName, {0}, mBottleThreshold, {"bottle"}, {cv::Scalar{0, 4, 227}}, mBottleTensorRT.getInputTensorSize(), mBottleTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv8Output(model, output, detections); });
+        mMalletModel = Model(malletModelName, {0}, mMalletThreshold, {"mallet"}, {cv::Scalar{232, 115, 5}}, mMalletTensorRT.getInputTensorSize(), mPickTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv8Output(model, output, detections); });
+        mPickModel = Model(pickModelName, {0}, mPickThreshold, {"pick"}, {cv::Scalar{5, 225, 5}}, mPickTensorRT.getInputTensorSize(), mMalletTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv8Output(model, output, detections); });
 
         RCLCPP_INFO_STREAM(get_logger(), std::format("Object detector initialized with models: {}, {}, {} and thresholds: {} and {}", mBottleModel.modelName, mMalletModel.modelName, mPickModel.modelName, mModelScoreThreshold, mModelNMSThreshold));
     }
 
-    StereoObjectDetector::StereoObjectDetector(rclcpp::NodeOptions const& options) : ObjectDetectorBase(options) {
+    StereoObjectDetector::StereoObjectDetector(rclcpp::NodeOptions const& options) : ObjectDetectorBase("stereo_object_detector", options) {
         RCLCPP_INFO_STREAM(get_logger(), "Creating Stereo Object Detector...");
 
         mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("/stereo_object_detector/annotated_img", 1);
@@ -62,7 +68,7 @@ namespace mrover {
         });
     }
 
-    ImageObjectDetector::ImageObjectDetector(rclcpp::NodeOptions const& options) : ObjectDetectorBase(options) {
+    ImageObjectDetector::ImageObjectDetector(rclcpp::NodeOptions const& options) : ObjectDetectorBase("image_object_detector", options) {
         RCLCPP_INFO_STREAM(get_logger(), "Creating Image Object Detector...");
 
         std::vector<ParameterWrapper> params{
