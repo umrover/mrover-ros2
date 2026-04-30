@@ -1,4 +1,5 @@
 from geometry_msgs.msg import Twist
+from mrover.msg import WaypointType
 from state_machine.state import State
 from . import waypoint
 from .context import Context
@@ -25,12 +26,17 @@ class DoneState(State):
 
 class OffState(State):
     def on_enter(self, context) -> None:
+        context.toggle_object_detector(WaypointType.NO_SEARCH)
         pass
 
     def on_exit(self, context) -> None:
         pass
 
     def on_loop(self, context) -> State:
+        # Ensure Object Detector service has finished
+        if not context.obj_detector_service_is_done():
+            return self
+
         if context.course and (not context.course.is_complete()):
             return waypoint.WaypointState()
 
