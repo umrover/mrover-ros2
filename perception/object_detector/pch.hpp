@@ -54,3 +54,7 @@
 #include "parameter.hpp"
 #include "point.hpp"
 #include <tensorrt.hpp>
+
+// Services
+#include <mrover/srv/toggle_object_detector.hpp>
+#include <rclcpp/service.hpp>

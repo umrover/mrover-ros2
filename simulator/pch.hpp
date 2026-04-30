@@ -91,3 +91,4 @@
 #include <mrover/msg/throttle.hpp>
 #include <mrover/msg/velocity.hpp>
 #include <mrover/srv/ik_mode.hpp>
+#include <mrover/srv/toggle_object_detector.hpp>
