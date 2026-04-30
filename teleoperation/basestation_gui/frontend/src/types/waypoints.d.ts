@@ -2,7 +2,7 @@ import type { LatLng } from 'leaflet'
 
 export interface AutonWaypoint {
   name: string
-  tag_id: number
+  tag_id: number | null
   type: number
   lat: number
   lon: number
@@ -27,7 +27,7 @@ export interface MapWaypoint {
 }
 
 export interface MapRouteWaypoint extends MapWaypoint {
-  tag_id: number
+  tag_id: number | null
   type: number
   enable_costmap: boolean
   coverage_radius: number

@@ -1,6 +1,7 @@
 <template>
-  <div class="flex flex-row gap-2">
-    <div class="flex flex-col gap-1" style="flex: 1;">
+  <div class="flex flex-col gap-2">
+    <div class="flex flex-col gap-1">
+      <span class="data-label">General</span>
       <FeedbackButton
         ref="autonCheckbox"
         class="w-full"
@@ -20,7 +21,23 @@
         @toggle="handleTeleopToggle"
       />
     </div>
-    <div class="flex flex-col gap-1" style="flex: 1;">
+    <div class="flex flex-col gap-1">
+      <span class="data-label">Costmap</span>
+      <div class="flex gap-1">
+        <button
+          class="btn btn-sm flex-1 btn-success"
+          data-testid="pw-costmap-all-on"
+          @click="autonomyStore.setAllCostmaps(true)"
+        >All On</button>
+        <button
+          class="btn btn-sm flex-1 btn-danger"
+          data-testid="pw-costmap-all-off"
+          @click="autonomyStore.setAllCostmaps(false)"
+        >All Off</button>
+      </div>
+    </div>
+    <div class="flex flex-col gap-1">
+      <span class="data-label">Navigation</span>
       <FeedbackButton
         class="w-full"
         data-testid="pw-pure-pursuit-toggle"
@@ -68,27 +85,27 @@ const pathRelaxationEnabled = computed(() => autonomyStore.pathRelaxationEnabled
 const pathInterpolationEnabled = computed(() => autonomyStore.pathInterpolationEnabled)
 
 const autonAction = (newState: boolean) => {
-  const routeMap = autonomyStore.routeForMap
   const waypoints = newState
-    ? routeMap.map((waypoint) => ({
-        latitude_degrees: waypoint.latLng.lat,
-        longitude_degrees: waypoint.latLng.lng,
-        tag_id: waypoint.tag_id,
-        type: waypoint.type,
-        enable_costmap: waypoint.enable_costmap,
-        coverage_radius: waypoint.coverage_radius,
+    ? autonomyStore.execution.map(wp => ({
+        latitude_degrees: wp.lat,
+        longitude_degrees: wp.lon,
+        tag_id: wp.tag_id,
+        type: wp.type,
+        enable_costmap: wp.enable_costmap,
+        coverage_radius: wp.coverage_radius,
       }))
     : []
 
   return autonAPI.enable(newState, waypoints)
 }
 
+const teleopAction = (newState: boolean) => autonAPI.enableTeleop(newState)
+const purePursuitAction = (newState: boolean) => autonAPI.togglePurePursuit(newState)
+const pathRelaxationAction = (newState: boolean) => autonAPI.togglePathRelaxation(newState)
+const pathInterpolationAction = (newState: boolean) => autonAPI.togglePathInterpolation(newState)
+
 const handleAutonToggle = (newState: boolean) => {
   autonomyStore.autonEnabled = newState
-}
-
-const teleopAction = (newState: boolean) => {
-  return autonAPI.enableTeleop(newState)
 }
 
 const handleTeleopToggle = (newState: boolean) => {
@@ -96,28 +113,15 @@ const handleTeleopToggle = (newState: boolean) => {
   emit('toggleTeleop', newState)
 }
 
-const purePursuitAction = (newState: boolean) => {
-  return autonAPI.togglePurePursuit(newState)
-}
-
 const handlePurePursuitToggle = (newState: boolean) => {
   autonomyStore.purePursuitEnabled = newState
-}
-
-const pathRelaxationAction = (newState: boolean) => {
-  return autonAPI.togglePathRelaxation(newState)
 }
 
 const handlePathRelaxationToggle = (newState: boolean) => {
   autonomyStore.pathRelaxationEnabled = newState
 }
 
-const pathInterpolationAction = (newState: boolean) => {
-  return autonAPI.togglePathInterpolation(newState)
-}
-
 const handlePathInterpolationToggle = (newState: boolean) => {
   autonomyStore.pathInterpolationEnabled = newState
 }
 </script>
-

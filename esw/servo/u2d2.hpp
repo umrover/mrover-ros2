@@ -52,7 +52,7 @@ namespace mrover {
         }
 
         static auto getSharedInstance() -> std::shared_ptr<U2D2> {
-            static std::shared_ptr<U2D2> inst{getInstance(), [](U2D2*) {}};
+            static std::shared_ptr<U2D2> inst{getInstance(), [](U2D2*) -> void {}};
             return inst;
         }
 

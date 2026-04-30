@@ -1,11 +1,11 @@
 import L from 'leaflet'
 import 'leaflet-rotatedmarker'
-import { ref, shallowRef, computed, watch, nextTick } from 'vue'
+import { ref, shallowRef, triggerRef, computed, watch, nextTick } from 'vue'
 import { useGridLayoutStore } from '@/stores/gridLayout'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
 import { quaternionToMapAngle } from '@/utils/map'
-import type { GpsFixMessage, OrientationMessage } from '@/types/coordinates'
+import type { GpsFixMessage, OrientationMessage, DroneWaypointMessage } from '@/types/coordinates'
 
 export interface UseRoverMapOptions {
   maxOdomCount?: number
@@ -31,6 +31,7 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
   const rover_bearing_deg = ref(0)
   const center = ref<[number, number]>(initialCenter)
   const online = ref(true)
+  const followRover = ref(false)
   const mapRef = ref<{ leafletObject: L.Map } | null>(null)
   const roverRef = ref<{ leafletObject: L.Marker } | null>(null)
   let roverMarker: L.Marker | null = null
@@ -62,7 +63,20 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
     popupAnchor: [0, -32],
   })
 
+  const drone_latitude_deg = ref(0)
+  const drone_longitude_deg = ref(0)
+  const droneRef = ref<{ leafletObject: L.Marker } | null>(null)
+  let droneMarker: L.Marker | null = null
+  const dronePath = shallowRef<L.LatLng[]>([])
+
+  const droneIcon = L.icon({
+    iconUrl: '/drone_marker.svg',
+    iconSize: [64, 64],
+    iconAnchor: [32, 32],
+  })
+
   const odomLatLng = computed(() => L.latLng(rover_latitude_deg.value, rover_longitude_deg.value))
+  const droneLatLng = computed(() => L.latLng(drone_latitude_deg.value, drone_longitude_deg.value))
 
   const getMap = (): L.Map | null => {
     return mapRef.value?.leafletObject as L.Map | null
@@ -72,6 +86,9 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
     nextTick(() => {
       if (roverRef.value) {
         roverMarker = roverRef.value.leafletObject as L.Marker
+      }
+      if (droneRef.value) {
+        droneMarker = droneRef.value.leafletObject as L.Marker
       }
       const map = getMap()
       if (map && !gridLocked.value) {
@@ -86,6 +103,22 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
     if (map) {
       map.setView(odomLatLng.value, map.getZoom())
     }
+  }
+
+  const centerOnDrone = () => {
+    const map = getMap()
+    if (map) {
+      map.setView(droneLatLng.value, map.getZoom())
+    }
+  }
+
+  const centerOpen = ref(false)
+  const zoomOpen = ref(false)
+  const zoomLevels = [18, 19, 20, 21, 22, 23, 24]
+
+  const setZoom = (level: number) => {
+    const map = getMap()
+    if (map) map.setZoom(level)
   }
 
   watch(gridLocked, (locked) => {
@@ -107,6 +140,24 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
     rover_bearing_deg.value = quaternionToMapAngle(msg.orientation)
   })
 
+  websocketStore.onMessage<DroneWaypointMessage>('nav', 'drone_waypoint', (msg) => {
+    drone_latitude_deg.value = msg.latitude
+    drone_longitude_deg.value = msg.longitude
+  })
+
+  watch([drone_latitude_deg, drone_longitude_deg], () => {
+    const latLng = L.latLng(drone_latitude_deg.value, drone_longitude_deg.value)
+    if (droneMarker) {
+      droneMarker.setLatLng(latLng)
+    }
+
+    if (dronePath.value.length >= maxOdomCount) {
+      dronePath.value.shift()
+    }
+    dronePath.value.push(latLng)
+    triggerRef(dronePath)
+  })
+
   watch([rover_latitude_deg, rover_longitude_deg, rover_bearing_deg], () => {
     const latLng = L.latLng(rover_latitude_deg.value, rover_longitude_deg.value)
 
@@ -118,6 +169,11 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
     if (roverMarker) {
       roverMarker.setRotationAngle(rover_bearing_deg.value)
       roverMarker.setLatLng(latLng)
+    }
+
+    if (followRover.value) {
+      const map = getMap()
+      if (map) map.setView(latLng, map.getZoom(), { animate: false })
     }
 
     odomCount.value++
@@ -133,6 +189,7 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
   return {
     center,
     online,
+    followRover,
     mapRef,
     roverRef,
     odomPath,
@@ -140,6 +197,11 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
     rover_latitude_deg,
     rover_longitude_deg,
     rover_bearing_deg,
+
+    droneRef,
+    dronePath,
+    droneLatLng,
+    droneIcon,
 
     onlineUrl,
     offlineUrl,
@@ -152,6 +214,11 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
 
     onMapReady,
     centerOnRover,
+    centerOnDrone,
+    centerOpen,
+    zoomOpen,
+    zoomLevels,
+    setZoom,
     getMap,
   }
 }

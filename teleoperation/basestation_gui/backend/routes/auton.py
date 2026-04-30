@@ -22,7 +22,7 @@ async def enable_auton(data: AutonEnableRequest):
             enable=data.enabled,
             waypoints=[
                 GPSWaypoint(
-                    tag_id=wp.tag_id,
+                    tag_id=wp.tag_id if wp.tag_id is not None else -1,
                     latitude_degrees=wp.latitude_degrees,
                     longitude_degrees=wp.longitude_degrees,
                     type=WaypointType(val=int(wp.type)),
