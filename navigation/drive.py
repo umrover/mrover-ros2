@@ -183,8 +183,8 @@ class DriveController:
         rover_dir = rover_pose.rotation()[:, 0]
         rover_dir[2] = 0
 
-        angular_error: float = abs(angle_to_rotate_2d(target_dir[:2], rover_dir[:2]))
-        if angular_error < completion_thresh:
+        angular_error: float = angle_to_rotate_2d(target_dir[:2], rover_dir[:2])
+        if abs(angular_error) < completion_thresh:
             return Twist(), True
 
         return (
