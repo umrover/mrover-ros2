@@ -45,7 +45,6 @@ class Navigation(Node):
                 ("ref_lon", Parameter.Type.DOUBLE),
                 ("ref_alt", Parameter.Type.DOUBLE),
                 ("target_expiration_duration", Parameter.Type.DOUBLE),
-                ("object_detector_frequency", Parameter.Type.DOUBLE),
                 ("zed_fov", Parameter.Type.DOUBLE),
                 # Pure Pursuit
                 ("pure_pursuit.min_lookahead_distance", Parameter.Type.DOUBLE),

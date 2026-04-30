@@ -18,7 +18,6 @@ navigation:
     target_expiration_duration: 60.0
     display_markers: true
 
-    object_detector_frequency: 5.0
     zed_fov: 1.9
     
     pure_pursuit:
