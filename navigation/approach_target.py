@@ -350,7 +350,7 @@ class ApproachTargetState(State):
             return costmap_search.CostmapSearchState()
 
         # If we are within the distance threshold of the target we have finished
-        if self.self_in_stop_threshold(context):
+        if self.self_in_stop_threshold(context) and not isinstance(self, LongRangeState):
             assert context.course is not None
 
             # if we are seeking for the post or we are actually looking at the target, we can move on
