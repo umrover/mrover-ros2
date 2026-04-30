@@ -353,8 +353,8 @@ class ApproachTargetState(State):
         if self.self_in_stop_threshold(context) and not isinstance(self, LongRangeState):
             assert context.course is not None
 
-            # if we are seeking for the post or we are actually looking at the target, we can move on
-            if context.course.look_for_post() or context.env.viewing_current_target():
+            # If we are seeking for the post
+            if context.course.look_for_post():
                 return self.next_state(context=context, is_finished=True)
 
             # we are seeking an object but aren't looking at it
@@ -366,9 +366,9 @@ class ApproachTargetState(State):
                 )
                 if not looking:
                     context.rover.send_drive_command(twist=turn_cmd)
+                    return self
                 else:
-                    context.node.get_logger().warn("Not looking at target but are facing the direction of it")
-            return self
+                    return self.next_state(context=context, is_finished=True)
 
         if self.USE_COSTMAP:
             return self.on_loop_costmap_enabled(context=context)
