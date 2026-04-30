@@ -59,7 +59,7 @@ namespace mrover {
 
         std::vector<ParameterWrapper> params{
                 {"detection_distance_threshold", mDistanceDetectionThreshold, 15.0}};
-            
+
         ParameterWrapper::declareParameters(this, params);
 
         mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("/stereo_object_detector/annotated_img", 1);
