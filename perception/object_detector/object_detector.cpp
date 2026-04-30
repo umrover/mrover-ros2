@@ -57,6 +57,11 @@ namespace mrover {
     StereoObjectDetector::StereoObjectDetector(rclcpp::NodeOptions const& options) : ObjectDetectorBase("stereo_object_detector", options) {
         RCLCPP_INFO_STREAM(get_logger(), "Creating Stereo Object Detector...");
 
+        std::vector<ParameterWrapper> params{
+                {"detection_distance_threshold", mDistanceDetectionThreshold, 15.0}};
+            
+        ParameterWrapper::declareParameters(this, params);
+
         mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("/stereo_object_detector/annotated_img", 1);
 
         mSensorSub = create_subscription<sensor_msgs::msg::PointCloud2>("/zed/left/points", 1, [this](sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) {
@@ -72,7 +77,8 @@ namespace mrover {
         RCLCPP_INFO_STREAM(get_logger(), "Creating Image Object Detector...");
 
         std::vector<ParameterWrapper> params{
-                {"long_range_camera/fov", mCameraHorizontalFov, 10.0}};
+                {"long_range_camera/fov", mCameraHorizontalFov, 10.0},
+                {"detection_distance_threshold", mDistanceDetectionThreshold, std::numeric_limits<float>::infinity()}};
 
         ParameterWrapper::declareParameters(this, params);
 

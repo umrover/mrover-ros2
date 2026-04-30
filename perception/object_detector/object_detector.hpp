@@ -73,6 +73,7 @@ namespace mrover {
         int mObjMaxHitcount{};
         float mModelScoreThreshold{};
         float mModelNMSThreshold{};
+        float mDistanceDetectionThreshold{};
         bool mDebug{};
 
         // nullptr = OFF
@@ -113,7 +114,6 @@ namespace mrover {
     class StereoObjectDetector final : public ObjectDetectorBase {
     private:
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mSensorSub;
-
     public:
         explicit StereoObjectDetector(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 

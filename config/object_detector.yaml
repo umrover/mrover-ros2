@@ -20,6 +20,7 @@ stereo_object_detector:
     pick_threshold: 5
     model_score_threshold: 0.75
     model_nms_threshold: 0.5
+    detection_distance_threshold: 15.0
 
 image_object_detector:
   ros__parameters:

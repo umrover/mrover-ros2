@@ -100,7 +100,8 @@ namespace mrover {
             seenObjects[classId] = true;
 
             // Get the object's position in 3D from the point cloud and run this statement if the optional has a value
-            if (std::optional<SE3d> objectInCamera = spiralSearchForValidPoint(msg, centerXInImage, centerYInImage, box.width, box.height)) {
+            std::optional<SE3d> objectInCamera = spiralSearchForValidPoint(msg, centerXInImage, centerYInImage, box.width, box.height);
+            if (objectInCamera && objectInCamera.value().translation().norm() <= mDistanceDetectionThreshold) {
                 try {
                     std::string objectImmediateFrame = std::format("immediate{}", className);
                     // Push the immediate detections to the camera frame
