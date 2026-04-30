@@ -8,9 +8,9 @@ namespace mrover {
         std::string malletModelName;
         std::string pickModelName;
 
-        int mBottleThreshold;
-        int mMalletThreshold;
-        int mPickThreshold;
+        int bottleThreshold;
+        int malletThreshold;
+        int pickThreshold;
 
         std::vector<ParameterWrapper> params{
                 {"camera_frame", mCameraFrame, "zed_left_camera_frame"},
@@ -21,9 +21,9 @@ namespace mrover {
                 {"bottle_model_name", bottleModelName, "bottle"},
                 {"mallet_model_name", malletModelName, "mallet"},
                 {"pick_model_name", pickModelName, "pick"},
-                {"bottle_threshold", mBottleThreshold, 5},
-                {"mallet_threshold", mMalletThreshold, 5},
-                {"pick_threshold", mPickThreshold, 5},
+                {"bottle_threshold", bottleThreshold, 5},
+                {"mallet_threshold", malletThreshold, 5},
+                {"pick_threshold", pickThreshold, 5},
                 {"model_score_threshold", mModelScoreThreshold, 0.75},
                 {"model_nms_threshold", mModelNMSThreshold, 0.5},
                 {"object_detector_debug", mDebug, true}};
@@ -47,9 +47,9 @@ namespace mrover {
 
         // initialize model data structure for each object
 
-        mBottleModel = Model(bottleModelName, {0}, mBottleThreshold, {"bottle"}, {cv::Scalar{0, 4, 227}}, mBottleTensorRT.getInputTensorSize(), mBottleTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv8Output(model, output, detections); });
-        mMalletModel = Model(malletModelName, {0}, mMalletThreshold, {"mallet"}, {cv::Scalar{232, 115, 5}}, mMalletTensorRT.getInputTensorSize(), mPickTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv8Output(model, output, detections); });
-        mPickModel = Model(pickModelName, {0}, mPickThreshold, {"pick"}, {cv::Scalar{5, 225, 5}}, mPickTensorRT.getInputTensorSize(), mMalletTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv8Output(model, output, detections); });
+        mBottleModel = Model(bottleModelName, {0}, bottleThreshold, {"bottle"}, {cv::Scalar{0, 4, 227}}, mBottleTensorRT.getInputTensorSize(), mBottleTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv8Output(model, output, detections); });
+        mMalletModel = Model(malletModelName, {0}, malletThreshold, {"mallet"}, {cv::Scalar{232, 115, 5}}, mMalletTensorRT.getInputTensorSize(), mPickTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv8Output(model, output, detections); });
+        mPickModel = Model(pickModelName, {0}, pickThreshold, {"pick"}, {cv::Scalar{5, 225, 5}}, mPickTensorRT.getInputTensorSize(), mMalletTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv8Output(model, output, detections); });
 
         RCLCPP_INFO_STREAM(get_logger(), std::format("Object detector initialized with models: {}, {}, {} and thresholds: {} and {}", mBottleModel.modelName, mMalletModel.modelName, mPickModel.modelName, mModelScoreThreshold, mModelNMSThreshold));
     }
