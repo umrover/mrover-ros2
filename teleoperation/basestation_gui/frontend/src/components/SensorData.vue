@@ -1,6 +1,6 @@
 <template>
   <div class="flex gap-2 h-full min-h-0">
-    <div class="flex flex-col gap-1 w-52 flex-shrink-0">
+    <div class="flex flex-col gap-1 w-52 shrink-0">
       <h4 class="component-header">Sensor Data</h4>
       <div class="flex gap-1">
         <button class="btn btn-outline-control btn-sm flex-1" data-testid="pw-sensor-view-all" @click="showModal = true">View All</button>
@@ -43,13 +43,19 @@
     <div class="flex flex-col gap-2 flex-1 min-h-0 min-w-0">
       <div class="flex gap-2 flex-1 min-h-0">
         <div class="panel flex flex-col flex-1 min-w-0 p-1!">
-          <span class="data-label">Humidity (%)</span>
+          <div class="flex items-center justify-between">
+            <span class="data-label">Humidity (%)</span>
+            <button class="btn btn-outline-secondary btn-xs" @click="downloadChartPNG(0)"><i class="bi bi-download"></i></button>
+          </div>
           <div class="grow min-h-0">
             <canvas ref="chartRef0"></canvas>
           </div>
         </div>
         <div class="panel flex flex-col flex-1 min-w-0 p-1!">
-          <span class="data-label">UV Index</span>
+          <div class="flex items-center justify-between">
+            <span class="data-label">UV Index</span>
+            <button class="btn btn-outline-secondary btn-xs" @click="downloadChartPNG(1)"><i class="bi bi-download"></i></button>
+          </div>
           <div class="grow min-h-0">
             <canvas ref="chartRef1"></canvas>
           </div>
@@ -57,13 +63,19 @@
       </div>
       <div class="flex gap-2 flex-1 min-h-0">
         <div class="panel flex flex-col flex-1 min-w-0 p-1!">
-          <span class="data-label">Ozone (ppb)</span>
+          <div class="flex items-center justify-between">
+            <span class="data-label">Ozone (ppb)</span>
+            <button class="btn btn-outline-secondary btn-xs" @click="downloadChartPNG(2)"><i class="bi bi-download"></i></button>
+          </div>
           <div class="grow min-h-0">
             <canvas ref="chartRef2"></canvas>
           </div>
         </div>
         <div class="panel flex flex-col flex-1 min-w-0 p-1!">
-          <span class="data-label">Pressure (Pa)</span>
+          <div class="flex items-center justify-between">
+            <span class="data-label">Pressure (Pa)</span>
+            <button class="btn btn-outline-secondary btn-xs" @click="downloadChartPNG(3)"><i class="bi bi-download"></i></button>
+          </div>
           <div class="grow min-h-0">
             <canvas ref="chartRef3"></canvas>
           </div>
@@ -96,6 +108,7 @@ import type {
   SPPressureMessage,
 } from '@/types/websocket'
 import SensorModal from '@/components/SensorModal.vue'
+import { currentTimestamp } from '@/utils/formatNumber'
 
 const websocketStore = useWebsocketStore()
 
@@ -161,6 +174,17 @@ const resetHistory = () => {
     Array(30).fill(0),
   ]
   timeCounter.value = 0
+}
+
+const downloadChartPNG = (index: number) => {
+  const chart = charts[index]
+  const config = chartConfigs[index]
+  if (!chart || !config) return
+  const url = chart.canvas.toDataURL('image/png')
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = `${config.title.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '')}_${currentTimestamp()}.png`
+  anchor.click()
 }
 
 const downloadCSV = () => {
@@ -231,6 +255,11 @@ onMounted(() => {
         scales: {
           y: {
             beginAtZero: false,
+            title: {
+              display: true,
+              text: config.title,
+              font: { size: 10 },
+            },
             ticks: {
               font: { size: 10 },
               maxTicksLimit: 8,
@@ -238,6 +267,11 @@ onMounted(() => {
             },
           },
           x: {
+            title: {
+              display: true,
+              text: 'Time (s)',
+              font: { size: 10 },
+            },
             ticks: { font: { size: 10 } },
           },
         },
@@ -300,3 +334,18 @@ onBeforeUnmount(() => {
   charts.length = 0
 })
 </script>
+
+<style scoped>
+.btn-xs {
+  padding: 0 0.3rem;
+  font-size: 0.7rem;
+  line-height: 1;
+  height: 2em;
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-xs i {
+  font-size: 0.7rem;
+}
+</style>
