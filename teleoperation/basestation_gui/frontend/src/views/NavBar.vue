@@ -122,6 +122,7 @@ export default defineComponent({
         '/DMTask': 'Delivery Mission',
         '/ESTask': 'Equipment Servicing',
         '/ScienceTask' : "Science Mission",
+        '/starter' : 'Starter Project',
       };
 
       return routeTitles[path] || 'Unknown Path';
