@@ -184,9 +184,9 @@ def add_to_store(data: CreateAutonWaypoint):
     try:
         conn = get_db_connection()
         cursor = conn.execute('''
-            INSERT INTO auton_waypoints (name, tag_id, type, latitude, longitude, enable_costmap, deletable)
-            VALUES (?, ?, ?, ?, ?, ?, 1)
-        ''', (data.name, data.tag_id, data.type, data.lat, data.lon, data.enable_costmap))
+            INSERT INTO auton_waypoints (name, tag_id, type, latitude, longitude, enable_costmap, coverage_radius, deletable)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+        ''', (data.name, data.tag_id, data.type, data.lat, data.lon, data.enable_costmap, data.coverage_radius))
         conn.commit()
         return {
             'status': 'success',
@@ -219,7 +219,7 @@ def update_store(waypoint_id: int, data: UpdateAutonWaypoint):
                 )
 
         col_map = {'lat': 'latitude', 'lon': 'longitude'}
-        allowed_cols = {'name', 'tag_id', 'type', 'latitude', 'longitude', 'enable_costmap'}
+        allowed_cols = {'name', 'tag_id', 'type', 'latitude', 'longitude', 'enable_costmap', 'coverage_radius'}
         set_clauses = []
         values = []
         for key, val in fields.items():
@@ -306,9 +306,9 @@ def save_execution(data: AutonWaypointList):
         conn.execute('DELETE FROM current_auton_course')
         for i, w in enumerate(data.waypoints):
             conn.execute('''
-                INSERT INTO current_auton_course (name, tag_id, type, latitude, longitude, enable_costmap, sequence_order)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (w.name, w.tag_id, w.type, w.lat, w.lon, w.enable_costmap, i))
+                INSERT INTO current_auton_course (name, tag_id, type, latitude, longitude, enable_costmap, coverage_radius, sequence_order)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (w.name, w.tag_id, w.type, w.lat, w.lon, w.enable_costmap, w.coverage_radius, i))
         conn.commit()
         return {'status': 'success'}
     finally:

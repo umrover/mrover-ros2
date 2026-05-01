@@ -49,6 +49,17 @@
                   <option :value="4">Rock Pick</option>
                 </select>
               </div>
+              <div class="col-span-2">
+                <label for="coverage_radius" class="form-label">Coverage Radius (0 for default):</label>
+                <input
+                  class="form-control"
+                  id="coverage_radius"
+                  v-model.number="form.coverage_radius"
+                  type="number"
+                  step="0.5"
+                  min="0"
+                />
+              </div>
             </div>
           </div>
           <div class="modal-footer">
@@ -79,6 +90,7 @@ const defaultForm = () => ({
   name: '',
   tag_id: null as number | null,
   type: 0,
+  coverage_radius: 0,
 })
 
 const form = ref(defaultForm())
