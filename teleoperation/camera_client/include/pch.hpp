@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include <QAbstractVideoSurface>
 #include <QApplication>
 #include <QCheckBox>
 #include <QComboBox>
@@ -20,7 +21,9 @@
 #include <QDropEvent>
 #include <QFileDialog>
 #include <QFormLayout>
+#include <QFrame>
 #include <QGridLayout>
+#include <QHBoxLayout>
 #include <QImage>
 #include <QLabel>
 #include <QLineEdit>
@@ -31,6 +34,7 @@
 #include <QMimeData>
 #include <QMouseEvent>
 #include <QObject>
+#include <QPainter>
 #include <QPixmap>
 #include <QPushButton>
 #include <QResizeEvent>
@@ -39,7 +43,8 @@
 #include <QTimer>
 #include <QToolBar>
 #include <QVBoxLayout>
-#include <QVideoWidget>
+#include <QVideoFrame>
+#include <QVideoSurfaceFormat>
 #include <QWidget>
 
 #include <opencv2/core.hpp>
