@@ -1,9 +1,11 @@
 import asyncio
 from backend.ws.base_ws import WebSocketHandler
-from backend.managers.ros import get_logger
+from backend.managers.ros import get_logger, get_service_client
+from backend.utils.ros_service import call_service_async
 from rclpy.action import ActionClient
 from mrover.action import TypingCode
 from mrover.msg import KeyboardYaw
+from mrover.srv import ToggleAlignment
 
 
 class AutonHandler(WebSocketHandler):
@@ -24,6 +26,8 @@ class AutonHandler(WebSocketHandler):
                 await self.cancel_goal()
             else:
                 await self.send_typing_code(code)
+        elif msg_type == 'toggle_alignment':
+            await self.toggle_alignment(data.get('enable', False))
         else:
             get_logger().warning(f"Unhandled AUTON message: {msg_type}")
 
@@ -59,6 +63,16 @@ class AutonHandler(WebSocketHandler):
             'current_state': feedback.current_state,
             'current_index': feedback.current_index,
         })
+
+    async def toggle_alignment(self, enable: bool):
+        client = get_service_client(ToggleAlignment, '/toggle_alignment')
+        request = ToggleAlignment.Request()
+        request.enable = enable
+        result, error = await call_service_async(client, request)
+        if error:
+            self.schedule_send({'type': 'alignment_error', 'error': error})
+        else:
+            self.schedule_send({'type': 'alignment_toggled', 'enable': enable, 'success': result.success})
 
     async def cancel_goal(self):
         if self.current_goal_handle:
