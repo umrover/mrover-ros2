@@ -46,6 +46,9 @@ state_machine/state_log.txt
 data/*.png
 data/raw-pano-images
 
+# blender backup files
+*.blend1
+
 # Dynamixel Ignores
 .catkin_tools/
 .dynamixel_sdk/
