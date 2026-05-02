@@ -124,9 +124,10 @@ const configSmooth = ref(false)
 
 watch(configBeginAtZero, (val) => {
   for (const chart of charts) {
-    if (!chart?.options.scales?.['y']) continue
-    chart.options.scales['y'].beginAtZero = val
-    chart.update()
+    const yScale = chart?.options.scales?.['y'] as { beginAtZero?: boolean } | undefined
+    if (!yScale) continue
+    yScale.beginAtZero = val
+    chart!.update()
   }
 })
 
