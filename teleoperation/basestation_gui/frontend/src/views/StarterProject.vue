@@ -1,22 +1,47 @@
 <template>
     <div class="view-wrapper">
         <h1>Body</h1>
+        <button class="btn btn-primary" @click="spamTestMessages()">
+            Spam test messages
+        </button>
     </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
     import { defineComponent, onMounted, onUnmounted } from 'vue'
-    import Vuex from 'vuex'
-    const { mapState } = Vuex
-    import type { WebSocketState } from '../types/websocket'
+    // import type { WebSocketState } from '../types/websocket'
+    import { useWebsocketStore } from '@/stores/websocket'
+
+
+    const websocketStore = useWebsocketStore()
 
     onMounted(() => {
-
+        
     })
 
     onUnmounted(() => {
         
     })
+
+    websocketStore.setupWebSocket('auton')
+
+    
+
+    const spamTestMessages = () => {
+        websocketStore.sendMessage('auton', 
+        {
+            type: 'debug',
+            timestamp: new Date().toISOString(),
+        })
+    }
+
+    // this.store.dispatch('websocket/sendMessage', {
+    //     id: 'waypoint',
+    //     message: {
+    //         type: 'debug',
+    //         timestamp: new Date().toISOString(),
+    //     }
+    // })
 
     // export default defineComponent({
     //     components: {
