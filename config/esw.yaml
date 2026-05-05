@@ -36,6 +36,8 @@ can_bridge_0:
         id: 0x24
       back_right:
         id: 0x25
+      pdlb:
+        id: 0x26
 
 can_bridge_1:
   ros__parameters:
