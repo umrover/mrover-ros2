@@ -34,6 +34,7 @@ namespace mrover {
         createMediaControls(selector, name, callbacks);
         createScreenshotButton(selector, callbacks);
         createScaleSlider(selector, callbacks);
+        createRotateButton(selector, callbacks);
 
         mSelectors.emplace(name, selector);
 
@@ -116,6 +117,23 @@ namespace mrover {
             resizeCallback(w, h);
         });
         selector.layout->addWidget(selector.scaleSlider);
+    }
+
+    auto VideoSelectorWidget::createRotateButton(Selector& selector, CameraCallbacks const& callbacks) -> void {
+        if (mUsingIcons && QIcon::hasThemeIcon("object-rotate-right")) {
+            selector.rotateButton = new QPushButton(QIcon::fromTheme("object-rotate-right"), QString(), selector.widget);
+        } else {
+            selector.rotateButton = new QPushButton("Rotate", selector.widget);
+        }
+
+        auto rotateCallback = callbacks.onRotate;
+        connect(selector.rotateButton, &QPushButton::clicked, this, [rotateCallback]() {
+            if (rotateCallback) {
+                rotateCallback();
+            }
+        });
+
+        selector.layout->addWidget(selector.rotateButton);
     }
 
 } // namespace mrover

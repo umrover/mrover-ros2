@@ -14,6 +14,7 @@ namespace mrover {
         RequestCallback onStop;
         RequestCallback onScreenshot;
         std::function<void(int, int)> onResize;
+        std::function<void()> onRotate;
     };
 
     class VideoSelectorWidget : public QWidget {
@@ -29,6 +30,7 @@ namespace mrover {
             QPushButton* stopButton;
             QPushButton* screenshotButton;
             QSlider* scaleSlider;
+            QPushButton* rotateButton;
         };
 
         bool mUsingIcons;
@@ -39,6 +41,7 @@ namespace mrover {
         auto createMediaControls(Selector& selector, std::string const& cameraName, CameraCallbacks const& callbacks) -> void;
         auto createScreenshotButton(Selector& selector, CameraCallbacks const& callbacks) -> void;
         auto createScaleSlider(Selector& selector, CameraCallbacks const& callbacks) -> void;
+        auto createRotateButton(Selector& selector, CameraCallbacks const& callbacks) -> void;
 
     public:
         explicit VideoSelectorWidget(QWidget* parent = nullptr);

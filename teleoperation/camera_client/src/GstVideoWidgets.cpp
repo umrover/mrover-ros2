@@ -56,8 +56,27 @@ GstVideoWidget::GstVideoWidget(QWidget* parent) : QVideoWidget(parent) {
 }
 
 auto GstVideoWidget::setGstPipeline(std::string const& pipeline) -> void {
-    mPlayer->setMedia(QUrl(std::format("gst-pipeline: {} ! videoconvert ! qtvideosink sync=false", pipeline).c_str()));
+    mBasePipeline = pipeline;
+    applyPipeline();
+}
+
+auto GstVideoWidget::applyPipeline() -> void {
+    std::string flipElement = "";
+    if (mRotation == 1) {
+        flipElement = " ! videoflip method=clockwise";
+    } else if (mRotation == 2) {
+        flipElement = " ! videoflip method=rotate-180";
+    } else if (mRotation == 3) {
+        flipElement = " ! videoflip method=counterclockwise";
+    }
+
+    mPlayer->setMedia(QUrl(std::format("gst-pipeline: {}{} ! videoconvert ! qtvideosink sync=false", mBasePipeline, flipElement).c_str()));
     play();
+}
+
+auto GstVideoWidget::rotate90() -> void {
+    mRotation = (mRotation + 1) % 4;
+    applyPipeline();
 }
 
 auto GstVideoWidget::errorString() const -> QString {
@@ -193,6 +212,25 @@ auto GstVideoGridWidget::rebuildGrid() -> void {
 void GstVideoGridWidget::resizeEvent(QResizeEvent* event) {
     QWidget::resizeEvent(event);
     rebuildGrid();
+}
+
+auto GstVideoGridWidget::rotateCamera(std::string const& name) -> bool {
+    auto* box = findVideoBox(name);
+    if (!box) return false;
+    
+    box->gstVideoWidget->rotate90();
+
+    QSize const currentSize = box->widget->minimumSize();
+    int const newWidth = currentSize.height();
+    int const newHeight = currentSize.width();
+
+    box->widget->setMinimumSize(newWidth, newHeight);
+    box->widget->setMaximumSize(newWidth, newHeight);
+    box->widget->resize(newWidth, newHeight);
+
+    rebuildGrid();
+    
+    return true;
 }
 
 auto GstVideoGridWidget::getGstVideoWidget(std::string const& name) -> GstVideoWidget* {
