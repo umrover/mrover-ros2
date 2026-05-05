@@ -33,8 +33,8 @@ namespace mrover {
         createVisibilityCheckBox(selector, callbacks);
         createMediaControls(selector, name, callbacks);
         createScreenshotButton(selector, callbacks);
-        createScaleSlider(selector, callbacks);
         createRotateButton(selector, callbacks);
+        createScaleSlider(selector, callbacks);
 
         mSelectors.emplace(name, selector);
 

@@ -2,7 +2,7 @@
   ros__parameters:
     ee1_cam:
       address: 10.1.0.2
-      port: 8082
+      port: 8087
       dev_node: "/dev/port_a1_cam"
       dev_path: ""
       stream:
@@ -19,7 +19,7 @@
         framerate: 5
     ee2_cam:
       address: 10.1.0.2
-      port: 8083
+      port: 8088
       dev_node: "/dev/port_a2_cam"
       dev_path: ""
       stream:
@@ -36,7 +36,7 @@
         framerate: 5
     ee3_cam:
       address: 10.1.0.2
-      port: 8084
+      port: 8089
       dev_node: "/dev/port_a3_cam"
       dev_path: ""
       stream:
@@ -53,7 +53,7 @@
         framerate: 5
     sp1_cam:
       address: 10.1.0.2
-      port: 8085
+      port: 8090
       dev_node: "/dev/port_a1_cam"
       dev_path: ""
       stream:
@@ -70,7 +70,7 @@
         framerate: 5
     sp2_cam:
       address: 10.1.0.2
-      port: 8086
+      port: 8091
       dev_node: "/dev/port_a2_cam"
       dev_path: ""
       stream:
@@ -85,10 +85,10 @@
         width: 640
         height: 480
         framerate: 5
-    joint_a_cam:
+    ee4_cam:
       address: 10.1.0.2
-      port: 8087
-      dev_node: "/dev/port_b_cam"
+      port: 8092
+      dev_node: "/dev/port_b1_cam"
       dev_path: ""
       stream:
         pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
@@ -102,10 +102,78 @@
         width: 640
         height: 480
         framerate: 5
-    mob_cam:
-      address: 127.0.0.1
-      port: 8088
-      dev_node: "/dev/mob_cam"
+    ee5_cam:
+      address: 10.1.0.2
+      port: 8093
+      dev_node: "/dev/port_b2_cam"
+      dev_path: ""
+      stream:
+        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
+        width: 640
+        height: 480
+        framerate: 15
+        codec: H265
+        bitrate: 1000000
+      image_capture:
+        pixel_format: YUYV
+        width: 640
+        height: 480
+        framerate: 5
+    mob_left_cam:
+      address: 10.1.0.2
+      port: 8094
+      dev_node: "/dev/port_c1_cam"
+      dev_path: ""
+      stream:
+        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
+        width: 640
+        height: 480
+        framerate: 15
+        codec: H265
+        bitrate: 1000000
+      image_capture:
+        pixel_format: YUYV
+        width: 640
+        height: 480
+        framerate: 5
+    mob_right_cam:
+      address: 10.1.0.2
+      port: 8095
+      dev_node: "/dev/port_c2_cam"
+      dev_path: ""
+      stream:
+        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
+        width: 640
+        height: 480
+        framerate: 15
+        codec: H265
+        bitrate: 1000000
+      image_capture:
+        pixel_format: YUYV
+        width: 640
+        height: 480
+        framerate: 5
+    gps_left_cam:
+      address: 10.1.0.2
+      port: 8096
+      dev_node: "/dev/port_d1_cam"
+      dev_path: ""
+      stream:
+        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
+        width: 640
+        height: 480
+        framerate: 15
+        codec: H265
+        bitrate: 1000000
+      image_capture:
+        pixel_format: YUYV
+        width: 640
+        height: 480
+        framerate: 5
+    gps_right_cam:
+      address: 10.1.0.2
+      port: 8097
+      dev_node: "/dev/port_d2_cam"
       dev_path: ""
       stream:
         pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
@@ -121,7 +189,7 @@
         framerate: 5
     zed_mini:
       address: 10.1.0.2
-      port: 8089
+      port: 8082
       image_topic: "/zed_mini/left/image"
       stream:
         pixel_format: ABGR32 # https://www.kernel.org/doc/html/v4.9/media/uapi/v4l/pixfmt-packed-rgb.html
@@ -137,7 +205,7 @@
         framerate: 15
     zed:
       address: 10.1.0.2
-      port: 8090
+      port: 8083
       image_topic: "/zed/left/image"
       stream:
         pixel_format: ABGR32 # https://www.kernel.org/doc/html/v4.9/media/uapi/v4l/pixfmt-packed-rgb.html
@@ -153,7 +221,7 @@
         framerate: 15
     long_range_cam:
       address: 10.1.0.2
-      port: 8091
+      port: 8084
       image_topic: "/long_range_cam/image"
       stream:
         pixel_format: ABGR32 # https://www.kernel.org/doc/html/v4.9/media/uapi/v4l/pixfmt-packed-rgb.html
@@ -169,7 +237,7 @@
         framerate: 15
     long_range_cam_annotated:
       address: 10.1.0.2
-      port: 8092
+      port: 8085
       image_topic: "/long_range_object_detector/annotated_img"
       stream:
         pixel_format: ABGR32 # https://www.kernel.org/doc/html/v4.9/media/uapi/v4l/pixfmt-packed-rgb.html
@@ -185,7 +253,7 @@
         framerate: 15
     zed_annotated:
       address: 10.1.0.2
-      port: 8093
+      port: 8086
       image_topic: "/stereo_object_detector/annotated_img"
       stream:
         pixel_format: ABGR32 # https://www.kernel.org/doc/html/v4.9/media/uapi/v4l/pixfmt-packed-rgb.html
@@ -220,13 +288,29 @@ sp2_streamer:
   ros__parameters:
     camera: "sp2_cam"
 
-joint_a_streamer:
+ee4_streamer:
   ros__parameters:
-    camera: "joint_a_cam"
+    camera: "ee4_cam"
 
-mob_streamer:
+ee5_streamer:
   ros__parameters:
-    camera: "mob_cam"
+    camera: "ee5_cam"
+
+mob_left_streamer:
+  ros__parameters:
+    camera: "mob_left_cam"
+
+mob_right_streamer:
+  ros__parameters:
+    camera: "mob_right_cam"
+
+gps_left_streamer:
+  ros__parameters:
+    camera: "gps_left_cam"
+
+gps_right_streamer:
+  ros__parameters:
+    camera: "gps_right_cam"
 
 zed_mini_streamer:
   ros__parameters:
@@ -253,23 +337,33 @@ camera_client:
     test: 10
     arm:
       cameras:
-        - "mob_cam"
-        - "joint_a_cam"
         - "ee1_cam"
         - "ee2_cam"
         - "ee3_cam"
+        - "ee4_cam"
+        - "ee5_cam"
+        - "mob_left_cam"
+        - "mob_right_cam"
+        - "gps_left_cam"
+        - "gps_right_cam"
         - "zed_mini"
         - "zed"
     science:
       cameras:
         - "sp1_cam"
         - "sp2_cam"
-        - "mob_cam"
+        - "mob_left_cam"
+        - "mob_right_cam"
+        - "gps_left_cam"
+        - "gps_right_cam"
         - "zed_mini"
         - "zed"
     auton:
       cameras:
-        - "mob_cam"
+        - "mob_left_cam"
+        - "mob_right_cam"
+        - "gps_left_cam"
+        - "gps_right_cam"
         - "zed_mini"
         - "zed_annotated"
         - "long_range_cam_annotated"
