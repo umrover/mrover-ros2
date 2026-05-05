@@ -30,6 +30,7 @@ from backend.ws.nav_ws import NavHandler
 from backend.ws.science_ws import ScienceHandler
 from backend.ws.latency_ws import LatencyHandler
 from backend.ws.auton_ws import AutonHandler
+from backend.ws.wypt_ws import WYPTHandler
 
 app = FastAPI()
 
@@ -98,6 +99,10 @@ async def ws_latency(websocket: WebSocket):
 @app.websocket("/ws/auton")
 async def ws_auton(websocket: WebSocket):
     await handle_websocket(websocket, AutonHandler)
+
+@app.websocket("/ws/wypt")
+async def ws_wypt(websocket: WebSocket):
+    await handle_websocket(websocket, WYPTHandler)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

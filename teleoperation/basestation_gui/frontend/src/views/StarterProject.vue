@@ -8,7 +8,7 @@
 </template>
 
 <script lang="ts" setup>
-    import { defineComponent, onMounted, onUnmounted } from 'vue'
+    import { onMounted, onUnmounted } from 'vue'
     // import type { WebSocketState } from '../types/websocket'
     import { useWebsocketStore } from '@/stores/websocket'
 
@@ -23,12 +23,12 @@
         
     })
 
-    websocketStore.setupWebSocket('auton')
+    websocketStore.setupWebSocket('wypt')
 
     
 
     const spamTestMessages = () => {
-        websocketStore.sendMessage('auton', 
+        websocketStore.sendMessage('wypt', 
         {
             type: 'debug',
             timestamp: new Date().toISOString(),
