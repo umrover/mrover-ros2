@@ -13,6 +13,7 @@ namespace mrover {
         RequestCallback onPlay;
         RequestCallback onStop;
         RequestCallback onScreenshot;
+        std::function<void(int, int)> onResize;
     };
 
     class VideoSelectorWidget : public QWidget {
@@ -27,6 +28,7 @@ namespace mrover {
             CallbackCheckBox* playPauseCheckBox;
             QPushButton* stopButton;
             QPushButton* screenshotButton;
+            QSlider* scaleSlider;
         };
 
         bool mUsingIcons;
@@ -36,6 +38,7 @@ namespace mrover {
         auto createVisibilityCheckBox(Selector& selector, CameraCallbacks const& callbacks) -> void;
         auto createMediaControls(Selector& selector, std::string const& cameraName, CameraCallbacks const& callbacks) -> void;
         auto createScreenshotButton(Selector& selector, CameraCallbacks const& callbacks) -> void;
+        auto createScaleSlider(Selector& selector, CameraCallbacks const& callbacks) -> void;
 
     public:
         explicit VideoSelectorWidget(QWidget* parent = nullptr);

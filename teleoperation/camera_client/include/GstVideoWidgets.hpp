@@ -89,6 +89,7 @@ namespace mrover {
         auto hideVideo(std::string const& name) -> bool;
         auto showVideo(std::string const& name) -> bool;
         auto moveCamera(std::string const& name, int newIndex) -> bool;
+        auto resizeCamera(std::string const& name, int width, int height) -> bool;
         auto hideAll() -> void;
 
         [[nodiscard]] auto error() const -> GstVideoGridWidget::Error;

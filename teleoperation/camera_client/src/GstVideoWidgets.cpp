@@ -56,7 +56,7 @@ GstVideoWidget::GstVideoWidget(QWidget* parent) : QVideoWidget(parent) {
 }
 
 auto GstVideoWidget::setGstPipeline(std::string const& pipeline) -> void {
-    mPlayer->setMedia(QUrl(std::format("gst-pipeline: {} ! videoconvert ! xvimagesink name=\"qtvideosink\" sync=false", pipeline).c_str()));
+    mPlayer->setMedia(QUrl(std::format("gst-pipeline: {} ! videoconvert ! qtvideosink sync=false", pipeline).c_str()));
     play();
 }
 
@@ -103,9 +103,20 @@ GstVideoGridWidget::GstVideoGridWidget(QWidget* parent)
 
 auto GstVideoGridWidget::calculateColumnCount() const -> int {
     int const availableWidth = width() - mMainLayout->contentsMargins().left() - mMainLayout->contentsMargins().right();
-    int const cellWidth = MIN_VIDEO_WIDTH + mMainLayout->spacing();
-    int const columns = std::max(1, availableWidth / cellWidth);
-    return columns;
+    
+    int currentVideoWidth = MIN_VIDEO_WIDTH;
+    if (!mVisibleOrder.empty()) {
+        auto it = mGstVideoBoxes.find(mVisibleOrder.front());
+        if (it != mGstVideoBoxes.end()) {
+            currentVideoWidth = it->second.widget->width(); 
+        }
+    }
+
+    int const maxColumns = std::max(1, availableWidth / (currentVideoWidth + mMainLayout->spacing()));
+    int const visibleCount = std::max(1, static_cast<int>(mVisibleOrder.size()));
+    int const idealColumns = static_cast<int>(std::ceil(std::sqrt(visibleCount)));
+
+    return std::min(maxColumns, idealColumns);
 }
 
 auto GstVideoGridWidget::addGstVideoWidget(std::string const& name, std::string const& pipeline) -> bool {
@@ -121,6 +132,7 @@ auto GstVideoGridWidget::addGstVideoWidget(std::string const& name, std::string 
     auto* gstVideoBoxGstVideoWidget = new GstVideoWidget(gstVideoBoxWidget);
 
     gstVideoBoxWidget->setMinimumSize(640, 480);
+    gstVideoBoxWidget->setMaximumSize(640, 480);
 
     gstVideoBoxGstVideoWidget->setGstPipeline(pipeline);
     if (gstVideoBoxGstVideoWidget->isError()) {
@@ -280,6 +292,16 @@ auto GstVideoGridWidget::clearError() -> void {
 auto GstVideoGridWidget::setError(Error error, std::string const& errorString) -> void {
     mError = error;
     mErrorString = QString::fromStdString(errorString);
+}
+
+auto GstVideoGridWidget::resizeCamera(std::string const& name, int width, int height) -> bool {
+    auto* box = findVideoBox(name);
+    if (!box) return false;
+    box->widget->setMinimumSize(width, height);
+    box->widget->setMaximumSize(width, height);
+    box->widget->resize(width, height);
+    rebuildGrid();
+    return true;
 }
 
 auto GstVideoGridWidget::getDropTargetIndex(QPoint const& pos) const -> int {
