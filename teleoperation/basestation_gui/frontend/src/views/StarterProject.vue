@@ -1,9 +1,8 @@
 <template>
     <div class="view-wrapper">
-        <h1>Body</h1>
         <div class="d-flex flex-col gap-2 mb-2">
             <button class="btn btn-primary" @click="spamTestMessages()">
-            Spam test messages
+                Spam test messages
             </button>
             <ArmControls class="island py-2" />
             <Rover3D class="island m-0 p-0" style="max-height: 700px;" />
@@ -17,75 +16,39 @@
     import ArmControls from '../components/ArmControls.vue'
     import Rover3D from '../components/Rover3D.vue'
 
+    // You may also see code in other files that does:
+    // --- const webSocketStore = useWebsocketStore() ---
+    // and calls methods using it, such as
+    // --- webSocketStore.sendMessage(arguments)
+    const {setupWebSocket, closeWebSocket, sendMessage} = useWebsocketStore()
 
-    const websocketStore = useWebsocketStore()
-
+    // Set up websockets when this component is mounted
+    // (happens shortly after page load here)
     onMounted(() => {
-        websocketStore.setupWebSocket('wypt')
-        websocketStore.setupWebSocket('arm')
+        setupWebSocket('wypt')
+        setupWebSocket('arm')
     })
 
+    // Close websockets when this component is unmounted
+    // (happens during page unload, in this case)
     onUnmounted(() => {
-        websocketStore.closeWebSocket('wypt')
-        websocketStore.setupWebSocket('arm')
+        closeWebSocket('wypt')
+        closeWebSocket('arm')
     })
 
+    // Send a bunch of messages to the "wypt" websocket
     const spamTestMessages = () => {
-        websocketStore.sendMessage('wypt', 
-        {
-            type: 'debug',
-            timestamp: new Date().toISOString(),
-        })
+
+        // Send a message every 1000 miliseconds
+        const interval = setInterval(() => {
+            sendMessage('wypt', 
+            {
+                type: 'debug',
+                timestamp: new Date().toISOString(),
+            })
+        }, 1000)
+
+        // Stop sending messages after 5000 miliseconds
+        setTimeout(() => clearInterval(interval), 5000)
     }
-
-    // this.store.dispatch('websocket/sendMessage', {
-    //     id: 'waypoint',
-    //     message: {
-    //         type: 'debug',
-    //         timestamp: new Date().toISOString(),
-    //     }
-    // })
-
-    // export default defineComponent({
-    //     components: {
-    //             // TODO
-    //         },
-
-    //     mounted() {
-    //         this.$store.dispatch('websocket/setupWebSocket', 'waypoints')
-    //             // TODO
-    //     },
-
-    //     unmounted() {
-    //         this.$store.dispatch('websocket/closeWebSocket', 'waypoints')
-    //             // TODO
-    //     },
-
-    //     computed: {
-    //         ...mapState('websocket', {
-    //         waypointsMessage: (state: WebSocketState) => state.messages['waypoints'],
-    //         }),
-    //     },
-
-    //     watch: {
-    //         waypointsMessage(msg) {
-    //         console.log(msg)
-    //         },
-    //     },
-
-    //     methods: {
-    //         spamTestMessages() {
-    //         const interval = setInterval(() => {
-    //             this.$store.dispatch('websocket/sendMessage', {
-    //             id: 'waypoints',
-    //             message: {
-    //                 type: 'debug',
-    //                 timestamp: new Date().toISOString(),
-    //             },
-    //             })
-    //         }, 1000)
-    //         setTimeout(() => clearInterval(interval), 5000)
-    //         },
-    //     },
-    // })
 </script>
