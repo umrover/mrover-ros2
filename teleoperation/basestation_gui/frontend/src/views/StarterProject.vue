@@ -1,31 +1,34 @@
 <template>
     <div class="view-wrapper">
         <h1>Body</h1>
-        <button class="btn btn-primary" @click="spamTestMessages()">
+        <div class="d-flex flex-col gap-2 mb-2">
+            <button class="btn btn-primary" @click="spamTestMessages()">
             Spam test messages
-        </button>
+            </button>
+            <ArmControls class="island py-2" />
+            <Rover3D class="island m-0 p-0" style="max-height: 700px;" />
+        </div>
     </div>
 </template>
 
 <script lang="ts" setup>
     import { onMounted, onUnmounted } from 'vue'
-    // import type { WebSocketState } from '../types/websocket'
     import { useWebsocketStore } from '@/stores/websocket'
+    import ArmControls from '../components/ArmControls.vue'
+    import Rover3D from '../components/Rover3D.vue'
 
 
     const websocketStore = useWebsocketStore()
 
     onMounted(() => {
-        
+        websocketStore.setupWebSocket('wypt')
+        websocketStore.setupWebSocket('arm')
     })
 
     onUnmounted(() => {
-        
+        websocketStore.closeWebSocket('wypt')
+        websocketStore.setupWebSocket('arm')
     })
-
-    websocketStore.setupWebSocket('wypt')
-
-    
 
     const spamTestMessages = () => {
         websocketStore.sendMessage('wypt', 

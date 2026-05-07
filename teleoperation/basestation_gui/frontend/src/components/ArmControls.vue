@@ -67,7 +67,7 @@ import type { ControllerStateMessage } from '@/types/websocket'
 import GamepadDisplay from './GamepadDisplay.vue'
 import IndicatorDot from './IndicatorDot.vue'
 
-const { onMessage } = useWebsocketStore()
+const { onMessage, sendMessage } = useWebsocketStore()
 
 const mode = ref('disabled')
 const forcing_limit = ref(false)
@@ -78,18 +78,56 @@ const { connected, axes, buttons, vibrationActuator } = useGamepadPolling({
   messageType: 'ra_controller',
 })
 
+const UPDATE_HZ = 30
+
+let keysPressed = {
+  w: false,
+  a: false,
+  s: false,
+  d: false,
+}
+let interval = 0
+
 const keyDown = async (event: { key: string }) => {
   if (event.key === ' ') {
     await newRAMode('disabled')
+  }
+
+  if (event.key in keysPressed) {
+    keysPressed[event.key as keyof typeof keysPressed] = true
+  }
+}
+
+const keyUp = async (event: {key: string}) => {
+  if (event.key in keysPressed) {
+    keysPressed[event.key as keyof typeof keysPressed] = false
   }
 }
 
 onMounted(() => {
   document.addEventListener('keydown', keyDown)
+  document.addEventListener('keyup', keyUp)
+
+  interval = window.setInterval(() => {
+      const axes = [0, 0, 0, 0]
+      const buttons: boolean[] = []
+      axes[0] = (keysPressed.d ? 1 : 0) - (keysPressed.a ? 1 : 0)
+      axes[1] = (keysPressed.s ? 1 : 0) - (keysPressed.w ? 1 : 0)
+
+      sendMessage('arm', {
+        type: 'ra_controller',
+        axes: axes,
+        buttons: buttons
+      })
+      // TODO
+
+    }, 1000 / UPDATE_HZ)
+
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', keyDown)
+  document.removeEventListener('keyup', keyUp)
 })
 
 const newRAMode = async (newMode: string) => {
