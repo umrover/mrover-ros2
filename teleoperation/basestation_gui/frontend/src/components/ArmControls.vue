@@ -182,7 +182,8 @@ const check_button_limit = (
 const VIBRATION_THRESHOLD = 0.8
 
 // Check if an arm limit is reached, and vibrate the controller
-// if so
+// if so. Only checks for ControllerStateMessages, so keyboard
+// controls won't trigger it.
 onMessage<ControllerStateMessage>('arm', 'arm_state', msg => {
   const left_horiz_limit = check_horizontal_axis_limit(0, msg.limits_hit[0])
   const left_vert_limit = check_vertical_axis_limit(1, msg.limits_hit[1])
