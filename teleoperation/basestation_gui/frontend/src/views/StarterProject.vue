@@ -25,23 +25,23 @@
     // Set up websockets when this component is mounted
     // (happens shortly after page load here)
     onMounted(() => {
-        setupWebSocket('wypt')
+        setupWebSocket('starter')
         setupWebSocket('arm')
     })
 
     // Close websockets when this component is unmounted
     // (happens during page unload, in this case)
     onUnmounted(() => {
-        closeWebSocket('wypt')
+        closeWebSocket('starter')
         closeWebSocket('arm')
     })
 
-    // Send a bunch of messages to the "wypt" websocket
+    // Send a bunch of messages to the "starter" websocket
     const spamTestMessages = () => {
 
         // Send a message every 1000 miliseconds
         const interval = setInterval(() => {
-            sendMessage('wypt', 
+            sendMessage('starter', 
             {
                 type: 'debug',
                 timestamp: new Date().toISOString(),

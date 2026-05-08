@@ -1,9 +1,9 @@
 from backend.ws.base_ws import WebSocketHandler
 from backend.managers.ros import get_logger
 
-class WYPTHandler(WebSocketHandler):
+class StarterHandler(WebSocketHandler):
     def __init__(self, websocket):
-        super().__init__(websocket, 'wypt')
+        super().__init__(websocket, 'starter')
     
     async def setup(self):
         pass
