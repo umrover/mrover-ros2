@@ -39,5 +39,5 @@ export const autonAPI = {
       method: 'POST',
       body: JSON.stringify({ enabled })
     })
-  }
+  },
 }

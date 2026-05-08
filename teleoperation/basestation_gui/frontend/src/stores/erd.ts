@@ -74,6 +74,28 @@ export const useErdStore = defineStore('erd', () => {
     searchWaypoint.value = searchWaypoint.value === index ? -1 : index
   }
 
+  function exportToText() {
+    if (waypoints.value.length === 0) return
+
+    let textContent = `Generated: ${new Date().toLocaleString()}\n\n`
+    waypoints.value.forEach((wp, index) => {
+      textContent += `[${index + 1}] ${wp.name.toUpperCase()}\n`
+      textContent += `    Latitude:  ${wp.lat.toFixed(8)}\n`
+      textContent += `    Longitude: ${wp.lon.toFixed(8)}\n`
+      textContent += `    Platform:  ${wp.drone ? 'Drone' : 'Rover'}\n\n`
+    })
+
+    const blob = new Blob([textContent.trim()], { type: 'text/plain;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `mission_course_${new Date().toISOString().split('T')[0]}.txt`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   return {
     waypoints,
     highlightedWaypoint,
@@ -87,5 +109,6 @@ export const useErdStore = defineStore('erd', () => {
     clearAll,
     setHighlighted,
     setSearch,
+    exportToText,
   }
 })

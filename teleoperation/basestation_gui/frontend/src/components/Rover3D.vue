@@ -17,10 +17,10 @@
             {{ viewLabels[viewMode] }}
             <i class="bi bi-chevron-down"></i>
           </button>
-          <ul class="cmd-dropdown-menu left-0 right-auto" :class="{ show: viewDropdownOpen }">
+          <ul class="dropdown-menu left-0 right-auto" :class="{ show: viewDropdownOpen }">
             <li v-for="(label, key) in viewLabels" :key="key">
               <button
-                class="cmd-dropdown-item"
+                class="dropdown-item"
                 :class="{ active: viewMode === key }"
                 @click="switchView(key); viewDropdownOpen = false">
                 {{ label }}
@@ -38,10 +38,10 @@
               {{ rotationLabels[rotationMode] }}
               <i class="bi bi-chevron-down"></i>
             </button>
-            <ul class="cmd-dropdown-menu left-0 right-auto" :class="{ show: rotationDropdownOpen }">
+            <ul class="dropdown-menu left-0 right-auto" :class="{ show: rotationDropdownOpen }">
               <li v-for="(label, key) in rotationLabels" :key="key">
                 <button
-                  class="cmd-dropdown-item"
+                  class="dropdown-item"
                   :class="{ active: rotationMode === key }"
                   @click="setRotationMode(key); rotationDropdownOpen = false">
                   {{ label }}
