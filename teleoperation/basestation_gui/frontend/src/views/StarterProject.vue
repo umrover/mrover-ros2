@@ -1,10 +1,10 @@
 <template>
     <div class="view-wrapper">
-        <div class="flex flex-row gap-2 mb-2 p-1">
-            <button class="btn btn-primary flex-auto !h-auto" @click="spamTestMessages()">
+        <div class="flex flex-col gap-2 mb-2 p-1">
+            <button class="btn btn-primary" @click="spamTestMessages()">
                 Spam test messages
             </button>
-            <ArmControls class="island py-1 flex-auto" />
+            <ArmControls class="island py-1" />
         </div>
         <Rover3D class="island m-0 p-0" style="max-height: 700px;" />
     </div>

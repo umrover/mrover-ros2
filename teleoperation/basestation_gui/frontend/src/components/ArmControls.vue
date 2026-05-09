@@ -72,14 +72,12 @@ const { onMessage, sendMessage } = useWebsocketStore()
 const mode = ref('disabled')
 const forcing_limit = ref(false)
 
-// Listen for a controller, and send messages from the controller's input to arm
 const { connected, axes, buttons, vibrationActuator } = useGamepadPolling({
   controllerIdFilter: 'Microsoft',
   topic: 'arm',
   messageType: 'ra_controller',
 })
 
-// Stores pressed keys
 let keysPressed = {
   w: false,
   a: false,
@@ -87,7 +85,9 @@ let keysPressed = {
   d: false,
 }
 
-// Detect when a key is pressed
+const UPDATE_HZ = 30
+let interval = 0
+
 const keyDown = async (event: { key: string }) => {
   if (event.key === ' ') {
     await newRAMode('disabled')
@@ -98,23 +98,17 @@ const keyDown = async (event: { key: string }) => {
   }
 }
 
-// Detect when a key is released
 const keyUp = async (event: {key: string}) => {
   if (event.key in keysPressed) {
     keysPressed[event.key as keyof typeof keysPressed] = false
   }
 }
 
-const UPDATE_HZ = 30
-let interval = 0
 
 onMounted(() => {
   document.addEventListener('keydown', keyDown)
   document.addEventListener('keyup', keyUp)
 
-  // Convert key input to controller input
-  // Then, send that input to arm
-  // Does this every 1000/UPDATE_HZ miliseconds (33.3 ms)
   interval = window.setInterval(() => {
     const axes = [0, 0, 0, 0]
     const buttons: boolean[] = []
@@ -136,7 +130,6 @@ onBeforeUnmount(() => {
   window.clearInterval(interval)
 })
 
-// Change arm mode
 const newRAMode = async (newMode: string) => {
   try {
     mode.value = newMode
@@ -181,9 +174,6 @@ const check_button_limit = (
 
 const VIBRATION_THRESHOLD = 0.8
 
-// Check if an arm limit is reached, and vibrate the controller
-// if so. Only checks for ControllerStateMessages, so keyboard
-// controls won't trigger it.
 onMessage<ControllerStateMessage>('arm', 'arm_state', msg => {
   const left_horiz_limit = check_horizontal_axis_limit(0, msg.limits_hit[0])
   const left_vert_limit = check_vertical_axis_limit(1, msg.limits_hit[1])

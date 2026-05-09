@@ -245,7 +245,6 @@ onBeforeUnmount(() => {
   closeWebSocket('nav')
 })
 
-// Update arm position in the basestation
 onMessage<ControllerStateMessage>('arm', 'arm_state', (msg) => {
   const joints = msg.names.map((name: string, index: number) => {
     const urdfName = jointNameMap[name] || name
@@ -286,7 +285,6 @@ function updateTopDownCamera() {
   }
 }
 
-// Update the costmap when new message is recieved
 onMessage<OccupancyGridMessage>('drive', 'costmap', (msg) => {
   const { resolution, width, height, origin } = msg.info
 
