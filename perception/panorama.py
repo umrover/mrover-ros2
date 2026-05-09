@@ -40,9 +40,13 @@ class Panorama(Node):
         self.fov_sub = self.create_subscription(CameraInfo, f"/{self.zed_version}/left/camera_info", self.fov_callback, 1)
 
         # gimbal service variables
-        self.cur_gimbal_target = 2*np.pi
+        self.cur_gimbal_target = 2 * np.pi
         self.num_images = 20
         self.rad_per_image = (2 * np.pi) / self.num_images
+        self.servo_timeout = 3 # seconds
+        self.start = (340 * np.pi) / 180
+        self.end = (20 * np.pi) / 180
+        self.delta   = (self.start - self.end) / self.num_images
 
         # Heading variables
         self.heading_sub = self.create_subscription(Heading, "/heading/fix", self.heading_callback, 1)
@@ -83,7 +87,7 @@ class Panorama(Node):
     
     def fov_callback(self, info_msg: CameraInfo):
         if self.zed_fov_rad is None:
-            self.get_logger().info("Updated FOV to {info_msg.fov}")
+            self.get_logger().info(f"Updated FOV to {info_msg.fov}")
             self.zed_fov_rad = info_msg.fov * (np.pi / 180)
             self.pixels_per_rad = self.zed_image_width_pixels / self.zed_fov_rad
 
@@ -92,6 +96,30 @@ class Panorama(Node):
         # get every tenth point to make the pc sparser
         # TODO: dtype hard-coded to float32
         if self.process_message == False:
+            return
+        
+        target = self.delta * self.pano_position_index + end
+
+        if self.start_time is None:
+            self.start_time = time.monotonic()
+            # START SPINNING THE MAST GIMBAL 
+            req = ServoPosition.Request()
+            req.header = Header()
+            req.names = ["gimbal_yaw"]
+            req.positions = [target]
+            print(f"Sending request to {target}")
+            self.gimbal_client.call_async(req)
+
+            if self.pano_position_index == self.num_images:
+                self.process_message = False
+                self.start_time = None
+
+            return
+
+        if (time.monotonic() - self.start_time) > self.servo_timeout:
+            self.pano_position_index += 1
+            self.start_time = None
+        else:
             return
         
         if self.zed_fov_rad == None:
@@ -139,14 +167,6 @@ class Panorama(Node):
         # Once the image and PC are recorded, move to the next position and 
         # turn off message processing
         self.process_message = False
-
-        # START SPINNING THE MAST GIMBAL TO NEXT POSITION (first position)
-        req = ServoPosition.Request()
-        req.header = Header()
-        req.names = ["gimbal_yaw"]
-        req.positions = [self.cur_gimbal_target]
-        self.future = self.gimbal_client.call_async(req)
-        self.future.add_done_callback(self.gimbal_callback)
 
     def heading_callback(self, heading: Heading):
         self.get_logger().info("Heading is {heading.heading}")
@@ -198,25 +218,10 @@ class Panorama(Node):
             self.destroy_subscription(self.heading_sub)
             self.heading_sub = None
 
-        # START SPINNING THE MAST GIMBAL (first position)
-        req = ServoPosition.Request()
-        req.header = Header()
-        req.names = ["gimbal_yaw"]
-        req.positions = [self.cur_gimbal_target]
-        self.future = self.gimbal_client.call_async(req)
-        self.future.add_done_callback(self.gimbal_callback)
+        self.pano_position_index = 0
+        self.start_time = None
 
         return response
-    
-    def gimbal_callback(self, future):
-        # Do not process any more images if our target is already 2pi
-        if self.cur_gimbal_target == 0.0:
-            return 
-        
-        # set next target and enable img/pc processing callback
-        self.cur_gimbal_target -= self.rad_per_image
-        self.cur_gimbal_target = max(self.cur_gimbal_target, 0.0)
-        self.process_message = True
 
     def end_callback(self, _, response):
         self.get_logger().info('Ending Pano...')
@@ -228,7 +233,7 @@ class Panorama(Node):
         req = ServoPosition.Request()
         req.header = Header()
         req.names = ["gimbal_yaw"]
-        req.positions = [0.0] # TODO is 90 correct?? 0?
+        req.positions = [np.pi]
         self.gimbal_client.call_async(req)
 
         # destroy all subs
