@@ -111,9 +111,9 @@ def calcPanorama(images_dir, shift):
         panorama = stitchImage(panorama, curr_img, path, overlap)
         print("The time taken for merging " + str(i+1) + " images: " + str(time.time() - start))
 
-    print(panorama)
-    cv2.imwrite(images_dir+'output.png', panorama.astype('uint8'))
+    # print(panorama)
+    # cv2.imwrite(images_dir+'output.png', panorama.astype('uint8'))
     return panorama
 
-calcPanorama('/home/khush/ros2_ws/src/mrover/data/test_pano/', [128]*18)
+# calcPanorama('/home/khush/ros2_ws/src/mrover/data/test_pano/', [128]*18)
 
