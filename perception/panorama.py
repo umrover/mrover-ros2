@@ -305,6 +305,7 @@ class Panorama(Node):
             cv2.imwrite(f"{new_path}/pano.png", pano)
             
             # convert the panorama to bgra for transport through ROS
+            pano = np.clip(pano, 0, 255).astype(np.uint8)
             bgra_pano = cv2.cvtColor(pano, cv2.COLOR_BGR2BGRA)
 
             # fill out the image message
