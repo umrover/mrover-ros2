@@ -37,7 +37,7 @@ class Panorama(Node):
 
         # Start the panorama
         self.process_message = False
-        self.fov_sub = self.create_subscription(CameraInfo, f"/{self.zed_version}/left/camera_info", self.fov_callback)
+        self.fov_sub = self.create_subscription(CameraInfo, f"/{self.zed_version}/left/camera_info", self.fov_callback, 1)
 
         # gimbal service variables
         self.cur_gimbal_target = 2*np.pi
@@ -143,8 +143,8 @@ class Panorama(Node):
         # START SPINNING THE MAST GIMBAL TO NEXT POSITION (first position)
         req = ServoPosition.Request()
         req.header = Header()
-        req.name = ["gimbal_yaw"]
-        req.position = [self.cur_gimbal_target]
+        req.names = ["gimbal_yaw"]
+        req.positions = [self.cur_gimbal_target]
         self.future = self.gimbal_client.call_async(req)
         self.future.add_done_callback(self.gimbal_callback)
 
@@ -201,8 +201,8 @@ class Panorama(Node):
         # START SPINNING THE MAST GIMBAL (first position)
         req = ServoPosition.Request()
         req.header = Header()
-        req.name = ["gimbal_yaw"]
-        req.position = [self.cur_gimbal_target]
+        req.names = ["gimbal_yaw"]
+        req.positions = [self.cur_gimbal_target]
         self.future = self.gimbal_client.call_async(req)
         self.future.add_done_callback(self.gimbal_callback)
 
@@ -227,8 +227,8 @@ class Panorama(Node):
         # Return Mast Gimbal to original position
         req = ServoPosition.Request()
         req.header = Header()
-        req.name = ["gimbal_yaw"]
-        req.position = [0.0] # TODO is 90 correct?? 0?
+        req.names = ["gimbal_yaw"]
+        req.positions = [0.0] # TODO is 90 correct?? 0?
         self.gimbal_client.call_async(req)
 
         # destroy all subs
