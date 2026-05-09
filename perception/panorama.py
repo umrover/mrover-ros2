@@ -42,7 +42,6 @@ class Panorama(Node):
         # gimbal service variables
         self.cur_gimbal_target = 2 * np.pi
         self.num_images = 20
-        self.rad_per_image = (2 * np.pi) / self.num_images
         self.servo_timeout = 3 # seconds
         self.start = (300 * np.pi) / 180
         self.end = (60 * np.pi) / 180
@@ -95,7 +94,7 @@ class Panorama(Node):
         # extract xyzrgb fields
         # get every tenth point to make the pc sparser
         # TODO: dtype hard-coded to float32
-        if self.process_message == False:
+        if self.process_message == False or self.zed_fov_rad == None:
             return
         
         target = self.delta * self.pano_position_index + self.start
@@ -116,15 +115,8 @@ class Panorama(Node):
 
             return
 
-        if (time.monotonic() - self.start_time) > self.servo_timeout:
-            self.pano_position_index += 1
-            self.start_time = None
-        else:
+        if not (time.monotonic() - self.start_time) > self.servo_timeout:
             return
-        
-        if self.zed_fov_rad == None:
-            self.get_logger().warn("Wait for FOV to be set")
-            return 
         
         # Record the image
         self.current_img = cv2.cvtColor(
@@ -136,6 +128,9 @@ class Panorama(Node):
 
         if self.current_img is None:
             return
+        
+        self.pano_position_index += 1
+        self.start_time = None
         
         self.img_list.append(copy.deepcopy(self.current_img))
         self.img_dirs.append(pos)
@@ -168,14 +163,14 @@ class Panorama(Node):
         self.get_logger().info("Heading is {heading.heading}")
         self.cur_heading = heading.heading
 
-    def label_pano(self, list_len, pano: np.ndarray):
+    def label_pano(self, num_images, pano: np.ndarray):
         # label hard coded NESW as a test
         fontFace = cv2.FONT_HERSHEY_SIMPLEX
         fontScale = 2.0
         color = (93, 236, 251)
         thickness = 5
         lineType = cv2.LINE_AA
-        order = np.arange(0, list_len)
+        order = np.arange(0, num_images)
 
         # For each cardinal dir, find which image has closest heading to that direction
         # Then find the image closest to that one in number from the order list
@@ -294,14 +289,14 @@ class Panorama(Node):
         print("Shifts: " + str(shift))
 
         # clear image list before running calcPano
-        list_len = len(self.img_list)
+        num_images = len(self.img_list)
         self.img_list = []
         pano = calcPanorama(new_path, shift)
 
         # Construct Pano and Save, get stitching order
         if pano is not None:
             # label and save the panorama if it succeeds
-            self.label_pano(list_len, pano)
+            self.label_pano(num_images, pano)
             cv2.imwrite(f"{new_path}/pano.png", pano)
             
             # convert the panorama to bgra for transport through ROS
