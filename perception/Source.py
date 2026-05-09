@@ -105,6 +105,8 @@ def calcPanorama(images_dir, shift):
         channel = np.argmax([np.var(curr_img[:,:,0]), np.var(curr_img[:,:,1]), np.var(curr_img[:,:,2])])
         
         overlap = curr_img.shape[1] - shift[i-1]
+        if overlap <= 0 or overlap >= 1280:
+            continue
         e = calcErrorSurface(panorama, curr_img, overlap, channel)
         E = calcSeam(e)
         path = calcSeamPath(E,e)
