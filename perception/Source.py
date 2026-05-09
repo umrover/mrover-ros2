@@ -2,7 +2,6 @@
 
 import numpy as np
 import cv2
-from PIL import Image as PilImage
 import time
 import glob
 
@@ -77,20 +76,7 @@ def colorCorrection(images_temp, shift, bestIndex=0, gamma=2.2):
         for i in range(bestIndex+1, rightBorder+1):
             for channel in range(3):
                 images_temp[i][:,:,channel] = np.power(G[channel] * alpha[channel, i], 1.0/gamma) * images_temp[i][:,:,channel]
-                
-    # for leftBorder in range(bestIndex-1, -1, -1):
-    #     for i in range(bestIndex-1, leftBorder-1, -1):
-    #         I = images_temp[i]
-    #         J = images_temp[i+1]
-    #         overlap = I.shape[1] - shift[i-1]
-    #         for channel in range(3):
-    #             alpha[channel, i] = np.sum(np.power(J[:,0:overlap+1,channel], gamma))/np.sum(np.power(I[:,-overlap-1:,channel],gamma))
-
-    #     G = np.sum(alpha, 1)/np.sum(np.square(alpha), 1)
-        
-    #     for i in range(bestIndex-1, leftBorder-1, -1):
-    #         for channel in range(3):
-    #             images_temp[i][:,:,channel] = np.power(G[channel] * alpha[channel, i], 1.0/gamma) * images_temp[i][:,:,channel]
+    
     return images_temp
 
 def calcPanorama(images_dir, shift):
@@ -98,18 +84,18 @@ def calcPanorama(images_dir, shift):
     # read panorama source images
     files = glob.glob(images_dir + "*.png")
     files = sorted(files)
-    print(len(files))
+    print(files)
     
-    image_files = [np.array(PilImage.open(files[i])) for i in range(len(files))]
+    image_files = [cv2.imread(img) for img in files]
     print(f"Num images found in path {images_dir}: {len(image_files)}")
     
     images_temp = [ image_files[i].astype('float64') for i in range(len(image_files))]
     
     if image_files[0].ndim == 2 or image_files[0].shape[2] == 1:
         images_temp = [ cv2.resize(cv2.cvtColor(image_files[i], cv2.COLOR_GRAY2RGB), np.shape(image_files[0])).astype('float64') for i in range(len(image_files))]
-            
+
     # Perform color correction based on first image
-    images_temp = colorCorrection(images_temp, shift)
+    # images_temp = colorCorrection(images_temp, shift)
 
     # Sequentially stitch each image, growing pano one by one
     panorama = images_temp[0]
@@ -125,14 +111,9 @@ def calcPanorama(images_dir, shift):
         panorama = stitchImage(panorama, curr_img, path, overlap)
         print("The time taken for merging " + str(i+1) + " images: " + str(time.time() - start))
 
-    # imageio.imwrite(images_dir+'output.png', np.array(255*panorama/np.max(panorama)).astype('uint8'))
+    # print(panorama)
+    # cv2.imwrite(images_dir+'output.png', panorama.astype('uint8'))
     return panorama
 
-# calcPanorama('/home/khush/ros2_ws/src/mrover/data/3/', [55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 0])
-
-# calcPanorama('./results/2/', [109]*6)
-
-# calcPanorama('./results/1/', [36]*16)
-
-# calcPanorama('./results/4/', [85]*5)
+# calcPanorama('/home/khush/ros2_ws/src/mrover/data/test_pano/', [128]*18)
 
