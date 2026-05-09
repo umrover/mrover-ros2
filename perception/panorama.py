@@ -44,9 +44,9 @@ class Panorama(Node):
         self.num_images = 20
         self.rad_per_image = (2 * np.pi) / self.num_images
         self.servo_timeout = 3 # seconds
-        self.start = (340 * np.pi) / 180
-        self.end = (20 * np.pi) / 180
-        self.delta   = (self.start - self.end) / self.num_images
+        self.start = (300 * np.pi) / 180
+        self.end = (60 * np.pi) / 180
+        self.delta   = (self.end - self.start) / self.num_images
 
         # Heading variables
         self.heading_sub = self.create_subscription(Heading, "/heading/fix", self.heading_callback, 1)
@@ -98,7 +98,7 @@ class Panorama(Node):
         if self.process_message == False:
             return
         
-        target = self.delta * self.pano_position_index + end
+        target = self.delta * self.pano_position_index + self.start
 
         if self.start_time is None:
             self.start_time = time.monotonic()
@@ -164,15 +164,11 @@ class Panorama(Node):
         rotated_pc = self.rotate_pc(rotation, self.arr_pc)
         self.stitched_pc = np.vstack((self.stitched_pc, rotated_pc))
 
-        # Once the image and PC are recorded, move to the next position and 
-        # turn off message processing
-        self.process_message = False
-
     def heading_callback(self, heading: Heading):
         self.get_logger().info("Heading is {heading.heading}")
         self.cur_heading = heading.heading
 
-    def label_pano(self, list_len, pano: np.ndarray, dir_diffs: np.ndarray):
+    def label_pano(self, list_len, pano: np.ndarray):
         # label hard coded NESW as a test
         fontFace = cv2.FONT_HERSHEY_SIMPLEX
         fontScale = 2.0
@@ -188,8 +184,8 @@ class Panorama(Node):
         y_org = int(pano.shape[0] / 4)
         img_mid = pano.shape[1] / (2*len(order))
         for i, dir in enumerate(self.pano_dirs):
-            head = i * 90
-            diffs = np.abs(self.headings - head)
+            head = i * (np.pi / 2)
+            diffs = np.abs(np.array(self.headings) - head)
             closest = diffs.argmin()
 
             diffs = np.abs(order - int(closest))
@@ -220,6 +216,7 @@ class Panorama(Node):
 
         self.pano_position_index = 0
         self.start_time = None
+        self.process_message = True
 
         return response
 
@@ -281,7 +278,7 @@ class Panorama(Node):
         new_path = f"{share_dir}/../../../../../src/mrover/data/raw-pano-images/{unique_id}/"
         os.mkdir(new_path)
         for i, img in enumerate(self.img_list):
-            name = f"{str(i).zfill(2)}.png"
+            name = f"{new_path}/{str(i).zfill(2)}.png" # TODO: pathlib
             cv2.imwrite(name, img)
 
         # stitch the pano together
