@@ -86,7 +86,7 @@ let keysPressed = {
 }
 
 const UPDATE_HZ = 30
-let interval = 0
+let interval: number | undefined
 
 const keyDown = async (event: { key: string }) => {
   if (event.key === ' ') {
