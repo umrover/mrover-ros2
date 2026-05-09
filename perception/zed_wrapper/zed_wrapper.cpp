@@ -281,7 +281,7 @@ namespace mrover {
                 sl::CalibrationParameters calibration = mZedInfo.camera_configuration.calibration_parameters;
                 auto leftCamInfoMsg = mrover::msg::CameraInfo();
                 auto rightCamInfoMsg = mrover::msg::CameraInfo();
-                fillCameraInfoMessages(calibration, mImageResolution, leftCamInfoMsg, rightCamInfoMsg);
+                fillCameraInfoMessages(calibration, mImageResolution, leftCamInfoMsg.info, rightCamInfoMsg.info);
                 leftCamInfoMsg.info.header.frame_id = std::format("{}_left_camera_optical_frame", mDeviceName);
                 leftCamInfoMsg.info.header.stamp = mPcMeasures.time;
                 leftCamInfoMsg.fov = calibration.left_cam.h_fov;
