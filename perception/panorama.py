@@ -49,7 +49,7 @@ class Panorama(Node):
 
         # Heading variables
         self.heading_sub = self.create_subscription(Heading, "/heading/fix", self.heading_callback, 1)
-        self.pano_dirs = ['N', 'E', 'S', 'W']
+        self.pano_dirs = ['E', 'S', 'W', 'N']
         self.cur_heading = 0.0 # degrees
 
         # PC Stitching Variables
@@ -134,7 +134,7 @@ class Panorama(Node):
         
         self.img_list.append(copy.deepcopy(self.current_img))
         self.img_dirs.append(pos)
-        self.headings.append((self.cur_heading + pos) % (2 * np.pi))
+        self.headings.append((self.cur_heading + pos + np.pi) % (2 * np.pi))
         
         # Record the PC
         self.get_logger().info("Grabbing a PC")
@@ -186,8 +186,9 @@ class Panorama(Node):
             diffs = np.abs(order - int(closest))
             pos = diffs.argmin()
 
-            if abs(self.headings[int(pos)] - self.headings[int(closest)]) > 20:
+            if abs(self.headings[int(pos)] - head) > (20 * np.pi / 180):
                 continue
+            
             x_org = int(pos * (pano.shape[1] / len(order)) + img_mid)
 
             cv2.putText(pano, dir, (x_org,y_org), fontFace, fontScale, color, thickness, lineType)
