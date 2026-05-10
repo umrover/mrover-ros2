@@ -36,15 +36,15 @@ namespace mrover {
         void init() {
             mDevice = {rclcpp::Node::shared_from_this(), "jetson", "pdlb"};
 
-            mChangeLEDSubscriber = create_subscription<mrover::msg::LED>("led", 10, 
-                [this](mrover::msg::LED::ConstSharedPtr const& msg) {
-                    changeLED(msg);
-                });
+            mChangeLEDSubscriber = create_subscription<mrover::msg::LED>("led", 10,
+                                                                         [this](mrover::msg::LED::ConstSharedPtr const& msg) {
+                                                                             changeLED(msg);
+                                                                         });
 
-            mPdlbReset = create_service<srv::PdlbReset>("pdlb_reset", 
-                [this](srv::PdlbReset::Request::SharedPtr const req, srv::PdlbReset::Response::SharedPtr res) { 
-                    processRequest(req, res); 
-                });
+            mPdlbReset = create_service<srv::PdlbReset>("pdlb_reset",
+                                                        [this](srv::PdlbReset::Request::SharedPtr const req, srv::PdlbReset::Response::SharedPtr res) {
+                                                            processRequest(req, res);
+                                                        });
         }
     };
 
