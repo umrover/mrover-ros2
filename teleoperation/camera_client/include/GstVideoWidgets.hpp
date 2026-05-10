@@ -25,7 +25,7 @@ namespace mrover {
 
         QMediaPlayer* mPlayer;
 
-        int mRotation{0}; 
+        int mRotation{0};
         std::string mBasePipeline;
         auto applyPipeline() -> void;
 

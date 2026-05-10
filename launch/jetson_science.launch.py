@@ -60,7 +60,7 @@ def generate_launch_description():
     return LaunchDescription(
         [
             launch_include_jetson_base,
-            science_hw_bridge_node, 
+            science_hw_bridge_node,
             panorama_node,
             cam_container,
         ]

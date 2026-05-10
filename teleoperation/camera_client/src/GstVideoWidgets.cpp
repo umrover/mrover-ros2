@@ -122,12 +122,12 @@ GstVideoGridWidget::GstVideoGridWidget(QWidget* parent)
 
 auto GstVideoGridWidget::calculateColumnCount() const -> int {
     int const availableWidth = width() - mMainLayout->contentsMargins().left() - mMainLayout->contentsMargins().right();
-    
+
     int currentVideoWidth = MIN_VIDEO_WIDTH;
     if (!mVisibleOrder.empty()) {
         auto it = mGstVideoBoxes.find(mVisibleOrder.front());
         if (it != mGstVideoBoxes.end()) {
-            currentVideoWidth = it->second.widget->width(); 
+            currentVideoWidth = it->second.widget->width();
         }
     }
 
@@ -217,7 +217,7 @@ void GstVideoGridWidget::resizeEvent(QResizeEvent* event) {
 auto GstVideoGridWidget::rotateCamera(std::string const& name) -> bool {
     auto* box = findVideoBox(name);
     if (!box) return false;
-    
+
     box->gstVideoWidget->rotate90();
 
     QSize const currentSize = box->widget->minimumSize();
@@ -229,7 +229,7 @@ auto GstVideoGridWidget::rotateCamera(std::string const& name) -> bool {
     box->widget->resize(newWidth, newHeight);
 
     rebuildGrid();
-    
+
     return true;
 }
 
