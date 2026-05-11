@@ -288,7 +288,7 @@ namespace mrover {
                     if (mOptions.use_abs_position && mAbsPosExtraIndex != -1) {
                         double const rawPos = (result.extra[mAbsPosExtraIndex].value * mOptions.abs_units_multiplier) - mOptions.abs_position_offset;
                         mPosition = static_cast<float>(std::remainder(rawPos, mOptions.abs_units_multiplier));
-                    } else if (~mIsHomed) {
+                    } else if (!mIsHomed) {
                         mPosition = std::numeric_limits<float>::quiet_NaN();
                     } else {
                         mPosition = static_cast<float>(result.position);

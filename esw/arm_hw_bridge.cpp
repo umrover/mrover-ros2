@@ -95,18 +95,16 @@ namespace mrover {
             };
             ParameterWrapper::declareParameters(this, parameters);
 
-            BrushlessController<Meters>::Options jointAOpts {
-                .require_homing = true
-            };
+            BrushlessController<Meters>::Options jointAOpts{
+                    .require_homing = true};
 
-            BrushlessController<Radians>::Options jointCOpts {
+            BrushlessController<Radians>::Options jointCOpts{
                     .abs_units_multiplier = 2.0 * M_PI, // output encoder is raw/cpr, scale to rads
                     .abs_position_offset = mJointCOffsetTheta.get(),
                     .query_abs_position = true,
                     .use_abs_position = true,
                     .query_abs_velocity = true,
-                    .use_abs_velocity = false
-            };
+                    .use_abs_velocity = false};
 
             mJointA = std::make_shared<BrushlessController<Meters>>(shared_from_this(), "jetson", "joint_a", jointAOpts);
             mJointB = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "joint_b");
