@@ -13,3 +13,7 @@ class StarterHandler(WebSocketHandler):
 
         if msg_type == "debug":
             get_logger().warning("debug message received by consumer at " + str(data.get("timestamp")) )
+        elif msg_type == "testing":
+            get_logger().warning("testing message '" + data.get("datum") + "' received at " + str(data.get("timestamp")))
+        else:
+            get_logger().warning(f"Unhandled Starter message: {msg_type}")

@@ -89,18 +89,20 @@ const UPDATE_HZ = 30
 let interval: number | undefined
 
 const keyDown = async (event: { key: string }) => {
-  if (event.key === ' ') {
+  const key = event.key.toLowerCase()
+  
+  if (key === ' ') {
     await newRAMode('disabled')
-  }
-
-  if (event.key in keysPressed) {
-    keysPressed[event.key as keyof typeof keysPressed] = true
+  } else if (key in keysPressed) {
+    keysPressed[key as keyof typeof keysPressed] = true
   }
 }
 
 const keyUp = async (event: {key: string}) => {
-  if (event.key in keysPressed) {
-    keysPressed[event.key as keyof typeof keysPressed] = false
+  const key = event.key.toLowerCase()
+
+  if (key in keysPressed) {
+    keysPressed[key as keyof typeof keysPressed] = false
   }
 }
 
@@ -110,7 +112,7 @@ onMounted(() => {
   document.addEventListener('keyup', keyUp)
 
   interval = window.setInterval(() => {
-    const axes = [0, 0, 0, 0]
+    const axes: number[] = [0, 0, 0, 0]
     const buttons: boolean[] = []
     axes[0] = (keysPressed.d ? 1 : 0) - (keysPressed.a ? 1 : 0)
     axes[1] = (keysPressed.s ? 1 : 0) - (keysPressed.w ? 1 : 0)

@@ -20,7 +20,7 @@
     // --- const webSocketStore = useWebsocketStore() ---
     // and calls methods using it, such as
     // --- webSocketStore.sendMessage(arguments)
-    const {setupWebSocket, closeWebSocket, sendMessage} = useWebsocketStore()
+    const { setupWebSocket, closeWebSocket, sendMessage } = useWebsocketStore()
 
     // Set up websockets when this component is mounted
     // (happens shortly after page load here)
@@ -39,10 +39,9 @@
     // Send a bunch of messages to the "starter" websocket
     const spamTestMessages = () => {
 
-        // Send a message every 1000 miliseconds
+        // Send a message every 1000 milliseconds
         const interval = setInterval(() => {
-            sendMessage('starter', 
-            {
+            sendMessage('starter', {
                 type: 'debug',
                 timestamp: new Date().toISOString(),
             })
