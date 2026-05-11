@@ -49,10 +49,10 @@ class Panorama(Node):
 
         # Heading variables
         self.heading_sub = self.create_subscription(Heading, "/heading/fix", self.heading_callback, 1)
-        self.pano_dirs = ['E', 'S', 'W', 'N']
+        self.pano_dirs = ['E', 'S', 'W', 'N'] # E = 0, N = 270 (as per localization)
         self.cur_heading = 0.0 # degrees
 
-        # PC Stitching Variables
+        # PC/Image Stitching Variables
         self.pc_sub = message_filters.Subscriber(self, PointCloud2, f"/{self.zed_version}/left/points")
         self.imu_sub = message_filters.Subscriber(self, Imu, f"/{self.zed_version}_imu/data_raw")
         self.gimbal_sub = message_filters.Subscriber(self, ControllerState, "/gimbal_controller_state")
@@ -65,8 +65,8 @@ class Panorama(Node):
         self.stitched_pc = np.empty((0, 8), dtype=np.float32)
 
         self.img_list = [] # list of images
-        self.img_dirs = [] # list of imu values per image
-        self.headings = []
+        self.img_dirs = [] # gimbal position per image
+        self.headings = [] # absolute heading per image
 
         if not os.path.isdir("data/raw-pano-images"):
             os.mkdir("data/raw-pano-images")
@@ -100,6 +100,11 @@ class Panorama(Node):
         target = self.delta * self.pano_position_index + self.start
 
         if self.start_time is None:
+            if self.pano_position_index == self.num_images:
+                self.process_message = False
+                self.start_time = None
+                return
+            
             self.start_time = time.monotonic()
             # START SPINNING THE MAST GIMBAL 
             req = ServoPosition.Request()
@@ -108,10 +113,6 @@ class Panorama(Node):
             req.positions = [target]
             print(f"Sending request to {target}")
             self.gimbal_client.call_async(req)
-
-            if self.pano_position_index == self.num_images:
-                self.process_message = False
-                self.start_time = None
 
             return
 
