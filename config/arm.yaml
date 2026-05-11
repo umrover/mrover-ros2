@@ -3,15 +3,13 @@ arm_hw_bridge:
     joint_a:
       min_velocity: -0.08
       max_velocity: 0.08
-      #min_position: 0.0
-      #max_position: 0.35
       max_torque: 30.0
       limit_switch_0_present: true
       limit_switch_0_enabled: true
       limit_switch_0_limits_forward: true
       limit_switch_0_active_high: false
-      limit_switch_0_used_for_readjustment: false
-      limit_switch_0_readjust_position: 0.4
+      limit_switch_0_used_for_readjustment: true
+      limit_switch_0_readjust_position: 0.3418
       limit_switch_0_aux_number: 1
       limit_switch_0_aux_pin: 0
       limit_switch_1_present: true
