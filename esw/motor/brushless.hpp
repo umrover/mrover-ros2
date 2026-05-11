@@ -68,12 +68,13 @@ namespace mrover {
         using OutputVelocity = compound_unit<OutputPosition, inverse<Seconds>>;
 
         struct Options {
+            double abs_units_multiplier{2.0 * M_PI};
+            double abs_position_offset{0.0};
             bool query_abs_position{false};
             bool use_abs_position{false};
-            double abs_position_offset{0.0};
             bool query_abs_velocity{false};
             bool use_abs_velocity{false};
-            double abs_units_multiplier{2.0 * M_PI};
+            bool require_homing{false};
         };
 
     private:
@@ -115,7 +116,7 @@ namespace mrover {
         };
 
         constexpr static std::size_t MAX_NUM_LIMIT_SWITCHES = 2;
-        static_assert(MAX_NUM_LIMIT_SWITCHES <= 2, "Only 2 limit switches are supported");
+        static_assert(MAX_NUM_LIMIT_SWITCHES <= 2, "only 2 limit switches are supported");
 
         Options mOptions;
         int mAbsPosExtraIndex = -1;
@@ -136,10 +137,11 @@ namespace mrover {
         bool mIsBwdLimitHit{false};
         bool mExtSoftFwd{false};
         bool mExtSoftBwd{false};
+        bool mIsHomed{false};
 
     public:
         BrushlessController(rclcpp::Node::SharedPtr node, std::string masterName, std::string controllerName, Options options = Options{})
-            : Base{std::move(node), std::move(masterName), std::move(controllerName)}, mOptions{options} {
+            : Base{std::move(node), std::move(masterName), std::move(controllerName)}, mOptions{options}, mIsHomed{!options.require_homing} {
 
             double minVelocity, maxVelocity;
             double minPosition, maxPosition;
@@ -286,6 +288,8 @@ namespace mrover {
                     if (mOptions.use_abs_position && mAbsPosExtraIndex != -1) {
                         double const rawPos = (result.extra[mAbsPosExtraIndex].value * mOptions.abs_units_multiplier) - mOptions.abs_position_offset;
                         mPosition = static_cast<float>(std::remainder(rawPos, mOptions.abs_units_multiplier));
+                    } else if (!mIsHomed) {
+                        mPosition = std::numeric_limits<float>::quiet_NaN();
                     } else {
                         mPosition = static_cast<float>(result.position);
                     }
@@ -392,6 +396,7 @@ namespace mrover {
             moteus::OutputExact::Command const outputExactCmd{command};
             moteus::CanFdFrame positionFrame = mMoteus->MakeOutputExact(outputExactCmd);
             mDevice.publishMessage(positionFrame);
+            mIsHomed = true;
         }
 
         auto sendQuery() -> void {
