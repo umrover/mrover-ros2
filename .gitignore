@@ -6,7 +6,6 @@
 # Common IDE's, ideally this should be in global gitignore per user
 .vscode/
 .idea/
-compile_commands.json
 
 # Compile Commands
 compile_commands.json
@@ -46,7 +45,3 @@ state_machine/state_log.txt
 
 data/*.png
 data/raw-pano-images
-
-# Dynamixel Ignores
-.catkin_tools/
-.dynamixel_sdk/
