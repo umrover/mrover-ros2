@@ -95,16 +95,20 @@ namespace mrover {
             };
             ParameterWrapper::declareParameters(this, parameters);
 
-            BrushlessController<Radians>::Options jointCOpts{
-                    .query_abs_position = true,
-                    .use_abs_position = true,
-                    .abs_position_offset = mJointCOffsetTheta.get(),
-                    .query_abs_velocity = true,
-                    .use_abs_velocity = false,
-                    .abs_units_multiplier = 2.0 * M_PI // output encoder is raw/cpr, scale to rads
+            BrushlessController<Meters>::Options jointAOpts {
+                .require_homing = true
             };
 
-            mJointA = std::make_shared<BrushlessController<Meters>>(shared_from_this(), "jetson", "joint_a");
+            BrushlessController<Radians>::Options jointCOpts {
+                    .abs_units_multiplier = 2.0 * M_PI, // output encoder is raw/cpr, scale to rads
+                    .abs_position_offset = mJointCOffsetTheta.get(),
+                    .query_abs_position = true,
+                    .use_abs_position = true,
+                    .query_abs_velocity = true,
+                    .use_abs_velocity = false
+            };
+
+            mJointA = std::make_shared<BrushlessController<Meters>>(shared_from_this(), "jetson", "joint_a", jointAOpts);
             mJointB = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "joint_b");
             mJointC = std::make_shared<BrushlessController<Radians>>(shared_from_this(), "jetson", "joint_c", jointCOpts);
             mJointDE0 = std::make_shared<BrushlessController<Revolutions>>(shared_from_this(), "jetson", "joint_de_0");
