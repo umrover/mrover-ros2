@@ -11,42 +11,7 @@
     </div>
     <div class="flex w-full" role="group" aria-label="Arm mode selection" data-testid="pw-arm-mode-buttons">
       <div class="btn-group-connected w-full">
-        <button
-          type="button"
-          class="btn btn-sm flex-1"
-          :class="mode === 'disabled' ? 'btn-danger' : 'btn-outline-danger'"
-          data-testid="pw-arm-mode-disabled"
-          @click="newRAMode('disabled')"
-        >
-          Disabled
-        </button>
-        <button
-          type="button"
-          class="btn btn-sm flex-1"
-          :class="mode === 'throttle' ? 'btn-success' : 'btn-outline-success'"
-          data-testid="pw-arm-mode-throttle"
-          @click="newRAMode('throttle')"
-        >
-          Throttle
-        </button>
-        <button
-          type="button"
-          class="btn btn-sm flex-1"
-          :class="mode === 'ik-pos' ? 'btn-success' : 'btn-outline-success'"
-          data-testid="pw-arm-mode-ik-pos"
-          @click="newRAMode('ik-pos')"
-        >
-          IK Pos
-        </button>
-        <button
-          type="button"
-          class="btn btn-sm flex-1"
-          :class="mode === 'ik-vel' ? 'btn-success' : 'btn-outline-success'"
-          data-testid="pw-arm-mode-ik-vel"
-          @click="newRAMode('ik-vel')"
-        >
-          IK Vel
-        </button>
+        <!-- TODO add buttons -->
       </div>
     </div>
     <GamepadDisplay
