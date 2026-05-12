@@ -13,6 +13,7 @@
 <script lang="ts" setup>
     import { onMounted, onUnmounted } from 'vue'
     import { useWebsocketStore } from '@/stores/websocket'
+    import type { StringMessage } from '@/types/websocket'
     import ArmControls from '../components/ArmControls.vue'
     import Rover3D from '../components/Rover3D.vue'
 
@@ -20,7 +21,7 @@
     // --- const webSocketStore = useWebsocketStore() ---
     // and calls methods using it, such as
     // --- webSocketStore.sendMessage(arguments)
-    const { setupWebSocket, closeWebSocket, sendMessage } = useWebsocketStore()
+    const { setupWebSocket, closeWebSocket, sendMessage, onMessage } = useWebsocketStore()
 
     // Set up websockets when this component is mounted
     // (happens shortly after page load here)
@@ -50,4 +51,8 @@
         // Stop sending messages after 5000 miliseconds
         setTimeout(() => clearInterval(interval), 5000)
     }
+
+    onMessage<StringMessage>('starter', 'foo', msg => {
+        console.log(msg.data)
+    })
 </script>
