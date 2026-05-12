@@ -43,6 +43,7 @@ class Panorama(Node):
         self.cur_gimbal_target = 2 * np.pi
         self.num_images = 20
         self.servo_timeout = 3 # seconds
+        self.servo_timeout_short = 1 # seconds
         self.start = (300 * np.pi) / 180
         self.end = (60 * np.pi) / 180
         self.delta   = (self.end - self.start) / self.num_images
@@ -116,7 +117,7 @@ class Panorama(Node):
 
             return
 
-        if not (time.monotonic() - self.start_time) > self.servo_timeout:
+        if not (time.monotonic() - self.start_time) > (self.servo_timeout if self.pano_position_index == 0 else self.servo_timeout_short):
             return
         
         # Record the image
