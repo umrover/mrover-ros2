@@ -15,7 +15,7 @@
     // --- const webSocketStore = useWebsocketStore() ---
     // and calls methods using it, such as
     // --- webSocketStore.sendMessage(arguments)
-    const { setupWebSocket, closeWebSocket, sendMessage } = useWebsocketStore()
+    const { setupWebSocket, closeWebSocket, sendMessage, onMessage } = useWebsocketStore()
 
     // Set up websockets when this component is mounted
     // (happens shortly after page load here)
@@ -45,4 +45,6 @@
         // Stop sending messages after 5000 miliseconds
         setTimeout(() => clearInterval(interval), 5000)
     }
+
+    // TODO add onMessage
 </script>
