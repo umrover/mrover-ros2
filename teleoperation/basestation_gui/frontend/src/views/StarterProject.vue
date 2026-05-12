@@ -43,7 +43,8 @@
         // Send a message every 1000 milliseconds
         const interval = setInterval(() => {
             sendMessage('starter', {
-                type: 'debug',
+                type: 'testing',
+                datum: 'Phil',
                 timestamp: new Date().toISOString(),
             })
         }, 1000)
