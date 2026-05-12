@@ -9,6 +9,7 @@
 <script lang="ts" setup>
     import { onMounted, onUnmounted } from 'vue'
     import { useWebsocketStore } from '@/stores/websocket'
+    import { StringMessage } from '@/types/websocket'
     // TODO import components
 
     // You may also see code in other files that does:
