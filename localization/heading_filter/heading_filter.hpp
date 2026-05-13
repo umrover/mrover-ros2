@@ -15,18 +15,20 @@ namespace mrover {
         void sync_rtk_heading_callback(const mrover::msg::Heading::ConstSharedPtr &heading, const mrover::msg::FixStatus::ConstSharedPtr &heading_status);
         void sync_imu_and_mag_callback(const sensor_msgs::msg::Imu::ConstSharedPtr &imu, const mrover::msg::Heading::ConstSharedPtr &mag_heading);
         void drive_forward_callback();
+        void publish_tf_callback();
         static auto quat_geodesic_angle_rad(const Eigen::Quaterniond &prev_quat, const Eigen::Quaterniond &current_quat) -> double;
+        auto update_imu_derived_state(const sensor_msgs::msg::Imu& imu) -> bool;
 
         // subscribers and publishers
         rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr linearized_position_sub;
-        message_filters::Subscriber<sensor_msgs::msg::Imu> imu_sub;
-        message_filters::Subscriber<mrover::msg::Heading> mag_heading_sub;
+        rclcpp::Subscription<geometry_msgs::msg::Twist>::ConstSharedPtr cmd_vel_sub;
         message_filters::Subscriber<mrover::msg::Heading> rtk_heading_sub;
         message_filters::Subscriber<mrover::msg::FixStatus> rtk_heading_status_sub;
-        rclcpp::Subscription<geometry_msgs::msg::Twist>::ConstSharedPtr cmd_vel_sub;
+        message_filters::Subscriber<sensor_msgs::msg::Imu> imu_sub;
+        message_filters::Subscriber<mrover::msg::Heading> mag_heading_sub;
         
-        rclcpp::Publisher<mrover::msg::Heading>::SharedPtr drive_forward_pub;
-        rclcpp::Publisher<mrover::msg::Heading>::SharedPtr imu_uncorrected_pub;
+        rclcpp::Publisher<mrover::msg::Heading>::SharedPtr drive_forward_heading_pub;
+        rclcpp::Publisher<mrover::msg::Heading>::SharedPtr raw_imu_heading_pub;
 
         // params
         std::string world_frame, gps_frame;
@@ -47,29 +49,38 @@ namespace mrover {
         // imu data watchdog
         rclcpp::TimerBase::SharedPtr imu_and_mag_watchdog;
         rclcpp::TimerBase::SharedPtr drive_forward_timer;
+        rclcpp::TimerBase::SharedPtr tf_publish_timer;
 
         // 1D Kalman Filter state
         double X;
         double P;
 
         // data store
+        struct IMUOrientationState {
+            rclcpp::Time stamp;
+            SO3d orientation;
+            R2d forward_xy;
+            double yaw_rad;
+        };
+        std::optional<IMUOrientationState> last_imu_derived;
+        std::optional<std::pair<rclcpp::Time, double>> last_rtk_yaw;
+        std::optional<std::pair<rclcpp::Time, double>> last_drive_forward_yaw;
         std::optional<Eigen::Quaterniond> prev_imu_orientation_norm;
         std::optional<sensor_msgs::msg::Imu> last_imu;
         std::optional<geometry_msgs::msg::Vector3Stamped> last_position;
-        std::vector<geometry_msgs::msg::Twist> twists;
+        std::deque<geometry_msgs::msg::Twist> twists_window;
         std::deque<geometry_msgs::msg::Vector3Stamped> position_window;    
         static constexpr std::size_t DRIVE_FORWARD_CAP = 3;
-        static constexpr double DRIVE_FORWARD_TIMER_S = 0.10;
+        static constexpr double DRIVE_FORWARD_TIMER = 0.10;
         static constexpr std::size_t TWISTS_CAP = 50;
+        static constexpr std::size_t RTK_AND_IMU_YAW_SYNC_CAP = 10;
         static constexpr std::size_t IMU_STUCK_THRESHOLD = 10;
         static constexpr std::size_t IMU_UNSTUCK_THRESHOLD = 10;
+        static constexpr double ROVER_POSE_TIMER = 0.04;
         static constexpr double EPS_STALE = 1e-9;
         std::size_t imu_stuck_counter = 0;
         std::size_t imu_unstuck_counter = 0;
         bool imu_orientation_stuck = false;
-
-
-        //if no zed imu + zed imu stale = publish raw rtk yaw.
     
     public:
 

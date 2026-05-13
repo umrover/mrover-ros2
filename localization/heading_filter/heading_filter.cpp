@@ -2,17 +2,60 @@
 
 namespace mrover {
 
-    auto HeadingFilter::quat_geodesic_angle_rad(const Eigen::Quaterniond &prev_quat, const Eigen::Quaterniond &current_quat) -> double {
-        Eigen::Quaterniond a_n = prev_quat.normalized();
-        Eigen::Quaterniond b_n = current_quat.normalized();
+    auto HeadingFilter::quat_geodesic_angle_rad(const Eigen::Quaterniond &prev_quat, const Eigen::Quaterniond &curr_quat) -> double {
+        const Eigen::Quaterniond a_n = prev_quat.normalized();
+        const Eigen::Quaterniond b_n = curr_quat.normalized();
 
         Eigen::Quaterniond q_rel = b_n * a_n.conjugate();
         if (q_rel.w() < 0) {
             q_rel.coeffs() *= -1.0;
         }
+
         q_rel.normalize();
-        double const half_angle = std::atan2(q_rel.vec().norm(), std::abs(q_rel.w()));
+        double half_angle = std::atan2(q_rel.vec().norm(), std::abs(q_rel.w()));
         return 2.0 * half_angle;
+    }
+
+    auto HeadingFilter::update_imu_derived_state(const sensor_msgs::msg::Imu& imu) -> bool {
+        auto const& qmsg = imu.orientation;
+        if (!std::isfinite(qmsg.w) || !std::isfinite(qmsg.x) || !std::isfinite(qmsg.y) || !std::isfinite(qmsg.z)) {
+            RCLCPP_WARN(get_logger(), "IMU quaternion has a non-finite component, skipping IMU derived-state update");
+            return false;
+        }
+
+        Eigen::Quaterniond q(qmsg.w, qmsg.x, qmsg.y, qmsg.z);
+        double const norm2 = q.squaredNorm();
+        if (!std::isfinite(norm2) || norm2 < 1e-12) {
+            RCLCPP_WARN(get_logger(), "IMU quaternion has invalid/near-zero norm, skipping IMU derived-state update");
+            return false;
+        }
+        q.normalize();
+
+        R2d const forward_xy = q.toRotationMatrix().col(0).head(2);
+        if (!forward_xy.array().isFinite().all()) {
+            RCLCPP_WARN(get_logger(), "IMU forward vector not finite, skipping IMU derived-state update");
+            return false;
+        }
+
+        double const yaw_rad = std::atan2(forward_xy.y(), forward_xy.x());
+        if (!std::isfinite(yaw_rad)) {
+            RCLCPP_WARN(get_logger(), "Computed IMU yaw not finite, skipping IMU derived-state update");
+            return false;
+        }
+
+        rclcpp::Time stamp{imu.header.stamp, get_clock()->get_clock_type()};
+        if (stamp.nanoseconds() == 0) {
+            stamp = get_clock()->now();
+        }
+
+        last_imu_derived = IMUOrientationState{
+            .stamp = stamp,
+            .orientation = SO3d(q),
+            .forward_xy = forward_xy,
+            .yaw_rad = yaw_rad,
+        };
+        last_imu = imu;
+        return true;
     }
 
     HeadingFilter::HeadingFilter() : Node("heading_filter") {
@@ -24,32 +67,40 @@ namespace mrover {
             {"mag_heading_noise", mag_noise, 10.0},
             {"rtk_heading_noise", rtk_noise, 0.00001},
             {"drive_forward_heading_noise", drive_noise, 0.0001},
-            {"rover_heading_change_threshold", heading_delta_threshold, 0.05},
-            {"minimum_linear_speed", min_speed, 0.4},
             {"process_noise", process_noise, 0.000001},
+            {"minimum_linear_speed", min_speed, 0.4},
+            {"rover_heading_change_threshold", heading_delta_threshold, 0.05},
             {"use_mag", use_mag, false},
-            {"use_rtk_only", use_rtk_only, false},
         };
 
         ParameterWrapper::declareParameters(this, params);
 
-        // subscribers
-        linearized_position_sub = this->create_subscription<geometry_msgs::msg::Vector3Stamped>("/linearized_position", 1, [&](const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr &position) {
-            last_position = *position;
-            position_window.push_back(*position);
-            while (position_window.size() > DRIVE_FORWARD_CAP) {
+        // Subscribers (State Estimation: ZED 2i IMU, RTK Dual-Antenna GPS; Manual Control Input: Joystick)
+
+        linearized_position_sub = this->create_subscription<geometry_msgs::msg::Vector3Stamped>("/linearized_position", 1, [&](const geometry_msgs::msg::Vector3Stamped::ConstSharedPtr &position_msg) {
+            last_position = *position_msg;
+            position_window.push_back(*position_msg);
+            if (position_window.size() > DRIVE_FORWARD_CAP) {
                 position_window.pop_front();
+            }
+        });
+
+        cmd_vel_sub = this->create_subscription<geometry_msgs::msg::Twist>("/cmd_vel", 10, [&](const geometry_msgs::msg::Twist::ConstSharedPtr &twist_msg) {
+            twists_window.push_back(*twist_msg);
+            if (twists_window.size() > TWISTS_CAP) {
+                twists_window.pop_front();
             }
         });
 
         rtk_heading_sub.subscribe(this, "/heading/fix");
         rtk_heading_status_sub.subscribe(this, "/heading_fix_status");
+        imu_sub.subscribe(this, "/zed_imu/data_raw");
+        mag_heading_sub.subscribe(this, "/zed_imu/mag_heading");
 
-        // synchronizers
-        uint32_t queue_size = 10;
+        // Synchronizers
 
         rtk_heading_sync = std::make_shared<message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<mrover::msg::Heading, mrover::msg::FixStatus>>>(
-            message_filters::sync_policies::ApproximateTime<mrover::msg::Heading, mrover::msg::FixStatus>(queue_size),
+            message_filters::sync_policies::ApproximateTime<mrover::msg::Heading, mrover::msg::FixStatus>(RTK_AND_IMU_YAW_SYNC_CAP),
             rtk_heading_sub,
             rtk_heading_status_sub
         );
@@ -57,63 +108,60 @@ namespace mrover {
         rtk_heading_sync->setAgePenalty(0.5);
         rtk_heading_sync->registerCallback(&HeadingFilter::sync_rtk_heading_callback, this);
 
-        if (!use_rtk_only) {
-            imu_sub.subscribe(this, "/zed_imu/data_raw");
-            mag_heading_sub.subscribe(this, "/zed_imu/mag_heading");
+        imu_and_mag_sync = std::make_shared<message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::Imu, mrover::msg::Heading>>>(
+            message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::Imu, mrover::msg::Heading>(RTK_AND_IMU_YAW_SYNC_CAP),
+            imu_sub,
+            mag_heading_sub
+        );
 
-            cmd_vel_sub = this->create_subscription<geometry_msgs::msg::Twist>("/cmd_vel", 10, [&](const geometry_msgs::msg::Twist::ConstSharedPtr &twist_msg) {
-                twists.push_back(*twist_msg);
-                if (twists.size() > TWISTS_CAP) {
-                    twists.erase(twists.begin(), twists.begin() + (twists.size() - TWISTS_CAP));
-                }
-            });
+        imu_and_mag_sync->setAgePenalty(0.5);
+        imu_and_mag_sync->registerCallback(&HeadingFilter::sync_imu_and_mag_callback, this);
 
-            drive_forward_pub = this->create_publisher<mrover::msg::Heading>("/drive_forward_heading", 1);
-            imu_uncorrected_pub = this->create_publisher<mrover::msg::Heading>("/imu_uncorrected_heading", 1);
+        // Publishers (Raw IMU-Derived Heading, Drive Forward (Instantaneous) Heading)
 
-            // imu data watchdog
-            const rclcpp::Duration IMU_AND_MAG_WATCHDOG_TIMEOUT = rclcpp::Duration::from_seconds(imu_timeout);
-            imu_and_mag_watchdog = this->create_wall_timer(IMU_AND_MAG_WATCHDOG_TIMEOUT.to_chrono<std::chrono::milliseconds>(), [&]() {
-                RCLCPP_WARN(get_logger(), "ZED IMU data watchdog expired");
-                last_imu.reset();
-                prev_imu_orientation_norm.reset();
-                imu_stuck_counter = 0;
-                imu_unstuck_counter = 0;
-                imu_orientation_stuck = false;
-            });
+        drive_forward_heading_pub = this->create_publisher<mrover::msg::Heading>("/drive_forward_heading", 1);
+        raw_imu_heading_pub = this->create_publisher<mrover::msg::Heading>("/imu_uncorrected_heading", 1);
 
-            // drive forward correction timer
-            drive_forward_timer = this->create_wall_timer(
-                std::chrono::milliseconds(static_cast<int64_t>(DRIVE_FORWARD_TIMER_S * 1000.0)),
-                [this]() -> void { drive_forward_callback(); }
-            );
+        // IMU Watchdog (Helps to preserve the integrity of IMU data by catching bad values)
 
-            imu_and_mag_sync = std::make_shared<message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::Imu, mrover::msg::Heading>>>(
-                message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::Imu, mrover::msg::Heading>(queue_size),
-                imu_sub,
-                mag_heading_sub
-            );
+        const rclcpp::Duration IMU_WATCHDOG_TIMEOUT = rclcpp::Duration::from_seconds(imu_timeout);
+        imu_and_mag_watchdog = this->create_wall_timer(
+            IMU_WATCHDOG_TIMEOUT.to_chrono<std::chrono::milliseconds>(), 
+            [&]() { RCLCPP_WARN(get_logger(), "ZED 2i IMU Data Watchdog Expired");
+            last_imu.reset();
+            last_imu_derived.reset();
+            prev_imu_orientation_norm.reset();
+            imu_unstuck_counter = 0;
+            imu_stuck_counter = 0;
+            imu_orientation_stuck = false;
+        });
 
-            imu_and_mag_sync->setAgePenalty(0.5);
-            imu_and_mag_sync->registerCallback(&HeadingFilter::sync_imu_and_mag_callback, this);
-        } else {
-            RCLCPP_WARN(get_logger(), "Heading filter publishing in rtk-yaw-only mode");
-        }
+        // Wall Timers
+
+        drive_forward_timer = this->create_wall_timer(
+            std::chrono::milliseconds(static_cast<int64_t>(DRIVE_FORWARD_TIMER * 1000.0)),
+            [this]() -> void { drive_forward_callback(); 
+        });
+
+        tf_publish_timer = this->create_wall_timer(
+            std::chrono::milliseconds(static_cast<int64_t>(ROVER_POSE_TIMER * 1000.0)),
+            [this]() -> void { publish_tf_callback(); }
+        );
+
+        // Initial Kalman Params (State Estimate & Estimate Uncertainty)
 
         X = 0;
         P = 1;
-
     }
 
     void HeadingFilter::predict(double process_noise) {
-
+        
         P = P + process_noise;
-
+        
     }
 
 
     void HeadingFilter::correct(double heading_correction_delta_meas, double heading_correction_delta_noise) {
-
         double K = (P) / (P + heading_correction_delta_noise);
         double innovation = heading_correction_delta_meas - X;
         X = std::fmod((X + K * (innovation) + 3 * M_PI), 2 * M_PI) - M_PI;
@@ -121,124 +169,69 @@ namespace mrover {
     }
 
     void HeadingFilter::sync_rtk_heading_callback(const mrover::msg::Heading::ConstSharedPtr &heading, const mrover::msg::FixStatus::ConstSharedPtr &heading_status) {
-
-        if (heading_status->fix_type.fix == mrover::msg::FixType::FIXED) {
-            double const rover_map_deg = fmod(heading->heading + 90. + 360., 360.);
-            double measured_heading_deg = 90. - rover_map_deg;
-            if (measured_heading_deg <= -180.) { measured_heading_deg += 360.; }
-            else if (measured_heading_deg > 180.) { measured_heading_deg -= 360.; }
-            if (use_rtk_only) {
-                if (!last_position) {
-                    RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "RTK-yaw only mode, waiting for /linearized_pos");
-                    return;
-                }
-                R3d position_in_map(last_position->vector.x, last_position->vector.y, last_position->vector.z);
-                double const measured_heading = measured_heading_deg * (M_PI / 180.);
-                SE3d pose_in_map(position_in_map, SO3d(Eigen::AngleAxisd(measured_heading, R3d::UnitZ())));
-                SE3Conversions::pushToTfTree(tf_broadcaster, gps_frame, world_frame, pose_in_map, get_clock()->now());
-                return;
-            }
-        }
-        
-        if (use_rtk_only) {
+        if (heading_status->fix_type.fix != mrover::msg::FixType::FIXED) {
             return;
         }
 
-        if (!last_imu) {
-            RCLCPP_WARN(get_logger(), "No IMU data!");
+        double const rover_map_deg = std::fmod(heading->heading + 90. + 360., 360.);
+        double measured_heading_deg = 90. - rover_map_deg;
+        if (measured_heading_deg <= -180.) {
+            measured_heading_deg += 360.;
+        } else if (measured_heading_deg > 180.) {
+            measured_heading_deg -= 360.;
+        }
+        double const measured_heading = measured_heading_deg * (M_PI / 180.);
+        last_rtk_yaw = {get_clock()->now(), measured_heading};
+
+        if (!last_imu_derived) {
+            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "No cached IMU-derived state for RTK correction");
             return;
         }
 
-        auto const& qmsg2 = last_imu->orientation;
-        if (!std::isfinite(qmsg2.w) || !std::isfinite(qmsg2.x) || !std::isfinite(qmsg2.y) || !std::isfinite(qmsg2.z)) {
-            RCLCPP_WARN(get_logger(), "IMU quaternion as a non-finite component, skipping orientation");
-            return;
-        }
-        Eigen::Quaterniond uncorrected_orientation(qmsg2.w, qmsg2.x, qmsg2.y, qmsg2.z);
-        double const norm2 = uncorrected_orientation.squaredNorm();
-        if (!std::isfinite(norm2) || norm2 < 1e-12) {
-            RCLCPP_WARN(get_logger(), "IMU quaternion has an invalid/near-zero norm, skipping normalization");
-            return;
-        }
-        uncorrected_orientation.normalize();
-        R2d uncorrected_forward = uncorrected_orientation.toRotationMatrix().col(0).head(2);
-        if (!uncorrected_forward.array().isFinite().all()) {
-            RCLCPP_WARN(get_logger(), "Forward vector not finite, skipping heading correction");
-            return;
-        }
-        double uncorrected_heading = std::atan2(uncorrected_forward.y(), uncorrected_forward.x());
-        if (!std::isfinite(uncorrected_heading)) {
-            RCLCPP_WARN(get_logger(), "Computed heading not finite, skipping heading correction");
-            return;
-        }
+        auto const previousX = X;
+        double heading_correction_delta = measured_heading - last_imu_derived->yaw_rad;
+        heading_correction_delta = std::fmod((heading_correction_delta + 3 * M_PI), 2 * M_PI) - M_PI;
 
-        if (heading_status->fix_type.fix == mrover::msg::FixType::FIXED) {
-            double const rover_map_deg = fmod(heading->heading + 90. + 360., 360.);
-            double measured_heading_deg = 90. - rover_map_deg;
-            if (measured_heading_deg <= -180.) { measured_heading_deg += 360.; }
-            else if (measured_heading_deg > 180.) { measured_heading_deg -= 360.; }
-            double const measured_heading = measured_heading_deg * (M_PI / 180.);
+        predict(process_noise);
+        correct(heading_correction_delta, rtk_noise);
 
-            auto const previousX = X;
-
-            double heading_correction_delta = measured_heading - uncorrected_heading;
-            heading_correction_delta = std::fmod((heading_correction_delta + 3 * M_PI), 2 * M_PI) - M_PI;
-            predict(process_noise);
-            correct(heading_correction_delta, rtk_noise);
-
-            auto const correctionDelta = (X - previousX);
-            RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "%s", std::format("RTK heading correction delta on X: {} rad", correctionDelta).c_str());
-        }
+        auto const correctionDelta = (X - previousX);
+        RCLCPP_INFO_THROTTLE(
+            get_logger(),
+            *get_clock(),
+            1000,
+            "%s",
+            std::format("RTK heading correction delta on X: {} rad", correctionDelta).c_str());
     }
 
     void HeadingFilter::sync_imu_and_mag_callback(const sensor_msgs::msg::Imu::ConstSharedPtr &imu, const mrover::msg::Heading::ConstSharedPtr &mag_heading) {
-        if (use_rtk_only) {
+        imu_and_mag_watchdog.reset();
+        if (!update_imu_derived_state(*imu) || !last_imu_derived) {
             return;
         }
-        
-        imu_and_mag_watchdog.reset();
-        last_imu = *imu;
 
         if (!last_position) {
             RCLCPP_WARN(get_logger(), "No position data!");
             return;
         }
 
+        auto const& imu_state = *last_imu_derived;
+        Eigen::Quaterniond const uncorrected_orientation = imu_state.orientation.quat().normalized();
+
         R3d position_in_map(last_position->vector.x, last_position->vector.y, last_position->vector.z);
         SE3d pose_in_map(position_in_map, SO3d::Identity());
 
-        auto const& qmsg = imu->orientation;
-        if (!std::isfinite(qmsg.w) || !std::isfinite(qmsg.x) || !std::isfinite(qmsg.y) || !std::isfinite(qmsg.z)) {
-            RCLCPP_WARN(get_logger(), "IMU quaternion has a non-finite component, skipping normalization");
-            return;
-        }
-        Eigen::Quaterniond uncorrected_orientation(qmsg.w, qmsg.x, qmsg.y, qmsg.z);
-        double const norm2 = uncorrected_orientation.squaredNorm();
-        if (!std::isfinite(norm2) || norm2 < 1e-12) {
-            RCLCPP_WARN(get_logger(), "IMU quaternion has invalid/near-zero norm; skipping orientation update");
-            return;
-        }
-        uncorrected_orientation.normalize();
-        SO3d uncorrected_orientation_rotm = uncorrected_orientation;
-
-        // For debugging purposes, calculating raw imu heading outside checks
-        R2d uncorrected_forward = uncorrected_orientation.toRotationMatrix().col(0).head(2);
-        if (uncorrected_forward.array().isFinite().all()) {
-            double uncorrected_heading = std::atan2(uncorrected_forward.y(), uncorrected_forward.x());
-            if (std::isfinite(uncorrected_heading)) {
-                mrover::msg::Heading imu_heading_msg;
-                imu_heading_msg.heading = std::fmod(90. - (uncorrected_heading * (180. / M_PI)) + 360., 360.);
-                imu_uncorrected_pub->publish(imu_heading_msg);
-            }
-        }
+        mrover::msg::Heading imu_heading_msg;
+        imu_heading_msg.heading = std::fmod(90. - (imu_state.yaw_rad * (180. / M_PI)) + 360., 360.);
+        raw_imu_heading_pub->publish(imu_heading_msg);
 
         if (prev_imu_orientation_norm) {
             double const theta = quat_geodesic_angle_rad(*prev_imu_orientation_norm, uncorrected_orientation);
             if (theta < EPS_STALE) {
-                imu_stuck_counter++;
+                ++imu_stuck_counter;
                 imu_unstuck_counter = 0;
-            } else if (theta >= EPS_STALE) {
-                imu_unstuck_counter++;
+            } else {
+                ++imu_unstuck_counter;
                 imu_stuck_counter = 0;
             }
         } else {
@@ -252,89 +245,58 @@ namespace mrover {
                 imu_unstuck_counter = 0;
                 RCLCPP_WARN(get_logger(), "IMU orientation no longer stuck, resuming IMU-based corrections");
             }
-        } else {
-            if (imu_stuck_counter >= IMU_STUCK_THRESHOLD) {
-                imu_orientation_stuck = true;
-                imu_stuck_counter = 0;
-                RCLCPP_WARN(get_logger(), "IMU orientation appears stuck (constant quaternion)");
-            }
+        } else if (imu_stuck_counter >= IMU_STUCK_THRESHOLD) {
+            imu_orientation_stuck = true;
+            imu_stuck_counter = 0;
+            RCLCPP_WARN(get_logger(), "IMU orientation appears stuck (constant quaternion)");
         }
 
         prev_imu_orientation_norm = uncorrected_orientation;
 
         if (use_mag) {
-            R2d uncorrected_forward = uncorrected_orientation_rotm.rotation().col(0).head(2);
-            if (!uncorrected_forward.array().isFinite().all()) {
-                RCLCPP_WARN(get_logger(), "Forward Vector not finite, skipping heading correction");
-                return;
-            }
-            double uncorrected_heading = std::atan2(uncorrected_forward.y(), uncorrected_forward.x());
-            if (!std::isfinite(uncorrected_heading)) {
-                RCLCPP_WARN(get_logger(), "Computed heading is not finite, skipping heading correction");
-                return;
-            }
-
             double measured_heading_deg = 90. - mag_heading->heading;
-            if (measured_heading_deg <= -180.) { measured_heading_deg += 360.; }
-            else if (measured_heading_deg > 180.) { measured_heading_deg -= 360.; }
+            if (measured_heading_deg <= -180.) {
+                measured_heading_deg += 360.;
+            } else if (measured_heading_deg > 180.) {
+                measured_heading_deg -= 360.;
+            }
             double const measured_heading = measured_heading_deg * (M_PI / 180.);
 
-            double heading_correction_delta = measured_heading - uncorrected_heading;
-            heading_correction_delta = std::fmod((heading_correction_delta + 3 * M_PI), 2 * M_PI) - M_PI;
-
             auto const previousX = X;
+            double heading_correction_delta = measured_heading - imu_state.yaw_rad;
+            heading_correction_delta = std::fmod((heading_correction_delta + 3 * M_PI), 2 * M_PI) - M_PI;
 
             predict(process_noise);
             correct(heading_correction_delta, mag_noise);
 
-            if (!std::isfinite(X)) {
-                RCLCPP_WARN(get_logger(), "Kalman state X is not finite, skipping TF publish");
-                return;
-            }
-
             auto const correctionDelta = (X - previousX);
-            RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "%s", std::format("Mag heading correction delta on X: {} rad", correctionDelta).c_str());
+            RCLCPP_INFO_THROTTLE(
+                get_logger(),
+                *get_clock(),
+                1000,
+                "%s",
+                std::format("Mag heading correction delta on X: {} rad", correctionDelta).c_str());
         }
 
-        if (!std::isfinite(X)) {
-            RCLCPP_WARN(get_logger(), "Kalman state X is not finite, skipping TF publish");
-            return;
-        }
-
-        SO3d curr_heading_correction = Eigen::AngleAxisd(X, R3d::UnitZ());
-        SO3d corrected_orientation = curr_heading_correction * uncorrected_orientation_rotm;
-        Eigen::Quaterniond q = corrected_orientation.quat();
-        q.normalize();
-        if (!q.coeffs().array().isFinite().all() || q.squaredNorm() < 1e-12) {
-            RCLCPP_WARN(get_logger(), "Corrected orientation quaternion invalid after normalize, skipping TF publish");
-            return;
-        }
-        pose_in_map.asSO3() = SO3d(q);
-
-        SE3Conversions::pushToTfTree(tf_broadcaster, gps_frame, world_frame, pose_in_map, get_clock()->now());
     }
 
     void HeadingFilter::drive_forward_callback() {
-        if (use_rtk_only) {
-            return;
-        }
-
-        if (!last_imu) {
-            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "No IMU data for drive-forward correction");
+        if (!last_imu_derived) {
+            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "No cached IMU-derived state for drive-forward correction");
             return;
         }
 
         double const min_linear_speed = min_speed;
 
         // Gate on "commanded forward"
-        bool const had_cmd_vel_samples = !twists.empty();
+        bool const had_cmd_vel_samples = !twists_window.empty();
         double mean_cmd_vel = 0.0;
         if (had_cmd_vel_samples) {
-            for (auto const& twist : twists) {
-                mean_cmd_vel += twist.linear.x / static_cast<double>(twists.size());
+            for (auto const& twist : twists_window) {
+                mean_cmd_vel += twist.linear.x / static_cast<double>(twists_window.size());
             }
         }
-        twists.clear();
+        twists_window.clear();
         if (mean_cmd_vel < min_linear_speed) {
             RCLCPP_WARN_THROTTLE(
                 get_logger(),
@@ -410,31 +372,11 @@ namespace mrover {
         // for debugging purposes, publishing drive forward heading
         mrover::msg::Heading drive_forward_heading_msg;
         drive_forward_heading_msg.heading = std::fmod(90. - (drive_forward_heading * (180. / M_PI)) + 360., 360.);
-        drive_forward_pub->publish(drive_forward_heading_msg);
-
-        // Compare against current IMU-derived heading and do a Kalman correct on delta.
-        auto const& qmsg = last_imu->orientation;
-        if (!std::isfinite(qmsg.w) || !std::isfinite(qmsg.x) || !std::isfinite(qmsg.y) || !std::isfinite(qmsg.z)) {
-            return;
-        }
-        Eigen::Quaterniond uncorrected_orientation(qmsg.w, qmsg.x, qmsg.y, qmsg.z);
-        const double norm2 = uncorrected_orientation.squaredNorm();
-        if (!std::isfinite(norm2) || norm2 < 1e-12) {
-            return;
-        }
-        uncorrected_orientation.normalize();
-        const R2d uncorrected_forward = uncorrected_orientation.toRotationMatrix().col(0).head(2);
-        if (!uncorrected_forward.array().isFinite().all()) {
-            return;
-        }
-        const double uncorrected_heading = std::atan2(uncorrected_forward.y(), uncorrected_forward.x());
-        if (!std::isfinite(uncorrected_heading)) {
-            return;
-        }
+        drive_forward_heading_pub->publish(drive_forward_heading_msg);
+        last_drive_forward_yaw = {get_clock()->now(), drive_forward_heading};
 
         auto const previousX = X;
-
-        double heading_correction_delta = drive_forward_heading - uncorrected_heading;
+        double heading_correction_delta = drive_forward_heading - last_imu_derived->yaw_rad;
         heading_correction_delta = wrapped_delta(heading_correction_delta);
 
         predict(process_noise);
@@ -444,14 +386,65 @@ namespace mrover {
         RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "%s", std::format("Drive forward correction delta on X: {} rad", correctionDelta).c_str());
     }
 
-}
+    void HeadingFilter::publish_tf_callback() {
+        if (!last_position) {
+            return;
+        }
+        if (!std::isfinite(X)) {
+            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Kalman state X not finite, skipping TF publish");
+            return;
+        }
 
+        auto wrap_pm_pi = [](double a) -> double {
+            return std::fmod(a + 3.0 * M_PI, 2.0 * M_PI) - M_PI;
+        };
 
-int main(int argc, char**argv) {
+        auto const now = get_clock()->now();
+        auto is_fresh = [&](rclcpp::Time const& stamp, double max_age_s) -> bool {
+            return (now - stamp).seconds() <= max_age_s;
+        };
 
-    rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<mrover::HeadingFilter>());
-    rclcpp::shutdown();
-    return 0;
+        bool const imu_fresh = last_imu_derived.has_value() && is_fresh(last_imu_derived->stamp, imu_timeout);
+        bool const use_full_imu_orientation = imu_fresh && !imu_orientation_stuck;
+        double const yaw_source_max_age_s = 0.5;
+
+        R3d position_in_map(last_position->vector.x, last_position->vector.y, last_position->vector.z);
+        SO3d published_orientation = SO3d::Identity();
+
+        if (use_full_imu_orientation) {
+            SO3d const curr_heading_correction = Eigen::AngleAxisd(X, R3d::UnitZ());
+            SO3d const corrected_orientation = curr_heading_correction * last_imu_derived->orientation;
+            Eigen::Quaterniond q = corrected_orientation.quat();
+            q.normalize();
+            if (!q.coeffs().array().isFinite().all() || q.squaredNorm() < 1e-12) {
+                RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Corrected orientation quaternion invalid, skipping TF publish");
+                return;
+            }
+            published_orientation = SO3d(q);
+        } else {
+            if (imu_orientation_stuck) {
+                RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000, "IMU orientation stuck: publishing yaw-only orientation");
+            }
+            std::optional<double> yaw_base_rad;
+            if (last_rtk_yaw && is_fresh(last_rtk_yaw->first, yaw_source_max_age_s)) {
+                yaw_base_rad = last_rtk_yaw->second;
+            } else if (last_drive_forward_yaw && is_fresh(last_drive_forward_yaw->first, yaw_source_max_age_s)) {
+                yaw_base_rad = last_drive_forward_yaw->second;
+            } else if (last_imu_derived) {
+                yaw_base_rad = last_imu_derived->yaw_rad;
+            }
+
+            if (!yaw_base_rad) {
+                RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "No yaw source available for degraded TF publish");
+                return;
+            }
+
+            double const yaw_pub = wrap_pm_pi(*yaw_base_rad + X);
+            published_orientation = SO3d(Eigen::AngleAxisd(yaw_pub, R3d::UnitZ()));
+        }
+
+        SE3d pose_in_map(position_in_map, published_orientation);
+        SE3Conversions::pushToTfTree(tf_broadcaster, gps_frame, world_frame, pose_in_map, get_clock()->now());
+    }
 
 }
