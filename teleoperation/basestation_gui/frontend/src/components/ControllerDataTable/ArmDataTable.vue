@@ -1,8 +1,13 @@
 <template>
-  <div class="flex flex-col gap-2 h-full">
-    <h4 class="component-header">Arm</h4>
-    <div class="overflow-x-auto cmd-scroll flex-1">
-      <table class="cmd-table compact-table w-full">
+  <div class="flex flex-col gap-1 h-full">
+    <div class="flex justify-between items-center pr-2 py-0">
+      <h4 class="component-header">Arm State</h4>
+      <button class="btn btn-icon-sm !h-6 !w-6 btn-outline-info" @click="legendModal?.open()">
+        <i class="bi bi-info-circle"></i>
+      </button>
+    </div>
+    <div class="overflow-x-auto scroll flex-1">
+      <table class="table compact-table w-full">
         <thead>
           <tr>
             <th>Joint</th>
@@ -19,19 +24,24 @@
             <td class="font-bold">{{ j.label }}</td>
             <td>{{ formatState(stateFor(j.id)) }}</td>
             <td>{{ formatError(errorFor(j.id)) }}</td>
-            <td class="numeric-col">{{ formatNumber(fieldAt(data.positions, j.id)) }}</td>
-            <td class="numeric-col">{{ formatNumber(fieldAt(data.velocities, j.id)) }}</td>
-            <td class="numeric-col">{{ formatNumber(fieldAt(data.currents, j.id)) }}</td>
+            <td class="numeric-col"><span v-html="formatNumber(fieldAt(data.positions, j.id), 3, 2, true)"></span></td>
+            <td class="numeric-col"><span v-html="formatNumber(fieldAt(data.velocities, j.id), 3, 2, true)"></span></td>
+            <td class="numeric-col"><span v-html="formatNumber(fieldAt(data.currents, j.id), 3, 2, true)"></span></td>
             <td>{{ formatLimit(fieldAt(data.limitsHit, j.id)) }}</td>
           </tr>
         </tbody>
       </table>
     </div>
+    <StateMappingModal ref="legendModal" />
   </div>
 </template>
 
 <script lang="ts" setup>
+import { ref } from 'vue'
 import { useControllerMessage, formatState, formatNumber, formatLimit, formatError, stateRowClass } from '@/composables/useControllerState'
+import StateMappingModal from '@/components/StateMappingModal.vue'
+
+const legendModal = ref<InstanceType<typeof StateMappingModal> | null>(null)
 
 const { stale, data } = useControllerMessage({
   topic: 'arm',

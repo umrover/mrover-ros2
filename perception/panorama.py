@@ -1,96 +1,76 @@
 #!/usr/bin/env python3
 
-import numpy as np
-from sensor_msgs.msg import PointCloud2, Image
-from std_msgs.msg import Header
-import sensor_msgs
-import tf2_ros
-from lie import SE3
-from sensor_msgs.msg import Imu
-from mrover.srv import PanoramaStart, PanoramaEnd
-
 import rclpy
 from rclpy.node import Node
-from rclpy.duration import Duration
-import sys
-from datetime import datetime
+from ament_index_python import get_package_share_directory
+
+from sensor_msgs.msg import PointCloud2, Image
+from std_msgs.msg import Header
+from sensor_msgs.msg import Imu
+from mrover.srv import PanoramaStart, PanoramaEnd, ServoPosition
+from mrover.msg import Heading, ControllerState, CameraInfo
 
 import cv2
 import time
 import message_filters
-import datetime
 import os
+import numpy as np
+import copy
+import datetime
 
-def get_quaternion_from_euler(roll, pitch, yaw):
-  """
-  Convert an Euler angle to a quaternion.
-   
-  Input
-    :param roll: The roll (rotation around x-axis) angle in radians.
-    :param pitch: The pitch (rotation around y-axis) angle in radians.
-    :param yaw: The yaw (rotation around z-axis) angle in radians.
- 
-  Output
-    :return qx, qy, qz, qw: The orientation in quaternion [x,y,z,w] format
-  """
-  qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
-  qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
-  qz = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
-  qw = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
- 
-  return [qx, qy, qz, qw]
-
-# Controls execution rate to be at a given hz
-class PanoRate():
-    def __init__(self, rate, node):
-        self.rate = rate
-        self.node = node
-        self.curr_time = self.node.get_clock().now()
-
-    def sleep(self):
-        self.prev_time = self.curr_time
-        self.curr_time = self.node.get_clock().now()
-
-        # If this is the first loop through don't block
-        if self.prev_time is None:
-            return
-
-        # Spin until rate has been met
-        end_timestamp = (self.prev_time.nanoseconds + ((1.0 / self.rate) * 1e9))
-        begin_timestamp = self.node.get_clock().now().nanoseconds
-        duration_nanoseconds = end_timestamp - begin_timestamp
-        duration_seconds = duration_nanoseconds * 1e-9
-        if(duration_seconds > 0):
-            time.sleep(duration_seconds)
+from Source import *
 
 class Panorama(Node):
     def __init__(self):
         super().__init__('panorama')
 
+        # Variable for the ZED you'd like to use (zed or zed_mini)
+        self.zed_version = "zed_mini"
+        self.zed_fov_rad = None
+        self.pixels_per_rad = None
+        self.zed_image_width_pixels = 1280
+
         # Pano Action Server
         self.start_pano = self.create_service(PanoramaStart, '/panorama/start', self.start_callback)
         self.end_pano = self.create_service(PanoramaEnd, '/panorama/end', self.end_callback)
+        self.gimbal_client = self.create_client(ServoPosition, "gimbal_servo")
 
         # Start the panorama
-        self.record_image = False
-        self.record_pc = False
+        self.process_message = False
+        self.fov_sub = self.create_subscription(CameraInfo, f"/{self.zed_version}/left/camera_info", self.fov_callback, 1)
 
-        # PC Stitching Variables
-        self.pc_sub = message_filters.Subscriber(self, PointCloud2, "/zed_mini/left/points")
-        self.imu_sub = message_filters.Subscriber(self, Imu, "/zed_mini_imu/data_raw")
+        # gimbal service variables
+        self.cur_gimbal_target = 2 * np.pi
+        self.num_images = 20
+        self.servo_timeout = 3 # seconds
+        self.servo_timeout_short = 1 # seconds
+        self.start = (300 * np.pi) / 180
+        self.end = (60 * np.pi) / 180
+        self.delta   = (self.end - self.start) / self.num_images
+
+        # Heading variables
+        self.heading_sub = self.create_subscription(Heading, "/heading/fix", self.heading_callback, 1)
+        self.pano_dirs = ['E', 'S', 'W', 'N'] # E = 0, N = 270 (as per localization)
+        self.cur_heading = 0.0 # degrees
+
+        # PC/Image Stitching Variables
+        self.pc_sub = message_filters.Subscriber(self, PointCloud2, f"/{self.zed_version}/left/points")
+        self.imu_sub = message_filters.Subscriber(self, Imu, f"/{self.zed_version}_imu/data_raw")
+        self.gimbal_sub = message_filters.Subscriber(self, ControllerState, "/gimbal_controller_state")
+        self.img_sub = message_filters.Subscriber(self, Image, f"/{self.zed_version}/left/image")
+        self.sync = message_filters.ApproximateTimeSynchronizer([self.pc_sub, self.imu_sub, self.img_sub, self.gimbal_sub], 1, 0.5)
+        self.sync.registerCallback(self.sync_callback)
+
         self.pc_publisher = self.create_publisher(PointCloud2, "/stitched_pc", 1)
         self.pano_img_debug_publisher = self.create_publisher(Image, "/debug_pano", 1)
-        self.pc_rate = PanoRate(2, self)
-
         self.stitched_pc = np.empty((0, 8), dtype=np.float32)
-        self.sync = message_filters.ApproximateTimeSynchronizer([self.pc_sub, self.imu_sub], 10, 1)
-        self.sync.registerCallback(self.synced_gps_pc_callback)
 
-        # Image Stitching Variables
-        self.img_sub = self.create_subscription(Image, "/zed_mini/left/image", self.image_callback, 1);
-        self.img_list = []
-        self.stitcher = cv2.Stitcher.create()
-        self.img_rate = PanoRate(2, self)
+        self.img_list = [] # list of images
+        self.img_dirs = [] # gimbal position per image
+        self.headings = [] # absolute heading per image
+
+        if not os.path.isdir("data/raw-pano-images"):
+            os.mkdir("data/raw-pano-images")
 
 
     def rotate_pc(self, trans_mat: np.ndarray, pc: np.ndarray):
@@ -104,68 +84,164 @@ class Panorama(Node):
         rotated_points = np.matmul(trans_mat, points.T).T
         pc[:, 0:3] = np.delete(rotated_points, 3, 1)
         return pc
+    
+    def fov_callback(self, info_msg: CameraInfo):
+        if self.zed_fov_rad is None:
+            self.get_logger().info(f"Updated FOV to {info_msg.fov}")
+            self.zed_fov_rad = info_msg.fov * (np.pi / 180)
+            self.pixels_per_rad = self.zed_image_width_pixels / self.zed_fov_rad
 
-    def synced_gps_pc_callback(self, pc_msg: PointCloud2, imu_msg: Imu):
+    def sync_callback(self, pc_msg: PointCloud2, imu_msg: Imu, img: Image, gimbal: ControllerState):
         # extract xyzrgb fields
         # get every tenth point to make the pc sparser
         # TODO: dtype hard-coded to float32
-        if self.record_pc:
-            self.current_pc = pc_msg
-            self.arr_pc = np.frombuffer(bytearray(pc_msg.data), dtype=np.float32).reshape(
-                pc_msg.height * pc_msg.width, int(pc_msg.point_step / 4)
-            )[0::10, :]
+        if self.process_message == False or self.zed_fov_rad == None:
+            return
+        
+        target = self.delta * self.pano_position_index + self.start
 
-            orientation = np.array([imu_msg.orientation._x, imu_msg.orientation._y, imu_msg.orientation._z, imu_msg.orientation._w])
+        if self.start_time is None:
+            if self.pano_position_index == self.num_images:
+                self.process_message = False
+                self.start_time = None
+                return
+            
+            self.start_time = time.monotonic()
+            # START SPINNING THE MAST GIMBAL 
+            req = ServoPosition.Request()
+            req.header = Header()
+            req.names = ["gimbal_yaw"]
+            req.positions = [target]
+            print(f"Sending request to {target}")
+            self.gimbal_client.call_async(req)
 
-            orientation = orientation / np.linalg.norm(orientation)
+            return
 
-            # Create the SE3
-            x, y, z, w = orientation
-            rotation = np.array([
-                [1 - 2*y**2 - 2*z**2, 2*x*y - 2*z*w, 2*x*z + 2*y*w, 0],
-                [2*x*y + 2*z*w, 1 - 2*x**2 - 2*z**2, 2*y*z - 2*x*w, 0],
-                [2*x*z - 2*y*w, 2*y*z + 2*x*w, 1 - 2*x**2 - 2*y**2, 0],
-                [0, 0, 0, 0]
-            ]) 
+        if not (time.monotonic() - self.start_time) > (self.servo_timeout if self.pano_position_index == 0 else self.servo_timeout_short):
+            return
+        
+        # Record the image
+        self.current_img = cv2.cvtColor(
+            np.frombuffer(img.data, dtype=np.uint8).reshape(img.height, img.width, 4), cv2.COLOR_RGBA2RGB
+        )
 
-            rotated_pc = self.rotate_pc(rotation, self.arr_pc)
-            self.stitched_pc = np.vstack((self.stitched_pc, rotated_pc))
-            self.pc_rate.sleep()
-        else:
-            # Clear the stitched pc
-            self.stitched_pc = np.empty((0, 8), dtype=np.float32)
+        idx = gimbal.names.index("gimbal_yaw")
+        pos = gimbal.positions[idx]
 
-    def image_callback(self, msg: Image):
-        if self.record_image:
-            self.current_img = cv2.cvtColor(
-                np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, 4), cv2.COLOR_RGBA2RGB
-            )
+        if self.current_img is None:
+            return
+        
+        self.pano_position_index += 1
+        self.start_time = None
+        
+        self.img_list.append(copy.deepcopy(self.current_img))
+        self.img_dirs.append(pos)
+        self.headings.append((self.cur_heading + pos + np.pi) % (2 * np.pi))
+        
+        # Record the PC
+        self.get_logger().info("Grabbing a PC")
+        self.current_pc = pc_msg
+        self.arr_pc = np.frombuffer(bytearray(pc_msg.data), dtype=np.float32).reshape(
+            pc_msg.height * pc_msg.width, int(pc_msg.point_step / 4)
+        )[0::10, :]
 
-            if self.current_img is not None:
-                self.img_list.append(np.copy(self.current_img))
-            self.img_rate.sleep()
-        else:
-            # Clear the images
-            self.img_list = []
-            self.stitcher = cv2.Stitcher.create(cv2.Stitcher_PANORAMA)
+        orientation = np.array([imu_msg.orientation._x, imu_msg.orientation._y, imu_msg.orientation._z, imu_msg.orientation._w])
 
+        orientation = orientation / np.linalg.norm(orientation)
+
+        # Create the SE3
+        x, y, z, w = orientation
+        rotation = np.array([
+            [1 - 2*y**2 - 2*z**2, 2*x*y - 2*z*w, 2*x*z + 2*y*w, 0],
+            [2*x*y + 2*z*w, 1 - 2*x**2 - 2*z**2, 2*y*z - 2*x*w, 0],
+            [2*x*z - 2*y*w, 2*y*z + 2*x*w, 1 - 2*x**2 - 2*y**2, 0],
+            [0, 0, 0, 1]
+        ])
+
+        rotated_pc = self.rotate_pc(rotation, self.arr_pc)
+        self.stitched_pc = np.vstack((self.stitched_pc, rotated_pc))
+
+    def heading_callback(self, heading: Heading):
+        self.get_logger().info("Heading is {heading.heading}")
+        self.cur_heading = heading.heading
+
+    def label_pano(self, num_images, pano: np.ndarray):
+        # label hard coded NESW as a test
+        fontFace = cv2.FONT_HERSHEY_SIMPLEX
+        fontScale = 2.0
+        color = (93, 236, 251)
+        thickness = 5
+        lineType = cv2.LINE_AA
+        order = np.arange(0, num_images)
+
+        # For each cardinal dir, find which image has closest heading to that direction
+        # Then find the image closest to that one in number from the order list
+        # Put the direction where that image "starts" in the pano (assume each indiv.
+        # image takes up roughly the same amount of space)
+        y_org = int(pano.shape[0] / 4)
+        img_mid = pano.shape[1] / (2*len(order))
+        for i, dir in enumerate(self.pano_dirs):
+            head = i * (np.pi / 2)
+            diffs = np.abs(np.array(self.headings) - head)
+            closest = diffs.argmin()
+
+            diffs = np.abs(order - int(closest))
+            pos = diffs.argmin()
+
+            if abs(self.headings[int(pos)] - head) > (20 * np.pi / 180):
+                continue
+            
+            x_org = int(pos * (pano.shape[1] / len(order)) + img_mid)
+
+            cv2.putText(pano, dir, (x_org,y_org), fontFace, fontScale, color, thickness, lineType)
+        
+        return pano
+        
     def start_callback(self, _, response):
         self.get_logger().info('Starting Pano...')
 
-        self.record_image = True
-        self.record_pc = True
+        if self.sync is None: 
+            self.pc_sub = message_filters.Subscriber(self, PointCloud2, f"/{self.zed_version}/left/points")
+            self.imu_sub = message_filters.Subscriber(self, Imu, f"/{self.zed_version}_imu/data_raw")
+            self.gimbal_sub = message_filters.Subscriber(self, ControllerState, "/gimbal_controller_state")
+            self.img_sub = message_filters.Subscriber(self, Image, f"/{self.zed_version}/left/image")
+            self.sync = message_filters.ApproximateTimeSynchronizer([self.pc_sub, self.imu_sub, self.img_sub, self.gimbal_sub], 1, 0.5)
+            self.sync.registerCallback(self.sync_callback)
 
-        # START SPINNING THE MAST GIMBAL
+        if self.heading_sub is not None:
+            self.destroy_subscription(self.heading_sub)
+            self.heading_sub = None
+
+        self.pano_position_index = 0
+        self.start_time = None
+        self.process_message = True
 
         return response
 
     def end_callback(self, _, response):
         self.get_logger().info('Ending Pano...')
 
-        self.record_image = False
-        self.record_pc = False
+        self.process_message = False
+        self.cur_gimbal_target = 2 * np.pi
 
-        # STOP SPINNING THE MAST GIMBAL
+        # Return Mast Gimbal to original position
+        req = ServoPosition.Request()
+        req.header = Header()
+        req.names = ["gimbal_yaw"]
+        req.positions = [np.pi]
+        self.gimbal_client.call_async(req)
+
+        # destroy all subs
+        if self.sync is not None:
+            self.destroy_subscription(self.pc_sub.sub)
+            self.destroy_subscription(self.imu_sub.sub)
+            self.destroy_subscription(self.img_sub.sub)
+            self.destroy_subscription(self.gimbal_sub.sub)
+            self.pc_sub = None
+            self.imu_sub = None
+            self.img_sub = None
+            self.gimbal_sub = None
+            self.sync = None
 
         # construct pc from stitched
         try:
@@ -188,25 +264,46 @@ class Panorama(Node):
         # if we do not receive any images, then this will crash
         if len(self.img_list) == 0:
             response.success = False
+            self.stitched_pc = np.empty((0, 8), dtype=np.float32)
+            self.img_list = []
+            self.img_dirs = []
+            self.headings = []
             return response
 
         # Save the images
         unique_id = "{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
-        new_path = f"data/raw-pano-images/{unique_id}"
+        share_dir = get_package_share_directory("mrover")
+        new_path = f"{share_dir}/../../../../../src/mrover/data/raw-pano-images/{unique_id}/"
         os.mkdir(new_path)
         for i, img in enumerate(self.img_list):
-            cv2.imwrite(f"{new_path}/{i}.png", img)              
+            name = f"{new_path}/{str(i).zfill(2)}.png" # TODO: pathlib
+            cv2.imwrite(name, img)
 
         # stitch the pano together
-        self.get_logger().info(f"Stitching {len(self.img_list)} images...")
-        _, pano = self.stitcher.stitch(self.img_list)
+        self.get_logger().info(f"Stitching {len(self.img_list)} images...")            
 
-        # Construct Pano and Save
+        # Calculate shifts
+        dirs = np.abs(np.array(self.img_dirs).astype(float))
+        diffs = np.abs(np.diff(dirs))
+        shift = diffs * self.pixels_per_rad
+        shift = shift.astype(int)
+        print("Directions (rad): " + str(dirs))
+        print("Diffs: " + str(diffs))
+        print("Shifts: " + str(shift))
+
+        # clear image list before running calcPano
+        num_images = len(self.img_list)
+        self.img_list = []
+        pano = calcPanorama(new_path, shift)
+
+        # Construct Pano and Save, get stitching order
         if pano is not None:
-            # save the panorama if it succeeds
-            cv2.imwrite(f"{new_path}/pano.png", img)
+            # label and save the panorama if it succeeds
+            self.label_pano(num_images, pano)
+            cv2.imwrite(f"{new_path}/pano.png", pano)
             
             # convert the panorama to bgra for transport through ROS
+            pano = np.clip(pano, 0, 255).astype(np.uint8)
             bgra_pano = cv2.cvtColor(pano, cv2.COLOR_BGR2BGRA)
 
             # fill out the image message
@@ -230,8 +327,15 @@ class Panorama(Node):
             # pano stitcher failed
             self.get_logger().info('Pano Failed...')
             response.success = False
-            return response
         
+        # Start capturing heading again
+        if self.heading_sub is None:
+            self.heading_sub = self.create_subscription(Heading, "/heading/fix", self.heading_callback, 1)
+            
+        self.stitched_pc = np.empty((0, 8), dtype=np.float32)
+        self.img_list = []
+        self.img_dirs = []
+        self.headings = []
         self.get_logger().info('Pano response sent to frontend')
         return response
 
@@ -247,4 +351,3 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
-

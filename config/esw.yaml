@@ -58,6 +58,10 @@ can_bridge_1:
         id: 0x35
       pusher:
         id: 0x36
+      abs_de_pitch:
+        id: 0x37
+      abs_de_roll:
+        id: 0x38
 
 can_bridge_2:
   ros__parameters:

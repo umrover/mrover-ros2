@@ -337,10 +337,13 @@ if (EXISTS ${MROVER_EMBEDDED_ROOT_DIR} AND NOT APPLE)
     mrover_add_header_only_library(science esw/science)
     target_link_libraries(science INTERFACE can_device units)
 
+    mrover_add_header_only_library(abs esw/abs)
+    target_link_libraries(abs INTERFACE can_device units parameter_utils)
+
     macro(mrover_add_esw_bridge_node name sources)
         mrover_add_node(${name} ${sources})
         ament_target_dependencies(${name} rclcpp std_srvs dynamixel_sdk)
-        target_link_libraries(${name} can_device units motor science servo)
+        target_link_libraries(${name} can_device units motor science servo abs)
     endmacro()
 
     # esw hardware bridge nodes
@@ -357,6 +360,10 @@ target_link_libraries(differential_drive_controller units)
 mrover_add_node(arm_controller navigation/arm_controller/arm_controller.cpp navigation/arm_controller/pch.hpp)
 target_link_libraries(arm_controller lie)
 ament_target_dependencies(arm_controller rclcpp)
+
+mrover_add_node(u2d2_bridge esw/u2d2_bridge.cpp)
+ament_target_dependencies(u2d2_bridge rclcpp std_msgs std_srvs dynamixel_sdk)
+target_link_libraries(u2d2_bridge servo)
 
 if (Gst_FOUND AND GstApp_FOUND)
     if (LibUdev_FOUND)

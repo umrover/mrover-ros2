@@ -88,6 +88,9 @@ class WaypointState(State):
             context.node.get_logger().info("Resetting costmap dilation")
             context.reset_dilation()
 
+        # Switch Object Detector to Type requested
+        context.toggle_object_detector(current_waypoint.type.val)
+
         context.node.get_logger().info("On Enter finished")
 
     def on_exit(self, context: Context) -> None:
@@ -233,6 +236,10 @@ class WaypointState(State):
         :param context: Context object
         :return:        Next state
         """
+
+        # Ensure Object Detector service has finished
+        if not context.obj_detector_service_is_done():
+            return self
 
         if context.course is None:
             return state.DoneState()

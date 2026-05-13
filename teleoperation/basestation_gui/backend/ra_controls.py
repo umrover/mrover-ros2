@@ -1,3 +1,4 @@
+import asyncio
 from enum import Enum
 import threading
 
@@ -20,17 +21,19 @@ def get_ra_mode() -> str:
         return ra_mode
 
 
-async def set_ra_mode(new_ra_mode: str):
+async def set_ra_mode(new_ra_mode: str) -> bool:
     global ra_mode
     if new_ra_mode == "ik-pos":
         if not await call_ik_mode_service(IK_MODE_POSITION_CONTROL):
-            return
+            return False
     elif new_ra_mode == "ik-vel":
         if not await call_ik_mode_service(IK_MODE_VELOCITY_CONTROL):
-            return
+            return False
 
     with ra_mode_lock:
         ra_mode = new_ra_mode
+
+    return True
 
 
 async def call_ik_mode_service(mode: int) -> bool:
@@ -131,7 +134,10 @@ def subset(names: list[str], values: list[float], joints: set[Joint]) -> tuple[l
 
 
 def send_ra_controls(
-    inputs: DeviceInputs, thr_pub: Publisher, ee_pos_pub: Publisher, ee_vel_pub: Publisher,
+    inputs: DeviceInputs,
+    thr_pub: Publisher,
+    ee_pos_pub: Publisher,
+    ee_vel_pub: Publisher,
 ) -> None:
     current_mode = get_ra_mode()
     match current_mode:
@@ -150,16 +156,30 @@ def send_ra_controls(
                     ik_pos_msg.pos.x = (-1.0) * safe_index(inputs.axes, ControllerAxis.LEFT_Y)
                     ik_pos_msg.pos.y = (-1.0) * safe_index(inputs.axes, ControllerAxis.LEFT_X)
                     ik_pos_msg.pos.z = (-1.0) * safe_index(inputs.axes, ControllerAxis.RIGHT_Y)
-                    ik_pos_msg.pitch = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER)
-                    ik_pos_msg.roll = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_BUMPER, ControllerButton.LEFT_BUMPER)
+                    ik_pos_msg.pitch = 1.0 * simulated_axis(
+                        inputs.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER
+                    )
+                    ik_pos_msg.roll = 1.0 * simulated_axis(
+                        inputs.buttons, ControllerButton.RIGHT_BUMPER, ControllerButton.LEFT_BUMPER
+                    )
                     ee_pos_pub.publish(ik_pos_msg)
                 case "ik-vel":
                     ik_vel_msg = Twist()
-                    ik_vel_msg.linear.x = (-1.0) * filter_input(safe_index(inputs.axes, ControllerAxis.LEFT_Y), deadzone=CONTROLLER_STICK_DEADZONE)
-                    ik_vel_msg.linear.y = (-1.0) * filter_input(safe_index(inputs.axes, ControllerAxis.LEFT_X), deadzone=CONTROLLER_STICK_DEADZONE)
-                    ik_vel_msg.linear.z = (-1.0) * filter_input(safe_index(inputs.axes, ControllerAxis.RIGHT_Y), deadzone=CONTROLLER_STICK_DEADZONE)
-                    ik_vel_msg.angular.y = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_BUMPER, ControllerButton.LEFT_BUMPER)
-                    ik_vel_msg.angular.x = 1.0 * simulated_axis(inputs.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER)
+                    ik_vel_msg.linear.x = (-1.0) * filter_input(
+                        safe_index(inputs.axes, ControllerAxis.LEFT_Y), deadzone=CONTROLLER_STICK_DEADZONE
+                    )
+                    ik_vel_msg.linear.y = (-1.0) * filter_input(
+                        safe_index(inputs.axes, ControllerAxis.LEFT_X), deadzone=CONTROLLER_STICK_DEADZONE
+                    )
+                    ik_vel_msg.linear.z = (-1.0) * filter_input(
+                        safe_index(inputs.axes, ControllerAxis.RIGHT_Y), deadzone=CONTROLLER_STICK_DEADZONE
+                    )
+                    ik_vel_msg.angular.y = 1.0 * simulated_axis(
+                        inputs.buttons, ControllerButton.RIGHT_TRIGGER, ControllerButton.LEFT_TRIGGER
+                    )
+                    ik_vel_msg.angular.x = 1.0 * simulated_axis(
+                        inputs.buttons, ControllerButton.RIGHT_BUMPER, ControllerButton.LEFT_BUMPER
+                    )
                     ee_vel_pub.publish(ik_vel_msg)
 
                     cam_throttle = filter_input(

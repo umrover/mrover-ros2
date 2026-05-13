@@ -1,7 +1,7 @@
 <template>
   <div class="relative flex self-stretch">
     <button
-      class="notification-btn border border-2 rounded"
+      class="notification-btn border-2 rounded"
       data-testid="pw-notification-bell"
       @click="togglePanel"
     >
@@ -14,19 +14,19 @@
       </span>
     </button>
 
-    <div v-if="showPanel" class="notification-panel cmd-panel" data-testid="pw-notification-panel">
+    <div v-if="showPanel" class="notification-panel panel" data-testid="pw-notification-panel">
       <div class="flex justify-between items-center p-4 border-b border-2">
         <h4 class="component-header">Notifications</h4>
         <div class="flex gap-2">
           <button
             v-if="notifications.length > 0"
-            class="cmd-btn cmd-btn-sm cmd-btn-outline-primary"
+            class="btn btn-sm btn-outline-primary"
             data-testid="pw-notification-clear-all"
             @click="clearAll"
           >
             Clear All
           </button>
-          <button class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary cmd-btn-icon-sm" @click="showPanel = false">
+          <button class="btn btn-sm btn-outline-secondary btn-icon-sm" @click="showPanel = false">
             <i class="bi bi-x-lg"></i>
           </button>
         </div>
@@ -51,7 +51,7 @@
               <p class="mt-2 mb-1">{{ notification.message }}</p>
             </div>
             <button
-              class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary cmd-btn-icon-sm"
+              class="btn btn-sm btn-outline-secondary btn-icon-sm"
               @click="removeNotification(notification.id)"
               title="Remove"
             >
@@ -61,7 +61,7 @@
 
           <div class="mt-2">
             <button
-              class="cmd-btn cmd-btn-sm cmd-btn-outline-control"
+              class="btn btn-sm btn-outline-control"
               @click="toggleDetails(notification.id)"
             >
               <i :class="expandedNotifications.includes(notification.id) ? 'bi bi-chevron-up' : 'bi bi-chevron-down'"></i>
@@ -182,9 +182,9 @@ export default defineComponent({
   font-size: 0.6875rem;
   font-weight: 600;
   line-height: 18px;
-  color: #fff;
+  color: var(--text-on-status);
   text-align: center;
-  background-color: var(--cmd-status-error);
+  background-color: var(--status-error);
   border-radius: 50rem;
 }
 
@@ -195,7 +195,7 @@ export default defineComponent({
   z-index: 1051;
   width: 500px;
   margin-top: 0.5rem;
-  box-shadow: var(--cmd-shadow-md);
+  box-shadow: var(--shadow-md);
 }
 
 .notification-list {
@@ -207,7 +207,7 @@ export default defineComponent({
 }
 
 .notification-item:last-child {
-  border-bottom: none !important;
+  border-bottom: none;
 }
 
 .notification-component {
@@ -223,6 +223,6 @@ export default defineComponent({
   max-height: 300px;
   font-size: 0.75rem;
   background-color: var(--view-bg);
-  border: 2px solid var(--cmd-panel-border);
+  border: 2px solid var(--panel-border);
 }
 </style>

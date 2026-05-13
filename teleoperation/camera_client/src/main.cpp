@@ -37,7 +37,8 @@ auto main(int argc, char** argv) -> int {
                                  .onPlay = [node, name]() { return node->requestPlay(name); },
                                  .onStop = [node, name]() { return node->requestStop(name); },
                                  .onScreenshot = [node, name]() { return node->requestScreenshot(name); },
-                         };
+                                 .onResize = [mainWindow, name](int w, int h) { mainWindow->getCameraGridWidget()->resizeCamera(name, w, h); },
+                                 .onRotate = [mainWindow, name]() { mainWindow->getCameraGridWidget()->rotateCamera(name); }};
 
                          mainWindow->createCamera(name, info.pipeline, std::move(callbacks));
                      });
