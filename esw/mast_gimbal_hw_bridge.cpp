@@ -10,9 +10,11 @@
 
 #include <mrover/msg/controller_state.hpp>
 #include <mrover/srv/servo_position.hpp>
+#include <std_srvs/srv/trigger.hpp>
 
 #include <servo.hpp>
 #include <u2d2.hpp>
+#include <lim.hpp>
 
 namespace mrover {
 
@@ -36,6 +38,8 @@ namespace mrover {
                 mControllerState.names.push_back(servoName);
             }
 
+            mYawLimBoard = std::make_shared<LimitSwitchBoard>(shared_from_this(), "jetson", "limit_board");
+
             mTimerGroup = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
             mServiceGroup = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
@@ -50,10 +54,35 @@ namespace mrover {
                     rmw_qos_profile_services_default,
                     mServiceGroup);
 
+            mHomingService = this->create_service<std_srvs::srv::Trigger>(
+                "home_gimbal_yaw",
+                [this](std_srvs::srv::Trigger::Request::SharedPtr const&, std_srvs::srv::Trigger::Response::SharedPtr const& res) -> void {
+                    if (mServos.count("gimbal_yaw") > 0) {
+                        mServos.at("gimbal_yaw")->startHoming(true); 
+                        res->success = true;
+                        res->message = "Homing initiated for gimbal yaw (moving towards reverse limit).";
+                    } else {
+                        res->success = false;
+                        res->message = "gimbal_yaw servo not found.";
+                    }
+                },
+                rmw_qos_profile_services_default,
+                mServiceGroup
+            );
+
             mPublishTimer = this->create_wall_timer(
                     std::chrono::milliseconds(100),
                     [this]() -> void { publishDataCallback(); },
                     mTimerGroup);
+
+            mHWLimitTimer = this->create_wall_timer(std::chrono::milliseconds(20), [this]() -> void {
+                if (mServos.count("gimbal_yaw") > 0 && mYawLimBoard) {
+                    mServos.at("gimbal_yaw")->updateHardwareLimits(
+                        mYawLimBoard->getLimitA(), 
+                        mYawLimBoard->getLimitB()
+                    );
+                }
+            }, mTimerGroup);
 
             mGimbalStatePub = this->create_publisher<msg::ControllerState>("gimbal_controller_state", 10);
         }
@@ -61,15 +90,17 @@ namespace mrover {
     private:
         std::vector<std::string> mServoNames = {"gimbal_pitch", "gimbal_yaw"};
         std::unordered_map<std::string, std::shared_ptr<Servo>> mServos;
-
+        std::shared_ptr<LimitSwitchBoard> mYawLimBoard;
         std::string mU2D2DeviceName;
 
         rclcpp::CallbackGroup::SharedPtr mServiceGroup;
         rclcpp::CallbackGroup::SharedPtr mTimerGroup;
 
         rclcpp::Service<srv::ServoPosition>::SharedPtr mPositionService;
+        rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr mHomingService;
         rclcpp::Publisher<msg::ControllerState>::SharedPtr mGimbalStatePub;
         rclcpp::TimerBase::SharedPtr mPublishTimer;
+        rclcpp::TimerBase::SharedPtr mHWLimitTimer;
         msg::ControllerState mControllerState;
 
         auto servoPositionCallback(srv::ServoPosition::Request::SharedPtr const& req, srv::ServoPosition::Response::SharedPtr const& res) -> void {

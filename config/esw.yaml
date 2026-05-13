@@ -26,6 +26,8 @@ can_bridge_0:
         id: 0x10
       pdlb:
         id: 0x11
+      limit_board:
+        id: 0x12
       front_left:
         id: 0x20
       middle_left:
