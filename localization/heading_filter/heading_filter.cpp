@@ -260,6 +260,10 @@ namespace mrover {
             }
         }
 
+        if(!use_rtk_only && imu_orientation_stuck) {
+            use_rtk_only = true;
+        }
+
         prev_imu_orientation_norm = uncorrected_orientation;
 
         if (use_mag) {
