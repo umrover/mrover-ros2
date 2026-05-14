@@ -12,9 +12,9 @@
 #include <mrover/srv/servo_position.hpp>
 #include <std_srvs/srv/trigger.hpp>
 
+#include <lim.hpp>
 #include <servo.hpp>
 #include <u2d2.hpp>
-#include <lim.hpp>
 
 namespace mrover {
 
@@ -55,20 +55,19 @@ namespace mrover {
                     mServiceGroup);
 
             mHomingService = this->create_service<std_srvs::srv::Trigger>(
-                "home_gimbal_yaw",
-                [this](std_srvs::srv::Trigger::Request::SharedPtr const&, std_srvs::srv::Trigger::Response::SharedPtr const& res) -> void {
-                    if (mServos.count("gimbal_yaw") > 0) {
-                        mServos.at("gimbal_yaw")->startHoming(true); 
-                        res->success = true;
-                        res->message = "Homing initiated for gimbal yaw (moving towards reverse limit).";
-                    } else {
-                        res->success = false;
-                        res->message = "gimbal_yaw servo not found.";
-                    }
-                },
-                rmw_qos_profile_services_default,
-                mServiceGroup
-            );
+                    "home_gimbal_yaw",
+                    [this](std_srvs::srv::Trigger::Request::SharedPtr const&, std_srvs::srv::Trigger::Response::SharedPtr const& res) -> void {
+                        if (mServos.count("gimbal_yaw") > 0) {
+                            mServos.at("gimbal_yaw")->startHoming(false);
+                            res->success = true;
+                            res->message = "homing initiated";
+                        } else {
+                            res->success = false;
+                            res->message = "gimbal_yaw servo not found";
+                        }
+                    },
+                    rmw_qos_profile_services_default,
+                    mServiceGroup);
 
             mPublishTimer = this->create_wall_timer(
                     std::chrono::milliseconds(100),
@@ -78,11 +77,10 @@ namespace mrover {
             mHWLimitTimer = this->create_wall_timer(std::chrono::milliseconds(20), [this]() -> void {
                 if (mServos.count("gimbal_yaw") > 0 && mYawLimBoard) {
                     mServos.at("gimbal_yaw")->updateHardwareLimits(
-                        mYawLimBoard->getLimitA(), 
-                        mYawLimBoard->getLimitB()
+                        mYawLimBoard->getLimitB(), 
+                        mYawLimBoard->getLimitA()
                     );
-                }
-            }, mTimerGroup);
+                } }, mTimerGroup);
 
             mGimbalStatePub = this->create_publisher<msg::ControllerState>("gimbal_controller_state", 10);
         }

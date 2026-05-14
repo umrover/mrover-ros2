@@ -43,7 +43,6 @@ namespace mrover {
         [[nodiscard]] auto getLimitB() const -> bool {
             return mLimitBPressed;
         }
-
     };
 
 } // namespace mrover

@@ -23,11 +23,11 @@ mast_gimbal_hw_bridge:
       position_multiplier: 6.25
       forward_limit: 6.108
       reverse_limit: 0.174
-      position_p: 4000.0
+      position_p: 2000.0
       position_i: 0.0
       position_d: 0.0
       velocity_p: 0.0
       velocity_i: 0.0
-      current_limit: 1000.0
-      profile_acceleration: 100.0
-      profile_velocity: 300.0
+      current_limit: 300.0
+      profile_acceleration: 20.0
+      profile_velocity: 150.0

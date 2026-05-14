@@ -53,15 +53,14 @@ namespace mrover {
                     mServiceGroup);
 
             mFunnelHoming = this->create_service<std_srvs::srv::Trigger>(
-                "sp_home_funnel",
-                [this](std_srvs::srv::Trigger::Request::SharedPtr const&, std_srvs::srv::Trigger::Response::SharedPtr const& res) -> void {
-                    mFunnelServo->startHoming(true);
-                    res->success = true;
-                    res->message = "Homing initiated for funnel.";
-                },
-                rmw_qos_profile_services_default,
-                mServiceGroup
-            );
+                    "sp_home_funnel",
+                    [this](std_srvs::srv::Trigger::Request::SharedPtr const&, std_srvs::srv::Trigger::Response::SharedPtr const& res) -> void {
+                        mFunnelServo->startHoming(true);
+                        res->success = true;
+                        res->message = "Homing initiated for funnel.";
+                    },
+                    rmw_qos_profile_services_default,
+                    mServiceGroup);
 
             mFunnelLimitTimer = this->create_wall_timer(std::chrono::milliseconds(20), [this]() -> void {
                 if (mAuger) {

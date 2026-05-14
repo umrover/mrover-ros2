@@ -41,4 +41,10 @@ def generate_launch_description():
         ],
     )
 
-    return LaunchDescription([can_bridge_0_node, can_bridge_1_node, can_bridge_2_node])
+    return LaunchDescription(
+        [
+            can_bridge_0_node,
+            # can_bridge_1_node,
+            # can_bridge_2_node,
+        ]
+    )
