@@ -57,14 +57,14 @@ namespace mrover {
                     [this](std_srvs::srv::Trigger::Request::SharedPtr const&, std_srvs::srv::Trigger::Response::SharedPtr const& res) -> void {
                         mFunnelServo->startHoming(true);
                         res->success = true;
-                        res->message = "Homing initiated for funnel.";
+                        res->message = "homing initiated for funnel";
                     },
                     rmw_qos_profile_services_default,
                     mServiceGroup);
 
             mFunnelLimitTimer = this->create_wall_timer(std::chrono::milliseconds(20), [this]() -> void {
                 if (mAuger) {
-                    bool funnelIndexHit = (mAuger->getLimitsHitBits() & 0x01) != 0;
+                    bool funnelIndexHit = (mAuger->getLimitsHitBits() & 0x01) != 0; // TODO verify that this is the correct bit
                     mFunnelServo->updateIndexLimit(funnelIndexHit);
                 }
             });

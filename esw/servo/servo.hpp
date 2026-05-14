@@ -430,9 +430,12 @@ namespace mrover {
             mUseHardwareLimits = useHwLimits;
             mUseIndexHoming = useIndexHoming;
             mIndexLimitRad = indexLimit;
+
             mForwardLimitRad = forwardLimit;
             mReverseLimitRad = reverseLimit;
+
             if (mUseHardwareLimits || mUseIndexHoming) mIsHomed = false;
+
             mAdjustedReverseLimit = static_cast<int64_t>((reverseLimit / TAU) * SERVO_TICKS);
             mAdjustedForwardLimit = static_cast<int64_t>((forwardLimit / TAU) * SERVO_TICKS);
         }
