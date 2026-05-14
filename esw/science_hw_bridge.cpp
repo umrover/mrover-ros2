@@ -8,6 +8,7 @@
 #include <mrover/msg/controller_state.hpp>
 #include <mrover/msg/throttle.hpp>
 #include <mrover/srv/servo_position.hpp>
+#include <std_srvs/srv/trigger.hpp>
 
 #include <brushed.hpp>
 #include <science.hpp>
@@ -51,6 +52,23 @@ namespace mrover {
                     rmw_qos_profile_services_default,
                     mServiceGroup);
 
+            mFunnelHoming = this->create_service<std_srvs::srv::Trigger>(
+                    "sp_home_funnel",
+                    [this](std_srvs::srv::Trigger::Request::SharedPtr const&, std_srvs::srv::Trigger::Response::SharedPtr const& res) -> void {
+                        mFunnelServo->startHoming(true);
+                        res->success = true;
+                        res->message = "homing initiated for funnel";
+                    },
+                    rmw_qos_profile_services_default,
+                    mServiceGroup);
+
+            mFunnelLimitTimer = this->create_wall_timer(std::chrono::milliseconds(20), [this]() -> void {
+                if (mAuger) {
+                    bool funnelIndexHit = (mAuger->getLimitsHitBits() & 0x01) != 0; // TODO verify that this is the correct bit
+                    mFunnelServo->updateIndexLimit(funnelIndexHit);
+                }
+            });
+
             mSPThrottleSub = create_subscription<msg::Throttle>("sp_thr_cmd", 1, [this](msg::Throttle::ConstSharedPtr const& msg) -> void { processThrottleCmd(msg); });
 
             mPublishDataTimer = create_wall_timer(
@@ -87,6 +105,8 @@ namespace mrover {
 
         rclcpp::CallbackGroup::SharedPtr mServiceGroup;
         rclcpp::Service<srv::ServoPosition>::SharedPtr mFunnelPositionService;
+        rclcpp::TimerBase::SharedPtr mFunnelLimitTimer;
+        rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr mFunnelHoming;
         rclcpp::TimerBase::SharedPtr mPublishDataTimer;
         rclcpp::Subscription<msg::Throttle>::SharedPtr mSPThrottleSub;
         rclcpp::Publisher<msg::ControllerState>::SharedPtr mControllerStatePub;

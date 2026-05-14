@@ -340,10 +340,13 @@ if (EXISTS ${MROVER_EMBEDDED_ROOT_DIR} AND NOT APPLE)
     mrover_add_header_only_library(abs esw/abs)
     target_link_libraries(abs INTERFACE can_device units parameter_utils)
 
+    mrover_add_header_only_library(lim esw/lim)
+    target_link_libraries(lim INTERFACE can_device units parameter_utils)
+
     macro(mrover_add_esw_bridge_node name sources)
         mrover_add_node(${name} ${sources})
         ament_target_dependencies(${name} rclcpp std_srvs dynamixel_sdk)
-        target_link_libraries(${name} can_device units motor science servo abs)
+        target_link_libraries(${name} can_device units motor science servo abs lim)
     endmacro()
 
     # esw hardware bridge nodes

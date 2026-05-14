@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <parameter.hpp>
 #include <rclcpp/logging.hpp>
 #include <rclcpp/publisher.hpp>
@@ -47,7 +48,6 @@ namespace mrover {
         double mPositionMultiplier{1};
         uint8_t mServoID{};
         uint8_t mAtLimit{0};
-        ServoPosition mBootPosition;
 
         rclcpp::Node::SharedPtr mNode;
         rclcpp::Publisher<msg::ServoConfigure>::SharedPtr mConfigPub;
@@ -59,6 +59,17 @@ namespace mrover {
         std::atomic<uint32_t> mCachedRawVelocity{0};
         std::atomic<uint16_t> mCachedRawCurrent{0};
         std::atomic<U2D2::Status> mCachedStatus{U2D2::Status::CommRxWaiting};
+
+        bool mUseHardwareLimits{false};
+        std::atomic<bool> mIsHomed{true};
+        std::atomic<bool> mHwFwdHit{false};
+        std::atomic<bool> mHwRevHit{false};
+        double mForwardLimitRad{0};
+        double mReverseLimitRad{0};
+
+        bool mUseIndexHoming{false};
+        std::atomic<bool> mIndexHit{false};
+        double mIndexLimitRad{0};
 
     public:
         enum class ServoProperty {
@@ -112,11 +123,6 @@ namespace mrover {
                         mCachedRawVelocity = msg->velocity;
                         mCachedRawCurrent = msg->current;
                         mCachedStatus = static_cast<U2D2::Status>(msg->status);
-
-                        if (!mHasReceivedData) {
-                            mHasReceivedData = true;
-                            setCurrentPosition(mBootPosition);
-                        }
                     });
 
             int servoID;
@@ -161,6 +167,10 @@ namespace mrover {
         }
 
         auto getPosition(double& pos) const -> U2D2::Status {
+            if (!mIsHomed) {
+                pos = std::numeric_limits<double>::quiet_NaN();
+                return mCachedStatus.load();
+            }
             auto currentPositionAndStatus = getCurrentServoPosition();
             pos = (static_cast<double>(currentPositionAndStatus.first) / SERVO_TICKS) * TAU;
             return currentPositionAndStatus.second;
@@ -182,6 +192,7 @@ namespace mrover {
         }
 
         auto setPosition(ServoPosition const position) -> U2D2::Status {
+            if ((mUseHardwareLimits || mUseIndexHoming) && !mIsHomed) return U2D2::Status::Active;
             mGoalPosition = static_cast<int64_t>((position / TAU) * static_cast<double>(SERVO_TICKS));
 
             auto currentPositionAndStatus = getCurrentServoPosition();
@@ -192,7 +203,19 @@ namespace mrover {
 
             mAtLimit = 0;
 
-            if (mMode == ServoMode::Limited) {
+            if (mUseHardwareLimits) {
+                auto const currentRaw = currentPositionAndStatus.first;
+                if (mHwFwdHit.load() && mGoalPosition > currentRaw) {
+                    mGoalPosition = currentRaw;
+                    mAtLimit |= 0x01;
+                }
+                if (mHwRevHit.load() && mGoalPosition < currentRaw) {
+                    mGoalPosition = currentRaw;
+                    mAtLimit |= 0x02;
+                }
+                publishWrite(ADDR_GOAL_POSITION, 4, offsetToRaw(mGoalPosition));
+
+            } else if (mMode == ServoMode::Limited) {
                 if (!isWithinLimits(mGoalPosition)) {
                     mGoalPosition = clampToLimits(mGoalPosition);
                 }
@@ -222,10 +245,17 @@ namespace mrover {
         }
 
         auto setVelocityTarget(ServoVelocity const velocity) -> U2D2::Status {
+            if ((mUseHardwareLimits || mUseIndexHoming) && !mIsHomed) return U2D2::Status::Active;
             mLastCommandTimeNs = mNode->now().nanoseconds();
             mVelocityTimedOut = false;
 
-            double const rpm = velocity * (60.0 / TAU);
+            double targetVel = velocity;
+            if (mUseHardwareLimits) {
+                if (mHwFwdHit.load() && targetVel > 0) targetVel = 0.0;
+                if (mHwRevHit.load() && targetVel < 0) targetVel = 0.0;
+            }
+
+            double const rpm = targetVel * (60.0 / TAU);
             auto const velocityTicks = static_cast<int32_t>(rpm / SERVO_RPM_PER_TICK);
 
             publishWrite(ADDR_GOAL_VELOCITY, 4, static_cast<uint32_t>(velocityTicks));
@@ -248,11 +278,73 @@ namespace mrover {
             return U2D2::Status::Active;
         }
 
-        [[nodiscard]] auto getLimitStatus() const -> uint8_t { return mAtLimit; }
+        [[nodiscard]] auto getLimitStatus() const -> uint8_t {
+            uint8_t status = mAtLimit;
+            if (mUseHardwareLimits) {
+                if (mHwFwdHit.load()) status |= 0x01;
+                if (mHwRevHit.load()) status |= 0x02;
+            }
+            return status;
+        }
 
         [[nodiscard]] auto getVelocityLimitRadPerSec() const -> double {
             double const rpm = mVelocityLimit * SERVO_RPM_PER_TICK;
             return rpm * (TAU / 60.0);
+        }
+
+        auto startHoming(bool forward) -> void {
+            if (!mUseHardwareLimits && !mUseIndexHoming) return;
+            double homingTarget = 0.0;
+            if (mUseHardwareLimits) {
+                homingTarget = forward ? (mForwardLimitRad + 10.0) : (mReverseLimitRad - 10.0);
+            } else if (mUseIndexHoming) {
+                auto currentPositionAndStatus = getCurrentServoPosition();
+                double currentPos = (static_cast<double>(currentPositionAndStatus.first) / SERVO_TICKS) * TAU;
+                homingTarget = forward ? (currentPos + 100.0) : (currentPos - 100.0);
+            }
+            auto const targetTicks = static_cast<int64_t>((homingTarget / TAU) * static_cast<double>(SERVO_TICKS));
+            mGoalPosition = targetTicks;
+            publishWrite(ADDR_GOAL_POSITION, 4, offsetToRaw(targetTicks));
+        }
+
+        auto updateHardwareLimits(bool fwd_hit, bool rev_hit) -> void {
+            if (!mUseHardwareLimits) return;
+
+            bool const prevFwd = mHwFwdHit.exchange(fwd_hit);
+            bool const prevRev = mHwRevHit.exchange(rev_hit);
+
+            if (fwd_hit && !prevFwd) snapToLimit(mForwardLimitRad, true, true);
+            if (rev_hit && !prevRev) snapToLimit(mReverseLimitRad, true, true);
+        }
+
+        auto updateIndexLimit(bool hit) -> void {
+            if (!mUseIndexHoming) return;
+            bool const prevHit = mIndexHit.exchange(hit);
+            if (hit && !prevHit) {
+                bool wasHomed = mIsHomed.load();
+                snapToLimit(mIndexLimitRad, !wasHomed, false);
+            }
+        }
+
+        auto snapToLimit(double limitRad, bool halt = true, bool forceExact = false) -> void {
+            if (forceExact) {
+                setCurrentPosition(limitRad);
+            } else {
+                auto currentPositionAndStatus = getCurrentServoPosition();
+                double currentPos = (static_cast<double>(currentPositionAndStatus.first) / SERVO_TICKS) * TAU;
+                double rotations = std::round((currentPos - limitRad) / TAU);
+                double exactPosition = limitRad + rotations * TAU;
+                setCurrentPosition(exactPosition);
+            }
+            mIsHomed.store(true);
+            if (halt) {
+                if (mOperatingMode == OperatingMode::Velocity) {
+                    publishWrite(ADDR_GOAL_VELOCITY, 4, 0);
+                } else {
+                    mGoalPosition = rawToOffset(mCachedRawPosition.load());
+                    publishWrite(ADDR_GOAL_POSITION, 4, offsetToRaw(mGoalPosition));
+                }
+            }
         }
 
     private:
@@ -266,6 +358,9 @@ namespace mrover {
 
         auto updateConfigFromParameters() -> void {
             std::string modeString;
+            bool useIndexHoming;
+            double indexLimit;
+            bool useHwLimits;
             std::string operatingModeStr;
             double forwardLimit;
             double reverseLimit;
@@ -281,6 +376,9 @@ namespace mrover {
 
             std::vector<ParameterWrapper> parameters = {
                     {std::format("{}.mode", mServoName), modeString, std::string("optimal")},
+                    {std::format("{}.use_index_homing", mServoName), useIndexHoming, false},
+                    {std::format("{}.index_limit", mServoName), indexLimit, 0.0},
+                    {std::format("{}.use_hw_limits", mServoName), useHwLimits, false},
                     {std::format("{}.operating_mode", mServoName), operatingModeStr, std::string("position")},
                     {std::format("{}.position_multiplier", mServoName), mPositionMultiplier, 1.0},
                     {std::format("{}.reverse_limit", mServoName), reverseLimit, 0.0},
@@ -293,8 +391,7 @@ namespace mrover {
                     {std::format("{}.current_limit", mServoName), currentLimit, 1750.0},
                     {std::format("{}.velocity_limit", mServoName), velocityLimit, 445.0},
                     {std::format("{}.profile_acceleration", mServoName), profileAcceleration, 100.0},
-                    {std::format("{}.profile_velocity", mServoName), profileVelocity, 100.0},
-                    {std::format("{}.boot_position", mServoName), mBootPosition, 0.0}};
+                    {std::format("{}.profile_velocity", mServoName), profileVelocity, 100.0}};
 
             ParameterWrapper::declareParameters(mNode.get(), parameters);
 
@@ -329,6 +426,15 @@ namespace mrover {
             (void) setProperty(ServoProperty::VelocityLimit, static_cast<uint32_t>(mVelocityLimit));
             (void) setProperty(ServoProperty::ProfileAcceleration, static_cast<uint32_t>(profileAcceleration));
             (void) setProperty(ServoProperty::ProfileVelocity, static_cast<uint32_t>(profileVelocity));
+
+            mUseHardwareLimits = useHwLimits;
+            mUseIndexHoming = useIndexHoming;
+            mIndexLimitRad = indexLimit;
+
+            mForwardLimitRad = forwardLimit;
+            mReverseLimitRad = reverseLimit;
+
+            if (mUseHardwareLimits || mUseIndexHoming) mIsHomed = false;
 
             mAdjustedReverseLimit = static_cast<int64_t>((reverseLimit / TAU) * SERVO_TICKS);
             mAdjustedForwardLimit = static_cast<int64_t>((forwardLimit / TAU) * SERVO_TICKS);

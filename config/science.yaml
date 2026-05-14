@@ -3,6 +3,8 @@ science_hw_bridge:
     funnel:
       id: 5
       mode: "optimal"
+      use_index_homing: true
+      index_limit: 0.0
       operating_mode: "extended_position"
       position_multiplier: 5.859375
       position_p: 6000.0
