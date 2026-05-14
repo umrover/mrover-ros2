@@ -140,13 +140,13 @@ def generate_launch_description():
     return LaunchDescription(
         [
             launch_include_can,
-            # diff_drive_controller_node,
+            diff_drive_controller_node,
             u2d2_bridge,
-            # superstructure_node,
-            # drive_hw_bridge_node,
+            superstructure_node,
+            drive_hw_bridge_node,
             mast_gimbal_hw_bridge,
-            # cam_container,
-            # zed_mini_container,
-            # zed_container,
+            cam_container,
+            zed_mini_container,
+            zed_container,
         ]
     )
