@@ -50,7 +50,7 @@ namespace mrover {
             }
         } catch (std::exception const& e) {
             RCLCPP_ERROR_STREAM(get_logger(), std::format("Exception encoding frame: {}", e.what()));
-            rclcpp::shutdown();
+            stopStreamPipelines();
         }
     }
 
@@ -231,6 +231,14 @@ namespace mrover {
         }};
 
         RCLCPP_INFO_STREAM(get_logger(), "Initialized GStreamer stream pipeline");
+    }
+
+    auto GstCameraServer::stopStreamPipelines() -> void {
+        try {
+            mStreamPipelineWrapper.stop();
+        } catch (std::runtime_error const& e) {
+            RCLCPP_ERROR_STREAM(get_logger(), std::format("Failed to stop GStreamer pipeline: {}", e.what()));
+        }
     }
 
     auto GstCameraServer::mediaControlServerCallback(srv::MediaControl::Request::ConstSharedPtr const& req, srv::MediaControl::Response::SharedPtr const& res) -> void {
@@ -475,7 +483,6 @@ namespace mrover {
 
         } catch (std::exception const& e) {
             RCLCPP_ERROR_STREAM(get_logger(), std::format("Exception initializing GStreamer V4L2 streamer: {}", e.what()));
-            rclcpp::shutdown();
         }
     }
 
@@ -507,8 +514,8 @@ namespace mrover {
                         break;
                     case GST_MESSAGE_ERROR:
                         gst_message_parse_error(message, &error, &debug);
-                        RCLCPP_FATAL_STREAM(logger, std::format("{} ({})", error->message, debug));
-                        rclcpp::shutdown();
+                        RCLCPP_ERROR_STREAM(logger, std::format("{} ({})", error->message, debug));
+                        node->stopStreamPipelines();
                         break;
                     default:
                         std::abort();
@@ -519,7 +526,7 @@ namespace mrover {
             }
             case GST_MESSAGE_EOS: {
                 RCLCPP_ERROR_STREAM(node->get_logger().get_child("gstreamer"), "End of stream");
-                rclcpp::shutdown();
+                node->stopStreamPipelines();
                 break;
             }
             default:
