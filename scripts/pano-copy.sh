@@ -5,7 +5,7 @@ FOLDER=~/Desktop/science_$(date +%Y-%m-%d_%H-%M-%S)
 # Make the science
 mkdir $FOLDER
 
-scp ~/ros2_ws/src/mrover/data/raw-pano-images/$(ls -1 ~/ros2_ws/src/mrover/data/raw-pano-images | tail -n 1)/pano.png john@10.1.0.2:$FOLDER
+scp -r jetson:/home/mrover/ros2_ws/src/mrover/data/raw-pano-images $FOLDER
 
 find ~/Downloads/ \
   -type f \
