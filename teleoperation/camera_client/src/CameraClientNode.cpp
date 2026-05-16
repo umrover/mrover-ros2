@@ -26,18 +26,29 @@ namespace mrover {
             configs[configName] = cameraNames;
 
             for (auto const& cameraName: cameraNames) {
+                auto sanitize = [](std::string str) -> std::string {
+                    std::array<std::string, 2> suffixes = {"_main", "_second"};
+                    for (auto const& suffix: suffixes) {
+                        if (str.ends_with(suffix)) {
+                            str.erase(str.length() - suffix.length());
+                            return str;
+                        }
+                    }
+                    return str;
+                };
+
                 if (mMediaControlClients.contains(cameraName)) {
                     RCLCPP_WARN(get_logger(), "Camera %s already exists, skipping", cameraName.c_str());
                     continue;
                 }
 
-                RCLCPP_INFO(get_logger(), "cameraName: %s", cameraName.c_str());
-                declare_parameter(std::format("{}.port", cameraName), rclcpp::ParameterType::PARAMETER_INTEGER);
-                declare_parameter(std::format("{}.stream.codec", cameraName), rclcpp::ParameterType::PARAMETER_STRING);
+                RCLCPP_INFO(get_logger(), "cameraName: %s", sanitize(cameraName).c_str());
+                declare_parameter(std::format("{}.port", sanitize(cameraName)), rclcpp::ParameterType::PARAMETER_INTEGER);
+                declare_parameter(std::format("{}.stream.codec", sanitize(cameraName)), rclcpp::ParameterType::PARAMETER_STRING);
 
-                auto const port = static_cast<std::uint16_t>(get_parameter(std::format("{}.port", cameraName)).as_int());
+                auto const port = static_cast<std::uint16_t>(get_parameter(std::format("{}.port", sanitize(cameraName))).as_int());
 
-                std::string const codec = get_parameter(std::format("{}.stream.codec", cameraName)).as_string();
+                std::string const codec = get_parameter(std::format("{}.stream.codec", sanitize(cameraName))).as_string();
 
                 std::string const pipeline = createRtpToRawSrc(port, gst::video::getCodecFromStringView(codec), rtpJitterMs);
 

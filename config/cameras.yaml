@@ -337,35 +337,44 @@ camera_client:
     test: 10
     arm:
       cameras:
-        - "ee1_cam"
-        - "ee2_cam"
-        - "ee3_cam"
-        - "ee4_cam"
-        - "ee5_cam"
-        - "mob_left_cam"
-        - "mob_right_cam"
-        - "gps_left_cam"
-        - "gps_right_cam"
-        - "zed_mini"
-        - "zed"
+        # main
+        - "ee1_cam_main"
+        - "ee2_cam_main"
+        - "ee3_cam_main"
+        - "ee4_cam_main"
+        - "ee5_cam_main"
+        - "zed_main"
+
+        # secondary
+        - "mob_left_cam_second"
+        - "mob_right_cam_second"
+        - "gps_left_cam_second"
+        - "gps_right_cam_second"
+        - "zed_mini_second"
     science:
       cameras:
-        - "sp1_cam"
-        - "sp2_cam"
-        - "mob_left_cam"
-        - "mob_right_cam"
-        - "gps_left_cam"
-        - "gps_right_cam"
-        - "zed_mini"
-        - "zed"
+        # main
+        - "sp1_cam_main"
+        - "sp2_cam_main"
+        - "zed_main"
+
+        # second
+        - "mob_left_cam_second"
+        - "mob_right_cam_second"
+        - "gps_left_cam_second"
+        - "gps_right_cam_second"
+        - "zed_mini_second"
     auton:
       cameras:
-        - "mob_left_cam"
-        - "mob_right_cam"
-        - "gps_left_cam"
-        - "gps_right_cam"
-        - "zed_mini"
-        - "zed_annotated"
-        - "long_range_cam_annotated"
+        # main
+        - "zed_annotated_main"
+        - "long_range_cam_annotated_main"
+
+        # second
+        - "mob_left_cam_second"
+        - "mob_right_cam_second"
+        - "gps_left_cam_second"
+        - "gps_right_cam_second"
+        - "zed_mini_second"
     rtp_jitter_ms: 50
 
