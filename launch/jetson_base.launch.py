@@ -23,6 +23,13 @@ def generate_launch_description():
         parameters=[Path(get_package_share_directory("mrover"), "config", "esw.yaml")],
     )
 
+    pdlb_hw_bridge_node = Node(
+        package="mrover",
+        executable="pdlb_hw_bridge",
+        name="pdlb_hw_bridge",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "esw.yaml")],
+    )
+
     u2d2_bridge = Node(
         package="mrover",
         executable="u2d2_bridge",
@@ -141,6 +148,7 @@ def generate_launch_description():
         [
             launch_include_can,
             diff_drive_controller_node,
+            pdlb_hw_bridge_node,
             u2d2_bridge,
             superstructure_node,
             drive_hw_bridge_node,
