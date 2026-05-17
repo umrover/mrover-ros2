@@ -7,20 +7,13 @@ mkdir $FOLDER
 
 scp -r jetson:/home/mrover/ros2_ws/src/mrover/data/raw-pano-images $FOLDER
 
-find ~/Downloads/ \
-  -type f \
-  -regextype posix-extended \
-  -regex '.*/[^/]+_[0-9]{2}-[0-9]{2}-[0-9]{2}\.png' \
-  -mmin -45 \
-  -exec cp {} $FOLDER \;
-
 now_secs=$(date +%s)
 today=$(date +%Y-%m-%d)
 
-find ~/Downloads -type f -name '*.png' | while read -r f; do
+find ~/Downloads -type f \( -name "*.png" -o -name "*.txt" \) | while read -r f; do
     base=$(basename "$f")
 
-    if [[ $base =~ _([0-9]{2})-([0-9]{2})-([0-9]{2})\.png$ ]]; then
+    if [[ $base =~ _([0-9]{2})-([0-9]{2})-([0-9]{2})\.(png|txt)$ ]]; then
         hh="${BASH_REMATCH[1]}"
         mm="${BASH_REMATCH[2]}"
         ss="${BASH_REMATCH[3]}"
