@@ -96,7 +96,7 @@ namespace mrover {
                     ImGui::SliderFloat("Arm Speed", &mArmSpeed, 0, 1);
             }
 
-            ImGui::InputDouble("Publish Hammer Distance Threshold", &mPublishHammerDistanceThreshold);
+            ImGui::InputDouble("Publish Mallet Distance Threshold", &mPublishMalletDistanceThreshold);
             ImGui::InputDouble("Publish Bottle Distance Threshold", &mPublishBottleDistanceThreshold);
 
             // for the imgui combo: https://skia.googlesource.com/external/github.com/ocornut/imgui/+/refs/tags/v1.73/imgui_demo.cpp

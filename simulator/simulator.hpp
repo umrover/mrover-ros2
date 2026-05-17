@@ -250,7 +250,7 @@ namespace mrover {
         bool mRenderModels = true;
         bool mRenderWireframeColliders = false;
         bool mRenderSkybox = false;
-        double mPublishHammerDistanceThreshold = 3;
+        double mPublishMalletDistanceThreshold = 3;
         double mPublishBottleDistanceThreshold = 3;
         float mCameraLockSlerp = 0.02;
 
@@ -265,6 +265,10 @@ namespace mrover {
         rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr mCmdVelPub;
 
         rclcpp::Publisher<msg::ImageTargets>::SharedPtr mImageTargetsPub;
+
+        rclcpp::Service<mrover::srv::ToggleObjectDetector>::SharedPtr dummyStereoToggleServer;
+
+        rclcpp::Service<mrover::srv::ToggleObjectDetector>::SharedPtr dummyImageToggleServer;
 
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
