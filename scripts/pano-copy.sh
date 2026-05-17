@@ -3,9 +3,9 @@
 FOLDER=~/Desktop/science_$(date +%Y-%m-%d_%H-%M-%S)
 
 # Make the science
-mkdir $FOLDER
+mkdir $FOLDER # shellcheck disable=SC2086
 
-scp -r jetson:/home/mrover/ros2_ws/src/mrover/data/raw-pano-images $FOLDER
+scp -r jetson:/home/mrover/ros2_ws/src/mrover/data/raw-pano-images $FOLDER # shellcheck disable=SC2086
 
 now_secs=$(date +%s)
 today=$(date +%Y-%m-%d)
