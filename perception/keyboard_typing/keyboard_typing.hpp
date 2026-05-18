@@ -105,8 +105,6 @@ namespace mrover {
         // Sub to /finger_camera/image topic
         rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr mImageSub;
 
-        int cnt = 0;
-
         LoopProfiler mLoopProfiler;
 
         // Can pub to any topic just make the name make sense
@@ -114,32 +112,15 @@ namespace mrover {
         rclcpp::Publisher<msg::IK>::SharedPtr mIKPub;
         rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr mIKVelPub;
 
-
-        // Tag offsets
-        std::unordered_map<int, cv::Vec3d> offset_map;
-
         // First position is rotation vector, second is translation vector
         // std::vector<cv::Vec3d> current_estimate;
         std::optional<SE3d> mCameraToKey = std::nullopt;
         bool mUpdatePoseEstimate = true;
 
-        // Filter that stores filtered pose
-        cv::KalmanFilter kf;
-
         cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);
 
         // Layout map (ID -> Bottom-Left Corner Position)
         std::map<int, cv::Vec3d> mTagLayout;
-
-        auto outputToCSV(cv::Vec3d& tvec, cv::Vec3d& rvec) -> void;
-
-        auto createRoverBoard() -> void;
-
-        rclcpp::Time last_prediction_time_;
-        bool filter_i0nitialized_ = false;
-
-        // Change the function signature to accept vectors
-        auto updateKalmanFilter(cv::Vec3d& tvec, cv::Vec3d& rvec) -> geometry_msgs::msg::Pose;
 
         auto sendIKCommand(float x, float y, float z, float pitch, float roll) -> void;
 
@@ -154,8 +135,6 @@ namespace mrover {
         // Median Filter
 
         auto vectorMedianFilter(cv::Vec3d tvec, cv::Vec3d rvec) -> std::pair<cv::Vec3d, cv::Vec3d>;
-
-        auto squaredEuclideanDistance(cv::Vec3d const& a, cv::Vec3d const& b) -> double;
 
         std::deque<cv::Vec3d> tvec_window;
 
