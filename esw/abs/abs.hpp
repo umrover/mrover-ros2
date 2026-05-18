@@ -10,17 +10,15 @@ namespace mrover {
     class AbsoluteEncoder {
         rclcpp::Node::SharedPtr mNode;
         CANDevice mDevice;
-        bool mInvert;
 
         Radians mPosition{0.0f};
         RadiansPerSecond mVelocity{0.0f};
 
     public:
-        AbsoluteEncoder(rclcpp::Node::SharedPtr node, std::string masterName, std::string deviceName, bool invert = false)
+        AbsoluteEncoder(rclcpp::Node::SharedPtr node, std::string masterName, std::string deviceName)
             : mNode{std::move(node)},
               mDevice{mNode, std::move(masterName), std::move(deviceName),
-                      [this](CANMsg_t const& msg) -> void { processMessage(msg); }},
-              mInvert{invert} {
+                      [this](CANMsg_t const& msg) -> void { processMessage(msg); }} {
         }
 
         void processMessage(CANMsg_t const& msg) {
@@ -29,9 +27,8 @@ namespace mrover {
 
                 if constexpr (std::is_same_v<T, ABSEncoderState>) {
                     // update local state
-                    float const sign = mInvert ? -1.0f : 1.0f;
-                    mPosition = Radians{decoded.position * sign};
-                    mVelocity = RadiansPerSecond{decoded.velocity * sign};
+                    mPosition = Radians{decoded.position};
+                    mVelocity = RadiansPerSecond{decoded.velocity};
                 } else {
                     RCLCPP_WARN(mNode->get_logger(), "absolute encoder received unexpected message type %s", typeid(T).name());
                 }
