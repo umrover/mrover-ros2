@@ -479,8 +479,8 @@ gg  <joint name="chassis_link_to_long_range_camera_link" type="fixed">
   </link>
 
   <joint name="arm_e_link_to_finger_camera" type="fixed">
-    <origin xyz="0 0 0" rpy="0 0 0"/>
-    <parent link="arm_e_link"/>
+    <origin xyz="0.03713988 0 -0.2" rpy="0 -1.134 0"/>
+    <parent link="arm_d_link"/>
     <child link="finger_camera_frame"/>
   </joint>
 

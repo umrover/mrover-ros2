@@ -57,6 +57,21 @@ def generate_launch_description():
         output="screen",
     )
 
+    # keyboard typing node
+    keyboard_typing_node = Node(
+        package="mrover",
+        executable="keyboard_typing",
+        name="keyboard_typing",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "keyboard_typing.yaml")],
+        respawn=False,
+    )
+
+    arm_e_link_to_cam = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        arguments=["0.02948991", "0", "-0.0456159", "0", "-1.0996", "0", "arm_fk_de", "finger_camera_frame"],
+    )
+
     launch_localization = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             Path(get_package_share_directory("mrover"), "launch/localization.launch.py").__str__()
@@ -67,6 +82,8 @@ def generate_launch_description():
         [
             launch_include_jetson_base,
             arm_hw_bridge_node,
+            keyboard_typing_node,
+            arm_e_link_to_cam,
             cam_container,
         ]
     )
