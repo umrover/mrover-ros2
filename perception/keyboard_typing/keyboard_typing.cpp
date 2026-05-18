@@ -599,7 +599,7 @@ namespace mrover {
                 RCLCPP_INFO_STREAM(this->get_logger(), "rolled_y_pos = " << rolled_y_pos);
                 bool status = send_goal(-rolled_x_pos, rolled_y_pos);
 
-                // Check goal cancelled 
+                // Check goal cancelled
                 if (goal_handle->is_canceling()) {
                     result->success = false;
                     goal_handle->canceled(result);
