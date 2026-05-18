@@ -69,7 +69,7 @@ def generate_launch_description():
     arm_e_link_to_cam = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
-        arguments=["0.03713988", "0", "-0.0945642", "0", "-1.134", "0", "arm_fk_de", "finger_camera_frame"],
+        arguments=["0.02948991", "0", "-0.0456159", "0", "-1.0996", "0", "arm_fk_de", "finger_camera_frame"],
     )
 
     launch_localization = IncludeLaunchDescription(

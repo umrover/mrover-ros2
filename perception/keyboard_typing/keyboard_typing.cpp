@@ -456,7 +456,8 @@ namespace mrover {
     // ----------------------- ACTION SERVER/CLIENT ---------------------------
     // Typing IK action client functions (communication with Nav)
     auto KeyboardTypingNode::send_goal(float x_delta, float y_delta) -> bool {
-        if (!mTypingClient->wait_for_action_server()) {
+        // Wait at most 5 seconds for nav action server before timing out
+        if (!mTypingClient->wait_for_action_server(std::chrono::seconds(5))) {
             RCLCPP_INFO_STREAM(this->get_logger(), "Typing Deltas Action Server not available");
             return false;
         }
@@ -505,11 +506,12 @@ namespace mrover {
             return rclcpp_action::GoalResponse::REJECT;
         }
 
+        // Check that each passed character is in the keyboard map (i.e. it's a valid char)
         std::string temp = goal->launch_code;
         if (!std::all_of(temp.begin(), temp.end(), [](unsigned char c) {
-                return std::isalpha(c);
+                return keyboard_offset.contains(static_cast<char>(std::toupper(static_cast<unsigned char>(c))));
             })) {
-            RCLCPP_WARN(this->get_logger(), "All keys must be letters!");
+            RCLCPP_WARN(this->get_logger(), "All keys must be letters or - (backspace)!");
             return rclcpp_action::GoalResponse::REJECT;
         }
 
@@ -595,15 +597,21 @@ namespace mrover {
                 RCLCPP_INFO_STREAM(this->get_logger(), "y_pos = " << y_pos);
                 RCLCPP_INFO_STREAM(this->get_logger(), "rolled_x_pos = " << rolled_x_pos);
                 RCLCPP_INFO_STREAM(this->get_logger(), "rolled_y_pos = " << rolled_y_pos);
-                send_goal(-rolled_x_pos, rolled_y_pos);
+                bool status = send_goal(-rolled_x_pos, rolled_y_pos);
 
+                // Check goal cancelled 
                 if (goal_handle->is_canceling()) {
                     result->success = false;
                     goal_handle->canceled(result);
                     return;
-                } // Check if goal canceled again because we returned from a long function
+                }
 
-                // TODO add handling for if goal fails
+                // If goal fails and we're on the first key, stop
+                if (!status && i == 0) {
+                    result->success = false;
+                    goal_handle->abort(result);
+                    return;
+                }
 
                 current_key = launchCode[i];
             }
