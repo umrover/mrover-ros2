@@ -84,8 +84,6 @@ namespace mrover {
                     {"joint_b_mount_theta", mJointBMountTheta.rep, 0.0},
                     {"joint_b_segment_offset_theta", mJointBSegmentOffsetTheta.rep, 0.0},
                     {"joint_c_offset_theta", mJointCOffsetTheta.rep, 0.0},
-                    {"joint_de_pitch_offset", mJointDEPitchOffset.rep, 0.0},
-                    {"joint_de_roll_offset", mJointDERollOffset.rep, 0.0},
                     {"joint_de_pitch_max_position", mJointDEPitchMaxPosition.rep, std::numeric_limits<float>::infinity()},
                     {"joint_de_pitch_min_position", mJointDEPitchMinPosition.rep, -std::numeric_limits<float>::infinity()},
                     {"joint_de_roll_max_position", mJointDERollMaxPosition.rep, std::numeric_limits<float>::infinity()},
@@ -113,8 +111,8 @@ namespace mrover {
             mJointDE1 = std::make_shared<BrushlessController<Revolutions>>(shared_from_this(), "jetson", "joint_de_1");
             mGripper = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "gripper");
             mPusher = std::make_shared<BrushedController<Meters>>(shared_from_this(), "jetson", "pusher");
-            mAbsDEPitch = std::make_shared<AbsoluteEncoder>(shared_from_this(), "jetson", "abs_de_pitch", true);
-            mAbsDERoll = std::make_shared<AbsoluteEncoder>(shared_from_this(), "jetson", "abs_de_roll", true);
+            mAbsDEPitch = std::make_shared<AbsoluteEncoder>(shared_from_this(), "jetson", "abs_de_pitch");
+            mAbsDERoll = std::make_shared<AbsoluteEncoder>(shared_from_this(), "jetson", "abs_de_roll");
 
             mArmThrottleSub = create_subscription<msg::Throttle>("arm_thr_cmd", 1, [this](msg::Throttle::ConstSharedPtr const& msg) -> void { processThrottleCmd(msg); });
             mArmVelocitySub = create_subscription<msg::Velocity>("arm_vel_cmd", 1, [this](msg::Velocity::ConstSharedPtr const& msg) -> void { processVelocityCmd(msg); });
@@ -205,7 +203,6 @@ namespace mrover {
         Percent mPusherThrottle;
         float mPusherWaitDuration{}, mPusherWaitCycles{};
 
-        Radians mJointDEPitchOffset, mJointDERollOffset;
         std::optional<Vector2<Radians>> mJointDEPitchRoll; // position after offset is applied (raw - offset)
 
         Radians mJointDEPitchMaxPosition, mJointDEPitchMinPosition;
@@ -520,8 +517,8 @@ namespace mrover {
         auto updateAbsoluteOffsets() -> void {
             mJointC->adjust(mJointCOffsetTheta);
 
-            Radians const currentPitch = mAbsDEPitch->getPosition() - mJointDEPitchOffset;
-            Radians const currentRoll = mAbsDERoll->getPosition() - mJointDERollOffset;
+            Radians const currentPitch = mAbsDEPitch->getPosition();
+            Radians const currentRoll = mAbsDERoll->getPosition();
             mJointDEPitchRoll = {currentPitch, currentRoll};
 
             Vector2<Radians> motorPositionsRad = PITCH_ROLL_TO_01_SCALE * (PITCH_ROLL_TO_0_1 * mJointDEPitchRoll.value());
@@ -603,12 +600,9 @@ namespace mrover {
         auto publishDataCallback() -> void {
             mControllerState.header.stamp = now();
 
-            Radians const pitch = mAbsDEPitch->getPosition() - mJointDEPitchOffset;
-            Radians const roll = mAbsDERoll->getPosition() - mJointDERollOffset;
+            Radians const pitch = mAbsDEPitch->getPosition();
+            Radians const roll = mAbsDERoll->getPosition();
             mJointDEPitchRoll = {pitch, roll};
-            // auto const pitchWrapped = wrapAngle(mJointDE1->getPosition());
-            // auto const rollWrapped = -1 * wrapAngle(mJointDE0->getPosition());
-            // mJointDEPitchRoll = {pitchWrapped, rollWrapped};
 
             mJointDE1->setExternalSoftLimits(pitch >= mJointDEPitchMaxPosition, pitch <= mJointDEPitchMinPosition);
             mJointDE0->setExternalSoftLimits(roll >= mJointDERollMaxPosition, roll <= mJointDERollMinPosition);
