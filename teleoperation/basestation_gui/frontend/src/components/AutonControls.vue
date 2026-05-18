@@ -76,6 +76,14 @@ const emit = defineEmits<{
   toggleTeleop: [enabled: boolean]
 }>()
 
+const autonomyStore = useAutonomyStore()
+
+const autonEnabled = computed(() => autonomyStore.autonEnabled)
+const teleopEnabled = computed(() => autonomyStore.teleopEnabled)
+const purePursuitEnabled = computed(() => autonomyStore.purePursuitEnabled)
+const pathRelaxationEnabled = computed(() => autonomyStore.pathRelaxationEnabled)
+const pathInterpolationEnabled = computed(() => autonomyStore.pathInterpolationEnabled)
+
 const autonAction = (newState: boolean) => {
   const waypoints = newState
     ? autonomyStore.execution.map(wp => ({
@@ -84,19 +92,13 @@ const autonAction = (newState: boolean) => {
         tag_id: wp.tag_id,
         type: wp.type,
         enable_costmap: wp.enable_costmap,
+        coverage_radius: wp.coverage_radius,
       }))
     : []
 
   return autonAPI.enable(newState, waypoints)
 }
 
-const autonomyStore = useAutonomyStore()
-
-const autonEnabled = computed(() => autonomyStore.autonEnabled)
-const teleopEnabled = computed(() => autonomyStore.teleopEnabled)
-const purePursuitEnabled = computed(() => autonomyStore.purePursuitEnabled)
-const pathRelaxationEnabled = computed(() => autonomyStore.pathRelaxationEnabled)
-const pathInterpolationEnabled = computed(() => autonomyStore.pathInterpolationEnabled)
 const teleopAction = (newState: boolean) => autonAPI.enableTeleop(newState)
 const purePursuitAction = (newState: boolean) => autonAPI.togglePurePursuit(newState)
 const pathRelaxationAction = (newState: boolean) => autonAPI.togglePathRelaxation(newState)
