@@ -11,6 +11,7 @@ namespace mrover {
 
     auto CameraClientNode::loadCameraConfigs() -> std::unordered_map<std::string, std::vector<std::string>> {
         std::unordered_map<std::string, std::vector<std::string>> configs;
+        std::unordered_set<std::string> sanitizedCameras{};
 
         // declare jitter
         declare_parameter("rtp_jitter_ms", 100);
@@ -37,10 +38,12 @@ namespace mrover {
                     return str;
                 };
 
-                if (mMediaControlClients.contains(cameraName)) {
+                if (sanitizedCameras.contains(sanitize(cameraName))) {
                     RCLCPP_WARN(get_logger(), "Camera %s already exists, skipping", cameraName.c_str());
                     continue;
                 }
+
+                sanitizedCameras.insert(sanitize(cameraName));
 
                 RCLCPP_INFO(get_logger(), "cameraName: %s", sanitize(cameraName).c_str());
                 declare_parameter(std::format("{}.port", sanitize(cameraName)), rclcpp::ParameterType::PARAMETER_INTEGER);
