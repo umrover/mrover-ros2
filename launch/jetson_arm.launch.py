@@ -68,5 +68,6 @@ def generate_launch_description():
             launch_include_jetson_base,
             arm_hw_bridge_node,
             cam_container,
+            launch_localization
         ]
     )
