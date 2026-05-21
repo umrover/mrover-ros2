@@ -48,6 +48,10 @@ namespace mrover {
 
         void sampleColorAtCursor();
 
+        int mRotation{0};
+        std::string mBasePipeline;
+        auto applyPipeline() -> void;
+
     public:
         explicit GstVideoWidget(QWidget* parent = nullptr);
 
@@ -60,6 +64,7 @@ namespace mrover {
         auto play() -> void;
         auto pause() -> void;
         auto stop() -> void;
+        auto rotate90() -> void;
 
         void updateFrame(QImage const& frame);
 
@@ -123,6 +128,8 @@ namespace mrover {
         auto hideVideo(std::string const& name) -> bool;
         auto showVideo(std::string const& name) -> bool;
         auto moveCamera(std::string const& name, int newIndex) -> bool;
+        auto resizeCamera(std::string const& name, int width, int height) -> bool;
+        auto rotateCamera(std::string const& name) -> bool;
         auto hideAll() -> void;
 
         [[nodiscard]] auto error() const -> GstVideoGridWidget::Error;

@@ -59,6 +59,7 @@ namespace mrover {
                             .onPlay = []() { return true; },
                             .onStop = []() { return true; },
                             .onScreenshot = []() { return true; },
+                            .onResize = [this, name](int w, int h) { mCameraGridWidget->resizeCamera(name, w, h); },
                     };
 
                     if (bool success = createCamera(name, pipeline, std::move(callbacks)); !success) {
