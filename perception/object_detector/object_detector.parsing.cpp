@@ -30,7 +30,7 @@ namespace mrover {
         output = output.reshape(1, predictionDimension);
         cv::transpose(output, output);
 
-        // This function expects the image to already be in the correct format thus no distrotion is needed
+        // This function expects the image to already be in the correct format thus no distortion is needed
         float const xFactor = 1.0;
         float const yFactor = 1.0;
 
@@ -67,7 +67,7 @@ namespace mrover {
             auto width = static_cast<int>(w * xFactor);
             auto height = static_cast<int>(h * yFactor);
 
-            // Push abck the box into storage
+            // Push back the box into storage
             boxes.emplace_back(left, top, width, height);
         }
 
@@ -78,7 +78,7 @@ namespace mrover {
         // Fill in the output Detections Vector
         for (int i: nmsResult) {
             //Push back the detection into the for storage vector
-            detections.emplace_back(classIds[i], model.classes[classIds[i]], confidences[i], boxes[i]);
+            detections.emplace_back(classIds[i], model.classes[classIds[i]], model.colors[classIds[i]], confidences[i], boxes[i]);
         }
     }
 

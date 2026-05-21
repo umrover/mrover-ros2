@@ -23,6 +23,13 @@ def generate_launch_description():
         parameters=[Path(get_package_share_directory("mrover"), "config", "esw.yaml")],
     )
 
+    pdlb_hw_bridge_node = Node(
+        package="mrover",
+        executable="pdlb_hw_bridge",
+        name="pdlb_hw_bridge",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "esw.yaml")],
+    )
+
     u2d2_bridge = Node(
         package="mrover",
         executable="u2d2_bridge",
@@ -50,14 +57,55 @@ def generate_launch_description():
         ],
     )
 
-    mob_streamer_node = Node(
+    base_link_to_right_gps = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        arguments=["0.0", "0.47", "0", "0", "0", "0", "1", "gps_frame", "base_link"],
+    )
+
+    base_link_to_zed = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        arguments=["0", "0", "1", "0", "0", "0", "1", "base_link", "zed_left_camera_frame"],
+    )
+
+    mast_gimbal_hw_bridge = Node(
         package="mrover",
-        executable="gst_camera_server",
-        name="mob_streamer",
+        executable="mast_gimbal_hw_bridge",
+        name="mast_gimbal_hw_bridge",
         output="screen",
         parameters=[
-            Path(get_package_share_directory("mrover"), "config", "cameras.yaml"),
+            Path(get_package_share_directory("mrover"), "config", "mast_gimbal.yaml"),
         ],
+    )
+
+    cameras_config_path = str(Path(get_package_share_directory("mrover"), "config", "cameras.yaml"))
+
+    cameras = [
+        "mob_left_streamer",
+        "mob_right_streamer",
+        "gps_left_streamer",
+        "gps_right_streamer",
+    ]
+
+    cam_composable_nodes = [
+        ComposableNode(
+            package="mrover",
+            plugin="mrover::GstCameraServer",
+            name=name,
+            parameters=[cameras_config_path],
+            extra_arguments=[{"use_intra_process_comms": True}],
+        )
+        for name in cameras
+    ]
+
+    cam_container = ComposableNodeContainer(
+        name="webcam_streamer_container",
+        namespace="",
+        package="rclcpp_components",
+        executable="component_container_mt",
+        composable_node_descriptions=cam_composable_nodes,
+        output="screen",
     )
 
     zed_mini_container = ComposableNodeContainer(
@@ -108,26 +156,19 @@ def generate_launch_description():
         output="screen",
     )
 
-    mast_gimbal_hw_bridge = Node(
-        package="mrover",
-        executable="mast_gimbal_hw_bridge",
-        name="mast_gimbal_hw_bridge",
-        output="screen",
-        parameters=[
-            Path(get_package_share_directory("mrover"), "config", "mast_gimbal.yaml"),
-        ],
-    )
-
     return LaunchDescription(
         [
             launch_include_can,
             diff_drive_controller_node,
+            pdlb_hw_bridge_node,
             u2d2_bridge,
             superstructure_node,
             drive_hw_bridge_node,
-            mob_streamer_node,
+            mast_gimbal_hw_bridge,
+            cam_container,
             zed_mini_container,
             zed_container,
-            mast_gimbal_hw_bridge,
+            base_link_to_zed,
+            base_link_to_right_gps,
         ]
     )
