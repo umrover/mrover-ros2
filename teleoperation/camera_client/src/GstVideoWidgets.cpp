@@ -56,8 +56,27 @@ GstVideoWidget::GstVideoWidget(QWidget* parent) : QVideoWidget(parent) {
 }
 
 auto GstVideoWidget::setGstPipeline(std::string const& pipeline) -> void {
-    mPlayer->setMedia(QUrl(std::format("gst-pipeline: {} ! videoconvert ! xvimagesink name=\"qtvideosink\" sync=false", pipeline).c_str()));
+    mBasePipeline = pipeline;
+    applyPipeline();
+}
+
+auto GstVideoWidget::applyPipeline() -> void {
+    std::string flipElement = "";
+    if (mRotation == 1) {
+        flipElement = " ! videoflip method=clockwise";
+    } else if (mRotation == 2) {
+        flipElement = " ! videoflip method=rotate-180";
+    } else if (mRotation == 3) {
+        flipElement = " ! videoflip method=counterclockwise";
+    }
+
+    mPlayer->setMedia(QUrl(std::format("gst-pipeline: {} ! videoconvert ! xvimagesink name=\"qtvideosink\" sync=false", mBasePipeline, flipElement).c_str()));
     play();
+}
+
+auto GstVideoWidget::rotate90() -> void {
+    mRotation = (mRotation + 1) % 4;
+    applyPipeline();
 }
 
 auto GstVideoWidget::errorString() const -> QString {
@@ -103,9 +122,20 @@ GstVideoGridWidget::GstVideoGridWidget(QWidget* parent)
 
 auto GstVideoGridWidget::calculateColumnCount() const -> int {
     int const availableWidth = width() - mMainLayout->contentsMargins().left() - mMainLayout->contentsMargins().right();
-    int const cellWidth = MIN_VIDEO_WIDTH + mMainLayout->spacing();
-    int const columns = std::max(1, availableWidth / cellWidth);
-    return columns;
+
+    int currentVideoWidth = MIN_VIDEO_WIDTH;
+    if (!mVisibleOrder.empty()) {
+        auto it = mGstVideoBoxes.find(mVisibleOrder.front());
+        if (it != mGstVideoBoxes.end()) {
+            currentVideoWidth = it->second.widget->width();
+        }
+    }
+
+    int const maxColumns = std::max(1, availableWidth / (currentVideoWidth + mMainLayout->spacing()));
+    int const visibleCount = std::max(1, static_cast<int>(mVisibleOrder.size()));
+    int const idealColumns = static_cast<int>(std::ceil(std::sqrt(visibleCount)));
+
+    return std::min(maxColumns, idealColumns);
 }
 
 auto GstVideoGridWidget::addGstVideoWidget(std::string const& name, std::string const& pipeline) -> bool {
@@ -121,6 +151,7 @@ auto GstVideoGridWidget::addGstVideoWidget(std::string const& name, std::string 
     auto* gstVideoBoxGstVideoWidget = new GstVideoWidget(gstVideoBoxWidget);
 
     gstVideoBoxWidget->setMinimumSize(640, 480);
+    gstVideoBoxWidget->setMaximumSize(640, 480);
 
     gstVideoBoxGstVideoWidget->setGstPipeline(pipeline);
     if (gstVideoBoxGstVideoWidget->isError()) {
@@ -181,6 +212,25 @@ auto GstVideoGridWidget::rebuildGrid() -> void {
 void GstVideoGridWidget::resizeEvent(QResizeEvent* event) {
     QWidget::resizeEvent(event);
     rebuildGrid();
+}
+
+auto GstVideoGridWidget::rotateCamera(std::string const& name) -> bool {
+    auto* box = findVideoBox(name);
+    if (!box) return false;
+
+    box->gstVideoWidget->rotate90();
+
+    QSize const currentSize = box->widget->minimumSize();
+    int const newWidth = currentSize.height();
+    int const newHeight = currentSize.width();
+
+    box->widget->setMinimumSize(newWidth, newHeight);
+    box->widget->setMaximumSize(newWidth, newHeight);
+    box->widget->resize(newWidth, newHeight);
+
+    rebuildGrid();
+
+    return true;
 }
 
 auto GstVideoGridWidget::getGstVideoWidget(std::string const& name) -> GstVideoWidget* {
@@ -280,6 +330,16 @@ auto GstVideoGridWidget::clearError() -> void {
 auto GstVideoGridWidget::setError(Error error, std::string const& errorString) -> void {
     mError = error;
     mErrorString = QString::fromStdString(errorString);
+}
+
+auto GstVideoGridWidget::resizeCamera(std::string const& name, int width, int height) -> bool {
+    auto* box = findVideoBox(name);
+    if (!box) return false;
+    box->widget->setMinimumSize(width, height);
+    box->widget->setMaximumSize(width, height);
+    box->widget->resize(width, height);
+    rebuildGrid();
+    return true;
 }
 
 auto GstVideoGridWidget::getDropTargetIndex(QPoint const& pos) const -> int {

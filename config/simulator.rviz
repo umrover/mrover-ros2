@@ -136,9 +136,9 @@ Visualization Manager:
           Value: true
         front_right_wheel_link:
           Value: true
-        hammer:
+        mallet:
           Value: true
-        hammer_truth:
+        mallet_truth:
           Value: true
         imu:
           Value: true
@@ -237,9 +237,9 @@ Visualization Manager:
             {}
           course2:
             {}
-          hammer:
+          mallet:
             {}
-          hammer_truth:
+          mallet_truth:
             {}
           rock1_truth:
             {}

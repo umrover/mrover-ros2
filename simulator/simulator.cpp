@@ -38,6 +38,16 @@ namespace mrover {
 
             mIkModeClient = create_client<srv::IkMode>("ik_mode");
 
+            dummyStereoToggleServer = create_service<mrover::srv::ToggleObjectDetector>("toggle_stereo_object_detector", [this](mrover::srv::ToggleObjectDetector::Request::ConstSharedPtr const& request, mrover::srv::ToggleObjectDetector::Response::SharedPtr const& response) {
+                RCLCPP_INFO_STREAM(get_logger(), "Setting dummy stereo object detection mode to: " << std::to_string(request->waypoint.val));
+                response->success = true;
+            });
+
+            dummyImageToggleServer = create_service<mrover::srv::ToggleObjectDetector>("toggle_image_object_detector", [this](mrover::srv::ToggleObjectDetector::Request::ConstSharedPtr const& request, mrover::srv::ToggleObjectDetector::Response::SharedPtr const& response) {
+                RCLCPP_INFO_STREAM(get_logger(), "Setting dummy image object detection mode to: " << std::to_string(request->waypoint.val));
+                response->success = true;
+            });
+
             if (!mIsHeadless) initWindow();
 
             initPhysics();
