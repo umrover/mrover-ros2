@@ -89,6 +89,8 @@ class Navigation(Node):
                 ("search.safe_approach_distance", Parameter.Type.DOUBLE),
                 ("search.angle_thresh", Parameter.Type.DOUBLE),
                 ("search.distance_threshold", Parameter.Type.DOUBLE),
+                ("search.distance_look_threshold", Parameter.Type.DOUBLE),
+                ("search.check_update_time", Parameter.Type.DOUBLE),
                 # Image Targets
                 ("image_targets.increment_weight", Parameter.Type.INTEGER),
                 ("image_targets.decrement_weight", Parameter.Type.INTEGER),
