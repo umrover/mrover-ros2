@@ -8,15 +8,10 @@ Using build profile: RelWithDebInfo
 + CXX=clang++
 + '[' -n /Users/bytedance/mrover-ros2 ']'
 + bash tools/setup_dawn.sh
-Downloading Dawn v20260423.175430 for Darwin/arm64...
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
-  0 9216k    0 32750    0     0    99k      0  0:01:32 --:--:--  0:01:32   99k100 9216k  100 9216k    0     0  10.6M      0 --:--:-- --:--:-- --:--:-- 17.0M
-Dawn v20260423.175430 installed.
 + COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification
 + colcon build --cmake-args -G Ninja -W no-dev -DCMAKE_BUILD_TYPE=RelWithDebInfo -DMROVER_PORTABLE=ON -DCMAKE_PREFIX_PATH=/Users/bytedance/mrover-ros2/.pixi/envs/default --symlink-install --event-handlers console_direct+
 Starting >>> mrover
+-- Found Python3: /Users/bytedance/mrover-ros2/.pixi/envs/default/bin/python3.12 (found version "3.12.13") found components: Interpreter Development Development.Module Development.Embed
 -- Found rclpy: 7.1.9 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/rclpy/cmake)
 -- Found rclcpp: 28.1.16 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/rclcpp/cmake)
 -- Override CMake install command with custom implementation using symlinks instead of copying resources
@@ -41,12 +36,6 @@ Starting >>> mrover
 -- Found yaml_cpp_vendor: 9.0.1 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/yaml_cpp_vendor/cmake)
 -- Setting yaml-cpp_DIR to: '/Users/bytedance/mrover-ros2/.pixi/envs/default/share/yaml_cpp_vendor/cmake/../../../opt/yaml_cpp_vendor/share/cmake/yaml-cpp'
 -- Found dynamixel_sdk: 4.0.3 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/dynamixel_sdk/cmake)
-CMake Error at CMakeLists.txt:82 (add_library):
-  add_library cannot create ALIAS target "webgpu" because target
-  "Dawn::webgpu_dawn" does not already exist.
-
-
--- Found PkgConfig: /Users/bytedance/mrover-ros2/.pixi/envs/default/bin/pkg-config (found version "0.29.2")
 -- Found ament_lint_auto: 0.17.4 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/ament_lint_auto/cmake)
 -- Found message files: msg/CAN.msg;msg/CO2.msg;msg/CalibrationStatus.msg;msg/CameraInfo.msg;msg/Chassis.msg;msg/ControllerState.msg;msg/Course.msg;msg/FixStatus.msg;msg/FixType.msg;msg/GPSPointList.msg;msg/GPSWaypoint.msg;msg/Heading.msg;msg/HeaterData.msg;msg/Humidity.msg;msg/IK.msg;msg/ImageTarget.msg;msg/ImageTargets.msg;msg/KeyboardYaw.msg;msg/LED.msg;msg/MotorsAdjust.msg;msg/NetworkBandwidth.msg;msg/Oxygen.msg;msg/Ozone.msg;msg/PDB.msg;msg/PDLB.msg;msg/Position.msg;msg/Pressure.msg;msg/SatelliteSignal.msg;msg/ScienceThermistors.msg;msg/SensorStates.msg;msg/ServoConfigure.msg;msg/ServoIn.msg;msg/ServoOut.msg;msg/Spectral.msg;msg/StateMachineStateUpdate.msg;msg/StateMachineStructure.msg;msg/StateMachineTransition.msg;msg/Temperature.msg;msg/Throttle.msg;msg/UV.msg;msg/Velocity.msg;msg/Waypoint.msg;msg/WaypointType.msg
 -- Found service files: srv/AdjustMotor.srv;srv/DilateCostMap.srv;srv/EnableAuton.srv;srv/EnableBool.srv;srv/IkMode.srv;srv/MediaControl.srv;srv/MoveCostMap.srv;srv/PanoService.srv;srv/PanoramaEnd.srv;srv/PanoramaStart.srv;srv/PdlbReset.srv;srv/Pusher.srv;srv/ScienceBoardReset.srv;srv/ServoPosition.srv;srv/ToggleCostMap.srv;srv/ToggleObjectDetector.srv
@@ -58,7 +47,6 @@ CMake Error at CMakeLists.txt:82 (add_library):
 -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
 -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
 -- Found python_cmake_module: 0.11.1 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/python_cmake_module/cmake)
--- Found PythonExtra: /Users/bytedance/mrover-ros2/.pixi/envs/default/bin/python3.12
 -- Found Python3: /Users/bytedance/mrover-ros2/.pixi/envs/default/bin/python3.12 (found version "3.12.13") found components: Interpreter Development NumPy Development.Module Development.Embed
 ZED not found...
 -- Added test 'cppcheck' to perform static code analysis on C / C++ code
@@ -71,18 +59,694 @@ ZED not found...
 -- Added test 'uncrustify' to check C / C++ code style
 -- Configured uncrustify additional arguments: 
 -- Added test 'xmllint' to check XML markup files
--- Configuring incomplete, errors occurred!
+-- Configuring done (57.0s)
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "nav_msgs::nav_msgs__rosidl_generator_py" includes
+  non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Target "mrover__rosidl_generator_py" INTERFACE_INCLUDE_DIRECTORIES property
+  contains path:
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/include/python3.12"
+
+  which is prefixed in the source directory.
+
+
+CMake Error in CMakeLists.txt:
+  Target "mrover__rosidl_generator_py" INTERFACE_INCLUDE_DIRECTORIES property
+  contains path:
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/core/include"
+
+  which is prefixed in the source directory.
+
+
+-- Generating done (1.7s)
+CMake Generate step failed.  Build files cannot be regenerated correctly.
 ninja: error: loading 'build.ninja': No such file or directory
 --- stderr: mrover
-CMake Error at CMakeLists.txt:82 (add_library):
-  add_library cannot create ALIAS target "webgpu" because target
-  "Dawn::webgpu_dawn" does not already exist.
-
-
 ZED not found...
----
-Failed   <<< mrover [1min 10s, exited with code 1]
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
 
-Summary: 0 packages finished [1min 10s]
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "nav_msgs::nav_msgs__rosidl_generator_py" includes
+  non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Imported target "rclcpp::rclcpp" includes non-existent path
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  in its INTERFACE_INCLUDE_DIRECTORIES.  Possible reasons include:
+
+  * The path was deleted, renamed, or moved to another location.
+
+  * An install or uninstall procedure did not complete successfully.
+
+  * The installation package was faulty and references files it does not
+  provide.
+
+
+
+CMake Error in CMakeLists.txt:
+  Target "mrover__rosidl_generator_py" INTERFACE_INCLUDE_DIRECTORIES property
+  contains path:
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/include/python3.12"
+
+  which is prefixed in the source directory.
+
+
+CMake Error in CMakeLists.txt:
+  Target "mrover__rosidl_generator_py" INTERFACE_INCLUDE_DIRECTORIES property
+  contains path:
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/core/include"
+
+  which is prefixed in the source directory.
+
+
+CMake Generate step failed.  Build files cannot be regenerated correctly.
+---
+Failed   <<< mrover [58.8s, exited with code 1]
+
+Summary: 0 packages finished [59.1s]
   1 package failed: mrover
   1 package had stderr output: mrover
