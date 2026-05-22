@@ -21,43 +21,22 @@ ARCH=$(uname -m)
 
 if [ "${OS}" = "Darwin" ] && [ "${ARCH}" = "arm64" ]; then
     BINARY_TARBALL="Dawn-${DAWN_SHA}-macos-latest-Release.tar.gz"
-    DAWN_LIB_NAME="libwebgpu_dawn.dylib"
 elif [ "${OS}" = "Linux" ] && [ "${ARCH}" = "x86_64" ]; then
     BINARY_TARBALL="Dawn-${DAWN_SHA}-ubuntu-latest-Release.tar.gz"
-    DAWN_LIB_NAME="libwebgpu_dawn.so"
 else
     echo "Unsupported platform: ${OS}/${ARCH}" >&2
     exit 1
 fi
 
-readonly HEADERS_TARBALL="dawn-headers-${DAWN_SHA}.tar.gz"
-
 tmpdir=$(mktemp -d)
 trap 'rm -rf "${tmpdir}"' EXIT
 
 echo "Downloading Dawn ${DAWN_VERSION} for ${OS}/${ARCH}..."
-curl -fSL "${BASE_URL}/${BINARY_TARBALL}" -o "${tmpdir}/dawn-bin.tar.gz"
-curl -fSL "${BASE_URL}/${HEADERS_TARBALL}" -o "${tmpdir}/dawn-headers.tar.gz"
+curl -fSL "${BASE_URL}/${BINARY_TARBALL}" -o "${tmpdir}/dawn.tar.gz"
 
 rm -rf "${DEST}"
-mkdir -p "${DEST}/lib" "${DEST}/include"
-
-mkdir -p "${tmpdir}/bin"
-tar -xzf "${tmpdir}/dawn-bin.tar.gz" -C "${tmpdir}/bin"
-find "${tmpdir}/bin" -name "${DAWN_LIB_NAME}" -exec cp {} "${DEST}/lib/" \;
-if [ ! -f "${DEST}/lib/${DAWN_LIB_NAME}" ]; then
-    echo "Failed to find ${DAWN_LIB_NAME} in tarball. Contents:" >&2
-    find "${tmpdir}/bin" -type f >&2
-    exit 1
-fi
-
-mkdir -p "${tmpdir}/hdr"
-tar -xzf "${tmpdir}/dawn-headers.tar.gz" -C "${tmpdir}/hdr"
-if [ -d "${tmpdir}/hdr/include" ]; then
-    cp -r "${tmpdir}/hdr/include/." "${DEST}/include/"
-else
-    cp -r "${tmpdir}/hdr/." "${DEST}/include/"
-fi
+mkdir -p "${DEST}"
+tar -xzf "${tmpdir}/dawn.tar.gz" -C "${DEST}" --strip-components 1
 
 echo "${DAWN_SHA}" > "${VERSION_FILE}"
 echo "Dawn ${DAWN_VERSION} installed."
