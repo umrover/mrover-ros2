@@ -1,23 +1,46 @@
-❯ pixi install               
-Error:   × Unexpected keys, expected only 'name', 'version', 'description', 'authors', 'channels', 'channel-priority', 'solve-strategy', 'platforms', 'license', 'license-file', 'readme',
-  │ 'homepage', 'repository', 'documentation', 'conda-pypi-map', 'pypi-options', 's3-options', 'preview', 'target', 'build-variants-files', 'build-variants', 'requires-pixi', 'exclude-
-  │ newer'
-   ╭─[/Users/bytedance/mrover-ros2/pixi.toml:6:1]
- 5 │ platforms = ["osx-arm64", "linux-64"]
- 6 │ detached-environments = true
-   · ──────────┬──────────
-   ·           ╰── 'detached-environments' was not expected here
- 7 │ 
-   ╰────
-  help: Did you mean 'documentation'?
+-- Added test 'xmllint' to check XML markup files
+-- Configuring done (61.6s)
+CMake Error in CMakeLists.txt:
+  Target "mrover__rosidl_generator_py" INTERFACE_INCLUDE_DIRECTORIES property
+  contains path:
 
-    ~/mrover-ros2    skj/toolchain ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── default   11:47:53  
-❯ pixi install
-Error:   × failed to solve the pypi requirements of environment 'default' for platform 'linux-64'
-  ├─▶ failed to resolve pypi dependencies
-  ╰─▶ Because moteus==0.3.72 depends on numpy<2 and mrover==2025.0.0 depends on numpy==2.4.6, we can conclude that moteus==0.3.72 and mrover==2025.0.0 are incompatible.
-      And because mrover==2025.0.0 depends on moteus==0.3.72, we can conclude that mrover==2025.0.0 cannot be used.
-      And because only mrover==2025.0.0 is available and you require mrover, we can conclude that your requirements are unsatisfiable.
-  help: The following PyPI packages have been pinned by the conda solve, and this version may be causing a conflict:
-        numpy==2.4.6
-        See https://pixi.sh/latest/concepts/conda_pypi/#pinned-package-conflicts for more information.
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/include/python3.12"
+
+  which is prefixed in the source directory.
+
+
+CMake Error in CMakeLists.txt:
+  Target "mrover__rosidl_generator_py" INTERFACE_INCLUDE_DIRECTORIES property
+  contains path:
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  which is prefixed in the source directory.
+
+
+-- Generating done (0.4s)
+CMake Generate step failed.  Build files cannot be regenerated correctly.
+ninja: error: loading 'build.ninja': No such file or directory
+--- stderr: mrover
+ZED not found...
+CMake Error in CMakeLists.txt:
+  Target "mrover__rosidl_generator_py" INTERFACE_INCLUDE_DIRECTORIES property
+  contains path:
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/include/python3.12"
+
+  which is prefixed in the source directory.
+
+
+CMake Error in CMakeLists.txt:
+  Target "mrover__rosidl_generator_py" INTERFACE_INCLUDE_DIRECTORIES property
+  contains path:
+
+    "/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include"
+
+  which is prefixed in the source directory.
+
+
+CMake Generate step failed.  Build files cannot be regenerated correctly.
+---
+Failed   <<< mrover [1min 2s, exited with code 1]
