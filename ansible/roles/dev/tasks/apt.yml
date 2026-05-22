@@ -1,0 +1,36 @@
+- name: Add GitHub CLI apt key
+  become: true
+  apt_key:
+    url: https://cli.github.com/packages/githubcli-archive-keyring.gpg
+    keyring: /usr/share/keyrings/githubcli-archive-keyring.gpg
+
+- name: Add GitHub CLI apt repo
+  become: true
+  apt_repository:
+    repo: deb [signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main
+    filename: github-cli
+
+- name: Add VSCode apt key
+  become: true
+  apt_key:
+    url: https://packages.microsoft.com/keys/microsoft.asc
+    keyring: /usr/share/keyrings/packages.microsoft.gpg
+
+- name: Add VSCode apt repo
+  become: true
+  apt_repository:
+    filename: vscode
+    repo: "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main"
+
+- name: Install apt packages
+  become: true
+  apt:
+    cache_valid_time: 3600
+    state: latest
+    name:
+      - zsh
+      - fzf
+      - tmux
+      - htop
+      - gh
+      - code

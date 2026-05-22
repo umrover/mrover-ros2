@@ -1,0 +1,13 @@
+- name: Install brew packages
+  community.general.homebrew:
+    name:
+      - fzf
+      - tmux
+      - htop
+      - gh
+    state: present
+
+- name: Install VSCode
+  community.general.homebrew_cask:
+    name: visual-studio-code
+    state: present

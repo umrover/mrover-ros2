@@ -1,0 +1,21 @@
+- name: Install pacman packages
+  become: true
+  community.general.pacman:
+    name:
+      - zsh
+      - fzf
+      - tmux
+      - htop
+      - github-cli
+    state: present
+
+- name: Install VSCode from AUR
+  become: false
+  shell: |
+    tmpdir=$(mktemp -d)
+    git clone https://aur.archlinux.org/visual-studio-code-bin.git "$tmpdir"
+    cd "$tmpdir" && makepkg -si --noconfirm
+    rm -rf "$tmpdir"
+  args:
+    executable: /bin/bash
+    creates: /usr/bin/code

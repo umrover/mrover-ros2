@@ -42,10 +42,11 @@ mkdir -p "${DEST}/lib" "${DEST}/include"
 
 mkdir -p "${tmpdir}/bin"
 tar -xzf "${tmpdir}/dawn-bin.tar.gz" -C "${tmpdir}/bin"
-if [ "${OS}" = "Darwin" ]; then
-    find "${tmpdir}/bin" -name "libwebgpu_dawn.dylib" -exec cp {} "${DEST}/lib/" \;
-else
-    find "${tmpdir}/bin" -name "libwebgpu_dawn.so" -exec cp {} "${DEST}/lib/" \;
+find "${tmpdir}/bin" -name "${DAWN_LIB_NAME}" -exec cp {} "${DEST}/lib/" \;
+if [ ! -f "${DEST}/lib/${DAWN_LIB_NAME}" ]; then
+    echo "Failed to find ${DAWN_LIB_NAME} in tarball. Contents:" >&2
+    find "${tmpdir}/bin" -type f >&2
+    exit 1
 fi
 
 mkdir -p "${tmpdir}/hdr"

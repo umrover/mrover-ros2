@@ -1,64 +1,55 @@
-- name: Oh-My-Zsh
+- name: Install platform-specific packages
+  include_tasks: "{{ ansible_pkg_mgr }}.yml"
+
+- name: Install oh-my-zsh
   git:
     repo: https://github.com/ohmyzsh/ohmyzsh.git
     dest: ~/.oh-my-zsh
     version: master
 
-- name: Dotfiles
-  synchronize:
-    # The trailing slash is very important here
-    # It tells rsync to copy only the CONTENTS of the folder and not the folder itself
-    # This is vital to make sure this works will any usernames
-    src: files/home/
-    dest: ~/
-    recursive: true
-
-- name: ZSH Automatic Suggestions Plugin
+- name: Install zsh-autosuggestions
   git:
     repo: https://github.com/zsh-users/zsh-autosuggestions
     dest: ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
 
-- name: ZSH Syntax Highlighting Plugin
+- name: Install zsh-syntax-highlighting
   git:
     repo: https://github.com/zsh-users/zsh-syntax-highlighting
     dest: ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
 
-- name: Use ZSH as a default shell
+- name: Deploy mrover oh-my-zsh theme
+  copy:
+    src: files/home/.oh-my-zsh/custom/themes/mrover.zsh-theme
+    dest: ~/.oh-my-zsh/custom/themes/mrover.zsh-theme
+
+- name: Deploy mrover config
+  copy:
+    src: files/home/.mrover.zshenv
+    dest: ~/.mrover.zshenv
+
+- name: Source mrover config
+  blockinfile:
+    path: ~/.zshenv
+    marker: "# {mark} MROVER"
+    block: source ~/.mrover.zshenv
+    create: true
+
+- name: Deploy mrover tmux config
+  copy:
+    src: files/home/.mrover.tmux.conf
+    dest: ~/.mrover.tmux.conf
+
+- name: Source mrover tmux config
+  blockinfile:
+    path: ~/.tmux.conf
+    marker: "# {mark} MROVER"
+    block: source-file ~/.mrover.tmux.conf
+    create: true
+
+- name: Set zsh as default shell
   become: true
-  command: chsh --shell /usr/bin/zsh {{ ansible_user_id }}
+  command: chsh -s "$(which zsh)" "{{ ansible_user_id }}"
+  changed_when: false
 
-- name: GitHub CLI APT Key
-  become: True
-  apt_key:
-    url: https://cli.github.com/packages/githubcli-archive-keyring.gpg
-    keyring: /usr/share/keyrings/githubcli-archive-keyring.gpg
-
-- name: GitHub APT List
-  become: True
-  apt_repository:
-    repo: deb [signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main
-    filename: github-cli
-
-- name: Add VSCode APT Key
-  become: true
-  apt_key:
-    url: https://packages.microsoft.com/keys/microsoft.asc
-    keyring: /usr/share/keyrings/packages.microsoft.gpg
-
-- name: Add VSCode APT List
-  become: true
-  apt_repository:
-    filename: vscode
-    repo: "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main"
-
-- name: Install APT Packages
-  become: true
-  apt:
-    cache_valid_time: 604800
-    state: latest
-    name:
-      - gh
-      - code
-
-- name: Install vscode debugger extension
+- name: Install VSCode extension
   command: code --install-extension ../pkg/file-selector-0.0.1.vsix
