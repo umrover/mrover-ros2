@@ -79,7 +79,7 @@ find_package(Dawn QUIET)
 if (NOT Dawn_FOUND)
     message(FATAL_ERROR "Dawn not found. Run 'tools/setup_dawn.sh' before building.")
 endif ()
-add_library(webgpu ALIAS Dawn::webgpu_dawn)
+add_library(webgpu ALIAS dawn::webgpu_dawn)
 
 find_package(manif REQUIRED)
 
