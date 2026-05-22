@@ -1,6 +1,3 @@
-# MRover Tier 2 (portable) dev environment. Scope: migration.md Phase 2
-# (ROS 2 Humble via RoboStack, basestation GUI, autonomy Python).
-
 [workspace]
 name = "mrover"
 version = "2025.0.0"
@@ -10,7 +7,7 @@ platforms = ["osx-arm64", "linux-64"]
 [dependencies]
 python = "3.11.*"
 
-# ROS 2 Humble (RoboStack); ros-base covers rclcpp/rclpy/msgs/tf2.
+# ROS 2 Humble via RoboStack.
 ros-humble-ros-base = "*"
 ros-humble-rviz2 = "*"
 ros-humble-xacro = "*"
@@ -24,7 +21,6 @@ ros-humble-rosidl-default-runtime = "*"
 ros-humble-ament-lint-auto = "*"
 ros-humble-ament-lint-common = "*"
 
-# Build toolchain.
 cmake = "*"
 ninja = "*"
 pkg-config = "*"
@@ -32,29 +28,25 @@ c-compiler = "*"
 cxx-compiler = "*"
 colcon-common-extensions = "==0.3.0"
 
-# RoboStack Humble lacks ros-humble-magic-enum; use conda-forge.
-magic_enum = "*"
+magic_enum = "*"        # not in robostack-humble; use conda-forge
+numpy = "==1.26.4"      # pinned to match pyproject.toml
 
-# Pinned conda-side to match pyproject and avoid a conda/PyPI solve conflict.
-numpy = "==1.26.4"
-
-# GUI frontend runtime.
+eigen = "*"
+opencv = "*"
+manif = "*"
+glfw = "*"
+assimp = "*"
+bullet = "*"
+qt-main = "*"
+gstreamer = "*"
+gst-plugins-base = "*"
 bun = "*"
 
+[target.linux-64.dependencies]
+tbb = "*"
+
 [pypi-dependencies]
-# Editable install; also pulls pyproject's PyPI deps.
 mrover = { path = ".", editable = true }
-
-[tasks]
-# Needs the MROVER_PORTABLE CMake profile (migration.md Phase 1); until then
-# the full CMakeLists build fails on the simulator/perception/CAN deps.
-build = "colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DMROVER_PORTABLE=ON"
-
-gui-install = { cmd = "bun install", cwd = "teleoperation/basestation_gui/frontend" }
-gui-frontend = { cmd = "bun --bun run dev", cwd = "teleoperation/basestation_gui/frontend", depends-on = ["gui-install"] }
-
-# Sources the colcon overlay so server.py sees the mrover messages.
-gui-backend = { cmd = "bash -c 'source install/setup.bash && cd teleoperation/basestation_gui && python server.py'", env = { RCUTILS_CONSOLE_OUTPUT_FORMAT = "[{severity}] {message}" }, depends-on = ["build"] }
 
 [feature.dev.dependencies]
 black = "*"

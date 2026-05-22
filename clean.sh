@@ -2,6 +2,9 @@
 
 set -euxo pipefail
 
-pushd ../..
-
-rm -rf build install log
+if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
+    rm -rf build install log
+else
+    pushd ../..
+    rm -rf build install log
+fi

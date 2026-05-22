@@ -1,29 +1,25 @@
 cmake_minimum_required(VERSION 3.25)
 project(mrover VERSION 2025.0.0 LANGUAGES C CXX)
 
-# Supress ROS CMake warning about Python.
-cmake_policy(SET CMP0148 OLD)
+cmake_policy(SET CMP0148 NEW)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CXX_STANDARD_REQUIRED ON)
 
-# Generate compile_commands.json for clangd language server.
-# Can be used by VSCode, CLion, VIM, etc.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(MROVER_CI "Enable CI options" OFF)
 option(MROVER_CLANG_TIDY "Enable static analysis with Clang tidy" ${MROVER_CI})
 option(MROVER_WARNINGS_AS_ERRORS "Treat warnings as errors" ${MROVER_CI})
+# Portable tier (Tier 2): gates out ZED/CUDA, CAN, and ESW hardware bridges.
+# The simulator, autonomy Python, and all pure-ROS C++ nodes are always built.
+option(MROVER_PORTABLE "Exclude rover-only targets: ZED/CUDA, CAN/ESW hardware bridges" OFF)
 
 set(node_plugins "")
 
 if (APPLE)
-    # Ensures that homebrew packages are never used over miniforge packages.
-    # TODO (ali): Pretty sure this doesn't do anything on macs
     set(CMAKE_IGNORE_PATH /opt/homebrew)
-    # Find mamba python
-    find_package(PythonLibs REQUIRED)
-    # link_libraries(${PYTHON_LIBRARIES})
+    find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 endif ()
 
 if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -79,42 +75,26 @@ if (NOT APPLE)
 endif()
 
 find_package(dawn QUIET)
-if (dawn_FOUND)
-    message(STATUS "Using Dawn system install")
-else ()
-    message(STATUS "Using Dawn from source")
+if (NOT dawn_FOUND)
     add_library(webgpu SHARED IMPORTED)
 
-    set(WEBGPU_BUILD_DIR ${CMAKE_CURRENT_LIST_DIR}/deps/dawn/out/Release)
     if (APPLE)
-        set(WEBGPU_SHARED_LIB ${WEBGPU_BUILD_DIR}/src/dawn/native/libwebgpu_dawn.dylib)
+        set(DAWN_LIB_NAME libwebgpu_dawn.dylib)
     else ()
-        set(WEBGPU_SHARED_LIB ${WEBGPU_BUILD_DIR}/src/dawn/native/libwebgpu_dawn.so)
+        set(DAWN_LIB_NAME libwebgpu_dawn.so)
     endif ()
-    if (EXISTS ${WEBGPU_SHARED_LIB})
-        target_include_directories(webgpu INTERFACE ${CMAKE_CURRENT_LIST_DIR}/deps/dawn/include ${WEBGPU_BUILD_DIR}/gen/include)
-        set_property(TARGET webgpu PROPERTY IMPORTED_LOCATION ${WEBGPU_SHARED_LIB})
 
-        set(dawn_FOUND TRUE)
+    set(DAWN_PREBUILT_DIR ${CMAKE_CURRENT_LIST_DIR}/deps/dawn-prebuilt)
+    if (EXISTS ${DAWN_PREBUILT_DIR}/lib/${DAWN_LIB_NAME})
+        message(STATUS "Using prebuilt Dawn from deps/dawn-prebuilt")
+        target_include_directories(webgpu INTERFACE ${DAWN_PREBUILT_DIR}/include)
+        set_property(TARGET webgpu PROPERTY IMPORTED_LOCATION ${DAWN_PREBUILT_DIR}/lib/${DAWN_LIB_NAME})
     else ()
-        message(WARNING "Dawn not found. If on Ubuntu install with 'sudo apt install -f ./pkg/libdawn-dev.deb'. Or build from source with ./scripts/build_dawn.sh")
+        message(FATAL_ERROR "Dawn not found. Run 'pixi run setup-dawn' before building.")
     endif ()
 endif ()
 
-find_package(manif QUIET)
-if (NOT manif_FOUND)
-    if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/manif/include/manif)
-        set(BUILD_TESTING_OLD ${BUILD_TESTING})
-        set(BUILD_TESTING OFF)
-        add_subdirectory(deps/manif EXCLUDE_FROM_ALL SYSTEM)
-        set(BUILD_TESTING ${BUILD_TESTING_OLD})
-        add_library(MANIF::manif ALIAS manif)
-
-        set(manif_FOUND TRUE)
-    else()
-        message(FATAL_ERROR "Manif not found. If on Ubuntu install with 'sudo apt install -f ./pkg/libmanif-dev.deb'. Or build from source with 'git submodule update --init deps/manif' and make sure it is non-empty")
-    endif()
-endif()
+find_package(manif REQUIRED)
 
 find_package(PkgConfig REQUIRED)
 pkg_search_module(NetLink libnl-3.0 IMPORTED_TARGET QUIET)
@@ -213,7 +193,11 @@ ament_target_dependencies(lie rclcpp geometry_msgs tf2 tf2_ros)
 mrover_add_header_only_library(loop_profiler loop_profiler)
 mrover_add_header_only_library(parameter_utils parameter_utils)
 mrover_add_header_only_library(gst_utils gst_utils)
-target_link_libraries(gst_utils INTERFACE magic_enum::magic_enum PkgConfig::Gst PkgConfig::GstApp)
+if (Gst_FOUND AND GstApp_FOUND)
+    target_link_libraries(gst_utils INTERFACE magic_enum::magic_enum PkgConfig::Gst PkgConfig::GstApp)
+else ()
+    target_link_libraries(gst_utils INTERFACE magic_enum::magic_enum)
+endif ()
 
 # Simulator
 
@@ -354,17 +338,19 @@ if (EXISTS ${MROVER_EMBEDDED_ROOT_DIR} AND NOT APPLE)
     mrover_add_esw_bridge_node(mast_gimbal_hw_bridge esw/mast_gimbal_hw_bridge.cpp)
 endif()
 
-mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
-ament_target_dependencies(differential_drive_controller rclcpp std_srvs)
-target_link_libraries(differential_drive_controller units)
+if (NOT MROVER_PORTABLE)
+    mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
+    ament_target_dependencies(differential_drive_controller rclcpp std_srvs)
+    target_link_libraries(differential_drive_controller units)
+
+    mrover_add_node(u2d2_bridge esw/u2d2_bridge.cpp)
+    ament_target_dependencies(u2d2_bridge rclcpp std_msgs std_srvs dynamixel_sdk)
+    target_link_libraries(u2d2_bridge servo)
+endif ()
 
 mrover_add_node(arm_controller navigation/arm_controller/arm_controller.cpp navigation/arm_controller/pch.hpp)
 target_link_libraries(arm_controller lie)
 ament_target_dependencies(arm_controller rclcpp)
-
-mrover_add_node(u2d2_bridge esw/u2d2_bridge.cpp)
-ament_target_dependencies(u2d2_bridge rclcpp std_msgs std_srvs dynamixel_sdk)
-target_link_libraries(u2d2_bridge servo)
 
 if (Gst_FOUND AND GstApp_FOUND)
     if (LibUdev_FOUND)
@@ -383,17 +369,22 @@ if (NetLink_FOUND AND NetLinkRoute_FOUND)
 endif ()
 
 # Teleop Qt5 Camera Client
-find_package(Qt5 5.15 REQUIRED COMPONENTS Widgets Multimedia MultimediaWidgets)
+find_package(Qt5 5.15 QUIET COMPONENTS Widgets Multimedia MultimediaWidgets)
+if (NOT Qt5_FOUND)
+    message(WARNING "Qt5 not found — camera_client will not be built. Add qt-main to your environment.")
+endif ()
 
-mrover_add_node(camera_client teleoperation/camera_client/*.*pp teleoperation/camera_client/include/pch.hpp)
-target_include_directories(camera_client PRIVATE teleoperation/camera_client/include)
-target_link_libraries(camera_client gst_utils Qt::Widgets Qt::Multimedia Qt::MultimediaWidgets opencv_core opencv_imgcodecs)
-ament_target_dependencies(camera_client rclcpp std_srvs sensor_msgs)
-set_target_properties(camera_client PROPERTIES
-    AUTOMOC ON
-    AUTORCC ON
-    AUTOUIC ON
-)
+if (Qt5_FOUND)
+    mrover_add_node(camera_client teleoperation/camera_client/*.*pp teleoperation/camera_client/include/pch.hpp)
+    target_include_directories(camera_client PRIVATE teleoperation/camera_client/include)
+    target_link_libraries(camera_client gst_utils Qt::Widgets Qt::Multimedia Qt::MultimediaWidgets opencv_core opencv_imgcodecs)
+    ament_target_dependencies(camera_client rclcpp std_srvs sensor_msgs)
+    set_target_properties(camera_client PROPERTIES
+        AUTOMOC ON
+        AUTORCC ON
+        AUTOUIC ON
+    )
+endif ()
 
 ## Install
 

@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# MRover Tier 2 (portable) dev setup: macOS, Linux, WSL.
-# Tier 1 (robot / Ubuntu-native) uses setup-native.sh.
+# Tier 2 (portable) one-time setup: macOS, Linux, WSL.
 
 set -Eeuo pipefail
 
@@ -9,32 +8,32 @@ readonly GREEN='\033[1;32m'
 readonly RED='\033[1;31m'
 readonly NC='\033[0m'
 
-# cd to the repo root (this script lives in tools/).
 cd "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 readonly PIXI_BIN="${PIXI_HOME:-$HOME/.pixi}/bin"
 
 if ! command -v pixi >/dev/null 2>&1; then
   if ! command -v curl >/dev/null 2>&1; then
-    echo -e "${RED}curl is required to install pixi. Install curl and re-run.${NC}"
+    echo -e "${RED}curl is required to install pixi.${NC}"
     exit 1
   fi
   echo -e "${GREY}Installing pixi ...${NC}"
   curl -fsSL https://pixi.sh/install.sh | bash
-  export PATH="${PIXI_BIN}:${PATH}"  # for this run; installer updates future shells
+  export PATH="${PIXI_BIN}:${PATH}"
   hash -r
 fi
 
 if ! command -v pixi >/dev/null 2>&1; then
-  echo -e "${RED}pixi was installed but is not on PATH. Open a new terminal and re-run.${NC}"
+  echo -e "${RED}pixi installed but not on PATH. Open a new terminal and re-run.${NC}"
   exit 1
 fi
 
-echo -e "${GREY}Resolving the environment with pixi ...${NC}"
+echo -e "${GREY}Initializing submodules ...${NC}"
+git submodule update --init deps/imgui deps/webgpuhpp deps/glfw3webgpu
+
+echo -e "${GREY}Installing packages ...${NC}"
 pixi install
 
-# Offer the 'mrover' command: source the repo's Tier 2 shell file from
-# ~/.zshenv, add the alias to ~/.zshrc. Append-only, never replace.
 readonly REPO_DIR="$PWD"
 readonly ZSHENV="$HOME/.zshenv"
 readonly ZSHRC="$HOME/.zshrc"
@@ -46,30 +45,19 @@ if [ -f "$ZSHENV" ] && grep -qF "$MARKER" "$ZSHENV"; then zshenv_has=yes; fi
 if [ -f "$ZSHRC" ] && grep -qF "$MARKER" "$ZSHRC"; then zshrc_has=yes; fi
 
 if [ "$zshenv_has" = yes ] && [ "$zshrc_has" = yes ]; then
-  echo -e "${GREY}'mrover' command already installed; leaving it.${NC}"
+  echo -e "${GREY}'mrover' command already configured.${NC}"
 else
-  read -r -p "Install the 'mrover' command (~/.zshenv source line + ~/.zshrc alias)? [y/N] " reply || reply=""
+  read -r -p "Install the 'mrover' shell command? [y/N] " reply || reply=""
   if [[ "$reply" =~ ^[Yy] ]]; then
     if [ "$zshenv_has" = no ]; then
-      {
-        echo ""
-        echo "$MARKER"
-        echo "[ -f \"${REPO_DIR}/tools/mrover.zshenv\" ] && source \"${REPO_DIR}/tools/mrover.zshenv\""
-      } >> "$ZSHENV"
+      { echo ""; echo "$MARKER"; echo "[ -f \"${REPO_DIR}/tools/mrover.zshenv\" ] && source \"${REPO_DIR}/tools/mrover.zshenv\""; } >> "$ZSHENV"
     fi
     if [ "$zshrc_has" = no ]; then
-      {
-        echo ""
-        echo "$MARKER"
-        echo "alias mrover='activate_mrover'"
-      } >> "$ZSHRC"
+      { echo ""; echo "$MARKER"; echo "alias mrover='activate_mrover'"; } >> "$ZSHRC"
     fi
-    echo -e "${GREEN}Installed 'mrover'. Open a new terminal and type 'mrover'.${NC}"
+    echo -e "${GREEN}Done. Open a new terminal and run 'mrover'.${NC}"
   fi
 fi
 
-echo -e "${GREEN}Done.${NC}"
-echo
-echo "Open a new terminal and type 'mrover' to enter the environment."
-echo "Then use ros2, colcon, bun, and python natively; the mrover package"
-echo "overlay is sourced once the project has been built."
+echo -e "${GREEN}Setup complete.${NC}"
+echo "Run 'mrover' to enter the environment, then './build.sh' to build."
