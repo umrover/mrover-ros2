@@ -9,15 +9,14 @@ maintainers = [
     { name = "Michigan Mars Rover Team", email = "rover-software-team@umich.edu" }
 ]
 dependencies = [
-    "empy==3.3.4",
+    "empy>=3.3.4,<4",
     "numpy>=2.0",
-    "shapely==2.0.6",
-    "moteus==0.3.72",
-    "pymap3d==3.1.0",
-    "pyubx2==1.2.45",
-    "lark==1.1.2",
-    "transforms3d==0.4.2",
-    "colcon-common-extensions==0.3.0",
+    "shapely>=2.0",
+    "pymap3d>=3.1.0",
+    "pyubx2>=1.2.45",
+    "lark>=1.1.2",
+    "transforms3d>=0.4.2",
+    "colcon-common-extensions>=0.3.0",
     "opencv-python>=4.9",
     "graphviz>=0.21",
     "fastapi>=0.100.0",
@@ -28,11 +27,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+rover = [
+    "moteus>=0.3.72",
+]
 dev = [
-    # If you update these, be sure to update the correspondig version checkers in style.sh
-    "black==24.8.0",
-    "mypy==1.11.2",
-    "ipython==8.27.0",
+    "black>=24.8.0",
+    "mypy>=1.11.2",
+    "ipython>=8.27.0",
 ]
 test = [
     "pytest>=7.0.0",

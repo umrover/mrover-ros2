@@ -33,14 +33,9 @@ function print_update_error() {
 
 function find_executable() {
   local -r executable="$1"
-  local -r version="$2"
   local -r path=$(which "${executable}")
   if [ ! -x "${path}" ]; then
     echo -e "${RED}[Error] Could not find ${executable}${NC}"
-    print_update_error
-  fi
-  if ! "${path}" --version | grep -q "${version}"; then
-    echo -e "${RED}[Error] Wrong ${executable} version${NC}"
     print_update_error
   fi
   echo "${path}"
@@ -48,9 +43,9 @@ function find_executable() {
 
 ## Check that all tools are installed
 
-readonly CLANG_FORMAT_PATH=$(find_executable clang-format-18 18.1)
-readonly BLACK_PATH=$(find_executable black 24.8.0)
-readonly MYPY_PATH=$(find_executable mypy 1.11.2)
+readonly CLANG_FORMAT_PATH=$(find_executable clang-format-18)
+readonly BLACK_PATH=$(find_executable black)
+readonly MYPY_PATH=$(find_executable mypy)
 
 ## Run checks
 

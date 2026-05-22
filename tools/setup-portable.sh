@@ -19,6 +19,8 @@ fi
 echo -e "${GREY}Initializing submodules ...${NC}"
 git submodule update --init deps/imgui deps/webgpuhpp deps/glfw3webgpu
 
+pixi config set detached-environments true --global
+
 echo -e "${GREY}Installing packages ...${NC}"
 pixi install
 
