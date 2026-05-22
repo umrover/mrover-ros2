@@ -1,0 +1,85 @@
+❯ ./build.sh               
++ build_profile=RelWithDebInfo
++ [[ 0 -ne 0 ]]
++ echo 'Using build profile: RelWithDebInfo'
+Using build profile: RelWithDebInfo
++ export CC=clang
++ CC=clang
++ export CXX=clang++
++ CXX=clang++
++ '[' -n /Users/bytedance/mrover-ros2 ']'
++ bash tools/setup_dawn.sh
+Downloading Dawn v20260423.175430 for Darwin/arm64...
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+100 9216k  100 9216k    0     0  9393k      0 --:--:-- --:--:-- --:--:-- 15.6M
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+100 11.1M  100 11.1M    0     0  9001k      0  0:00:01  0:00:01 --:--:-- 12.7M
+Dawn v20260423.175430 installed.
++ COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification
++ colcon build --cmake-args -G Ninja -W no-dev -DCMAKE_BUILD_TYPE=RelWithDebInfo -DMROVER_PORTABLE=ON -DCMAKE_PREFIX_PATH=/Users/bytedance/mrover-ros2/.pixi/envs/default --symlink-install --event-handlers console_direct+
+Starting >>> mrover
+-- The C compiler identification is Clang 19.1.7
+-- The CXX compiler identification is Clang 19.1.7
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /Users/bytedance/mrover-ros2/.pixi/envs/default/bin/clang - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /Users/bytedance/mrover-ros2/.pixi/envs/default/bin/clang++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found Python3: /Users/bytedance/mrover-ros2/.pixi/envs/default/bin/python3.12 (found version "3.12.13") found components: Interpreter Development Development.Module Development.Embed
+-- Found rclpy: 7.1.9 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/rclpy/cmake)
+-- Found rclcpp: 28.1.16 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/rclcpp/cmake)
+-- Override CMake install command with custom implementation using symlinks instead of copying resources
+-- Found rosidl_generator_c: 4.6.7 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/rosidl_generator_c/cmake)
+-- Found rosidl_generator_cpp: 4.6.7 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/rosidl_generator_cpp/cmake)
+-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+-- Found rmw_implementation_cmake: 7.3.3 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/rmw_implementation_cmake/cmake)
+-- Found rmw_fastrtps_cpp: 8.4.3 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/rmw_fastrtps_cpp/cmake)
+-- Found OpenSSL: /Users/bytedance/mrover-ros2/.pixi/envs/default/lib/libcrypto.dylib (found version "3.6.2")
+-- Found FastRTPS: /Users/bytedance/mrover-ros2/.pixi/envs/default/include (Required is at least version "2.13")
+-- Using RMW implementation 'rmw_fastrtps_cpp' as default
+-- Found rclcpp_components: 28.1.16 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/rclcpp_components/cmake)
+-- Found nav_msgs: 5.3.6 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/nav_msgs/cmake)
+-- Found sensor_msgs: 5.3.6 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/sensor_msgs/cmake)
+-- Found rtcm_msgs: 1.1.6 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/rtcm_msgs/cmake)
+-- Found rosidl_default_generators: 1.6.0 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/rosidl_default_generators/cmake)
+-- Found rosidl_adapter: 4.6.7 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/rosidl_adapter/cmake)
+-- Found action_msgs: 2.0.3 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/action_msgs/cmake)
+-- Found tf2: 0.36.19 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/tf2/cmake)
+-- Found tf2_ros: 0.36.19 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/tf2_ros/cmake)
+-- Found urdf: 2.10.0 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/urdf/cmake)
+-- Found std_srvs: 5.3.6 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/std_srvs/cmake)
+-- Found yaml_cpp_vendor: 9.0.1 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/yaml_cpp_vendor/cmake)
+-- Setting yaml-cpp_DIR to: '/Users/bytedance/mrover-ros2/.pixi/envs/default/share/yaml_cpp_vendor/cmake/../../../opt/yaml_cpp_vendor/share/cmake/yaml-cpp'
+-- Found dynamixel_sdk: 4.0.3 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/dynamixel_sdk/cmake)
+-- Found Bullet: /Users/bytedance/mrover-ros2/.pixi/envs/default/lib/libBulletDynamics.dylib
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Found OpenCV: /Users/bytedance/mrover-ros2/.pixi/envs/default (found version "4.13.0")
+CMake Error at CMakeLists.txt:93 (message):
+  Dawn not found.  Run 'pixi run setup-dawn' before building.
+
+
+-- Configuring incomplete, errors occurred!
+ninja: error: loading 'build.ninja': No such file or directory
+--- stderr: mrover
+CMake Error at CMakeLists.txt:93 (message):
+  Dawn not found.  Run 'pixi run setup-dawn' before building.
+
+
+---
+Failed   <<< mrover [21.7s, exited with code 1]
+
+Summary: 0 packages finished [23.2s]
+  1 package failed: mrover
+  1 package had stderr output: mrover
