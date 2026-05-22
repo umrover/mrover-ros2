@@ -149,18 +149,19 @@ pixi provides:
 
 ## Phase 0: prerequisites
 
-Resolve before the Jazzy work:
-
+- [x] `robostack-jazzy` confirmed GA for `osx-arm64`. Proceeding directly to
+      Jazzy. The `ros-humble-ros-base` osx-arm64 package requires Python 3.9,
+      not 3.10, making a clean Humble baseline impossible on macOS.
 - [ ] Confirm JetPack 7 supports the AGX Orin and ships Ubuntu 24.04. If the
-      Orin stays on JetPack 6, the rover stays on Humble.
-- [ ] Confirm `robostack-jazzy` is GA for `osx-arm64`. If not, do Phases 1 to 3
-      on Humble first.
-- [ ] Confirm conda-forge has `osx-arm64` builds for: glfw, bullet, assimp,
+      Orin stays on JetPack 6, the rover stays on Humble until JetPack 7.
+- [x] conda-forge `osx-arm64` builds confirmed for: glfw, bullet, assimp,
       eigen, opencv, qt, gstreamer, manif.
 
-## Phases
+The rover (Tier 1) upgrades to Ubuntu 24.04 Noble and Jazzy alongside Tier 2.
+One distro fleet-wide. Rover upgrade is gated on JetPack 7 availability for
+the Jetson AGX Orin.
 
-Do portability first, on the current distro. Do not run two migrations at once.
+## Phases
 
 ### Phase 1: define the portable subset
 
@@ -168,11 +169,9 @@ Do portability first, on the current distro. Do not run two migrations at once.
       ESW, and firmware.
 - [ ] Audit `find_package` and `NOT APPLE` gating for holes.
 
-### Phase 2: pixi on Humble
+### Phase 2: pixi on Jazzy
 
-- [ ] Write `pixi.toml`: three platforms, the basestation/sim/dev/test
-      environments.
-- [ ] Add pixi tasks for build, GUI, and launch.
+- [ ] Write `pixi.toml`: `robostack-jazzy`, Python 3.12, three platforms.
 - [ ] Commit `pixi.lock`.
 - [ ] Run the basestation GUI and autonomy Python on macOS.
 - [ ] Remove hardcoded paths (see Technical debt).
@@ -196,15 +195,11 @@ Do portability first, on the current distro. Do not run two migrations at once.
 - [ ] Align the imgui wgpu backend with the Dawn `webgpu.h` version.
 - [ ] Run the simulator on macOS.
 
-### Phase 6: Humble to Jazzy
+### Phase 6: Tier 1 rover upgrade to Jazzy
 
-- [ ] Upgrade Tier 1 Ansible to Noble and `ros-jazzy-*`.
-- [ ] Point `pixi.toml` at `robostack-jazzy`.
-- [ ] Migrate Python 3.10 to 3.12.
-- [ ] Replace `find_package(PythonLibs)` with `find_package(Python3)`. Revisit
-      the `CMP0148` policy.
-- [ ] Verify message compatibility across the fleet.
-- [ ] Upgrade the rover last, after the Jetson is on JetPack 7.
+- [ ] Upgrade Tier 1 Ansible to Ubuntu 24.04 Noble and `ros-jazzy-*` apt packages.
+- [ ] Verify DDS message compatibility between Tier 1 and Tier 2.
+- [ ] Upgrade the Jetson last, after JetPack 7 is available for the AGX Orin.
 
 ## Technical debt to fix
 
@@ -218,10 +213,9 @@ Do portability first, on the current distro. Do not run two migrations at once.
 
 | Risk                                  | Mitigation                                                    |
 | ------------------------------------- | ------------------------------------------------------------- |
-| JetPack 7 slips or omits Orin support | Run Phases 1 to 5 on Humble. Defer Phase 6.                   |
-| RoboStack-Jazzy not GA for macOS      | Do Phases 1 to 3 on Humble first.                             |
+| JetPack 7 slips or omits Orin support | Rover stays on Humble until JetPack 7. Tier 2 proceeds on Jazzy; fleets must not talk until rover upgrades. |
 | RoboStack package gaps                | Work around or pin via lockfile. Keep exotic packages Tier 1. |
-| Dawn or imgui version skew            | Pin the Dawn submodule SHA. Host prebuilt artifacts.          |
+| Dawn or imgui version skew            | Pin the Dawn SHA. Host prebuilt artifacts via GitHub releases. |
 | Work decays again                     | macOS CI required for merge. No long-lived branch.            |
 
 ## Anti-patterns

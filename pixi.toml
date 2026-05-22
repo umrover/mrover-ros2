@@ -1,25 +1,25 @@
 [workspace]
 name = "mrover"
 version = "2025.0.0"
-channels = ["robostack-humble", "conda-forge"]
+channels = ["robostack-jazzy", "conda-forge"]
 platforms = ["osx-arm64", "linux-64"]
 
 [dependencies]
-python = "3.11.*"
+python = "3.12.*"
 
 # ROS 2 Humble via RoboStack.
-ros-humble-ros-base = "*"
-ros-humble-rviz2 = "*"
-ros-humble-xacro = "*"
-ros-humble-rtcm-msgs = "*"
-ros-humble-dynamixel-sdk = "*"
-ros-humble-tf-transformations = "*"
-ros-humble-ament-cmake = "*"
-ros-humble-ament-cmake-python = "*"
-ros-humble-rosidl-default-generators = "*"
-ros-humble-rosidl-default-runtime = "*"
-ros-humble-ament-lint-auto = "*"
-ros-humble-ament-lint-common = "*"
+ros-jazzy-ros-base = "*"
+ros-jazzy-rviz2 = "*"
+ros-jazzy-xacro = "*"
+ros-jazzy-rtcm-msgs = "*"
+ros-jazzy-dynamixel-sdk = "*"
+ros-jazzy-tf-transformations = "*"
+ros-jazzy-ament-cmake = "*"
+ros-jazzy-ament-cmake-python = "*"
+ros-jazzy-rosidl-default-generators = "*"
+ros-jazzy-rosidl-default-runtime = "*"
+ros-jazzy-ament-lint-auto = "*"
+ros-jazzy-ament-lint-common = "*"
 
 cmake = "*"
 ninja = "*"

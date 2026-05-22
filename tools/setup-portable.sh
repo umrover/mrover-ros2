@@ -10,22 +10,10 @@ readonly NC='\033[0m'
 
 cd "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-readonly PIXI_BIN="${PIXI_HOME:-$HOME/.pixi}/bin"
-
 if ! command -v pixi >/dev/null 2>&1; then
-  if ! command -v curl >/dev/null 2>&1; then
-    echo -e "${RED}curl is required to install pixi.${NC}"
-    exit 1
-  fi
   echo -e "${GREY}Installing pixi ...${NC}"
-  curl -fsSL https://pixi.sh/install.sh | bash
-  export PATH="${PIXI_BIN}:${PATH}"
-  hash -r
-fi
-
-if ! command -v pixi >/dev/null 2>&1; then
-  echo -e "${RED}pixi installed but not on PATH. Open a new terminal and re-run.${NC}"
-  exit 1
+  curl -fsSL https://pixi.sh/install.sh | sh
+  export PATH="${HOME}/.pixi/bin:${PATH}"
 fi
 
 echo -e "${GREY}Initializing submodules ...${NC}"
