@@ -12,33 +12,77 @@ Downloading Dawn v20260423.175430 for Darwin/arm64...
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
-  0 9216k    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 9216k  100 9216k    0     0  12.3M      0 --:--:-- --:--:-- --:--:-- 16.0M
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
-  0 11.1M    0 15495    0     0  21918      0  0:08:53 --:--:--  0:08:53 21918100 11.1M  100 11.1M    0     0  8390k      0  0:00:01  0:00:01 --:--:-- 17.0M
-Failed to find libwebgpu_dawn.dylib in tarball. Contents:
-/var/folders/kb/mtfncf812x97jmnvwndv334r0000gn/T/tmp.l5sL6QG0C2/bin/Dawn-31e25af254ab572c77054edec4946d2244e184dd-macos-latest-Release/bin/tint
-/var/folders/kb/mtfncf812x97jmnvwndv334r0000gn/T/tmp.l5sL6QG0C2/bin/Dawn-31e25af254ab572c77054edec4946d2244e184dd-macos-latest-Release/bin/tint_info
-/var/folders/kb/mtfncf812x97jmnvwndv334r0000gn/T/tmp.l5sL6QG0C2/bin/Dawn-31e25af254ab572c77054edec4946d2244e184dd-macos-latest-Release/bin/ir_fuzz_as
-/var/folders/kb/mtfncf812x97jmnvwndv334r0000gn/T/tmp.l5sL6QG0C2/bin/Dawn-31e25af254ab572c77054edec4946d2244e184dd-macos-latest-Release/include/webgpu/webgpu_cpp.h
-/var/folders/kb/mtfncf812x97jmnvwndv334r0000gn/T/tmp.l5sL6QG0C2/bin/Dawn-31e25af254ab572c77054edec4946d2244e184dd-macos-latest-Release/include/webgpu/webgpu_cpp_chained_struct.h
-/var/folders/kb/mtfncf812x97jmnvwndv334r0000gn/T/tmp.l5sL6QG0C2/bin/Dawn-31e25af254ab572c77054edec4946d2244e184dd-macos-latest-Release/include/webgpu/webgpu_enum_class_bitmasks.h
-/var/folders/kb/mtfncf812x97jmnvwndv334r0000gn/T/tmp.l5sL6QG0C2/bin/Dawn-31e25af254ab572c77054edec4946d2244e184dd-macos-latest-Release/include/webgpu/webgpu_cpp_print.h
-/var/folders/kb/mtfncf812x97jmnvwndv334r0000gn/T/tmp.l5sL6QG0C2/bin/Dawn-31e25af254ab572c77054edec4946d2244e184dd-macos-latest-Release/include/webgpu/webgpu.h
-/var/folders/kb/mtfncf812x97jmnvwndv334r0000gn/T/tmp.l5sL6QG0C2/bin/Dawn-31e25af254ab572c77054edec4946d2244e184dd-macos-latest-Release/include/dawn/wire/client/webgpu_cpp.h
-/var/folders/kb/mtfncf812x97jmnvwndv334r0000gn/T/tmp.l5sL6QG0C2/bin/Dawn-31e25af254ab572c77054edec4946d2244e184dd-macos-latest-Release/include/dawn/wire/client/webgpu_cpp_print.h
-/var/folders/kb/mtfncf812x97jmnvwndv334r0000gn/T/tmp.l5sL6QG0C2/bin/Dawn-31e25af254ab572c77054edec4946d2244e184dd-macos-latest-Release/include/dawn/wire/client/webgpu.h
-/var/folders/kb/mtfncf812x97jmnvwndv334r0000gn/T/tmp.l5sL6QG0C2/bin/Dawn-31e25af254ab572c77054edec4946d2244e184dd-macos-latest-Release/include/dawn/native/NullBackend.h
-/var/folders/kb/mtfncf812x97jmnvwndv334r0000gn/T/tmp.l5sL6QG0C2/bin/Dawn-31e25af254ab572c77054edec4946d2244e184dd-macos-latest-Release/include/dawn/native/dawn_native_export.h
-/var/folders/kb/mtfncf812x97jmnvwndv334r0000gn/T/tmp.l5sL6QG0C2/bin/Dawn-31e25af254ab572c77054edec4946d2244e184dd-macos-latest-Release/include/dawn/native/MetalBackend.h
-/var/folders/kb/mtfncf812x97jmnvwndv334r0000gn/T/tmp.l5sL6QG0C2/bin/Dawn-31e25af254ab572c77054edec4946d2244e184dd-macos-latest-Release/include/dawn/native/DawnNative.h
-/var/folders/kb/mtfncf812x97jmnvwndv334r0000gn/T/tmp.l5sL6QG0C2/bin/Dawn-31e25af254ab572c77054edec4946d2244e184dd-macos-latest-Release/include/dawn/webgpu_cpp.h
-/var/folders/kb/mtfncf812x97jmnvwndv334r0000gn/T/tmp.l5sL6QG0C2/bin/Dawn-31e25af254ab572c77054edec4946d2244e184dd-macos-latest-Release/include/dawn/dawn_proc_table.h
-/var/folders/kb/mtfncf812x97jmnvwndv334r0000gn/T/tmp.l5sL6QG0C2/bin/Dawn-31e25af254ab572c77054edec4946d2244e184dd-macos-latest-Release/include/dawn/webgpu_cpp_print.h
-/var/folders/kb/mtfncf812x97jmnvwndv334r0000gn/T/tmp.l5sL6QG0C2/bin/Dawn-31e25af254ab572c77054edec4946d2244e184dd-macos-latest-Release/include/dawn/webgpu.h
-/var/folders/kb/mtfncf812x97jmnvwndv334r0000gn/T/tmp.l5sL6QG0C2/bin/Dawn-31e25af254ab572c77054edec4946d2244e184dd-macos-latest-Release/lib/cmake/Dawn/DawnTargets.cmake
-/var/folders/kb/mtfncf812x97jmnvwndv334r0000gn/T/tmp.l5sL6QG0C2/bin/Dawn-31e25af254ab572c77054edec4946d2244e184dd-macos-latest-Release/lib/cmake/Dawn/DawnTargets-release.cmake
-/var/folders/kb/mtfncf812x97jmnvwndv334r0000gn/T/tmp.l5sL6QG0C2/bin/Dawn-31e25af254ab572c77054edec4946d2244e184dd-macos-latest-Release/lib/cmake/Dawn/DawnConfigVersion.cmake
-/var/folders/kb/mtfncf812x97jmnvwndv334r0000gn/T/tmp.l5sL6QG0C2/bin/Dawn-31e25af254ab572c77054edec4946d2244e184dd-macos-latest-Release/lib/cmake/Dawn/DawnConfig.cmake
-/var/folders/kb/mtfncf812x97jmnvwndv334r0000gn/T/tmp.l5sL6QG0C2/bin/Dawn-31e25af254ab572c77054edec4946d2244e184dd-macos-latest-Release/lib/libwebgpu_dawn.a
+  0 9216k    0 32750    0     0    99k      0  0:01:32 --:--:--  0:01:32   99k100 9216k  100 9216k    0     0  10.6M      0 --:--:-- --:--:-- --:--:-- 17.0M
+Dawn v20260423.175430 installed.
++ COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification
++ colcon build --cmake-args -G Ninja -W no-dev -DCMAKE_BUILD_TYPE=RelWithDebInfo -DMROVER_PORTABLE=ON -DCMAKE_PREFIX_PATH=/Users/bytedance/mrover-ros2/.pixi/envs/default --symlink-install --event-handlers console_direct+
+Starting >>> mrover
+-- Found rclpy: 7.1.9 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/rclpy/cmake)
+-- Found rclcpp: 28.1.16 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/rclcpp/cmake)
+-- Override CMake install command with custom implementation using symlinks instead of copying resources
+-- Found rosidl_generator_c: 4.6.7 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/rosidl_generator_c/cmake)
+-- Found rosidl_generator_cpp: 4.6.7 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/rosidl_generator_cpp/cmake)
+-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+-- Found rmw_implementation_cmake: 7.3.3 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/rmw_implementation_cmake/cmake)
+-- Found rmw_fastrtps_cpp: 8.4.3 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/rmw_fastrtps_cpp/cmake)
+-- Using RMW implementation 'rmw_fastrtps_cpp' as default
+-- Found rclcpp_components: 28.1.16 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/rclcpp_components/cmake)
+-- Found nav_msgs: 5.3.6 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/nav_msgs/cmake)
+-- Found sensor_msgs: 5.3.6 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/sensor_msgs/cmake)
+-- Found rtcm_msgs: 1.1.6 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/rtcm_msgs/cmake)
+-- Found rosidl_default_generators: 1.6.0 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/rosidl_default_generators/cmake)
+-- Found rosidl_adapter: 4.6.7 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/rosidl_adapter/cmake)
+-- Found action_msgs: 2.0.3 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/action_msgs/cmake)
+-- Found tf2: 0.36.19 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/tf2/cmake)
+-- Found tf2_ros: 0.36.19 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/tf2_ros/cmake)
+-- Found urdf: 2.10.0 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/urdf/cmake)
+-- Found std_srvs: 5.3.6 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/std_srvs/cmake)
+-- Found yaml_cpp_vendor: 9.0.1 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/yaml_cpp_vendor/cmake)
+-- Setting yaml-cpp_DIR to: '/Users/bytedance/mrover-ros2/.pixi/envs/default/share/yaml_cpp_vendor/cmake/../../../opt/yaml_cpp_vendor/share/cmake/yaml-cpp'
+-- Found dynamixel_sdk: 4.0.3 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/dynamixel_sdk/cmake)
+CMake Error at CMakeLists.txt:82 (add_library):
+  add_library cannot create ALIAS target "webgpu" because target
+  "Dawn::webgpu_dawn" does not already exist.
+
+
+-- Found PkgConfig: /Users/bytedance/mrover-ros2/.pixi/envs/default/bin/pkg-config (found version "0.29.2")
+-- Found ament_lint_auto: 0.17.4 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/ament_lint_auto/cmake)
+-- Found message files: msg/CAN.msg;msg/CO2.msg;msg/CalibrationStatus.msg;msg/CameraInfo.msg;msg/Chassis.msg;msg/ControllerState.msg;msg/Course.msg;msg/FixStatus.msg;msg/FixType.msg;msg/GPSPointList.msg;msg/GPSWaypoint.msg;msg/Heading.msg;msg/HeaterData.msg;msg/Humidity.msg;msg/IK.msg;msg/ImageTarget.msg;msg/ImageTargets.msg;msg/KeyboardYaw.msg;msg/LED.msg;msg/MotorsAdjust.msg;msg/NetworkBandwidth.msg;msg/Oxygen.msg;msg/Ozone.msg;msg/PDB.msg;msg/PDLB.msg;msg/Position.msg;msg/Pressure.msg;msg/SatelliteSignal.msg;msg/ScienceThermistors.msg;msg/SensorStates.msg;msg/ServoConfigure.msg;msg/ServoIn.msg;msg/ServoOut.msg;msg/Spectral.msg;msg/StateMachineStateUpdate.msg;msg/StateMachineStructure.msg;msg/StateMachineTransition.msg;msg/Temperature.msg;msg/Throttle.msg;msg/UV.msg;msg/Velocity.msg;msg/Waypoint.msg;msg/WaypointType.msg
+-- Found service files: srv/AdjustMotor.srv;srv/DilateCostMap.srv;srv/EnableAuton.srv;srv/EnableBool.srv;srv/IkMode.srv;srv/MediaControl.srv;srv/MoveCostMap.srv;srv/PanoService.srv;srv/PanoramaEnd.srv;srv/PanoramaStart.srv;srv/PdlbReset.srv;srv/Pusher.srv;srv/ScienceBoardReset.srv;srv/ServoPosition.srv;srv/ToggleCostMap.srv;srv/ToggleObjectDetector.srv
+-- Found action files: action/ClickIk.action;action/KeyAction.action;action/TypingCode.action;action/TypingPosition.action
+-- PROJ NAME: mrover
+-- Found message files: msg/CAN.msg;msg/CO2.msg;msg/CalibrationStatus.msg;msg/CameraInfo.msg;msg/Chassis.msg;msg/ControllerState.msg;msg/Course.msg;msg/FixStatus.msg;msg/FixType.msg;msg/GPSPointList.msg;msg/GPSWaypoint.msg;msg/Heading.msg;msg/HeaterData.msg;msg/Humidity.msg;msg/IK.msg;msg/ImageTarget.msg;msg/ImageTargets.msg;msg/KeyboardYaw.msg;msg/LED.msg;msg/MotorsAdjust.msg;msg/NetworkBandwidth.msg;msg/Oxygen.msg;msg/Ozone.msg;msg/PDB.msg;msg/PDLB.msg;msg/Position.msg;msg/Pressure.msg;msg/SatelliteSignal.msg;msg/ScienceThermistors.msg;msg/SensorStates.msg;msg/ServoConfigure.msg;msg/ServoIn.msg;msg/ServoOut.msg;msg/Spectral.msg;msg/StateMachineStateUpdate.msg;msg/StateMachineStructure.msg;msg/StateMachineTransition.msg;msg/Temperature.msg;msg/Throttle.msg;msg/UV.msg;msg/Velocity.msg;msg/Waypoint.msg;msg/WaypointType.msg;starter_project/autonomy/msg/StarterProjectTag.msg
+-- Found Python3: /Users/bytedance/mrover-ros2/.pixi/envs/default/bin/python3.12 (found version "3.12.13") found components: Interpreter
+-- Found ament_cmake_ros: 0.12.0 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/ament_cmake_ros/cmake)
+-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+-- Found python_cmake_module: 0.11.1 (/Users/bytedance/mrover-ros2/.pixi/envs/default/share/python_cmake_module/cmake)
+-- Found PythonExtra: /Users/bytedance/mrover-ros2/.pixi/envs/default/bin/python3.12
+-- Found Python3: /Users/bytedance/mrover-ros2/.pixi/envs/default/bin/python3.12 (found version "3.12.13") found components: Interpreter Development NumPy Development.Module Development.Embed
+ZED not found...
+-- Added test 'cppcheck' to perform static code analysis on C / C++ code
+-- Configured cppcheck include dirs: /Users/bytedance/mrover-ros2/preload;/Users/bytedance/mrover-ros2/perception;$<BUILD_INTERFACE:/Users/bytedance/mrover-ros2/build/mrover/rosidl_generator_c>;$<BUILD_INTERFACE:/Users/bytedance/mrover-ros2/build/mrover/rosidl_typesupport_fastrtps_c>;$<BUILD_INTERFACE:/Users/bytedance/mrover-ros2/build/mrover/rosidl_generator_cpp>;$<BUILD_INTERFACE:/Users/bytedance/mrover-ros2/build/mrover/rosidl_typesupport_fastrtps_cpp>;$<BUILD_INTERFACE:/Users/bytedance/mrover-ros2/build/mrover/rosidl_typesupport_introspection_c>;$<BUILD_INTERFACE:/Users/bytedance/mrover-ros2/build/mrover/rosidl_typesupport_introspection_cpp>;/Users/bytedance/mrover-ros2/build/mrover/rosidl_generator_c;/Users/bytedance/mrover-ros2/build/mrover/rosidl_generator_py;/Users/bytedance/mrover-ros2/.pixi/envs/default/include/python3.12;/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/core/include;/Users/bytedance/mrover-ros2/.pixi/envs/default/include/rmw;/Users/bytedance/mrover-ros2/.pixi/envs/default/include/rclcpp;/Users/bytedance/mrover-ros2/.pixi/envs/default/include/std_msgs;/Users/bytedance/mrover-ros2/.pixi/envs/default/lib/python3.12/site-packages/numpy/_core/include;/Users/bytedance/mrover-ros2/.pixi/envs/default/include/sensor_msgs;/Users/bytedance/mrover-ros2/lie;/Users/bytedance/mrover-ros2/.pixi/envs/default/include/geometry_msgs;/Users/bytedance/mrover-ros2/.pixi/envs/default/include/tf2;/Users/bytedance/mrover-ros2/.pixi/envs/default/include/tf2_ros;/Users/bytedance/mrover-ros2/loop_profiler;/Users/bytedance/mrover-ros2/parameter_utils;/Users/bytedance/mrover-ros2/gst_utils;/Users/bytedance/mrover-ros2/.pixi/envs/default/include/rclcpp_components;/Users/bytedance/mrover-ros2/.pixi/envs/default/include/nav_msgs;/Users/bytedance/mrover-ros2/.pixi/envs/default/include/urdf;/Users/bytedance/mrover-ros2/.pixi/envs/default/include/bullet;/Users/bytedance/mrover-ros2/.pixi/envs/default/include/rtcm_msgs;/Users/bytedance/mrover-ros2/.pixi/envs/default/include/rcutils;/Users/bytedance/mrover-ros2/.pixi/envs/default/include/builtin_interfaces;/Users/bytedance/mrover-ros2/.pixi/envs/default/include/message_filters;/Users/bytedance/mrover-ros2/perception/tag_detector/pch.hpp;/Users/bytedance/mrover-ros2/perception/cost_map/pch.hpp;/Users/bytedance/mrover-ros2/teleoperation/camera_client/include;/Users/bytedance/mrover-ros2/.pixi/envs/default/include/std_srvs
+-- Configured cppcheck exclude dirs and/or files: 
+-- Added test 'flake8' to check Python code syntax and style conventions
+-- Configured 'flake8' exclude dirs and/or files: 
+-- Added test 'lint_cmake' to check CMake code style
+-- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257
+-- Added test 'uncrustify' to check C / C++ code style
+-- Configured uncrustify additional arguments: 
+-- Added test 'xmllint' to check XML markup files
+-- Configuring incomplete, errors occurred!
+ninja: error: loading 'build.ninja': No such file or directory
+--- stderr: mrover
+CMake Error at CMakeLists.txt:82 (add_library):
+  add_library cannot create ALIAS target "webgpu" because target
+  "Dawn::webgpu_dawn" does not already exist.
+
+
+ZED not found...
+---
+Failed   <<< mrover [1min 10s, exited with code 1]
+
+Summary: 0 packages finished [1min 10s]
+  1 package failed: mrover
+  1 package had stderr output: mrover
