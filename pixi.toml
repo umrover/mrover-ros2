@@ -3,6 +3,7 @@ name = "mrover"
 version = "2025.0.0"
 channels = ["robostack-jazzy", "conda-forge"]
 platforms = ["osx-arm64", "linux-64"]
+detached-environments = true
 
 [dependencies]
 python = "3.12.*"
@@ -29,7 +30,7 @@ cxx-compiler = "*"
 colcon-common-extensions = "==0.3.0"
 
 magic_enum = "*"        # not in robostack-humble; use conda-forge
-numpy = "==1.26.4"      # pinned to match pyproject.toml
+numpy = ">=2.0"
 
 eigen = "*"
 opencv = "*"
