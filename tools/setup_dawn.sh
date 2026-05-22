@@ -21,8 +21,10 @@ ARCH=$(uname -m)
 
 if [ "${OS}" = "Darwin" ] && [ "${ARCH}" = "arm64" ]; then
     BINARY_TARBALL="Dawn-${DAWN_SHA}-macos-latest-Release.tar.gz"
+    DAWN_LIB_NAME="libwebgpu_dawn.dylib"
 elif [ "${OS}" = "Linux" ] && [ "${ARCH}" = "x86_64" ]; then
     BINARY_TARBALL="Dawn-${DAWN_SHA}-ubuntu-latest-Release.tar.gz"
+    DAWN_LIB_NAME="libwebgpu_dawn.so"
 else
     echo "Unsupported platform: ${OS}/${ARCH}" >&2
     exit 1
