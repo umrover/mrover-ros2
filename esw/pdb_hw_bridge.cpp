@@ -3,18 +3,18 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <mrover/msg/led.hpp>
-#include <mrover/srv/pdlb_reset.hpp>
+#include <mrover/srv/pdb_reset.hpp>
 
 namespace mrover {
 
-    class PDLBHWBridge final : public rclcpp::Node {
+    class PDBHWBridge final : public rclcpp::Node {
     private:
         CANDevice mDevice;
         rclcpp::Subscription<mrover::msg::LED>::SharedPtr mChangeLEDSubscriber;
-        rclcpp::Service<srv::PdlbReset>::SharedPtr mPdlbReset;
+        rclcpp::Service<srv::PDBReset>::SharedPtr mPDBReset;
 
     public:
-        PDLBHWBridge() : Node{"pdlb_hw_bridge"} {}
+        PDBHWBridge() : Node{"pdb_hw_bridge"} {}
 
         void changeLED(mrover::msg::LED::ConstSharedPtr const& ros_msg) {
             bool red = ros_msg->color == mrover::msg::LED::RED;
@@ -22,27 +22,27 @@ namespace mrover {
             bool blue = ros_msg->color == mrover::msg::LED::BLUE;
             bool blinking = ros_msg->color == mrover::msg::LED::BLINKING_GREEN;
 
-            CANMsg_t const can_msg = AutonLEDCommand(red, green, blue, blinking);
+            CANMsg_t const can_msg = PDBAutonLEDCmd(red, green, blue, blinking);
             mDevice.publishMessage(can_msg);
         }
 
-        void processRequest(srv::PdlbReset::Request::SharedPtr const req, srv::PdlbReset::Response::SharedPtr res) {
-            CANMsg_t const msg = PDLBResetCommand(req->reset, req->clear_faults);
+        void processRequest(srv::PDBReset::Request::SharedPtr const req, srv::PDBReset::Response::SharedPtr res) {
+            CANMsg_t const msg = PDBResetCmd(req->reset, req->clear_faults);
             mDevice.publishMessage(msg);
 
             res->success = true;
         }
 
         void init() {
-            mDevice = {rclcpp::Node::shared_from_this(), "jetson", "pdlb"};
+            mDevice = {rclcpp::Node::shared_from_this(), "jetson", "pdb"};
 
             mChangeLEDSubscriber = create_subscription<mrover::msg::LED>("led", 10,
                                                                          [this](mrover::msg::LED::ConstSharedPtr const& msg) {
                                                                              changeLED(msg);
                                                                          });
 
-            mPdlbReset = create_service<srv::PdlbReset>("pdlb_reset",
-                                                        [this](srv::PdlbReset::Request::SharedPtr const req, srv::PdlbReset::Response::SharedPtr res) {
+            mPDBReset = create_service<srv::PDBReset>("pdb_reset",
+                                                        [this](srv::PDBReset::Request::SharedPtr const req, srv::PDBReset::Response::SharedPtr res) {
                                                             processRequest(req, res);
                                                         });
         }
@@ -53,10 +53,10 @@ namespace mrover {
 auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
 
-    auto pdlb = std::make_shared<mrover::PDLBHWBridge>();
-    pdlb->init();
+    auto pdb = std::make_shared<mrover::PDBHWBridge>();
+    pdb->init();
 
-    rclcpp::spin(pdlb);
+    rclcpp::spin(pdb);
     rclcpp::shutdown();
     return EXIT_SUCCESS;
 }
