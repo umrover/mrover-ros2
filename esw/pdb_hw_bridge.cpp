@@ -42,9 +42,9 @@ namespace mrover {
                                                                          });
 
             mPDBReset = create_service<srv::PDBReset>("pdb_reset",
-                                                        [this](srv::PDBReset::Request::SharedPtr const req, srv::PDBReset::Response::SharedPtr res) {
-                                                            processRequest(req, res);
-                                                        });
+                                                      [this](srv::PDBReset::Request::SharedPtr const req, srv::PDBReset::Response::SharedPtr res) {
+                                                          processRequest(req, res);
+                                                      });
         }
     };
 
