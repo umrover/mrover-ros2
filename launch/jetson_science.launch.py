@@ -57,11 +57,12 @@ def generate_launch_description():
         output="screen",
     )
 
+    launch_localization = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            Path(get_package_share_directory("mrover"), "launch/localization.launch.py").__str__()
+        )
+    )
+
     return LaunchDescription(
-        [
-            launch_include_jetson_base,
-            science_hw_bridge_node,
-            panorama_node,
-            cam_container,
-        ]
+        [launch_include_jetson_base, science_hw_bridge_node, panorama_node, cam_container, launch_localization]
     )
