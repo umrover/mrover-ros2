@@ -18,6 +18,8 @@ import numpy as np
 import copy
 import datetime
 
+import open3d as o3d
+
 from Source import *
 
 class Panorama(Node):
@@ -244,22 +246,24 @@ class Panorama(Node):
             self.sync = None
 
         # construct pc from stitched
-        try:
-            pc_msg = PointCloud2()
-            pc_msg.width = self.stitched_pc.shape[0]
-            stitched_pc = self.stitched_pc.flatten()
-            header = Header()
-            header.frame_id = "map"
-            pc_msg.header = header
-            pc_msg.fields = self.current_pc.fields
-            pc_msg.is_bigendian = self.current_pc.is_bigendian
-            pc_msg.data = stitched_pc.tobytes()
-            pc_msg.height = 1
-            pc_msg.point_step = int(len(pc_msg.data) / pc_msg.width)
-            pc_msg.is_dense = self.current_pc.is_dense
-            self.pc_publisher.publish(pc_msg)
-        except:
-            self.get_logger().info("Failed to create point cloud message...")
+        self.get_logger().info(f"Shape: {arr_pc.shape}")
+        lens = np.linalg.norm(arr_pc[:, 0:3], axis=1)
+
+        filtered_pts = arr_pc[lens < 10, :]
+
+        self.get_logger().info(f"Lens shape: {lens.shape}")
+
+        pcd = o3d.geometry.PointCloud()
+
+        pcd.points = o3d.utility.Vector3dVector(filtered_pts[:, 0:3])
+
+        colors = filtered_pts[:, 3].copy(order='C').view(np.uint8).reshape((filtered_pts.shape[0], 4))[:, 2::-1].copy(order='C').astype(np.float32) / 255
+
+        self.get_logger().info(f"View shape: {colors.shape}")
+
+        pcd.colors = o3d.utility.Vector3dVector(colors)
+
+        o3d.io.write_point_cloud("data/raw-pano-images/pano.ply", pcd)
 
         # if we do not receive any images, then this will crash
         if len(self.img_list) == 0:
