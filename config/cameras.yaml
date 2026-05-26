@@ -136,7 +136,7 @@
         width: 640
         height: 480
         framerate: 5
-    mob_right_cam:
+    gps_left_cam:
       address: 10.1.0.2
       port: 8095
       dev_node: "/dev/port_c2_cam"
@@ -153,7 +153,7 @@
         width: 640
         height: 480
         framerate: 5
-    gps_left_cam:
+    mob_right_cam:
       address: 10.1.0.2
       port: 8096
       dev_node: "/dev/port_d1_cam"

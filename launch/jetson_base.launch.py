@@ -23,6 +23,13 @@ def generate_launch_description():
         parameters=[Path(get_package_share_directory("mrover"), "config", "esw.yaml")],
     )
 
+    pdlb_hw_bridge_node = Node(
+        package="mrover",
+        executable="pdlb_hw_bridge",
+        name="pdlb_hw_bridge",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "esw.yaml")],
+    )
+
     u2d2_bridge = Node(
         package="mrover",
         executable="u2d2_bridge",
@@ -48,6 +55,18 @@ def generate_launch_description():
             Path(get_package_share_directory("mrover"), "config", "esw.yaml"),
             Path(get_package_share_directory("mrover"), "config", "drive.yaml"),
         ],
+    )
+
+    base_link_to_right_gps = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        arguments=["0.0", "0.47", "0", "0", "0", "0", "1", "gps_frame", "base_link"],
+    )
+
+    base_link_to_zed = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        arguments=["0", "0", "1", "0", "0", "0", "1", "base_link", "zed_left_camera_frame"],
     )
 
     mast_gimbal_hw_bridge = Node(
@@ -141,6 +160,7 @@ def generate_launch_description():
         [
             launch_include_can,
             diff_drive_controller_node,
+            pdlb_hw_bridge_node,
             u2d2_bridge,
             superstructure_node,
             drive_hw_bridge_node,
@@ -148,5 +168,7 @@ def generate_launch_description():
             cam_container,
             zed_mini_container,
             zed_container,
+            base_link_to_zed,
+            base_link_to_right_gps,
         ]
     )
