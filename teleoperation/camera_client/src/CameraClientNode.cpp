@@ -49,9 +49,6 @@ namespace mrover {
                 sanitizedCameras.insert(sanitize(cameraName));
 
                 RCLCPP_INFO(get_logger(), "cameraName: %s", sanitize(cameraName).c_str());
-                declare_parameter(std::format("{}.port", sanitize(cameraName)), rclcpp::ParameterType::PARAMETER_INTEGER);
-                declare_parameter(std::format("{}.stream.codec", sanitize(cameraName)), rclcpp::ParameterType::PARAMETER_STRING);
-
                 auto const port = static_cast<std::uint16_t>(get_parameter(std::format("{}.port", sanitize(cameraName))).as_int());
 
                 std::string const codec = get_parameter(std::format("{}.stream.codec", sanitize(cameraName))).as_string();

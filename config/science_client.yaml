@@ -1,0 +1,23 @@
+camera_client:
+  ros__parameters:
+    test: 10
+    arm:
+      cameras:
+        # main
+        - "sp1_cam_main"
+        - "sp2_cam_main"
+        - "zed_main"
+        - "mob_left_cam_main"
+        - "mob_right_cam_main"
+
+        # second
+        - "gps_left_cam_second"
+        - "gps_right_cam_second"
+        - "zed_mini_second"
+    science:
+      cameras:
+        - "zed_main"
+    auton:
+      cameras:
+        - "zed_main"
+    rtp_jitter_ms: 50

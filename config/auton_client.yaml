@@ -1,0 +1,22 @@
+camera_client:
+  ros__parameters:
+    test: 10
+    arm:
+      cameras:
+        # main
+        - "zed_annotated_main"
+        - "long_range_cam_annotated_main"
+
+        # second
+        - "mob_left_cam_second"
+        - "mob_right_cam_second"
+        - "gps_left_cam_second"
+        - "gps_right_cam_second"
+        - "zed_mini_second"
+    science:
+      cameras:
+        - "zed_main"
+    auton:
+      cameras:
+        - "zed_main"
+    rtp_jitter_ms: 50
