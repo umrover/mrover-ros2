@@ -17,6 +17,8 @@ navigation:
 
     target_expiration_duration: 60.0
     display_markers: true
+
+    zed_fov: 1.9
     
     pure_pursuit:
       min_lookahead_distance: 0.4
@@ -61,6 +63,7 @@ navigation:
       no_search_wait_time: 10.0
 
     search:
+      object_stop_threshold: 3.0
       stop_threshold: 0.5
       drive_forward_threshold: 0.34
       coverage_radius: 20.0
@@ -70,7 +73,6 @@ navigation:
       traversable_cost: 5.0
       safe_approach_distance: 5.0
       angle_thresh: 0.0872665 #pi/36 radians / 5 degrees
-      distance_threshold: 1.0
       update_delay: 3.0
       
     single_tag:
