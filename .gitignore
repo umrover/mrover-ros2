@@ -3,8 +3,9 @@
 /install/
 /log/
 
-# pixi environment directory (pixi.lock IS committed, .pixi/ is not)
-/.pixi/
+# pixi environment directory (pixi.lock IS committed, envs are not)
+/.pixi/*
+!/.pixi/config.toml
 
 # Dawn prebuilt binaries (downloaded by tools/setup_dawn.sh, not committed)
 /deps/dawn-prebuilt/
