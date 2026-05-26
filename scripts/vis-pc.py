@@ -2,8 +2,17 @@
 
 import open3d as o3d
 
-# Load point cloud from file
-pcd = o3d.io.read_point_cloud("output.ply")
+import sys
+import os
 
-# Simple visualization
-o3d.visualization.draw_geometries([pcd])
+if len(sys.argv) == 1:
+    print("Usage: vis-pc.py <path>")
+    exit(1)
+else:
+    if not os.path.exists(sys.argv[1]):
+        print("File does not exist")
+        exit(1)
+
+    pcd = o3d.io.read_point_cloud(sys.argv[1])
+
+    o3d.visualization.draw_geometries([pcd])
