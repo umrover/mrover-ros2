@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import L from 'leaflet'
 import type { BasicWaypointRecord, MapWaypoint } from '@/types/waypoints'
 import { waypointsAPI } from '@/utils/api'
+import { currentTimestamp } from '@/utils/formatNumber'
 
 export const useErdStore = defineStore('erd', () => {
   const waypoints = ref<BasicWaypointRecord[]>([])
@@ -89,7 +90,7 @@ export const useErdStore = defineStore('erd', () => {
     const link = document.createElement('a')
     const url = URL.createObjectURL(blob)
     link.setAttribute('href', url)
-    link.setAttribute('download', `mission_course_${new Date().toISOString().split('T')[0]}.txt`)
+    link.setAttribute('download', `mission_course_${currentTimestamp()}.txt`)
     link.style.visibility = 'hidden'
     document.body.appendChild(link)
     link.click()

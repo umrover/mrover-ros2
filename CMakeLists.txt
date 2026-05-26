@@ -350,6 +350,7 @@ if (EXISTS ${MROVER_EMBEDDED_ROOT_DIR} AND NOT APPLE)
     mrover_add_esw_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
     mrover_add_esw_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
     mrover_add_esw_bridge_node(science_hw_bridge esw/science_hw_bridge.cpp)
+    mrover_add_esw_bridge_node(pdlb_hw_bridge esw/pdlb_hw_bridge.cpp)
     mrover_add_esw_bridge_node(mast_gimbal_hw_bridge esw/mast_gimbal_hw_bridge.cpp)
 endif()
 
