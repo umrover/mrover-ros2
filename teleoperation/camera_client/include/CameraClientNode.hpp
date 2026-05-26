@@ -7,6 +7,8 @@ namespace mrover {
     struct CameraInfo {
         std::string name;
         std::string pipeline;
+        int width;
+        int height;
     };
 
     enum CAMERA_CONFIG : unsigned char {

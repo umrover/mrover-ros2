@@ -34,10 +34,14 @@ namespace mrover {
                 RCLCPP_INFO(get_logger(), "cameraName: %s", cameraName.c_str());
                 declare_parameter(std::format("{}.port", cameraName), rclcpp::ParameterType::PARAMETER_INTEGER);
                 declare_parameter(std::format("{}.stream.codec", cameraName), rclcpp::ParameterType::PARAMETER_STRING);
+                declare_parameter(std::format("{}.stream.width", cameraName), rclcpp::ParameterType::PARAMETER_INTEGER);
+                declare_parameter(std::format("{}.stream.height", cameraName), rclcpp::ParameterType::PARAMETER_INTEGER);
 
                 auto const port = static_cast<std::uint16_t>(get_parameter(std::format("{}.port", cameraName)).as_int());
 
                 std::string const codec = get_parameter(std::format("{}.stream.codec", cameraName)).as_string();
+                auto const width = static_cast<int>(get_parameter(std::format("{}.stream.width", cameraName)).as_int());
+                auto const height = static_cast<int>(get_parameter(std::format("{}.stream.height", cameraName)).as_int());
 
                 std::string const pipeline = createRtpToRawSrc(port, gst::video::getCodecFromStringView(codec), rtpJitterMs);
 
@@ -50,7 +54,7 @@ namespace mrover {
                                                                      }));
 
                 // emit signal for GUI to handle camera setup
-                emit cameraDiscovered(CameraInfo{.name = cameraName, .pipeline = pipeline});
+                emit cameraDiscovered(CameraInfo{.name = cameraName, .pipeline = pipeline, .width = width, .height = height});
             }
         }
 

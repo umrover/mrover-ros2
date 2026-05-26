@@ -41,6 +41,7 @@ auto main(int argc, char** argv) -> int {
                                  .onRotate = [mainWindow, name]() { mainWindow->getCameraGridWidget()->rotateCamera(name); }};
 
                          mainWindow->createCamera(name, info.pipeline, std::move(callbacks));
+                         mainWindow->getCameraGridWidget()->resizeCamera(name, info.width, info.height);
                      });
 
     QObject::connect(node.get(), &mrover::CameraClientNode::imageCaptured,
