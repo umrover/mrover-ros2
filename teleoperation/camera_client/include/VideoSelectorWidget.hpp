@@ -40,13 +40,13 @@ namespace mrover {
         auto createVisibilityCheckBox(Selector& selector, CameraCallbacks const& callbacks) -> void;
         auto createMediaControls(Selector& selector, std::string const& cameraName, CameraCallbacks const& callbacks) -> void;
         auto createScreenshotButton(Selector& selector, CameraCallbacks const& callbacks) -> void;
-        auto createScaleSlider(Selector& selector, CameraCallbacks const& callbacks) -> void;
+        auto createScaleSlider(Selector& selector, int initialWidth, CameraCallbacks const& callbacks) -> void;
         auto createRotateButton(Selector& selector, CameraCallbacks const& callbacks) -> void;
 
     public:
         explicit VideoSelectorWidget(QWidget* parent = nullptr);
 
-        auto addCamera(std::string const& name, CameraCallbacks callbacks) -> void;
+        auto addCamera(std::string const& name, int initialWidth, CameraCallbacks callbacks) -> void;
     };
 
 } // namespace mrover

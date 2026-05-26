@@ -58,7 +58,7 @@ namespace mrover {
                             .onResize = [this, name](int w, int h) { mCameraGridWidget->resizeCamera(name, w, h); },
                     };
 
-                    if (bool success = createCamera(name, pipeline, std::move(callbacks)); !success) {
+                    if (bool success = createCamera(name, pipeline, 640, std::move(callbacks)); !success) {
                         QMetaObject::invokeMethod(mGstRtpVideoCreatorWidget, "onCreateResult",
                                                   Qt::QueuedConnection,
                                                   Q_ARG(bool, false),
@@ -71,12 +71,12 @@ namespace mrover {
                 });
     }
 
-    auto CameraClientMainWindow::createCamera(std::string const& name, std::string const& pipeline, CameraCallbacks callbacks) -> bool {
+    auto CameraClientMainWindow::createCamera(std::string const& name, std::string const& pipeline, int initialWidth, CameraCallbacks callbacks) -> bool {
         mCameraGridWidget->addGstVideoWidget(name, pipeline);
         if (mCameraGridWidget->isError()) {
             return false;
         }
-        mCameraSelectorWidget->addCamera(name, std::move(callbacks));
+        mCameraSelectorWidget->addCamera(name, initialWidth, std::move(callbacks));
         return true;
     }
 

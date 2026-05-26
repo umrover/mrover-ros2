@@ -15,7 +15,7 @@ namespace mrover {
                        QIcon::hasThemeIcon("camera-photo-symbolic"));
     }
 
-    auto VideoSelectorWidget::addCamera(std::string const& name, CameraCallbacks callbacks) -> void {
+    auto VideoSelectorWidget::addCamera(std::string const& name, int initialWidth, CameraCallbacks callbacks) -> void {
         if (mSelectors.contains(name)) {
             qDebug() << "Selector with name" << QString::fromStdString(name) << "already exists.";
             return;
@@ -34,7 +34,7 @@ namespace mrover {
         createMediaControls(selector, name, callbacks);
         createScreenshotButton(selector, callbacks);
         createRotateButton(selector, callbacks);
-        createScaleSlider(selector, callbacks);
+        createScaleSlider(selector, initialWidth, callbacks);
 
         mSelectors.emplace(name, selector);
 
@@ -104,10 +104,14 @@ namespace mrover {
         selector.layout->addWidget(selector.screenshotButton);
     }
 
-    auto VideoSelectorWidget::createScaleSlider(Selector& selector, CameraCallbacks const& callbacks) -> void {
+    auto VideoSelectorWidget::createScaleSlider(Selector& selector, int initialWidth, CameraCallbacks const& callbacks) -> void {
         selector.scaleSlider = new QSlider(Qt::Horizontal, selector.widget);
         selector.scaleSlider->setRange(50, 200);
-        selector.scaleSlider->setValue(100);
+
+        int initialSliderValue = (initialWidth * 100) / 640;
+        initialSliderValue = std::max(50, std::min(200, initialSliderValue));
+
+        selector.scaleSlider->setValue(initialSliderValue);
         selector.scaleSlider->setFixedWidth(80);
         auto resizeCallback = callbacks.onResize;
         connect(selector.scaleSlider, &QSlider::valueChanged, this, [resizeCallback](int value) {

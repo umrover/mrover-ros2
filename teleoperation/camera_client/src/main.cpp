@@ -40,7 +40,7 @@ auto main(int argc, char** argv) -> int {
                                  .onResize = [mainWindow, name](int w, int h) { mainWindow->getCameraGridWidget()->resizeCamera(name, w, h); },
                                  .onRotate = [mainWindow, name]() { mainWindow->getCameraGridWidget()->rotateCamera(name); }};
 
-                         mainWindow->createCamera(name, info.pipeline, std::move(callbacks));
+                         mainWindow->createCamera(name, info.pipeline, info.width, std::move(callbacks));
                          mainWindow->getCameraGridWidget()->resizeCamera(name, info.width, info.height);
                      });
 

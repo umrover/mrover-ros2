@@ -28,7 +28,7 @@ namespace mrover {
     public:
         explicit CameraClientMainWindow(QWidget* parent = nullptr);
 
-        auto createCamera(std::string const& name, std::string const& pipeline, CameraCallbacks callbacks) -> bool;
+        auto createCamera(std::string const& name, std::string const& pipeline, int initialWidth, CameraCallbacks callbacks) -> bool;
         auto getCameraGridWidget() -> GstVideoGridWidget*;
 
         auto setConfigs(std::unordered_map<std::string, std::vector<std::string>>&& configs) -> void;
