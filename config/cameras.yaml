@@ -3,7 +3,7 @@
     ee1_cam:
       address: 10.1.0.2
       port: 8087
-      dev_node: "/dev/video0"
+      dev_node: "/dev/port_a1_cam"
       dev_path: ""
       stream:
         pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
