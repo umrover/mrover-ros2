@@ -38,10 +38,13 @@ namespace mrover {
                     return str;
                 };
 
-                if (sanitizedCameras.contains(sanitize(cameraName))) {
+                if (mMediaControlClients.contains(cameraName)) {
                     RCLCPP_WARN(get_logger(), "Camera %s already exists, skipping", cameraName.c_str());
                     continue;
-                }
+                }else if(!sanitizedCamerasFds.contains(sanitize(cameraName))){
+                    declare_parameter(std::format("{}.port", sanitize(cameraName)), rclcpp::ParameterType::PARAMETER_INTEGER);
+                    declare_parameter(std::format("{}.stream.codec", sanitize(cameraName)), rclcpp::ParameterType::PARAMETER_STRING);
+
 
                 sanitizedCameras.insert(sanitize(cameraName));
 
