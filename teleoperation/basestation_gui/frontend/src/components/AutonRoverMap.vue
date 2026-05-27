@@ -23,19 +23,16 @@
         :icon="basestationIcon"
       />
       <l-marker ref="droneRef" :lat-lng="droneLatLng" :icon="droneIcon" />
-      <template v-for="(waypoint, index) in storeForMap" :key="index">
-        <l-marker :lat-lng="waypoint.latLng" :icon="waypointIcon">
-          <l-tooltip :options="{ permanent: 'true', direction: 'top' }">
-            {{ waypoint.name }}
-          </l-tooltip>
-        </l-marker>
-        <l-circle
-          v-if="showWaypointRadius"
-          :lat-lng="waypoint.latLng"
-          :radius="20"
-          :options="{ color: '#3b82f6', weight: 1, fillOpacity: 0.08 }"
-        />
-      </template>
+      <l-marker
+        v-for="(waypoint, index) in storeForMap"
+        :key="index"
+        :lat-lng="waypoint.latLng"
+        :icon="waypointIcon"
+      >
+        <l-tooltip :options="{ permanent: 'true', direction: 'top' }">
+          {{ waypoint.name }}
+        </l-tooltip>
+      </l-marker>
       <l-polyline
         :lat-lngs="executionPath"
         color="red"
@@ -51,9 +48,6 @@
       </button>
       <button class="overlay-toolbar-btn" @click="followRover = !followRover">
         Follow Rover <i :class="followRover ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
-      </button>
-      <button class="overlay-toolbar-btn" @click="showWaypointRadius = !showWaypointRadius">
-        Radius <i :class="showWaypointRadius ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
       </button>
       <div class="overlay-dropdown">
         <button class="overlay-toolbar-btn" :disabled="followRover" @click="centerOpen = !centerOpen; zoomOpen = false">
@@ -92,15 +86,12 @@ import {
   LPolyline,
   LTooltip,
   LControlScale,
-  LCircle,
 } from '@vue-leaflet/vue-leaflet'
 import { useAutonomyStore } from '@/stores/autonomy'
 import { storeToRefs } from 'pinia'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import { ref, computed } from 'vue'
-
-const showWaypointRadius = ref(true)
 import { useRoverMap } from '@/composables/useRoverMap'
 import { useWebsocketStore } from '@/stores/websocket'
 import type { BasestationPositionMessage } from '@/types/coordinates'
@@ -139,6 +130,7 @@ const {
   maxOdomCount: 500,
   drawFrequency: 1,
   initialCenter: [38.4071654, -110.7923927],
+  offlineUrl: '/map/{z}/{x}/{y}.png',
 })
 
 const websocketStore = useWebsocketStore()

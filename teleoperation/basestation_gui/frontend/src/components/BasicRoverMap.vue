@@ -96,9 +96,9 @@ import 'leaflet-rotatedmarker'
 import type { LeafletMouseEvent } from 'leaflet'
 import type { MapWaypoint } from '@/types/waypoints'
 import { ref, watch } from 'vue'
+import { useRoverMap } from '@/composables/useRoverMap'
 
 const showWaypointRadius = ref(true)
-import { useRoverMap } from '@/composables/useRoverMap'
 
 const erdStore = useErdStore()
 const { waypointListForMap, highlightedWaypoint, searchWaypoint } = storeToRefs(erdStore)
