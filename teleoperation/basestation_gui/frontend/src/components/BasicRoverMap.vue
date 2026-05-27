@@ -29,6 +29,12 @@
             {{ waypoint.name }}, {{ index }}
           </l-tooltip>
         </l-marker>
+        <l-circle
+          v-if="showWaypointRadius"
+          :lat-lng="waypoint.latLng"
+          :radius="20"
+          :options="{ color: '#3b82f6', weight: 1, fillOpacity: 0.08 }"
+        />
       </div>
 
       <l-polyline :lat-lngs="odomPath" :color="'blue'" />
@@ -40,6 +46,9 @@
       </button>
       <button class="overlay-toolbar-btn" @click="followRover = !followRover">
         Follow Rover <i :class="followRover ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
+      </button>
+      <button class="overlay-toolbar-btn" @click="showWaypointRadius = !showWaypointRadius">
+        Radius <i :class="showWaypointRadius ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
       </button>
       <div class="overlay-dropdown">
         <button class="overlay-toolbar-btn" :disabled="followRover" @click="centerOpen = !centerOpen; zoomOpen = false">
@@ -77,6 +86,7 @@ import {
   LPolyline,
   LTooltip,
   LControlScale,
+  LCircle,
 } from '@vue-leaflet/vue-leaflet'
 import { useErdStore } from '@/stores/erd'
 import { storeToRefs } from 'pinia'
@@ -86,6 +96,8 @@ import 'leaflet-rotatedmarker'
 import type { LeafletMouseEvent } from 'leaflet'
 import type { MapWaypoint } from '@/types/waypoints'
 import { ref, watch } from 'vue'
+
+const showWaypointRadius = ref(true)
 import { useRoverMap } from '@/composables/useRoverMap'
 
 const erdStore = useErdStore()
