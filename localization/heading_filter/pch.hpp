@@ -5,6 +5,7 @@
 #include <chrono>
 #include <cstdint>
 #include <memory>
+#include <cmath>
 
 // 2. Third-party geometry/math libraries
 #include <lie.hpp>
