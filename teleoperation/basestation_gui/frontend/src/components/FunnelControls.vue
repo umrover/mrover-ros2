@@ -146,11 +146,9 @@ const segments: Segment[] = SITES.map((site, i) => {
 
 const websocketStore = useWebsocketStore()
 
-const funnelState = computed((): ControllerStateMessage | null => {
-  const msg = websocketStore.messages['science']
-  if (!msg) return null
-  const typedMsg = msg as ControllerStateMessage
-  return typedMsg.type === 'sp_controller_state' ? typedMsg : null
+const funnelState = ref<ControllerStateMessage | null>(null)
+websocketStore.onMessage<ControllerStateMessage>('science', 'sp_controller_state', (msg) => {
+  funnelState.value = msg
 })
 
 const hasState = computed(() => funnelState.value !== null)
