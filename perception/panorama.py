@@ -164,7 +164,6 @@ class Panorama(Node):
         self.stitched_pc = np.vstack((self.stitched_pc, rotated_pc))
 
     def heading_callback(self, heading: Heading):
-        self.get_logger().info("Heading is {heading.heading}")
         self.cur_heading = heading.heading
 
     def label_pano(self, num_images, pano: np.ndarray):
@@ -246,10 +245,10 @@ class Panorama(Node):
             self.sync = None
 
         # construct pc from stitched
-        self.get_logger().info(f"Shape: {arr_pc.shape}")
-        lens = np.linalg.norm(arr_pc[:, 0:3], axis=1)
+        self.get_logger().info(f"Shape: {self.arr_pc.shape}")
+        lens = np.linalg.norm(self.arr_pc[:, 0:3], axis=1)
 
-        filtered_pts = arr_pc[lens < 10, :]
+        filtered_pts = self.arr_pc[lens < 10, :]
 
         self.get_logger().info(f"Lens shape: {lens.shape}")
 
@@ -263,7 +262,6 @@ class Panorama(Node):
 
         pcd.colors = o3d.utility.Vector3dVector(colors)
 
-        o3d.io.write_point_cloud("data/raw-pano-images/pano.ply", pcd)
 
         # if we do not receive any images, then this will crash
         if len(self.img_list) == 0:
@@ -305,6 +303,7 @@ class Panorama(Node):
             # label and save the panorama if it succeeds
             self.label_pano(num_images, pano)
             cv2.imwrite(f"{new_path}/pano.png", pano)
+            o3d.io.write_point_cloud(f"{new_path}/pano.ply", pcd)
             
             # convert the panorama to bgra for transport through ROS
             pano = np.clip(pano, 0, 255).astype(np.uint8)
