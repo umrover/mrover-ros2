@@ -245,10 +245,10 @@ class Panorama(Node):
             self.sync = None
 
         # construct pc from stitched
-        self.get_logger().info(f"Shape: {self.arr_pc.shape}")
-        lens = np.linalg.norm(self.arr_pc[:, 0:3], axis=1)
+        self.get_logger().info(f"Shape: {self.stitched_pc.shape}")
+        lens = np.linalg.norm(self.stitched_pc[:, 0:3], axis=1)
 
-        filtered_pts = self.arr_pc[lens < 10, :]
+        filtered_pts = self.stitched_pc[lens < 10, :]
 
         self.get_logger().info(f"Lens shape: {lens.shape}")
 
