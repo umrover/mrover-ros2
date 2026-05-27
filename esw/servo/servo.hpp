@@ -321,6 +321,7 @@ namespace mrover {
             if (!mUseIndexHoming) return;
             bool const prevHit = mIndexHit.exchange(hit);
             if (hit && !prevHit) {
+                RCLCPP_INFO(mNode->get_logger(), "hit & homing!!");
                 bool wasHomed = mIsHomed.load();
                 snapToLimit(mIndexLimitRad, !wasHomed, false);
             }

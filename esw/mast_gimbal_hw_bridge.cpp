@@ -77,7 +77,7 @@ namespace mrover {
             mHWLimitTimer = this->create_wall_timer(std::chrono::milliseconds(20), [this]() -> void {
                 if (mServos.count("gimbal_yaw") > 0 && mYawLimBoard) {
                     mServos.at("gimbal_yaw")->updateHardwareLimits(
-                        mYawLimBoard->getLimitB(), 
+                        mYawLimBoard->getLimitB(),
                         mYawLimBoard->getLimitA()
                     );
                 } }, mTimerGroup);
