@@ -1,79 +1,94 @@
 <template>
   <div class="rover3d-root">
     <canvas
+      v-if="enabled"
+      ref="canvasEl"
       class="webgl"
       @click="closeDropdowns()"
       @pointerdown="onPointerDown"
       @pointermove="onPointerMove"
       @pointerup="onPointerUp"
     ></canvas>
+    <div v-else class="disabled-overlay">3D View Disabled</div>
     <div class="overlay-toolbar left-0 right-0 items-center justify-between">
       <div class="flex gap-1">
-        <div class="relative">
-          <button
-            type="button"
-            class="overlay-toolbar-btn"
-            @click="viewDropdownOpen = !viewDropdownOpen">
-            {{ viewLabels[viewMode] }}
-            <i class="bi bi-chevron-down"></i>
-          </button>
-          <ul class="dropdown-menu left-0 right-auto" :class="{ show: viewDropdownOpen }">
-            <li v-for="(label, key) in viewLabels" :key="key">
-              <button
-                class="dropdown-item"
-                :class="{ active: viewMode === key }"
-                @click="switchView(key); viewDropdownOpen = false">
-                {{ label }}
-              </button>
-            </li>
-          </ul>
-        </div>
-
-        <template v-if="isTopMode">
+        <template v-if="enabled">
           <div class="relative">
             <button
               type="button"
               class="overlay-toolbar-btn"
-              @click="rotationDropdownOpen = !rotationDropdownOpen">
-              {{ rotationLabels[rotationMode] }}
+              @click="viewDropdownOpen = !viewDropdownOpen">
+              {{ viewLabels[viewMode] }}
               <i class="bi bi-chevron-down"></i>
             </button>
-            <ul class="dropdown-menu left-0 right-auto" :class="{ show: rotationDropdownOpen }">
-              <li v-for="(label, key) in rotationLabels" :key="key">
+            <ul class="dropdown-menu left-0 right-auto" :class="{ show: viewDropdownOpen }">
+              <li v-for="(label, key) in viewLabels" :key="key">
                 <button
                   class="dropdown-item"
-                  :class="{ active: rotationMode === key }"
-                  @click="setRotationMode(key); rotationDropdownOpen = false">
+                  :class="{ active: viewMode === key }"
+                  @click="switchView(key); viewDropdownOpen = false">
                   {{ label }}
                 </button>
               </li>
             </ul>
           </div>
-        </template>
 
-        <button
-          v-if="showReset"
-          type="button"
-          class="overlay-toolbar-btn"
-          title="Reset camera position"
-          @click="handleReset()">
-          <i class="bi bi-arrow-counterclockwise"></i>
-        </button>
+          <template v-if="isTopMode">
+            <div class="relative">
+              <button
+                type="button"
+                class="overlay-toolbar-btn"
+                @click="rotationDropdownOpen = !rotationDropdownOpen">
+                {{ rotationLabels[rotationMode] }}
+                <i class="bi bi-chevron-down"></i>
+              </button>
+              <ul class="dropdown-menu left-0 right-auto" :class="{ show: rotationDropdownOpen }">
+                <li v-for="(label, key) in rotationLabels" :key="key">
+                  <button
+                    class="dropdown-item"
+                    :class="{ active: rotationMode === key }"
+                    @click="setRotationMode(key); rotationDropdownOpen = false">
+                    {{ label }}
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </template>
+
+          <button
+            v-if="showReset"
+            type="button"
+            class="overlay-toolbar-btn"
+            title="Reset camera position"
+            @click="handleReset()">
+            <i class="bi bi-arrow-counterclockwise"></i>
+          </button>
+        </template>
       </div>
 
-      <button
-        type="button"
-        class="overlay-toolbar-btn"
-        :class="{ 'overlay-toolbar-btn-active': costmapVisible }"
-        @click="toggleCostMap()">
-        Cost Map
-      </button>
+      <div class="flex gap-1">
+        <button
+          v-if="enabled"
+          type="button"
+          class="overlay-toolbar-btn"
+          :class="{ 'overlay-toolbar-btn-active': costmapVisible }"
+          @click="toggleCostMap()">
+          Cost Map
+        </button>
+        <button
+          type="button"
+          class="overlay-toolbar-btn"
+          :class="{ 'overlay-toolbar-btn-active': !enabled }"
+          @click="toggleEnabled()">
+          <i :class="enabled ? 'bi bi-eye' : 'bi bi-eye-slash'"></i>
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
 import type { ControllerStateMessage, OccupancyGridMessage } from '@/types/websocket'
 import type { OrientationMessage } from '@/types/coordinates'
@@ -123,6 +138,7 @@ const rotationLabels: Record<RotationMode, string> = {
 
 const LS_VIEW_MODE = 'rover3d.viewMode'
 const LS_ROTATION_MODE = 'rover3d.rotationMode'
+const LS_ENABLED = 'rover3d.enabled'
 
 const validViewModes = new Set(Object.values(ViewMode))
 const validRotationModes = new Set(Object.values(RotationMode))
@@ -136,6 +152,8 @@ const viewMode = ref<ViewMode>(loadEnum(LS_VIEW_MODE, validViewModes, ViewMode.O
 const rotationMode = ref<RotationMode>(loadEnum(LS_ROTATION_MODE, validRotationModes, RotationMode.FollowHeading))
 const viewDropdownOpen = ref(false)
 const rotationDropdownOpen = ref(false)
+const enabled = ref(localStorage.getItem(LS_ENABLED) !== 'false')
+const canvasEl = ref<HTMLCanvasElement | null>(null)
 
 const isTopMode = computed(() => viewMode.value === ViewMode.Top)
 const showReset = computed(() => {
@@ -233,15 +251,22 @@ function toggleCostMap() {
   toggleCostMapVisibility()
 }
 
-onMounted(() => {
-  const canvas = document.querySelector('canvas.webgl') as HTMLCanvasElement
-  setupScene(canvas)
-  if (!costmapVisible.value) {
-    setCostMapVisibility(false)
+watch(canvasEl, (canvas) => {
+  if (canvas) {
+    setupScene(canvas)
+    if (!costmapVisible.value) setCostMapVisibility(false)
+    switchView(viewMode.value)
+    setupWebSocket('nav')
+  } else {
+    disposeScene()
+    closeWebSocket('nav')
   }
-  switchView(viewMode.value)
-  setupWebSocket('nav')
 })
+
+function toggleEnabled() {
+  enabled.value = !enabled.value
+  localStorage.setItem(LS_ENABLED, String(enabled.value))
+}
 
 onBeforeUnmount(() => {
   disposeScene()
@@ -336,5 +361,17 @@ onMessage<OrientationMessage>('nav', 'orientation', (msg) => {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+.disabled-overlay {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a1a1a;
+  color: #555;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
 }
 </style>
