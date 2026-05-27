@@ -4,16 +4,16 @@ camera_client:
     arm:
       cameras:
         # main
-        - "sp1_cam_main"
-        - "sp2_cam_main"
         - "zed_main"
         - "mob_left_cam_main"
         - "mob_right_cam_main"
+        - "zed_mini_main"
 
         # second
+        - "sp1_cam_second"
+        - "sp2_cam_second"
         - "gps_left_cam_second"
         - "gps_right_cam_second"
-        - "zed_mini_second"
     science:
       cameras:
         - "zed_main"

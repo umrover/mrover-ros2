@@ -7,8 +7,6 @@ camera_client:
         - "ee1_cam_main"
         - "ee2_cam_main"
         - "ee3_cam_main"
-        - "ee4_cam_main"
-        - "ee5_cam_main"
         - "zed_main"
 
         # secondary
