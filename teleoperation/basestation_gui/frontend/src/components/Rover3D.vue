@@ -210,13 +210,16 @@ function onPointerUp() {
   isDragging = false
 }
 
+const JOINT_A_SCALE = -100
+const JOINT_A_OFFSET = 40
+
 const jointNameMap: Record<string, string> = {
   joint_a: 'chassis_to_arm_a',
   joint_b: 'arm_a_to_arm_b',
   joint_c: 'arm_b_to_arm_c',
   joint_de_pitch: 'arm_c_to_arm_d',
   joint_de_roll: 'arm_d_to_arm_e',
-  gripper: 'gripper_link',
+  gripper: 'arm_e_to_arm_gripper',
 }
 
 const lastKnownPositions: Record<string, number> = {}
@@ -251,7 +254,7 @@ onMessage<ControllerStateMessage>('arm', 'arm_state', (msg) => {
     const incoming: number | null = (msg.positions as (number | null)[])[index] ?? null
 
     if (incoming !== null) {
-      const mapped = urdfName === 'chassis_to_arm_a' ? incoming * -100 + 40 : incoming
+      const mapped = urdfName === 'chassis_to_arm_a' ? incoming * JOINT_A_SCALE + JOINT_A_OFFSET : incoming
       lastKnownPositions[urdfName] = mapped
     }
 
