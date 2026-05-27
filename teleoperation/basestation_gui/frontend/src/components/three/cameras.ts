@@ -37,6 +37,7 @@ export function createCameras(
   canvas: HTMLCanvasElement,
   scene: THREE.Scene,
   roverPivot: THREE.Group,
+  markDirty: () => void,
 ): CameraManager {
   const aspect = canvas.clientWidth / canvas.clientHeight
   const makeCamera = () => new THREE.PerspectiveCamera(75, aspect, 0.1, 5000)
@@ -62,6 +63,7 @@ export function createCameras(
   }
 
   const controls = new OrbitControls(cameras[CameraType.Orbit], canvas)
+  controls.addEventListener('change', markDirty)
 
   let activeType: CameraType = CameraType.Orbit
   let navAzimuth = 0
@@ -120,6 +122,7 @@ export function createCameras(
     navAzimuth = radians
     if (navActive) {
       applyNavOrientation()
+      markDirty()
     }
   }
 

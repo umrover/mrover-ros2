@@ -3,6 +3,7 @@ import * as THREE from 'three'
 export interface SceneContext {
   scene: THREE.Scene
   renderer: THREE.WebGLRenderer
+  markDirty: () => void
   startRenderLoop: (getActiveCamera: () => THREE.Camera, onUpdate?: () => void) => void
   dispose: () => void
 }
@@ -11,7 +12,6 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
   const scene = new THREE.Scene()
   scene.background = new THREE.Color(0x87ceeb)
 
-  // lighting
   const ambientLight = new THREE.AmbientLight(0x808080, 1)
   scene.add(ambientLight)
 
@@ -20,17 +20,20 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
   directionalLight.castShadow = false
   scene.add(directionalLight)
 
-  // renderer
-  const renderer = new THREE.WebGLRenderer({ antialias: false, canvas })
+  const renderer = new THREE.WebGLRenderer({ antialias: false, canvas, powerPreference: 'low-power' })
   renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
   renderer.setPixelRatio(1)
   renderer.shadowMap.enabled = false
-  renderer.toneMapping = THREE.ACESFilmicToneMapping
-  renderer.toneMappingExposure = 2.5
 
-  // resize handling
+  let needsRender = true
+
+  function markDirty() {
+    needsRender = true
+  }
+
   const resizeObserver = new ResizeObserver(() => {
     renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
+    markDirty()
   })
   resizeObserver.observe(canvas.parentElement!)
 
@@ -42,7 +45,7 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
   ) {
     let lastTime = performance.now()
     let timeSinceLastFrame = 0
-    const frameInterval = 1 / 60
+    const frameInterval = 1 / 30
 
     const tick = () => {
       animationFrameId = window.requestAnimationFrame(tick)
@@ -53,7 +56,10 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
       if (timeSinceLastFrame > frameInterval) {
         timeSinceLastFrame %= frameInterval
         onUpdate?.()
-        renderer.render(scene, getActiveCamera())
+        if (needsRender) {
+          needsRender = false
+          renderer.render(scene, getActiveCamera())
+        }
       }
     }
     tick()
@@ -67,5 +73,5 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
     renderer.dispose()
   }
 
-  return { scene, renderer, startRenderLoop, dispose }
+  return { scene, renderer, markDirty, startRenderLoop, dispose }
 }
