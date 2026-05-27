@@ -45,6 +45,7 @@ export function useRoverScene() {
   }
 
   function dispose() {
+    cameraManager?.dispose()
     sceneCtx?.dispose()
     sceneCtx = null
     cameraManager = null

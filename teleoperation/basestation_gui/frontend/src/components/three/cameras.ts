@@ -24,6 +24,7 @@ export interface CameraManager {
   setNavAzimuth: (radians: number) => void
   tickNav: () => void
   updateAspect: (width: number, height: number) => void
+  dispose: () => void
 }
 
 const PRESETS: Record<CameraType, CameraPreset> = {
@@ -64,6 +65,14 @@ export function createCameras(
 
   const controls = new OrbitControls(cameras[CameraType.Orbit], canvas)
   controls.addEventListener('change', markDirty)
+
+  // OrbitControls fires 'change' from inside controls.update(), which only runs right before
+  // a render. These listeners kick off the first render so the chain can start.
+  const onPointerActivity = (e: PointerEvent) => { if (e.buttons !== 0) markDirty() }
+  const onWheel = () => markDirty()
+  canvas.addEventListener('pointermove', onPointerActivity, { passive: true })
+  canvas.addEventListener('pointerdown', markDirty, { passive: true })
+  canvas.addEventListener('wheel', onWheel, { passive: true })
 
   let activeType: CameraType = CameraType.Orbit
   let navAzimuth = 0
@@ -148,5 +157,12 @@ export function createCameras(
     }
   }
 
-  return { cameras, controls, setType, getActive, resetActive, setNavAzimuth, tickNav, updateAspect }
+  function dispose() {
+    canvas.removeEventListener('pointermove', onPointerActivity)
+    canvas.removeEventListener('pointerdown', markDirty)
+    canvas.removeEventListener('wheel', onWheel)
+    controls.dispose()
+  }
+
+  return { cameras, controls, setType, getActive, resetActive, setNavAzimuth, tickNav, updateAspect, dispose }
 }

@@ -38,31 +38,33 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
   resizeObserver.observe(canvas.parentElement!)
 
   let animationFrameId = 0
+  let lastRenderTime = 0
+  const MIN_RENDER_INTERVAL_MS = 100 // 10 FPS cap
 
   function startRenderLoop(
     getActiveCamera: () => THREE.Camera,
     onUpdate?: () => void,
   ) {
-    let lastTime = performance.now()
-    let timeSinceLastFrame = 0
-    const frameInterval = 1 / 30
-
-    const tick = () => {
+    const tick = (now: DOMHighResTimeStamp) => {
       animationFrameId = window.requestAnimationFrame(tick)
-      const now = performance.now()
-      const delta = (now - lastTime) / 1000
-      lastTime = now
-      timeSinceLastFrame += delta
-      if (timeSinceLastFrame > frameInterval) {
-        timeSinceLastFrame %= frameInterval
-        onUpdate?.()
-        if (needsRender) {
-          needsRender = false
-          renderer.render(scene, getActiveCamera())
-        }
-      }
+
+      if (document.hidden) return
+      if (!needsRender) return
+      if (now - lastRenderTime < MIN_RENDER_INTERVAL_MS) return
+
+      needsRender = false
+      lastRenderTime = now
+      onUpdate?.()
+      renderer.render(scene, getActiveCamera())
     }
-    tick()
+    animationFrameId = window.requestAnimationFrame(tick)
+
+    // Resume after the tab becomes visible again
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && needsRender) {
+        markDirty()
+      }
+    })
   }
 
   function dispose() {
