@@ -190,8 +190,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--location", required=True, choices=LOCATIONS)
     parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--large", action="store_true",
-                        help="use larger radius for zoom 17+ tiers (0.05 instead of 0.015/0.005)")
+    parser.add_argument(
+        "--large", action="store_true", help="use larger radius for zoom 17+ tiers (0.05 instead of 0.015/0.005)"
+    )
     args = parser.parse_args()
     lat, lon = LOCATIONS[args.location]
     run(lat, lon, args.dry_run, 0.02 if args.large else None)
