@@ -14,7 +14,7 @@ def generate_launch_description():
         name="camera_client",
         parameters=[
             Path(get_package_share_directory("mrover"), "config", "cameras.yaml"),
-            Path(get_package_share_directory("mrover"), "config", "es_client.yaml"),
+            Path(get_package_share_directory("mrover"), "config", "arm_client.yaml"),
         ],
     )
 
