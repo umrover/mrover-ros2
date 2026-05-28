@@ -24,7 +24,6 @@ export interface CameraManager {
   setNavAzimuth: (radians: number) => void
   tickNav: () => void
   updateAspect: (width: number, height: number) => void
-  dispose: () => void
 }
 
 const PRESETS: Record<CameraType, CameraPreset> = {
@@ -146,9 +145,5 @@ export function createCameras(
     }
   }
 
-  function dispose() {
-    controls.dispose()
-  }
-
-  return { cameras, controls, setType, getActive, resetActive, setNavAzimuth, tickNav, updateAspect, dispose }
+  return { cameras, controls, setType, getActive, resetActive, setNavAzimuth, tickNav, updateAspect }
 }
