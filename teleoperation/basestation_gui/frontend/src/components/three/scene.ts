@@ -11,6 +11,7 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
   const scene = new THREE.Scene()
   scene.background = new THREE.Color(0x87ceeb)
 
+  // lighting
   const ambientLight = new THREE.AmbientLight(0x808080, 1)
   scene.add(ambientLight)
 
@@ -19,33 +20,43 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
   directionalLight.castShadow = false
   scene.add(directionalLight)
 
-  const renderer = new THREE.WebGLRenderer({ antialias: false, canvas, powerPreference: 'low-power' })
+  // renderer
+  const renderer = new THREE.WebGLRenderer({ antialias: false, canvas })
   renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
   renderer.setPixelRatio(1)
   renderer.shadowMap.enabled = false
+  renderer.toneMapping = THREE.ACESFilmicToneMapping
+  renderer.toneMappingExposure = 2.5
 
+  // resize handling
   const resizeObserver = new ResizeObserver(() => {
     renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
   })
   resizeObserver.observe(canvas.parentElement!)
 
   let animationFrameId = 0
-  let lastRenderTime = 0
-  const MIN_RENDER_INTERVAL_MS = 200 // 5 FPS cap
 
   function startRenderLoop(
     getActiveCamera: () => THREE.Camera,
     onUpdate?: () => void,
   ) {
-    const tick = (now: DOMHighResTimeStamp) => {
+    let lastTime = performance.now()
+    let timeSinceLastFrame = 0
+    const frameInterval = 1 / 10
+
+    const tick = () => {
       animationFrameId = window.requestAnimationFrame(tick)
-      if (document.hidden) return
-      if (now - lastRenderTime < MIN_RENDER_INTERVAL_MS) return
-      lastRenderTime = now
-      onUpdate?.()
-      renderer.render(scene, getActiveCamera())
+      const now = performance.now()
+      const delta = (now - lastTime) / 1000
+      lastTime = now
+      timeSinceLastFrame += delta
+      if (timeSinceLastFrame > frameInterval) {
+        timeSinceLastFrame %= frameInterval
+        onUpdate?.()
+        renderer.render(scene, getActiveCamera())
+      }
     }
-    animationFrameId = window.requestAnimationFrame(tick)
+    tick()
   }
 
   function dispose() {

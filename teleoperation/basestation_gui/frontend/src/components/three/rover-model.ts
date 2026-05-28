@@ -32,9 +32,11 @@ type URDFJoint = THREE.Object3D & {
 export function loadRover(parent: THREE.Group): RoverModel {
   const jointMap = new Map<string, URDFJoint>()
 
+  // Debug GUI (hidden by default)
   const gui = new GUI({ width: 400 })
   gui.hide()
 
+  // URDF loader with GLTF + Draco mesh support
   const manager = new THREE.LoadingManager()
   const loader = new URDFLoader(manager)
   loader.packages = { mrover: '/urdf' }
@@ -59,6 +61,7 @@ export function loadRover(parent: THREE.Group): RoverModel {
   loader.load(
     '/urdf/rover/rover.urdf',
     (robot: THREE.Object3D) => {
+      // ROS Z-up to Three.js Y-up conversion
       const roverContainer = new THREE.Group()
       roverContainer.position.set(0, -50, 0)
       roverContainer.rotation.set(-Math.PI / 2, 0, 0)
