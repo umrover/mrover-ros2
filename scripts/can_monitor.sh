@@ -15,14 +15,11 @@ echo "Monitoring $NETWORK every $POLL_INTERVAL seconds..."
 
 while true; do
     # Check if the can bus is DOWN
-    if ip -d link show "$NETWORK" | grep -q -e "state DOWN" -e "bus-off"; then
-        echo "$(date +'%Y-%m-%d %H:%M:%S') - Warning: $NETWORK is DOWN or BUS-OFF."
-        echo "Attempting recovery..."
-        
-        # Run your custom restart command
+    if ip -d link show "$NETWORK" | grep -q -e "state DOWN"; then
+        echo "$NETWORK went DOWN. Restarting..."
         sudo restart_can
         
-        # Give the interface a few seconds to come back up before polling again
+        # Give the bus a few seconds to come back up before polling again
         sleep 5
     fi
     
