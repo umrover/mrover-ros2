@@ -58,7 +58,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import BaseGridView from '@/components/BaseGridView.vue'
 import AutonRoverMap from '@/components/AutonRoverMap.vue'
 import AutonWaypointEditor from '@/components/AutonWaypointEditor.vue'
@@ -71,6 +71,10 @@ import DriveStatusIndicator from '@/components/DriveStatusIndicator.vue'
 import Rover3D from '@/components/Rover3D.vue'
 import { useAutonomyStore } from '@/stores/autonomy'
 import { storeToRefs } from 'pinia'
+import { ledAPI } from '@/utils/ledAPI'
+
+onMounted(() => ledAPI.setMission('auton'))
+onUnmounted(() => ledAPI.setMission('home'))
 
 const defaultLayout = [
   { x: 0, y: 0, w: 5, h: 2, i: 'odometry' },
