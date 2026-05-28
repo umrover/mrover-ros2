@@ -6,8 +6,8 @@ camera_client:
         # main
         - "ee1_cam_main"
         - "ee2_cam_main"
-        - "ee3_cam_main"
         - "zed_main"
+        - "ee3_cam_main"
 
         # secondary
         - "mob_left_cam_second"

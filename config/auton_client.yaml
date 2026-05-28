@@ -6,13 +6,11 @@ camera_client:
         # main
         - "zed_annotated_main"
         - "long_range_cam_annotated_main"
+        - "gps_left_cam_main"
+        - "gps_right_cam_main"
+        - "zed_mini_main"
 
         # second
-        - "mob_left_cam_second"
-        - "mob_right_cam_second"
-        - "gps_left_cam_second"
-        - "gps_right_cam_second"
-        - "zed_mini_second"
     science:
       cameras:
         - "zed_main"
