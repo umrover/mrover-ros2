@@ -21,7 +21,7 @@ stereo_object_detector:
     model_score_threshold: 0.75
     mallet_score_threshold: 0.75
     bottle_score_threshold: 0.75
-    pick_score_threshold: 0.75
+    pick_score_threshold: 0.5
     model_nms_threshold: 0.5
     detection_distance_threshold: 15.0
 
@@ -41,6 +41,6 @@ image_object_detector:
     model_score_threshold: 0.75
     mallet_score_threshold: 0.75
     bottle_score_threshold: 0.75
-    pick_score_threshold: 0.75
+    pick_score_threshold: 0.5
     model_nms_threshold: 0.5
     long_range_camera/fov: 10.0
