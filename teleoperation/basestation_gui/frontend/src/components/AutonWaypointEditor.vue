@@ -29,6 +29,9 @@
           >
             <i class="bi bi-arrow-clockwise"></i>
           </button>
+          <button class="btn btn-sm btn-secondary btn-icon-sm" data-testid="pw-import-waypoints" title="Import waypoints" @click="importModal?.open()">
+            <i class="bi bi-upload"></i>
+          </button>
           <button class="btn btn-sm btn-success" data-testid="pw-add-from-map" @click="addModal?.open()">
             Add from Map
           </button>
@@ -179,6 +182,7 @@
   <VimBar v-if="vim.vimEnabled.value" ref="commandBar" @execute="vim.handleVimCommand" @close="vim.restoreFocus" />
 
   <AutonWaypointModal ref="addModal" />
+  <WaypointImportModal ref="importModal" />
 
   <ConfirmModal
     ref="resetModal"
@@ -196,6 +200,7 @@
 import { ref, onMounted } from 'vue'
 import WaypointItem from './AutonWaypointItem.vue'
 import AutonWaypointModal from './AutonWaypointModal.vue'
+import WaypointImportModal from './WaypointImportModal.vue'
 import ConfirmModal from './ConfirmModal.vue'
 import VimBar from './VimBar.vue'
 import { VueDraggable } from 'vue-draggable-plus'
@@ -207,6 +212,7 @@ const autonomyStore = useAutonomyStore()
 
 const editorRef = ref<HTMLElement | null>(null)
 const addModal = ref<InstanceType<typeof AutonWaypointModal> | null>(null)
+const importModal = ref<InstanceType<typeof WaypointImportModal> | null>(null)
 const resetModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 const storeItemRefs: Record<number, InstanceType<typeof WaypointItem>> = {}
 const commandBar = ref<InstanceType<typeof VimBar> | null>(null)

@@ -26,6 +26,7 @@
     "leaflet-rotatedmarker": "^0.2.0",
     "lil-gui": "^0.21.0",
     "pinia": "^3.0.4",
+    "read-excel-file": "^9.0.10",
     "three": "^0.183.2",
     "urdf-loader": "^0.12.6",
     "vue": "^3.5.30",
