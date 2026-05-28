@@ -57,3 +57,15 @@ cost_map:
     top_clip: 1.0
     z_percent: 0.34
     z_threshold: 0.51
+
+stereo_object_detector:
+  ros__parameters:
+    bottle_model_name: "bottle"
+    mallet_model_name: "mallet"
+    pick_model_name: "pick"
+    bottle_threshold: 5
+    mallet_threshold: 5
+    pick_threshold: 5
+    mallet_score_threshold: 0.75
+    bottle_score_threshold: 0.75
+    pick_score_threshold: 0.75

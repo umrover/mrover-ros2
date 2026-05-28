@@ -18,12 +18,15 @@ namespace mrover {
                 {"increment_weight", mObjIncrementWeight, 2},
                 {"decrement_weight", mObjDecrementWeight, 1},
                 {"hitcount_max", mObjMaxHitcount, 10},
-                {"bottle_model_name", bottleModelName, "bottle"},
+                {"bottle_model_name", bottleModelName, "bottle-old"},
                 {"mallet_model_name", malletModelName, "mallet"},
                 {"pick_model_name", pickModelName, "pick"},
                 {"bottle_threshold", bottleThreshold, 5},
                 {"mallet_threshold", malletThreshold, 5},
                 {"pick_threshold", pickThreshold, 5},
+                {"mallet_score_threshold", mMalletScoreThreshold, 0.75},
+                {"bottle_score_threshold", mBottleScoreThreshold, 0.75},
+                {"pick_score_threshold", mPickScoreThreshold, 0.75},
                 {"model_score_threshold", mModelScoreThreshold, 0.75},
                 {"model_nms_threshold", mModelNMSThreshold, 0.5},
                 {"object_detector_debug", mDebug, true}};
@@ -39,6 +42,12 @@ namespace mrover {
         RCLCPP_INFO_STREAM(get_logger(), "Opening Model " << pickModelName);
 
         RCLCPP_INFO_STREAM(get_logger(), "Found package path " << packagePath);
+
+        mModelScoreThreshold = 0.75;
+
+        RCLCPP_INFO_STREAM(get_logger(), "Pick Threshold " << mPickScoreThreshold);
+        RCLCPP_INFO_STREAM(get_logger(), "Bottle Threshold " << mBottleScoreThreshold);
+        RCLCPP_INFO_STREAM(get_logger(), "Mallet Threshold " << mMalletScoreThreshold);
 
         // Initialize TensorRT Inference objects for each model
         mBottleTensorRT = TensortRT{bottleModelName, packagePath.string()};

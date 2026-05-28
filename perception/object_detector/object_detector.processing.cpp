@@ -1,4 +1,6 @@
 #include "object_detector.hpp"
+#include <rclcpp/logging.hpp>
+#include <string>
 
 namespace mrover {
 
@@ -16,14 +18,17 @@ namespace mrover {
             case msg::WaypointType::WATER_BOTTLE:
                 currentModel = &mBottleModel;
                 currentTensorRT = &mBottleTensorRT;
+                mModelScoreThreshold = mBottleScoreThreshold;
                 break;
             case msg::WaypointType::MALLET:
                 currentModel = &mMalletModel;
                 currentTensorRT = &mMalletTensorRT;
+                mModelScoreThreshold = mMalletScoreThreshold;
                 break;
             case msg::WaypointType::ROCK_PICK:
                 currentModel = &mPickModel;
                 currentTensorRT = &mPickTensorRT;
+                mModelScoreThreshold = mPickScoreThreshold;
                 break;
             default:
                 response->success = false;
@@ -32,6 +37,7 @@ namespace mrover {
         }
         response->success = true;
         RCLCPP_INFO_STREAM(get_logger(), std::format("Set stereo object detector to {}", setMode));
+        RCLCPP_INFO_STREAM(this->get_logger(), std::format("Score Threshold is Now {}", mModelScoreThreshold));
     }
 
     auto StereoObjectDetector::pointCloudCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg) -> void {
@@ -181,7 +187,8 @@ namespace mrover {
             cv::Point textPosition(80, static_cast<int>(80 * (i + 1)));
             constexpr int fontSize = 1;
             constexpr int fontWeight = 2;
-            putText(image, detections[i].className, textPosition, cv::FONT_HERSHEY_COMPLEX, fontSize, detections[i].fontColor, fontWeight); // Putting the text in the matrix
+            std::string text = detections[i].className + " " + std::to_string(detections[i].confidence);
+            putText(image, text, textPosition, cv::FONT_HERSHEY_COMPLEX, fontSize, detections[i].fontColor, fontWeight); // Putting the text in the matrix
         }
     }
 
