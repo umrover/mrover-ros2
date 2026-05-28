@@ -37,15 +37,15 @@ export function createCostmap(scene: THREE.Scene): CostmapRenderer {
   container.add(colorPlane)
 
   const unavailableCanvas = document.createElement('canvas')
-  unavailableCanvas.width = 256
-  unavailableCanvas.height = 256
+  unavailableCanvas.width = SIDE_LENGTH
+  unavailableCanvas.height = SIDE_LENGTH
   const unavailableCtx = unavailableCanvas.getContext('2d')!
   unavailableCtx.fillStyle = 'white'
-  unavailableCtx.font = 'bold 16px Arial'
+  unavailableCtx.font = 'bold 48px Arial'
   unavailableCtx.textAlign = 'center'
   unavailableCtx.textBaseline = 'middle'
-  unavailableCtx.fillText('This Side North', 128, 118)
-  unavailableCtx.fillText('Costmap Not Available', 128, 140)
+  unavailableCtx.fillText('This Side North', SIDE_LENGTH / 2, SIDE_LENGTH / 2 - 50)
+  unavailableCtx.fillText('Costmap Not Available', SIDE_LENGTH / 2, SIDE_LENGTH / 2 + 80)
 
   const unavailableTexture = new THREE.CanvasTexture(unavailableCanvas)
   const unavailablePlane = new THREE.Mesh(
