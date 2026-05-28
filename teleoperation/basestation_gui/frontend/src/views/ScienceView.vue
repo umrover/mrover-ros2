@@ -79,6 +79,7 @@
 </template>
 
 <script lang="ts" setup>
+import { onMounted, onUnmounted } from 'vue'
 import BaseGridView from '@/components/BaseGridView.vue'
 import SensorData from '@/components/SensorData.vue'
 import BasicMap from '@/components/BasicRoverMap.vue'
@@ -87,6 +88,10 @@ import DriveControls from '@/components/DriveControls.vue'
 import GimbalControls from '@/components/GimbalControls.vue'
 import OdometryReading from '@/components/OdometryReading.vue'
 import ArmDataTable from '@/components/ControllerDataTable/ArmDataTable.vue'
+import { ledAPI } from '@/utils/ledAPI'
+
+onMounted(() => ledAPI.setMission('science'))
+onUnmounted(() => ledAPI.setMission('home'))
 import SPDataTable from '@/components/ControllerDataTable/SPDataTable.vue'
 import DriveDataTable from '@/components/ControllerDataTable/DriveDataTable.vue'
 import FunnelControls from '@/components/FunnelControls.vue'
