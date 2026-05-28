@@ -13,7 +13,7 @@ export interface CostmapRenderer {
   setVisibility: (visible: boolean) => void
 }
 
-export function createCostmap(scene: THREE.Scene, markDirty: () => void): CostmapRenderer {
+export function createCostmap(scene: THREE.Scene): CostmapRenderer {
   const container = new THREE.Group()
   scene.add(container)
 
@@ -87,7 +87,6 @@ export function createCostmap(scene: THREE.Scene, markDirty: () => void): Costma
       textureData[idx + 3] = 255
     }
     texture.needsUpdate = true
-    markDirty()
   }
 
   function reset() {

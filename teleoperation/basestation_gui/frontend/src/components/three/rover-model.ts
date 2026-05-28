@@ -29,7 +29,7 @@ type URDFJoint = THREE.Object3D & {
   setJointValue?: (val: number) => void
 }
 
-export function loadRover(parent: THREE.Group, markDirty: () => void): RoverModel {
+export function loadRover(parent: THREE.Group): RoverModel {
   const jointMap = new Map<string, URDFJoint>()
 
   const gui = new GUI({ width: 400 })
@@ -104,7 +104,6 @@ export function loadRover(parent: THREE.Group, markDirty: () => void): RoverMode
     for (const { name, position } of joints) {
       jointMap.get(name)?.setJointValue?.(position)
     }
-    markDirty()
   }
 
   return { updateJoints }

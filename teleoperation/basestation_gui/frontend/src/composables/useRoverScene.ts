@@ -23,15 +23,12 @@ export function useRoverScene() {
     roverPivot = new THREE.Group()
     sceneCtx.scene.add(roverPivot)
 
-    const markDirty = sceneCtx.markDirty
-
-    cameraManager = createCameras(canvas, sceneCtx.scene, roverPivot, markDirty)
-    costmap = createCostmap(sceneCtx.scene, markDirty)
-    roverModel = loadRover(roverPivot, markDirty)
+    cameraManager = createCameras(canvas, sceneCtx.scene, roverPivot)
+    costmap = createCostmap(sceneCtx.scene)
+    roverModel = loadRover(roverPivot)
 
     const resizeObserver = new ResizeObserver(() => {
       cameraManager?.updateAspect(canvas.clientWidth, canvas.clientHeight)
-      markDirty()
     })
     resizeObserver.observe(canvas)
 
@@ -57,7 +54,6 @@ export function useRoverScene() {
   function setCamera(type: CameraType) {
     cameraManager?.setType(type)
     cameraType.value = type
-    sceneCtx?.markDirty()
   }
 
   function updateCostMap(gridData: number[]) {
@@ -70,17 +66,14 @@ export function useRoverScene() {
 
   function toggleCostMapVisibility() {
     costmap?.toggleVisibility()
-    sceneCtx?.markDirty()
   }
 
   function setCostMapVisibility(visible: boolean) {
     costmap?.setVisibility(visible)
-    sceneCtx?.markDirty()
   }
 
   function resetCamera() {
     cameraManager?.resetActive()
-    sceneCtx?.markDirty()
   }
 
   function setNavAzimuth(radians: number) {
@@ -94,7 +87,6 @@ export function useRoverScene() {
   function setRoverHeading(radians: number) {
     if (roverPivot) {
       roverPivot.rotation.y = radians
-      sceneCtx?.markDirty()
     }
   }
 

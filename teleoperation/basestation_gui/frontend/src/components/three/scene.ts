@@ -3,7 +3,6 @@ import * as THREE from 'three'
 export interface SceneContext {
   scene: THREE.Scene
   renderer: THREE.WebGLRenderer
-  markDirty: () => void
   startRenderLoop: (getActiveCamera: () => THREE.Camera, onUpdate?: () => void) => void
   dispose: () => void
 }
@@ -25,21 +24,14 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
   renderer.setPixelRatio(1)
   renderer.shadowMap.enabled = false
 
-  let needsRender = true
-
-  function markDirty() {
-    needsRender = true
-  }
-
   const resizeObserver = new ResizeObserver(() => {
     renderer.setSize(canvas.clientWidth, canvas.clientHeight, false)
-    markDirty()
   })
   resizeObserver.observe(canvas.parentElement!)
 
   let animationFrameId = 0
   let lastRenderTime = 0
-  const MIN_RENDER_INTERVAL_MS = 100 // 10 FPS cap
+  const MIN_RENDER_INTERVAL_MS = 200 // 5 FPS cap
 
   function startRenderLoop(
     getActiveCamera: () => THREE.Camera,
@@ -47,24 +39,13 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
   ) {
     const tick = (now: DOMHighResTimeStamp) => {
       animationFrameId = window.requestAnimationFrame(tick)
-
       if (document.hidden) return
-      if (!needsRender) return
       if (now - lastRenderTime < MIN_RENDER_INTERVAL_MS) return
-
-      needsRender = false
       lastRenderTime = now
       onUpdate?.()
       renderer.render(scene, getActiveCamera())
     }
     animationFrameId = window.requestAnimationFrame(tick)
-
-    // Resume after the tab becomes visible again
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden && needsRender) {
-        markDirty()
-      }
-    })
   }
 
   function dispose() {
@@ -75,5 +56,5 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
     renderer.dispose()
   }
 
-  return { scene, renderer, markDirty, startRenderLoop, dispose }
+  return { scene, renderer, startRenderLoop, dispose }
 }

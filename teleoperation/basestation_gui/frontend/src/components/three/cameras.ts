@@ -38,7 +38,6 @@ export function createCameras(
   canvas: HTMLCanvasElement,
   scene: THREE.Scene,
   roverPivot: THREE.Group,
-  markDirty: () => void,
 ): CameraManager {
   const aspect = canvas.clientWidth / canvas.clientHeight
   const makeCamera = () => new THREE.PerspectiveCamera(75, aspect, 0.1, 5000)
@@ -64,15 +63,6 @@ export function createCameras(
   }
 
   const controls = new OrbitControls(cameras[CameraType.Orbit], canvas)
-  controls.addEventListener('change', markDirty)
-
-  // OrbitControls fires 'change' from inside controls.update(), which only runs right before
-  // a render. These listeners kick off the first render so the chain can start.
-  const onPointerActivity = (e: PointerEvent) => { if (e.buttons !== 0) markDirty() }
-  const onWheel = () => markDirty()
-  canvas.addEventListener('pointermove', onPointerActivity, { passive: true })
-  canvas.addEventListener('pointerdown', markDirty, { passive: true })
-  canvas.addEventListener('wheel', onWheel, { passive: true })
 
   let activeType: CameraType = CameraType.Orbit
   let navAzimuth = 0
@@ -131,7 +121,6 @@ export function createCameras(
     navAzimuth = radians
     if (navActive) {
       applyNavOrientation()
-      markDirty()
     }
   }
 
@@ -158,9 +147,6 @@ export function createCameras(
   }
 
   function dispose() {
-    canvas.removeEventListener('pointermove', onPointerActivity)
-    canvas.removeEventListener('pointerdown', markDirty)
-    canvas.removeEventListener('wheel', onWheel)
     controls.dispose()
   }
 
