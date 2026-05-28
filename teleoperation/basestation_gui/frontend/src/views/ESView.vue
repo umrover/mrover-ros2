@@ -43,6 +43,7 @@
 </template>
 
 <script lang="ts" setup>
+import { onMounted, onUnmounted } from 'vue'
 import BaseGridView from '@/components/BaseGridView.vue'
 import ArmDataTable from '@/components/ControllerDataTable/ArmDataTable.vue'
 import DriveDataTable from '@/components/ControllerDataTable/DriveDataTable.vue'
@@ -50,6 +51,10 @@ import ArmControls from '@/components/ArmControls.vue'
 import DriveControls from '@/components/DriveControls.vue'
 import Rover3D from '@/components/Rover3D.vue'
 import AutonTyping from '@/components/AutonTyping.vue'
+import { ledAPI } from '@/utils/ledAPI'
+
+onMounted(() => ledAPI.setMission('es'))
+onUnmounted(() => ledAPI.setMission('home'))
 
 const defaultLayout = [
   { x: 0, y: 0, w: 3, h: 2, i: 'arm-controls' },
