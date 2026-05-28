@@ -131,7 +131,7 @@ const {
   setZoom,
   getMap,
 } = useRoverMap({
-  maxOdomCount: 1000,
+  maxOdomCount: 100000000,
   drawFrequency: 1,
   initialCenter: [38.4225202, -110.7844653],
 })
