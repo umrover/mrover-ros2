@@ -77,13 +77,11 @@ import {
   siteTargetRad,
 } from './funnelGeometry'
 
-// State
 const funnelState = ref<ControllerStateMessage | null>(null)
 const currentSite = ref(-1)
 const pendingSite = ref<number | null>(null)
 const isLoading = ref(false)
 
-// Derived
 const hasState = computed(() => funnelState.value !== null)
 
 const currentDegrees = computed((): string => {
@@ -109,7 +107,6 @@ watch(funnelState, (state) => {
   }
 }, { immediate: true })
 
-// Actions
 async function sendPosition(index: number) {
   if (isLoading.value || !hasState.value || index === -1) return
   if (!SITES[index]) return
@@ -135,7 +132,6 @@ function selectSite(index: number) {
   sendPosition(index)
 }
 
-// WebSocket subscription
 const websocketStore = useWebsocketStore()
 websocketStore.onMessage<ControllerStateMessage>('science', 'sp_controller_state', (msg) => {
   funnelState.value = msg
