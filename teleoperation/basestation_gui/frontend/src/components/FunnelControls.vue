@@ -100,7 +100,7 @@ const currentDegrees = computed((): string => {
   if (!state?.names || !state.positions) return '---'
   const idx = state.names.indexOf('funnel')
   if (idx < 0) return '---'
-  const deg = (state.positions[idx] ?? 0) * RAD_TO_DEG
+  const deg = ((state.positions[idx] ?? 0) * RAD_TO_DEG) % 360
   return Object.is(Math.round(deg), -0) ? '0' : deg.toFixed(0)
 })
 
