@@ -44,7 +44,7 @@ namespace mrover {
         int64_t mAdjustedForwardLimit{};
         int64_t mAdjustedReverseLimit{};
         int64_t mGoalPosition{};
-        int64_t mPositionOffsetTicks{0};
+        std::atomic<int64_t> mPositionOffsetTicks{0};
         double mPositionMultiplier{1};
         uint8_t mServoID{};
         uint8_t mAtLimit{0};
@@ -55,7 +55,7 @@ namespace mrover {
         rclcpp::Subscription<msg::ServoOut>::SharedPtr mStateSub;
 
         std::atomic<bool> mHasReceivedData{false};
-        std::atomic<uint32_t> mCachedRawPosition{0};
+        std::atomic<int32_t> mCachedRawPosition{0};
         std::atomic<uint32_t> mCachedRawVelocity{0};
         std::atomic<uint16_t> mCachedRawCurrent{0};
         std::atomic<U2D2::Status> mCachedStatus{U2D2::Status::CommRxWaiting};
@@ -119,10 +119,11 @@ namespace mrover {
             mStateSub = mNode->create_subscription<msg::ServoOut>(
                     std::format("/u2d2/{}/out", mServoName), 10,
                     [this](msg::ServoOut::ConstSharedPtr const& msg) -> void {
-                        mCachedRawPosition = msg->position;
+                        mCachedRawPosition = static_cast<int32_t>(msg->position);
                         mCachedRawVelocity = msg->velocity;
                         mCachedRawCurrent = msg->current;
                         mCachedStatus = static_cast<U2D2::Status>(msg->status);
+                        mHasReceivedData = true;
                     });
 
             int servoID;
@@ -162,7 +163,7 @@ namespace mrover {
         auto setCurrentPosition(ServoPosition const position) -> U2D2::Status {
             auto const targetTicks = static_cast<int64_t>((position / TAU) * SERVO_TICKS);
             auto const currentRaw = static_cast<int32_t>(mCachedRawPosition.load());
-            mPositionOffsetTicks = static_cast<int64_t>(currentRaw / mPositionMultiplier) - targetTicks;
+            mPositionOffsetTicks.store(static_cast<int64_t>(currentRaw / mPositionMultiplier) - targetTicks);
             return U2D2::Status::Success;
         }
 
@@ -221,7 +222,7 @@ namespace mrover {
                 }
                 publishWrite(ADDR_GOAL_POSITION, 4, offsetToRaw(mGoalPosition));
             } else {
-                auto const targetRaw = static_cast<int64_t>((mGoalPosition + mPositionOffsetTicks) * mPositionMultiplier);
+                auto const targetRaw = static_cast<int64_t>((mGoalPosition + mPositionOffsetTicks.load()) * mPositionMultiplier);
                 auto const currentRaw = static_cast<int64_t>(mCachedRawPosition.load());
 
                 auto const jointPeriodRaw = static_cast<int64_t>(SERVO_TICKS * mPositionMultiplier);
@@ -485,11 +486,11 @@ namespace mrover {
 
         [[nodiscard]] auto rawToOffset(uint32_t position) const -> int64_t {
             auto const signedPos = static_cast<int32_t>(position);
-            return static_cast<int64_t>(signedPos / mPositionMultiplier) - mPositionOffsetTicks;
+            return static_cast<int64_t>(signedPos / mPositionMultiplier) - mPositionOffsetTicks.load();
         }
 
         [[nodiscard]] auto offsetToRaw(int64_t position) const -> uint32_t {
-            auto const rawTarget = static_cast<int64_t>((position + mPositionOffsetTicks) * mPositionMultiplier);
+            auto const rawTarget = static_cast<int64_t>((position + mPositionOffsetTicks.load()) * mPositionMultiplier);
             return static_cast<uint32_t>(static_cast<int32_t>(rawTarget));
         }
 
