@@ -18,7 +18,7 @@ namespace mrover {
                 {"increment_weight", mObjIncrementWeight, 2},
                 {"decrement_weight", mObjDecrementWeight, 1},
                 {"hitcount_max", mObjMaxHitcount, 10},
-                {"bottle_model_name", bottleModelName, "bottle-old"},
+                {"bottle_model_name", bottleModelName, "bottle"},
                 {"mallet_model_name", malletModelName, "mallet"},
                 {"pick_model_name", pickModelName, "pick"},
                 {"bottle_threshold", bottleThreshold, 5},
