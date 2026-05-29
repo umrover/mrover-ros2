@@ -1,6 +1,6 @@
 <template>
   <div class="wrapper bg-theme-card border-b border-theme">
-    <div class="pl-4 pr-2 py-2 flex justify-between items-center relative">
+    <div class="pl-4 pr-2 py-2 flex justify-between items-center relative flex-nowrap">
       <a class="logo absolute" href="/"><img src="/mrover.png" alt="MRover" width="200" /></a>
       <div class="flex items-center gap-4">
         <h1 class="text-theme-primary">{{ title }}</h1>
@@ -24,6 +24,11 @@
         </div>
       </div>
       <div class="flex items-stretch gap-2">
+        <div class="border-2 border-theme rounded px-2 flex flex-col justify-center font-mono text-sm">
+          <span class="text-muted font-semibold">jetson</span>
+          <span><span v-html="formatNumber(jetsonLatencyMs, 4, 0)"></span><span class="text-muted">ms</span></span>
+        </div>
+        <div class="border-l border-2 border-start-theme self-center nav-divider"></div>
         <WebsocketStatus />
         <div class="border-l border-2 border-start-theme self-center nav-divider"></div>
         <div class="dropdown flex relative">
@@ -70,6 +75,8 @@ import WebsocketStatus from '../components/WebsocketStatus.vue';
 import NotificationCenter from '../components/NotificationCenter.vue';
 import { useGridLayoutStore } from '@/stores/gridLayout';
 import { useThemeStore } from '@/stores/theme';
+import { useWebsocketStore } from '@/stores/websocket';
+import { formatNumber } from '@/utils/formatNumber';
 
 export default defineComponent({
   name: 'NavBar',
@@ -77,6 +84,13 @@ export default defineComponent({
     const gridLayoutStore = useGridLayoutStore();
     const themeStore = useThemeStore();
     const dropdownOpen = ref(false);
+    const jetsonLatencyMs = ref<number | null>(null);
+
+    const websocketStore = useWebsocketStore();
+    websocketStore.setupWebSocket('latency');
+    websocketStore.onMessage<{ type: string; latency_ms: number | null }>('latency', 'jetson_ping', (msg) => {
+      jetsonLatencyMs.value = msg.latency_ms;
+    });
 
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -91,9 +105,10 @@ export default defineComponent({
 
     onUnmounted(() => {
       document.removeEventListener('click', handleClickOutside);
+      websocketStore.closeWebSocket('latency');
     });
 
-    return { gridLayoutStore, themeStore, dropdownOpen };
+    return { gridLayoutStore, themeStore, dropdownOpen, jetsonLatencyMs, formatNumber };
   },
   computed: {
     title(): string {
