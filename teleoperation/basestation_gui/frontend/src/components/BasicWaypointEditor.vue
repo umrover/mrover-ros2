@@ -89,6 +89,12 @@
         >
           View Recordings
         </button>
+        <button
+          class="btn btn-outline-danger btn-sm w-full"
+          @click="resetSchemaModal?.open()"
+        >
+          Reset Recording DB
+        </button>
       </div>
     </div>
 
@@ -123,6 +129,15 @@
     <RecordingsModal
       :show="showRecordingsModal"
       @close="showRecordingsModal = false"
+    />
+
+    <ConfirmModal
+      ref="resetSchemaModal"
+      modal-id="resetSchemaModal"
+      title="Reset Recording Database"
+      message="This will drop and recreate the recordings tables, deleting all existing data. This cannot be undone."
+      confirm-text="Reset"
+      @confirm="handleResetSchema"
     />
 
     <ConfirmModal
@@ -175,6 +190,7 @@ const currentRecordingId = ref<number | null>(null)
 const showRecordingsModal = ref(false)
 
 const clearWaypointsModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
+const resetSchemaModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 
 const formatted_odom = computed(() => ({
   lat: { d: rover_latitude_deg.value },
@@ -237,6 +253,14 @@ async function startRecording(isDrone: boolean) {
     }
   } catch (error) {
     console.error('Error starting recording:', error)
+  }
+}
+
+async function handleResetSchema() {
+  try {
+    await recordingAPI.resetSchema()
+  } catch (error) {
+    console.error('Failed to reset recording schema:', error)
   }
 }
 

@@ -53,6 +53,7 @@ export interface RecordedWaypoint {
   id: number
   lat: number
   lon: number
+  altitude: number | null
   timestamp: string
   sequence: number
 }

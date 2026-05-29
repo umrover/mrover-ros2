@@ -39,5 +39,9 @@ export const recordingAPI = {
 
   deleteAll(): Promise<APIResponse> {
     return apiFetch('/recordings/clear/', { method: 'DELETE' })
+  },
+
+  resetSchema(): Promise<APIResponse> {
+    return apiFetch('/recordings/reset-schema/', { method: 'POST' })
   }
 }
