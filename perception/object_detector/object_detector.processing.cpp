@@ -1,6 +1,4 @@
 #include "object_detector.hpp"
-#include <rclcpp/logging.hpp>
-#include <string>
 
 namespace mrover {
 

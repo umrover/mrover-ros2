@@ -1,5 +1,4 @@
 #include "object_detector.hpp"
-#include <functional>
 
 namespace mrover {
 
