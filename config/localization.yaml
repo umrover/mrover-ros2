@@ -32,6 +32,7 @@ heading_filter:
     minimum_linear_speed: 0.4
     rover_heading_change_threshold: 0.05
     use_mag: false
+    use_rtk_only: false
 
 pose_filter:
   ros__parameters:

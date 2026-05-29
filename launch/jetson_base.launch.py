@@ -57,6 +57,18 @@ def generate_launch_description():
         ],
     )
 
+    base_link_to_right_gps = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        arguments=["0.0", "0.47", "0", "0", "0", "0", "1", "gps_frame", "base_link"],
+    )
+
+    base_link_to_zed = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        arguments=["0", "0", "1", "0", "0", "0", "1", "base_link", "zed_left_camera_frame"],
+    )
+
     mast_gimbal_hw_bridge = Node(
         package="mrover",
         executable="mast_gimbal_hw_bridge",
@@ -156,5 +168,7 @@ def generate_launch_description():
             cam_container,
             zed_mini_container,
             zed_container,
+            base_link_to_zed,
+            base_link_to_right_gps,
         ]
     )

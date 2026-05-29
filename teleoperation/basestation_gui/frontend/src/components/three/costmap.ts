@@ -76,9 +76,9 @@ export function createCostmap(scene: THREE.Scene): CostmapRenderer {
         textureData[idx + 1] = 128
         textureData[idx + 2] = 0
       } else if (val < 0) {
-        textureData[idx] = 0
-        textureData[idx + 1] = 26
-        textureData[idx + 2] = 0
+        textureData[idx] = 128
+        textureData[idx + 1] = 128
+        textureData[idx + 2] = 128
       } else {
         textureData[idx] = Math.min(255, val * 2.55)
         textureData[idx + 1] = Math.max(0, 255 - val * 2.55)

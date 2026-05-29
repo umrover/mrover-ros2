@@ -35,6 +35,12 @@
           @click="autonomyStore.setAllCostmaps(false)"
         >All Off</button>
       </div>
+      <button
+        class="btn btn-sm w-full"
+        :class="autonomyStore.defaultCostmapEnabled ? 'btn-success' : 'btn-danger'"
+        data-testid="pw-costmap-default-toggle"
+        @click="autonomyStore.toggleDefaultCostmap()"
+      >Default: {{ autonomyStore.defaultCostmapEnabled ? 'On' : 'Off' }}</button>
     </div>
     <div class="flex flex-col gap-1">
       <span class="data-label">Navigation</span>

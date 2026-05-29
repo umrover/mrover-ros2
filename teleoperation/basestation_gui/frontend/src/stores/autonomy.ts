@@ -11,7 +11,7 @@ function isInList(list: AutonWaypoint[], wp: AutonWaypoint): boolean {
 export const useAutonomyStore = defineStore('autonomy', () => {
   const store = ref<AutonWaypoint[]>([])
   const execution = ref<AutonWaypoint[]>([])
-  const allCostmapToggle = ref(true)
+  const defaultCostmapEnabled = ref(false)
   const navState = ref('OffState')
 
   const isNavigating = computed(() =>
@@ -128,14 +128,14 @@ export const useAutonomyStore = defineStore('autonomy', () => {
 
   async function addToExecution(waypoint: AutonWaypoint) {
     if (isInList(execution.value, waypoint)) return
-    execution.value = [...execution.value, { ...waypoint, enable_costmap: waypoint.enable_costmap ?? allCostmapToggle.value }]
+    execution.value = [...execution.value, { ...waypoint, enable_costmap: defaultCostmapEnabled.value }]
     await saveExecution()
   }
 
   async function addManyToExecution(waypoints: AutonWaypoint[]) {
     const toAdd = waypoints.filter(wp => !isInList(execution.value, wp))
     if (toAdd.length === 0) return
-    execution.value = [...execution.value, ...toAdd.map(wp => ({ ...wp, enable_costmap: wp.enable_costmap ?? allCostmapToggle.value }))]
+    execution.value = [...execution.value, ...toAdd.map(wp => ({ ...wp, enable_costmap: defaultCostmapEnabled.value }))]
     await saveExecution()
   }
 
@@ -178,13 +178,16 @@ export const useAutonomyStore = defineStore('autonomy', () => {
   }
 
   function setAllCostmaps(value: boolean) {
-    allCostmapToggle.value = value
     execution.value = execution.value.map(wp => ({ ...wp, enable_costmap: value }))
     saveExecution()
   }
 
   function toggleAllCostmaps() {
-    setAllCostmaps(!allCostmapToggle.value)
+    setAllCostmaps(!execution.value.every(wp => wp.enable_costmap))
+  }
+
+  function toggleDefaultCostmap() {
+    defaultCostmapEnabled.value = !defaultCostmapEnabled.value
   }
 
   function toggleExecutionCostmap(index: number) {
@@ -208,7 +211,7 @@ export const useAutonomyStore = defineStore('autonomy', () => {
   return {
     store,
     execution,
-    allCostmapToggle,
+    defaultCostmapEnabled,
     navState,
     isNavigating,
     highlightedWaypoint,
@@ -237,6 +240,7 @@ export const useAutonomyStore = defineStore('autonomy', () => {
     clearExecution,
     setAllCostmaps,
     toggleAllCostmaps,
+    toggleDefaultCostmap,
     toggleExecutionCostmap,
     setNavState,
     resetAll,
