@@ -26,7 +26,9 @@
       <div class="flex items-stretch gap-2">
         <div class="border-2 border-theme rounded px-2 flex flex-col justify-center font-mono text-sm">
           <span class="text-muted font-semibold">jetson</span>
-          <span><span v-html="formatNumber(jetsonLatencyMs, 4, 0)"></span><span class="text-muted">ms</span></span>
+          <span :class="jetsonLatencyReceived && jetsonLatencyMs === null ? 'text-danger' : ''">
+            <span v-html="formatNumber(jetsonLatencyMs, 4, 0)"></span><span :class="jetsonLatencyReceived && jetsonLatencyMs === null ? '' : 'text-muted'">ms</span>
+          </span>
         </div>
         <div class="border-l border-2 border-start-theme self-center nav-divider"></div>
         <WebsocketStatus />
@@ -85,11 +87,13 @@ export default defineComponent({
     const themeStore = useThemeStore();
     const dropdownOpen = ref(false);
     const jetsonLatencyMs = ref<number | null>(null);
+    const jetsonLatencyReceived = ref(false);
 
     const websocketStore = useWebsocketStore();
     websocketStore.setupWebSocket('latency');
     websocketStore.onMessage<{ type: string; latency_ms: number | null }>('latency', 'jetson_ping', (msg) => {
       jetsonLatencyMs.value = msg.latency_ms;
+      jetsonLatencyReceived.value = true;
     });
 
     const handleClickOutside = (e: MouseEvent) => {
@@ -108,7 +112,7 @@ export default defineComponent({
       websocketStore.closeWebSocket('latency');
     });
 
-    return { gridLayoutStore, themeStore, dropdownOpen, jetsonLatencyMs, formatNumber };
+    return { gridLayoutStore, themeStore, dropdownOpen, jetsonLatencyMs, jetsonLatencyReceived, formatNumber };
   },
   computed: {
     title(): string {
