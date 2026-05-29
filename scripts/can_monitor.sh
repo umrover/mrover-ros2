@@ -14,10 +14,8 @@ ROS_PID=""
 
 start_ros_node() {
     echo "Launching ROS 2 jetson_can node..."
-    # Run in the background using '&'
-    ros2 launch mrover launch jetson_can.launch.py &
-    
-    # Capture the Process ID of the last background command
+    ros2 launch mrover jetson_can.launch.py &
+
     ROS_PID=$!
     echo "ROS 2 node running (PID: $ROS_PID)."
 }
@@ -39,7 +37,13 @@ start_ros_node
 echo "Monitoring $NETWORK every $POLL_INTERVAL seconds..."
 
 while true; do
-    # Check if the can bus is DOWN
+    if [ -n "$ROS_PID" ] && ! kill -0 "$ROS_PID" 2>/dev/null; then
+        echo "---------------------------------------------------"
+        echo "CRITICAL: The ROS 2 process (PID: $ROS_PID) died unexpectedly!"
+        echo "Exiting monitor script."
+        exit 1
+    fi
+
     if ip -d link show "$NETWORK" | grep -q -e "state DOWN"; then
         echo "---------------------------------------------------"
         echo "$(date +'%Y-%m-%d %H:%M:%S') - $NETWORK went DOWN!"
