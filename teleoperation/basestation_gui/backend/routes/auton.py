@@ -1,9 +1,11 @@
+import asyncio
 import traceback
 
 from fastapi import APIRouter, HTTPException
+from geometry_msgs.msg import Twist, Vector3
 
 from backend.managers.ros import get_node, get_service_client
-from backend.models_pydantic import AutonEnableRequest, TeleopEnableRequest
+from backend.models_pydantic import AutonEnableRequest, TeleopEnableRequest, DriveBackRequest
 from backend.managers.led import set_teleop_enabled
 from backend.utils.ros_service import call_service_async
 from mrover.srv import EnableAuton
@@ -11,6 +13,17 @@ from mrover.msg import GPSWaypoint, WaypointType
 from std_srvs.srv import SetBool
 
 router = APIRouter(prefix="/api", tags=["auton"])
+
+BACKUP_LINEAR_SPEED = -0.5
+BACKUP_PUBLISH_HZ = 10
+
+_backup_publisher = None
+
+def get_backup_publisher():
+    global _backup_publisher
+    if _backup_publisher is None:
+        _backup_publisher = get_node().create_publisher(Twist, "/joystick_vel_cmd", 1)
+    return _backup_publisher
 
 
 @router.post("/enable_auton/")
@@ -91,3 +104,17 @@ async def toggle_path_interpolation(data: TeleopEnableRequest):
     if result is None:
         raise HTTPException(status_code=500, detail="Service /toggle_path_interpolation is not available or timed out")
     return {'status': 'success', 'enabled': data.enabled}
+
+
+@router.post("/drive_back/")
+async def drive_back(data: DriveBackRequest):
+    pub = get_backup_publisher()
+    steps = int(data.duration_seconds * BACKUP_PUBLISH_HZ)
+    twist = Twist(linear=Vector3(x=BACKUP_LINEAR_SPEED), angular=Vector3(z=0.0))
+    try:
+        for _ in range(steps):
+            pub.publish(twist)
+            await asyncio.sleep(1.0 / BACKUP_PUBLISH_HZ)
+    finally:
+        pub.publish(Twist())
+    return {'status': 'success'}
