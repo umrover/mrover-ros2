@@ -117,8 +117,6 @@ namespace mrover {
         std::optional<SE3d> mCameraToKey = std::nullopt;
         bool mUpdatePoseEstimate = true;
 
-        cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);
-
         // Layout map (ID -> Bottom-Left Corner Position)
         std::map<int, cv::Vec3d> mTagLayout;
 
