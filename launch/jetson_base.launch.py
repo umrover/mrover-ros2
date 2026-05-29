@@ -158,7 +158,7 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
-            launch_include_can,
+            # launch_include_can,
             diff_drive_controller_node,
             pdlb_hw_bridge_node,
             u2d2_bridge,
