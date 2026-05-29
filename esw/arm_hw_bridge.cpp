@@ -552,7 +552,7 @@ namespace mrover {
             if (mPusherState == PusherState::IDLE) return;
 
             uint8_t const limits = mPusher->getLimitsHitBits();
-            bool const stalled = mPusher->getIsStalled();
+            bool const stalled = false; // mPusher->getIsStalled();
 
             switch (mPusherState) {
                 case PusherState::DRIVING_FORWARD:

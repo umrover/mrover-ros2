@@ -263,7 +263,7 @@ namespace mrover {
             auto result = std::make_shared<action::TypingPosition::Result>();
             result->success = false;
             auto feedback = std::make_shared<action::TypingPosition::Feedback>();
-            RCLCPP_INFO(get_logger(), "Joint A Current: %f, Gripper Current: %f", joints["joint_a"].pos, joints["gripper"].pos);
+            RCLCPP_INFO(get_logger(), "Joint A Origin: %f, Gripper Origin: %f", mTypingOrigin.y, mTypingOrigin.gripper);
 
 
             // make param

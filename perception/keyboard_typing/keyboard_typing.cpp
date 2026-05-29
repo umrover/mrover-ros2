@@ -57,20 +57,20 @@ namespace mrover {
         //     yawCallback(msg);
         // });
 
-        mImageSub = create_subscription<sensor_msgs::msg::Image>("/finger_camera/image", rclcpp::QoS(1), [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
-            yawCallback(msg);
-        });
+        // mImageSub = create_subscriptioVn<sensor_msgs::msg::Image>("/finger_camera/image", rclcpp::QoS(1), [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+        //     yawCallback(msg);
+        // });
 
         // grab transform from finger_cam to gripper
         // wait until the transformation is acquired
-        while (true) {
-            try {
-                cam_to_gripper = SE3Conversions::fromTfTree(tf_buffer, "finger_camera_frame", "arm_fk_de");
-                break;
-            } catch (tf2::TransformException const& e) {
-                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
-            }
-        }
+        // while (true) {
+        //     try {
+        //         cam_to_gripper = SE3Conversions::fromTfTree(tf_buffer, "finger_camera_frame", "arm_joint_DE");
+        //         break;
+        //     } catch (tf2::TransformException const& e) {
+        //         RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
+        //     }
+        // }
 
         // Create Ik mode client
         mIkModeClient = create_client<srv::IkMode>("ik_mode");
@@ -140,7 +140,7 @@ namespace mrover {
             SE3d arm_fk_to_tag = cam_to_gripper * opencv_to_ros * cam_to_tag * orientation_fix;
 
             // Publish tag to tf tree
-            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_fk_de", arm_fk_to_tag, get_clock()->now());
+            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_joint_DE", arm_fk_to_tag, get_clock()->now());
 
             // Publish z key to tf tree
             SE3d z_to_tag{mZKeyTransform, Eigen::Quaterniond::Identity()};
@@ -549,22 +549,22 @@ namespace mrover {
             // Align arm over z key
             RCLCPP_INFO_STREAM(this->get_logger(), "Aligning to z key");
 
-            if (mAlignArm) {
-                align_to_z();
-            } else {
-                // grab roll of keyboard
-                try {
-                    SE3d armbase_to_z = SE3Conversions::fromTfTree(tf_buffer, "keyboard_z", "arm_base_link");
+            // if (mAlignArm) {
+            //     align_to_z();
+            // } else {
+            //     // grab roll of keyboard
+            //     try {
+            //         SE3d armbase_to_z = SE3Conversions::fromTfTree(tf_buffer, "keyboard_z", "arm_base_link");
 
-                    double r21 = armbase_to_z.transform()(2, 1);
-                    double r22 = armbase_to_z.transform()(2, 2);
+            //         double r21 = armbase_to_z.transform()(2, 1);
+            //         double r22 = armbase_to_z.transform()(2, 2);
 
-                    keyboard_roll = std::atan2(r21, r22);
+            //         keyboard_roll = std::atan2(r21, r22);
 
-                } catch (tf2::TransformException const& e) {
-                    RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
-                }
-            }
+            //     } catch (tf2::TransformException const& e) {
+            //         RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
+            //     }
+            // }
 
             // Activate typing mode
             RCLCPP_INFO_STREAM(this->get_logger(), "Sending ik mode request");
@@ -586,18 +586,18 @@ namespace mrover {
                 x_pos = keyboard_offset.at(launchCode[i])[0];
                 y_pos = keyboard_offset.at(launchCode[i])[1];
 
-                double rolled_x_pos = (x_pos * std::cos(keyboard_roll)) - (y_pos * std::sin(keyboard_roll));
+                // double rolled_x_pos = (x_pos * std::cos(keyboard_roll)) - (y_pos * std::sin(keyboard_roll));
 
-                double rolled_y_pos = (x_pos * std::sin(keyboard_roll)) + (y_pos * std::cos(keyboard_roll));
+                // double rolled_y_pos = (x_pos * std::sin(keyboard_roll)) + (y_pos * std::cos(keyboard_roll));
 
                 RCLCPP_WARN(this->get_logger(), "X_pos", mMinCodeLength, mMaxCodeLength);
 
                 RCLCPP_INFO_STREAM(this->get_logger(), "current letter = " << launchCode[i]);
                 RCLCPP_INFO_STREAM(this->get_logger(), "x_pos = " << x_pos);
                 RCLCPP_INFO_STREAM(this->get_logger(), "y_pos = " << y_pos);
-                RCLCPP_INFO_STREAM(this->get_logger(), "rolled_x_pos = " << rolled_x_pos);
-                RCLCPP_INFO_STREAM(this->get_logger(), "rolled_y_pos = " << rolled_y_pos);
-                bool status = send_goal(-rolled_x_pos, rolled_y_pos);
+                // RCLCPP_INFO_STREAM(this->get_logger(), "rolled_x_pos = " << rolled_x_pos);
+                // RCLCPP_INFO_STREAM(this->get_logger(), "rolled_y_pos = " << rolled_y_pos);
+                bool status = send_goal(-x_pos, y_pos);
 
                 // Check goal cancelled
                 if (goal_handle->is_canceling()) {

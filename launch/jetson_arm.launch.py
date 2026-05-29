@@ -69,7 +69,7 @@ def generate_launch_description():
     arm_e_link_to_cam = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
-        arguments=["0.02948991", "0", "-0.0456159", "0", "-1.0996", "0", "arm_fk_de", "finger_camera_frame"],
+        arguments=["0.02948991", "0", "-0.0456159", "0", "-1.0996", "0", "arm_joint_DE", "finger_camera_frame"],
     )
 
     launch_localization = IncludeLaunchDescription(
@@ -78,4 +78,4 @@ def generate_launch_description():
         )
     )
 
-    return LaunchDescription([launch_include_jetson_base, arm_hw_bridge_node, cam_container, launch_localization, keyboard_typing_node, arm_e_link_to_cam])
+    return LaunchDescription([launch_include_jetson_base, arm_hw_bridge_node, cam_container])
