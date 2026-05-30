@@ -199,7 +199,7 @@ class Panorama(Node):
         return pano
         
     def start_callback(self, _, response):
-        self.get_logger().info('Starting Pano...')
+        self.get_logger().info(f"Starting Pano with Heading {self.cur_heading}...")
 
         if self.sync is None: 
             self.pc_sub = message_filters.Subscriber(self, PointCloud2, f"/{self.zed_version}/left/points")
