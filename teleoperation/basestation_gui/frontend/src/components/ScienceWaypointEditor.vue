@@ -56,11 +56,33 @@
           </button>
           <button
             class="btn btn-primary btn-sm"
-            :disabled="scienceStore.waypoints.length === 0"
             @click="showCourseMapModal = true"
           >
             <i class="bi bi-map"></i> Map
           </button>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <div class="p-1 border-b-2 flex justify-between items-center h-[var(--btn-height-md)]">
+          <h4 class="component-header">Path Recording</h4>
+          <div class="flex items-center h-[var(--btn-height-sm)]">
+            <div v-if="isRecording" class="recording-badge flex items-center gap-1">
+              <span class="recording-dot"></span>
+              REC
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center justify-between p-2 border rounded">
+          <span class="data-label">Rover Telemetry</span>
+          <button
+            v-if="!isRecording"
+            class="btn btn-success btn-sm w-20"
+            @click="startRecording"
+          >
+            Start
+          </button>
+          <button v-else class="btn btn-danger btn-sm w-20" @click="stopRecording">Stop</button>
         </div>
       </div>
     </div>
@@ -119,7 +141,7 @@ import ConfirmModal from './ConfirmModal.vue'
 import { useScienceWaypointStore } from '@/stores/scienceWaypoints'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
-import { scienceWaypointsAPI } from '@/utils/api'
+import { scienceWaypointsAPI, recordingAPI } from '@/utils/api'
 import type { GpsFixMessage } from '@/types/coordinates'
 
 const scienceStore = useScienceWaypointStore()
@@ -151,6 +173,30 @@ const canAddWaypoint = computed(() =>
 
 const showCourseMapModal = ref(false)
 const resetTableModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
+
+const isRecording = ref(false)
+
+async function startRecording() {
+  try {
+    const recordingName = `Science Recording ${new Date().toLocaleString()}`
+    const response = await recordingAPI.create(recordingName, false)
+    if (response.status === 'success' && response.recording_id) {
+      isRecording.value = true
+    }
+  } catch (error) {
+    console.error('Error starting recording:', error)
+  }
+}
+
+async function stopRecording() {
+  try {
+    await recordingAPI.stop()
+  } catch (error) {
+    console.error('Error stopping recording:', error)
+  } finally {
+    isRecording.value = false
+  }
+}
 
 websocketStore.onMessage<GpsFixMessage>('nav', 'gps_fix', (msg) => {
   rover_latitude_deg.value = msg.latitude
@@ -249,5 +295,37 @@ export default {
   height: 1.75rem;
   padding: 0;
   font-size: 0.75rem;
+}
+
+.data-label {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.recording-badge {
+  font-size: 0.625rem;
+  font-weight: 800;
+  color: var(--status-error);
+  padding: 0.125rem 0.375rem;
+  background-color: rgba(var(--status-error-rgb), 0.1);
+  border: 1px solid var(--status-error);
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.05em;
+}
+
+.recording-dot {
+  width: 6px;
+  height: 6px;
+  background-color: var(--status-error);
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.2); }
+  100% { opacity: 1; transform: scale(1); }
 }
 </style>
