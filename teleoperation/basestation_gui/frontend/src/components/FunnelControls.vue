@@ -1,19 +1,20 @@
 <template>
-  <div class="relative w-full h-full overflow-hidden" data-testid="pw-funnel-controls">
+  <div class="relative w-full h-full" data-testid="pw-funnel-controls">
     <div class="absolute top-0 left-0 right-0 flex justify-between items-center z-10">
       <h4 class="component-header">Funnel</h4>
-      <div class="flex items-center">
+      <div class="flex items-center gap-2">
         <i
           v-if="!hasState"
-          class="bi bi-info-circle mr-1 text-sm text-muted"
+          class="bi bi-info-circle text-sm text-muted"
           title="Changes not allowed until funnel position received"
         ></i>
+        <button
+          class="tare-btn"
+          :disabled="!hasState || offsetDeg === 0"
+          title="Reset offset to 0"
+          @click="tare"
+        >Tare</button>
         <IndicatorDot :is-active="hasState" class="mr-2" />
-        <div class="flex items-center gap-0.5 text-[11px]">
-          <button class="micro-btn" :disabled="!hasState || isLoading" @click="adjustOffset(-1)">-</button>
-          <span class="text-muted select-none tabular-nums min-w-[2.5ch] text-center">{{ offsetDeg }}&deg;</span>
-          <button class="micro-btn" :disabled="!hasState || isLoading" @click="adjustOffset(1)">+</button>
-        </div>
       </div>
     </div>
 
@@ -60,7 +61,40 @@
         </text>
       </g>
 
-      <text :x="CX" :y="CY + 6" class="center-val">{{ currentDegrees }}&deg;</text>
+      <g
+        v-for="blade in leftBlades"
+        :key="`lb${blade.delta}`"
+        :class="['blade', { disabled: !hasState || isLoading }]"
+        role="button"
+        @click="adjustOffset(blade.delta)"
+      >
+        <path :d="blade.path" />
+        <text
+          :x="blade.tx" :y="blade.ty"
+          class="blade-label"
+          dominant-baseline="middle"
+          :transform="`rotate(${blade.rot},${blade.tx},${blade.ty})`"
+        >{{ blade.label }}</text>
+      </g>
+
+      <g
+        v-for="blade in rightBlades"
+        :key="`rb${blade.delta}`"
+        :class="['blade', { disabled: !hasState || isLoading }]"
+        role="button"
+        @click="adjustOffset(blade.delta)"
+      >
+        <path :d="blade.path" />
+        <text
+          :x="blade.tx" :y="blade.ty"
+          class="blade-label"
+          dominant-baseline="middle"
+          :transform="`rotate(${blade.rot},${blade.tx},${blade.ty})`"
+        >{{ blade.label }}</text>
+      </g>
+
+      <text :x="CX" :y="CY + 3" class="center-val">{{ currentDegrees }}&deg;</text>
+      <text :x="CX" :y="CY + 17" class="offset-readout">{{ offsetDeg >= 0 ? '+' : '' }}{{ offsetDeg }}&deg;</text>
     </svg>
   </div>
 </template>
@@ -68,7 +102,6 @@
 <script lang="ts" setup>
 import { ref, computed, watch } from 'vue'
 import { scienceAPI } from '@/utils/api'
-import { useGamepadPolling } from '@/composables/useGamepadPolling'
 import { useWebsocketStore } from '@/stores/websocket'
 import type { ControllerStateMessage } from '@/types/websocket'
 import IndicatorDot from './IndicatorDot.vue'
@@ -81,18 +114,18 @@ import {
   closestSiteIndex,
   siteTargetDeg,
   siteTargetRad,
+  leftBlades,
+  rightBlades,
 } from './funnelGeometry'
 
 const OFFSET_STORAGE_KEY = 'funnel-offset-deg'
 
-// State
 const funnelState = ref<ControllerStateMessage | null>(null)
 const currentSite = ref(-1)
 const pendingSite = ref<number | null>(null)
 const isLoading = ref(false)
 const offsetDeg = ref(Number(localStorage.getItem(OFFSET_STORAGE_KEY)) || 0)
 
-// Derived
 const hasState = computed(() => funnelState.value !== null)
 
 const currentDegrees = computed((): string => {
@@ -100,7 +133,7 @@ const currentDegrees = computed((): string => {
   if (!state?.names || !state.positions) return '---'
   const idx = state.names.indexOf('funnel')
   if (idx < 0) return '---'
-  const deg = (state.positions[idx] ?? 0) * RAD_TO_DEG
+  const deg = ((state.positions[idx] ?? 0) * RAD_TO_DEG) % 360
   return Object.is(Math.round(deg), -0) ? '0' : deg.toFixed(0)
 })
 
@@ -108,7 +141,6 @@ const siteTargets = computed(() =>
   SITES.map((_, i) => siteTargetDeg(i, offsetDeg.value))
 )
 
-// Match rover position to the nearest site whenever state or offset changes
 watch([funnelState, offsetDeg], ([state, offset]) => {
   if (!state || isLoading.value) return
   const idx = state.names.indexOf('funnel')
@@ -119,7 +151,6 @@ watch([funnelState, offsetDeg], ([state, offset]) => {
   }
 }, { immediate: true })
 
-// Actions
 async function sendPosition(index: number) {
   if (isLoading.value || !hasState.value || index === -1) return
   if (!SITES[index]) return
@@ -155,35 +186,29 @@ async function adjustOffset(delta: number) {
   }
 }
 
+async function tare() {
+  if (!hasState.value || offsetDeg.value === 0) return
+  const previous = offsetDeg.value
+  offsetDeg.value = 0
+  if (currentSite.value === -1) {
+    localStorage.setItem(OFFSET_STORAGE_KEY, '0')
+    return
+  }
+  try {
+    await sendPosition(currentSite.value)
+  } catch {
+    offsetDeg.value = previous
+  }
+}
+
 function selectSite(index: number) {
   if (index === currentSite.value || isLoading.value || !hasState.value) return
   sendPosition(index)
 }
 
-// WebSocket subscription
 const websocketStore = useWebsocketStore()
 websocketStore.onMessage<ControllerStateMessage>('science', 'sp_controller_state', (msg) => {
   funnelState.value = msg
-})
-
-// Gamepad: dpad left/right nudges offset
-const { buttons, connected } = useGamepadPolling({ controllerIdFilter: 'Microsoft', hz: 10 })
-let prevLeft: boolean | undefined = undefined
-let prevRight: boolean | undefined = undefined
-
-watch(buttons, (btns) => {
-  if (!connected.value || !hasState.value) return
-
-  const left = (btns[14] ?? 0) > 0.5
-  const right = (btns[15] ?? 0) > 0.5
-
-  if (prevLeft !== undefined && prevRight !== undefined) {
-    if (left && !prevLeft) adjustOffset(-1)
-    if (right && !prevRight) adjustOffset(1)
-  }
-
-  prevLeft = left
-  prevRight = right
 })
 </script>
 
@@ -193,6 +218,7 @@ watch(buttons, (btns) => {
   inset: 0;
   width: 100%;
   height: 100%;
+  overflow: visible;
 }
 
 .segment {
@@ -266,31 +292,76 @@ watch(buttons, (btns) => {
   fill: var(--disabled-text, #9ca3af);
 }
 
-.micro-btn {
-  width: 18px;
-  height: 18px;
-  line-height: 1;
+.blade {
+  cursor: pointer;
+}
+
+.blade path {
+  fill: color-mix(in srgb, var(--control-primary) 10%, var(--card-bg));
+  stroke: var(--input-border);
+  stroke-width: 1;
+  transition: fill 0.15s ease;
+}
+
+.blade:hover:not(.disabled) path {
+  fill: var(--control-primary);
+}
+
+.blade:hover:not(.disabled) .blade-label {
+  fill: #fff;
+}
+
+.blade.disabled {
+  cursor: not-allowed;
+}
+
+.blade.disabled path {
+  fill: var(--disabled-bg, #f3f4f6);
+  stroke: var(--disabled-border, #e5e7eb);
+}
+
+.blade.disabled .blade-label {
+  fill: var(--disabled-text, #9ca3af);
+}
+
+.blade-label {
+  font-size: 10px;
+  font-weight: 700;
+  fill: var(--control-primary);
+  text-anchor: middle;
+  pointer-events: none;
+  user-select: none;
+}
+
+.tare-btn {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 7px;
   border-radius: 4px;
   border: 1px solid var(--input-border);
   background: transparent;
-  color: var(--control-primary);
-  font-weight: 700;
+  color: var(--text-primary, currentColor);
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
-.micro-btn:hover:not(:disabled) {
+.tare-btn:hover:not(:disabled) {
   background: var(--control-primary);
   color: #fff;
+  border-color: var(--control-primary);
 }
 
-.micro-btn:disabled {
+.tare-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.offset-readout {
+  font-size: 11px;
+  font-weight: 500;
+  fill: var(--text-muted);
+  text-anchor: middle;
+  font-variant-numeric: tabular-nums;
 }
 
 .center-val {

@@ -59,6 +59,9 @@ class AutonEnableRequest(BaseModel):
 class TeleopEnableRequest(BaseModel):
     enabled: bool
 
+class DriveBackRequest(BaseModel):
+    duration_seconds: float = Field(ge=1.0, le=10.0)
+
 class GimbalPositionRequest(BaseModel):
     joint: str
     position: float
