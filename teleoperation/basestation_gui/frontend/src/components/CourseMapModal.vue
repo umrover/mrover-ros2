@@ -44,7 +44,7 @@
 
                 <l-marker
                   v-for="(wp, i) in scienceStore.waypoints"
-                  :key="wp.db_id ?? i"
+                  :key="wp.id ?? i"
                   :lat-lng="[wp.lat, wp.lon]"
                   :icon="waypointIcon"
                 >

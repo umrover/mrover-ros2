@@ -84,7 +84,7 @@
         </div>
         <WaypointItem
           v-for="(waypoint, i) in scienceStore.waypoints"
-          :key="waypoint.db_id || i"
+          :key="waypoint.id || i"
           :waypoint="waypoint"
           :index="i"
           @delete="handleDelete($event)"
