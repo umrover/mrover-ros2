@@ -5,6 +5,7 @@ class BasicWaypoint(BaseModel):
     name: str
     lat: float = Field(ge=-90.0, le=90.0)
     lon: float = Field(ge=-180.0, le=180.0)
+    altitude: float | None = None
     drone: bool = False
 
 class BasicWaypointList(BaseModel):
@@ -43,6 +44,7 @@ class UpdateBasicWaypoint(BaseModel):
     name: str | None = None
     lat: float | None = Field(default=None, ge=-90.0, le=90.0)
     lon: float | None = Field(default=None, ge=-180.0, le=180.0)
+    altitude: float | None = None
     drone: bool | None = None
 
 class AutonEnableWaypoint(BaseModel):

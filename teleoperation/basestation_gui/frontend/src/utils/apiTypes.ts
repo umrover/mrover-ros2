@@ -82,6 +82,12 @@ export interface RAModeResponse extends APIResponse {
   mode?: string
 }
 
+export interface GpsSnapshotResponse extends APIResponse {
+  lat?: number
+  lon?: number
+  altitude?: number
+}
+
 export interface ServoResponse extends APIResponse {
   position?: number
   at_tgt?: boolean

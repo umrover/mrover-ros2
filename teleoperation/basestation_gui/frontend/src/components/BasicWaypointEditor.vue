@@ -89,7 +89,6 @@
         >
           View Recordings
         </button>
-
       </div>
     </div>
 
@@ -240,7 +239,6 @@ async function startRecording(isDrone: boolean) {
     console.error('Error starting recording:', error)
   }
 }
-
 
 async function stopRecording() {
   try {

@@ -31,7 +31,7 @@ export const useErdStore = defineStore('erd', () => {
     }
   }
 
-  async function addWaypoint(wp: Omit<BasicWaypointRecord, 'db_id'>) {
+  async function addWaypoint(wp: Omit<BasicWaypointRecord, 'db_id'> & { altitude?: number | null }) {
     const resp = await waypointsAPI.createBasic(wp)
     if (resp.status === 'success' && resp.waypoint) {
       waypoints.value = [...waypoints.value, resp.waypoint]
@@ -83,9 +83,10 @@ export const useErdStore = defineStore('erd', () => {
       textContent += `[${index + 1}] ${wp.name.toUpperCase()}\n`
       textContent += `    Latitude:  ${wp.lat.toFixed(8)}\n`
       textContent += `    Longitude: ${wp.lon.toFixed(8)}\n`
-      textContent += `    Platform:  ${wp.drone ? 'Drone' : 'Rover'}\n\n`
+      textContent += `    Altitude:  ${wp.altitude != null ? wp.altitude.toFixed(4) + ' m' : 'N/A'}\n\n`
     })
 
+    textContent += '0.01 m'
     const blob = new Blob([textContent.trim()], { type: 'text/plain;charset=utf-8;' })
     const link = document.createElement('a')
     const url = URL.createObjectURL(blob)

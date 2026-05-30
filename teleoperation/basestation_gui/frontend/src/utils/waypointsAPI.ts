@@ -6,7 +6,8 @@ import type {
   CurrentCourseResponse,
   DeleteWaypointResponse,
   CreateWaypointResponse,
-  CreateBasicWaypointResponse
+  CreateBasicWaypointResponse,
+  GpsSnapshotResponse
 } from './apiTypes'
 import { apiFetch } from './apiFetch'
 
@@ -17,7 +18,11 @@ export const waypointsAPI = {
     return apiFetch('/waypoints/basic/')
   },
 
-  createBasic(waypoint: Omit<BasicWaypointRecord, 'db_id'>): Promise<CreateBasicWaypointResponse> {
+  getGpsSnapshot(): Promise<GpsSnapshotResponse> {
+    return apiFetch('/waypoints/basic/gps-snapshot/')
+  },
+
+  createBasic(waypoint: Omit<BasicWaypointRecord, 'db_id'> & { altitude?: number | null }): Promise<CreateBasicWaypointResponse> {
     return apiFetch('/waypoints/basic/', {
       method: 'POST',
       body: JSON.stringify(waypoint)

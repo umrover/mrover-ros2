@@ -72,7 +72,7 @@
 
     <template #waypoints>
       <div class="island p-2 rounded h-full">
-        <BasicWaypointEditor />
+        <ScienceWaypointEditor />
       </div>
     </template>
   </BaseGridView>
@@ -83,7 +83,7 @@ import { onMounted, onUnmounted } from 'vue'
 import BaseGridView from '@/components/BaseGridView.vue'
 import SensorData from '@/components/SensorData.vue'
 import BasicMap from '@/components/BasicRoverMap.vue'
-import BasicWaypointEditor from '@/components/BasicWaypointEditor.vue'
+import ScienceWaypointEditor from '@/components/ScienceWaypointEditor.vue'
 import DriveControls from '@/components/DriveControls.vue'
 import GimbalControls from '@/components/GimbalControls.vue'
 import OdometryReading from '@/components/OdometryReading.vue'
