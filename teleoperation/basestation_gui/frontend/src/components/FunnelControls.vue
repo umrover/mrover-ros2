@@ -1,5 +1,5 @@
 <template>
-  <div class="relative w-full h-full overflow-hidden" data-testid="pw-funnel-controls">
+  <div class="relative w-full h-full" data-testid="pw-funnel-controls">
     <div class="absolute top-0 left-0 right-0 flex justify-between items-center z-10">
       <h4 class="component-header">Funnel</h4>
       <div class="flex items-center">
@@ -55,7 +55,40 @@
         </text>
       </g>
 
-      <text :x="CX" :y="CY + 6" class="center-val">{{ currentDegrees }}&deg;</text>
+      <g
+        v-for="blade in leftBlades"
+        :key="`lb${blade.delta}`"
+        :class="['blade', { disabled: !hasState || isLoading }]"
+        role="button"
+        @click="adjustOffset(blade.delta)"
+      >
+        <path :d="blade.path" />
+        <text
+          :x="blade.tx" :y="blade.ty"
+          class="blade-label"
+          dominant-baseline="middle"
+          :transform="`rotate(${blade.rot},${blade.tx},${blade.ty})`"
+        >{{ blade.label }}</text>
+      </g>
+
+      <g
+        v-for="blade in rightBlades"
+        :key="`rb${blade.delta}`"
+        :class="['blade', { disabled: !hasState || isLoading }]"
+        role="button"
+        @click="adjustOffset(blade.delta)"
+      >
+        <path :d="blade.path" />
+        <text
+          :x="blade.tx" :y="blade.ty"
+          class="blade-label"
+          dominant-baseline="middle"
+          :transform="`rotate(${blade.rot},${blade.tx},${blade.ty})`"
+        >{{ blade.label }}</text>
+      </g>
+
+      <text :x="CX" :y="CY + 3" class="center-val">{{ currentDegrees }}&deg;</text>
+      <text :x="CX" :y="CY + 17" class="offset-readout">{{ offsetDeg >= 0 ? '+' : '' }}{{ offsetDeg }}&deg;</text>
     </svg>
   </div>
 </template>
@@ -75,12 +108,17 @@ import {
   closestSiteIndex,
   siteTargetDeg,
   siteTargetRad,
+  leftBlades,
+  rightBlades,
 } from './funnelGeometry'
+
+const OFFSET_STORAGE_KEY = 'funnel-offset-deg'
 
 const funnelState = ref<ControllerStateMessage | null>(null)
 const currentSite = ref(-1)
 const pendingSite = ref<number | null>(null)
 const isLoading = ref(false)
+const offsetDeg = ref(Number(localStorage.getItem(OFFSET_STORAGE_KEY)) || 0)
 
 const hasState = computed(() => funnelState.value !== null)
 
@@ -94,14 +132,14 @@ const currentDegrees = computed((): string => {
 })
 
 const siteTargets = computed(() =>
-  SITES.map((_, i) => siteTargetDeg(i, 0))
+  SITES.map((_, i) => siteTargetDeg(i, offsetDeg.value))
 )
 
-watch(funnelState, (state) => {
+watch([funnelState, offsetDeg], ([state, offset]) => {
   if (!state || isLoading.value) return
   const idx = state.names.indexOf('funnel')
   if (idx < 0) return
-  const match = closestSiteIndex(state.positions[idx], 0)
+  const match = closestSiteIndex(state.positions[idx], offset as number)
   if (match !== -1 && currentSite.value !== match) {
     currentSite.value = match
   }
@@ -117,13 +155,28 @@ async function sendPosition(index: number) {
   isLoading.value = true
 
   try {
-    await scienceAPI.setFunnelPosition(siteTargetRad(index, 0), false)
+    await scienceAPI.setFunnelPosition(siteTargetRad(index, offsetDeg.value), false)
+    localStorage.setItem(OFFSET_STORAGE_KEY, String(offsetDeg.value))
   } catch (err) {
     currentSite.value = previousSite
     throw err
   } finally {
     isLoading.value = false
     pendingSite.value = null
+  }
+}
+
+async function adjustOffset(delta: number) {
+  if (isLoading.value || !hasState.value) return
+  offsetDeg.value += delta
+  if (currentSite.value === -1) {
+    localStorage.setItem(OFFSET_STORAGE_KEY, String(offsetDeg.value))
+    return
+  }
+  try {
+    await sendPosition(currentSite.value)
+  } catch {
+    offsetDeg.value -= delta
   }
 }
 
@@ -144,6 +197,7 @@ websocketStore.onMessage<ControllerStateMessage>('science', 'sp_controller_state
   inset: 0;
   width: 100%;
   height: 100%;
+  overflow: visible;
 }
 
 .segment {
@@ -217,31 +271,53 @@ websocketStore.onMessage<ControllerStateMessage>('science', 'sp_controller_state
   fill: var(--disabled-text, #9ca3af);
 }
 
-.micro-btn {
-  width: 18px;
-  height: 18px;
-  line-height: 1;
-  border-radius: 4px;
-  border: 1px solid var(--input-border);
-  background: transparent;
-  color: var(--control-primary);
-  font-weight: 700;
+.blade {
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  transition: background 0.15s ease;
 }
 
-.micro-btn:hover:not(:disabled) {
-  background: var(--control-primary);
-  color: #fff;
+.blade path {
+  fill: color-mix(in srgb, var(--control-primary) 10%, var(--card-bg));
+  stroke: var(--input-border);
+  stroke-width: 1;
+  transition: fill 0.15s ease;
 }
 
-.micro-btn:disabled {
-  opacity: 0.4;
+.blade:hover:not(.disabled) path {
+  fill: var(--control-primary);
+}
+
+.blade:hover:not(.disabled) .blade-label {
+  fill: #fff;
+}
+
+.blade.disabled {
   cursor: not-allowed;
+}
+
+.blade.disabled path {
+  fill: var(--disabled-bg, #f3f4f6);
+  stroke: var(--disabled-border, #e5e7eb);
+}
+
+.blade.disabled .blade-label {
+  fill: var(--disabled-text, #9ca3af);
+}
+
+.blade-label {
+  font-size: 10px;
+  font-weight: 700;
+  fill: var(--control-primary);
+  text-anchor: middle;
+  pointer-events: none;
+  user-select: none;
+}
+
+.offset-readout {
+  font-size: 11px;
+  font-weight: 500;
+  fill: var(--text-muted);
+  text-anchor: middle;
+  font-variant-numeric: tabular-nums;
 }
 
 .center-val {
