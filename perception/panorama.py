@@ -138,7 +138,18 @@ class Panorama(Node):
         
         self.img_list.append(copy.deepcopy(self.current_img))
         self.img_dirs.append(pos)
-        self.headings.append((self.cur_heading + pos + np.pi) % (2 * np.pi))
+
+        # Original way of calculating absolute heading
+        # self.headings.append((self.cur_heading + pos + np.pi) % (2 * np.pi))
+
+        # The following should be the correct way to calculate the absolute position of the image. 
+        # The labeling function assumes each image starts at this heading. The above appends what angle 
+        # the center of each image is at. As a result the check for whether the closest direction 
+        # is within 20 degrees fails for West. The following line should say that the absolute heading 
+        # of the start of the current image is the start heading, plus the current position (where pi 
+        # is facing the same direction of the rover), minus half of the zed fov, plus pi, all 
+        # modded by 2pi. 
+        self.headings.append((self.cur_heading + pos - (self.zed_fov_rad / 2) + np.pi) % (2 * np.pi))
         
         # Record the PC
         self.get_logger().info("Grabbing a PC")
