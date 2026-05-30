@@ -9,11 +9,6 @@
           title="Changes not allowed until funnel position received"
         ></i>
         <IndicatorDot :is-active="hasState" class="mr-2" />
-        <div class="flex items-center gap-0.5 text-[11px]">
-          <button class="micro-btn" :disabled="!hasState || isLoading" @click="adjustOffset(-1)">-</button>
-          <span class="text-muted select-none tabular-nums min-w-[2.5ch] text-center">{{ offsetDeg }}&deg;</span>
-          <button class="micro-btn" :disabled="!hasState || isLoading" @click="adjustOffset(1)">+</button>
-        </div>
       </div>
     </div>
 
@@ -68,7 +63,6 @@
 <script lang="ts" setup>
 import { ref, computed, watch } from 'vue'
 import { scienceAPI } from '@/utils/api'
-import { useGamepadPolling } from '@/composables/useGamepadPolling'
 import { useWebsocketStore } from '@/stores/websocket'
 import type { ControllerStateMessage } from '@/types/websocket'
 import IndicatorDot from './IndicatorDot.vue'
@@ -83,16 +77,11 @@ import {
   siteTargetRad,
 } from './funnelGeometry'
 
-const OFFSET_STORAGE_KEY = 'funnel-offset-deg'
-
-// State
 const funnelState = ref<ControllerStateMessage | null>(null)
 const currentSite = ref(-1)
 const pendingSite = ref<number | null>(null)
 const isLoading = ref(false)
-const offsetDeg = ref(Number(localStorage.getItem(OFFSET_STORAGE_KEY)) || 0)
 
-// Derived
 const hasState = computed(() => funnelState.value !== null)
 
 const currentDegrees = computed((): string => {
@@ -100,26 +89,24 @@ const currentDegrees = computed((): string => {
   if (!state?.names || !state.positions) return '---'
   const idx = state.names.indexOf('funnel')
   if (idx < 0) return '---'
-  const deg = (state.positions[idx] ?? 0) * RAD_TO_DEG
+  const deg = ((state.positions[idx] ?? 0) * RAD_TO_DEG) % 360
   return Object.is(Math.round(deg), -0) ? '0' : deg.toFixed(0)
 })
 
 const siteTargets = computed(() =>
-  SITES.map((_, i) => siteTargetDeg(i, offsetDeg.value))
+  SITES.map((_, i) => siteTargetDeg(i, 0))
 )
 
-// Match rover position to the nearest site whenever state or offset changes
-watch([funnelState, offsetDeg], ([state, offset]) => {
+watch(funnelState, (state) => {
   if (!state || isLoading.value) return
   const idx = state.names.indexOf('funnel')
   if (idx < 0) return
-  const match = closestSiteIndex(state.positions[idx], offset as number)
+  const match = closestSiteIndex(state.positions[idx], 0)
   if (match !== -1 && currentSite.value !== match) {
     currentSite.value = match
   }
 }, { immediate: true })
 
-// Actions
 async function sendPosition(index: number) {
   if (isLoading.value || !hasState.value || index === -1) return
   if (!SITES[index]) return
@@ -130,8 +117,7 @@ async function sendPosition(index: number) {
   isLoading.value = true
 
   try {
-    await scienceAPI.setFunnelPosition(siteTargetRad(index, offsetDeg.value), false)
-    localStorage.setItem(OFFSET_STORAGE_KEY, String(offsetDeg.value))
+    await scienceAPI.setFunnelPosition(siteTargetRad(index, 0), false)
   } catch (err) {
     currentSite.value = previousSite
     throw err
@@ -141,49 +127,14 @@ async function sendPosition(index: number) {
   }
 }
 
-async function adjustOffset(delta: number) {
-  if (isLoading.value || !hasState.value) return
-  offsetDeg.value += delta
-  if (currentSite.value === -1) {
-    localStorage.setItem(OFFSET_STORAGE_KEY, String(offsetDeg.value))
-    return
-  }
-  try {
-    await sendPosition(currentSite.value)
-  } catch {
-    offsetDeg.value -= delta
-  }
-}
-
 function selectSite(index: number) {
   if (index === currentSite.value || isLoading.value || !hasState.value) return
   sendPosition(index)
 }
 
-// WebSocket subscription
 const websocketStore = useWebsocketStore()
 websocketStore.onMessage<ControllerStateMessage>('science', 'sp_controller_state', (msg) => {
   funnelState.value = msg
-})
-
-// Gamepad: dpad left/right nudges offset
-const { buttons, connected } = useGamepadPolling({ controllerIdFilter: 'Microsoft', hz: 10 })
-let prevLeft: boolean | undefined = undefined
-let prevRight: boolean | undefined = undefined
-
-watch(buttons, (btns) => {
-  if (!connected.value || !hasState.value) return
-
-  const left = (btns[14] ?? 0) > 0.5
-  const right = (btns[15] ?? 0) > 0.5
-
-  if (prevLeft !== undefined && prevRight !== undefined) {
-    if (left && !prevLeft) adjustOffset(-1)
-    if (right && !prevRight) adjustOffset(1)
-  }
-
-  prevLeft = left
-  prevRight = right
 })
 </script>
 
