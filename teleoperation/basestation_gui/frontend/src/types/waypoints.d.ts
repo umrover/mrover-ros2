@@ -16,7 +16,6 @@ export interface BasicWaypointRecord {
   name: string
   lat: number
   lon: number
-  altitude?: number | null
   drone?: boolean
 }
 

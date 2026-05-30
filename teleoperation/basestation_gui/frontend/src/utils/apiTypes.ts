@@ -53,7 +53,6 @@ export interface RecordedWaypoint {
   id: number
   lat: number
   lon: number
-  altitude: number | null
   timestamp: string
   sequence: number
 }
@@ -80,12 +79,6 @@ export interface RecordingWaypointsResponse extends APIResponse {
 
 export interface RAModeResponse extends APIResponse {
   mode?: string
-}
-
-export interface GpsSnapshotResponse extends APIResponse {
-  lat?: number
-  lon?: number
-  altitude?: number
 }
 
 export interface ServoResponse extends APIResponse {

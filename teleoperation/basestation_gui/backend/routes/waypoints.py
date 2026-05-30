@@ -1,20 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from backend.database import get_db_connection
 from backend.models_pydantic import BasicWaypoint, BasicWaypointList, AutonWaypointList, CreateAutonWaypoint, UpdateAutonWaypoint, UpdateBasicWaypoint
-from backend.managers.recording import get_recording_manager
 
 router = APIRouter(prefix="/api/waypoints", tags=["waypoints"])
-
-
-@router.get("/basic/gps-snapshot/")
-def get_gps_snapshot():
-    manager = get_recording_manager()
-    return {
-        'status': 'success',
-        'lat': manager.rover_lat,
-        'lon': manager.rover_lon,
-        'altitude': manager.rover_alt,
-    }
 
 
 @router.get("/basic/")
@@ -49,8 +37,8 @@ def save_basic_waypoints(data: BasicWaypointList):
         conn.execute('DELETE FROM basic_waypoints')
         for w in waypoints:
             conn.execute(
-                'INSERT INTO basic_waypoints (name, latitude, longitude, altitude, drone) VALUES (?, ?, ?, ?, ?)',
-                (w.name, w.lat, w.lon, w.altitude, w.drone)
+                'INSERT INTO basic_waypoints (name, latitude, longitude, drone) VALUES (?, ?, ?, ?)',
+                (w.name, w.lat, w.lon, w.drone)
             )
         conn.commit()
         return {'status': 'success', 'count': len(waypoints)}
@@ -65,8 +53,8 @@ def create_basic_waypoint(data: BasicWaypoint):
     try:
         conn = get_db_connection()
         cursor = conn.execute(
-            'INSERT INTO basic_waypoints (name, latitude, longitude, altitude, drone) VALUES (?, ?, ?, ?, ?)',
-            (data.name, data.lat, data.lon, data.altitude, data.drone)
+            'INSERT INTO basic_waypoints (name, latitude, longitude, drone) VALUES (?, ?, ?, ?)',
+            (data.name, data.lat, data.lon, data.drone)
         )
         conn.commit()
         db_id = cursor.lastrowid
@@ -77,7 +65,6 @@ def create_basic_waypoint(data: BasicWaypoint):
                 'name': data.name,
                 'lat': data.lat,
                 'lon': data.lon,
-                'altitude': data.altitude,
                 'drone': data.drone,
             }
         }
@@ -100,7 +87,7 @@ def update_basic_waypoint(waypoint_id: int, data: UpdateBasicWaypoint):
             raise HTTPException(status_code=400, detail="No fields to update")
 
         col_map = {'lat': 'latitude', 'lon': 'longitude'}
-        allowed_cols = {'name', 'latitude', 'longitude', 'altitude', 'drone'}
+        allowed_cols = {'name', 'latitude', 'longitude', 'drone'}
         set_clauses = []
         values = []
         for key, val in fields.items():
