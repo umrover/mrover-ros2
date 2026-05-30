@@ -11,8 +11,8 @@ export const SITES: Site[] = [
   { label: 'Buret A',  radians: 2.0071 },
   { label: 'Griess A', radians: 1.1693 },
   { label: 'Trash',    radians: 0.0 },
-  { label: 'Buret B',  radians: 5.1138 },
-  { label: 'Griess B', radians: 4.2586 },
+  { label: 'Buret B',  radians: 5.1662 },
+  { label: 'Griess B', radians: 4.3284 },
 ]
 
 export const CX = 100
@@ -112,3 +112,50 @@ export function siteTargetRad(siteIndex: number, offsetDeg: number): number {
   const raw = SITES[siteIndex].radians + offsetDeg * DEG_TO_RAD
   return ((raw % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
 }
+
+const BLADE_R1 = 105
+const BLADE_R2 = 130
+const BLADE_HALF_SPAN = 8.5
+
+function bladePt(angleDeg: number, r: number) {
+  const rad = (angleDeg - 90) * DEG_TO_RAD
+  return { x: CX + r * Math.cos(rad), y: CY + r * Math.sin(rad) }
+}
+
+function makeBladePath(centerDeg: number): string {
+  const a1 = centerDeg - BLADE_HALF_SPAN
+  const a2 = centerDeg + BLADE_HALF_SPAN
+  const i1 = bladePt(a1, BLADE_R1), i2 = bladePt(a2, BLADE_R1)
+  const o2 = bladePt(a2, BLADE_R2), o1 = bladePt(a1, BLADE_R2)
+  const f = (n: number) => n.toFixed(2)
+  return `M${f(i1.x)},${f(i1.y)} A${BLADE_R1},${BLADE_R1} 0 0 1 ${f(i2.x)},${f(i2.y)} L${f(o2.x)},${f(o2.y)} A${BLADE_R2},${BLADE_R2} 0 0 0 ${f(o1.x)},${f(o1.y)} Z`
+}
+
+function bladeCentroid(centerDeg: number) {
+  const r = (BLADE_R1 + BLADE_R2) / 2
+  const rad = (centerDeg - 90) * DEG_TO_RAD
+  return { x: CX + r * Math.cos(rad), y: CY + r * Math.sin(rad) }
+}
+
+export interface Blade {
+  delta: number
+  label: string
+  path: string
+  tx: number
+  ty: number
+  rot: number
+}
+
+export const leftBlades: Blade[] = (
+  [{ delta: -1, center: 250 }, { delta: -5, center: 270 }, { delta: -10, center: 290 }] as const
+).map(({ delta, center }) => {
+  const { x: tx, y: ty } = bladeCentroid(center)
+  return { delta, label: String(delta), path: makeBladePath(center), tx, ty, rot: center - 270 }
+})
+
+export const rightBlades: Blade[] = (
+  [{ delta: 10, center: 70 }, { delta: 5, center: 90 }, { delta: 1, center: 110 }] as const
+).map(({ delta, center }) => {
+  const { x: tx, y: ty } = bladeCentroid(center)
+  return { delta, label: `+${delta}`, path: makeBladePath(center), tx, ty, rot: center - 90 }
+})
