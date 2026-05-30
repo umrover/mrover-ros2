@@ -20,6 +20,27 @@
         :action="teleopAction"
         @toggle="handleTeleopToggle"
       />
+      <div class="flex flex-col gap-1 mt-1">
+        <div class="flex justify-between items-center">
+          <span class="text-sm">Drive Back: {{ backupDuration }}s</span>
+        </div>
+        <input
+          v-model.number="backupDuration"
+          type="range"
+          min="1"
+          max="10"
+          step="1"
+          class="w-full"
+          data-testid="pw-drive-back-slider"
+        />
+        <button
+          class="btn btn-sm w-full"
+          :class="backingUp ? 'btn-warning' : 'btn-danger'"
+          :disabled="backingUp"
+          data-testid="pw-drive-back-btn"
+          @click="handleDriveBack"
+        >{{ backingUp ? `Backing up... (${backupCountdown}s)` : 'Drive Back' }}</button>
+      </div>
     </div>
     <div class="flex flex-col gap-1">
       <span class="data-label">Costmap</span>
@@ -35,6 +56,12 @@
           @click="autonomyStore.setAllCostmaps(false)"
         >All Off</button>
       </div>
+      <button
+        class="btn btn-sm w-full"
+        :class="autonomyStore.defaultCostmapEnabled ? 'btn-success' : 'btn-danger'"
+        data-testid="pw-costmap-default-toggle"
+        @click="autonomyStore.toggleDefaultCostmap()"
+      >Default: {{ autonomyStore.defaultCostmapEnabled ? 'On' : 'Off' }}</button>
     </div>
     <div class="flex flex-col gap-1">
       <span class="data-label">Navigation</span>
@@ -67,7 +94,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import FeedbackButton from './FeedbackButton.vue'
 import { useAutonomyStore } from '@/stores/autonomy'
 import { autonAPI } from '@/utils/api'
@@ -121,5 +148,28 @@ const handlePathRelaxationToggle = (newState: boolean) => {
 
 const handlePathInterpolationToggle = (newState: boolean) => {
   autonomyStore.pathInterpolationEnabled = newState
+}
+
+const backupDuration = ref(3)
+const backingUp = ref(false)
+const backupCountdown = ref(0)
+
+const handleDriveBack = async () => {
+  if (backingUp.value) return
+  backingUp.value = true
+  backupCountdown.value = backupDuration.value
+
+  const interval = setInterval(() => {
+    backupCountdown.value -= 1
+    if (backupCountdown.value <= 0) clearInterval(interval)
+  }, 1000)
+
+  try {
+    await autonAPI.driveBack(backupDuration.value)
+  } finally {
+    clearInterval(interval)
+    backingUp.value = false
+    backupCountdown.value = 0
+  }
 }
 </script>

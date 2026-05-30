@@ -29,6 +29,12 @@
             {{ waypoint.name }}, {{ index }}
           </l-tooltip>
         </l-marker>
+        <l-circle
+          v-if="showWaypointRadius"
+          :lat-lng="waypoint.latLng"
+          :radius="20"
+          :options="{ color: '#3b82f6', weight: 1, fillOpacity: 0.08 }"
+        />
       </div>
 
       <l-polyline :lat-lngs="odomPath" :color="'blue'" />
@@ -40,6 +46,9 @@
       </button>
       <button class="overlay-toolbar-btn" @click="followRover = !followRover">
         Follow Rover <i :class="followRover ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
+      </button>
+      <button class="overlay-toolbar-btn" @click="showWaypointRadius = !showWaypointRadius">
+        Radius <i :class="showWaypointRadius ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
       </button>
       <div class="overlay-dropdown">
         <button class="overlay-toolbar-btn" :disabled="followRover" @click="centerOpen = !centerOpen; zoomOpen = false">
@@ -77,6 +86,7 @@ import {
   LPolyline,
   LTooltip,
   LControlScale,
+  LCircle,
 } from '@vue-leaflet/vue-leaflet'
 import { useErdStore } from '@/stores/erd'
 import { storeToRefs } from 'pinia'
@@ -87,6 +97,8 @@ import type { LeafletMouseEvent } from 'leaflet'
 import type { MapWaypoint } from '@/types/waypoints'
 import { ref, watch } from 'vue'
 import { useRoverMap } from '@/composables/useRoverMap'
+
+const showWaypointRadius = ref(true)
 
 const erdStore = useErdStore()
 const { waypointListForMap, highlightedWaypoint, searchWaypoint } = storeToRefs(erdStore)
@@ -119,7 +131,7 @@ const {
   setZoom,
   getMap,
 } = useRoverMap({
-  maxOdomCount: 1000,
+  maxOdomCount: 100000000,
   drawFrequency: 1,
   initialCenter: [38.4225202, -110.7844653],
 })

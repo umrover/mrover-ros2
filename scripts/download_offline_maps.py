@@ -31,6 +31,7 @@ LOCATIONS = {
     "a2": (42.293988, -83.710156),
     "urc": (38.406422, -110.791900),
     "circ": (51.470181, -112.744886),
+    "super8": (38.990116, -110.132553),
 }
 
 
@@ -64,21 +65,23 @@ def tile_range(lat: float, lon: float, r: float, z: int) -> tuple[int, int, int,
     return max(0, x0), max(0, y0), min(m, x1), min(m, y1)
 
 
-def tiles(lat: float, lon: float) -> Generator[tuple[int, int, int], None, None]:
+def tiles(lat: float, lon: float, high_zoom_radius: float | None = None) -> Generator[tuple[int, int, int], None, None]:
     """Find (z, x, y) for every tile across all zoom tiers centered on lat/lon."""
     for tier in TIERS:
+        r = high_zoom_radius if high_zoom_radius is not None and tier.z_min >= 17 else tier.radius_deg
         for z in range(tier.z_min, tier.z_max + 1):
-            x0, y0, x1, y1 = tile_range(lat, lon, tier.radius_deg, z)
+            x0, y0, x1, y1 = tile_range(lat, lon, r, z)
             for x in range(x0, x1 + 1):
                 for y in range(y0, y1 + 1):
                     yield z, x, y
 
 
-def count(lat: float, lon: float) -> int:
+def count(lat: float, lon: float, high_zoom_radius: float | None = None) -> int:
     n = 0
     for tier in TIERS:
+        r = high_zoom_radius if high_zoom_radius is not None and tier.z_min >= 17 else tier.radius_deg
         for z in range(tier.z_min, tier.z_max + 1):
-            x0, y0, x1, y1 = tile_range(lat, lon, tier.radius_deg, z)
+            x0, y0, x1, y1 = tile_range(lat, lon, r, z)
             n += (x1 - x0 + 1) * (y1 - y0 + 1)
     return n
 
@@ -131,8 +134,8 @@ def download(z: int, x: int, y: int) -> str:
     return "err"
 
 
-def run(lat: float, lon: float, dry_run: bool) -> None:
-    tot = count(lat, lon)
+def run(lat: float, lon: float, dry_run: bool, high_zoom_radius: float | None = None) -> None:
+    tot = count(lat, lon, high_zoom_radius)
     print(f"Tiles: {tot:,} -> {OUTPUT}")
     if dry_run:
         return
@@ -151,7 +154,7 @@ def run(lat: float, lon: float, dry_run: bool) -> None:
     with ThreadPoolExecutor(max_workers=CONCURRENCY) as pool:
         futures = {}
         pending = 0
-        tile_iter = tiles(lat, lon)
+        tile_iter = tiles(lat, lon, high_zoom_radius)
         batch = CONCURRENCY * 4
 
         def submit_batch() -> None:
@@ -188,6 +191,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--location", required=True, choices=LOCATIONS)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--large", action="store_true", help="use larger radius for zoom 17+ tiers (0.05 instead of 0.015/0.005)"
+    )
     args = parser.parse_args()
     lat, lon = LOCATIONS[args.location]
-    run(lat, lon, args.dry_run)
+    run(lat, lon, args.dry_run, 0.02 if args.large else None)

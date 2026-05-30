@@ -42,7 +42,7 @@ export function createScene(canvas: HTMLCanvasElement): SceneContext {
   ) {
     let lastTime = performance.now()
     let timeSinceLastFrame = 0
-    const frameInterval = 1 / 60
+    const frameInterval = 1 / 10
 
     const tick = () => {
       animationFrameId = window.requestAnimationFrame(tick)
