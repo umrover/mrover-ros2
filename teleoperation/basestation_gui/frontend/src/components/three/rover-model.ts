@@ -19,11 +19,18 @@ const DEFAULT_JOINT_VALUES: Record<string, number> = {
   arm_b_to_arm_c: 1.91,
   arm_c_to_arm_d: -1,
   arm_d_to_arm_e: -1.57,
-  gripper_link: 0,
+  arm_e_to_arm_gripper: 0,
+}
+
+type URDFJoint = THREE.Object3D & {
+  jointType?: string
+  jointValue?: number
+  limit?: { lower: number; upper: number }
+  setJointValue?: (val: number) => void
 }
 
 export function loadRover(parent: THREE.Group): RoverModel {
-  let rover: THREE.Object3D | null = null
+  const jointMap = new Map<string, URDFJoint>()
 
   // Debug GUI (hidden by default)
   const gui = new GUI({ width: 400 })
@@ -54,8 +61,6 @@ export function loadRover(parent: THREE.Group): RoverModel {
   loader.load(
     '/urdf/rover/rover.urdf',
     (robot: THREE.Object3D) => {
-      rover = robot
-
       // ROS Z-up to Three.js Y-up conversion
       const roverContainer = new THREE.Group()
       roverContainer.position.set(0, -50, 0)
@@ -64,20 +69,16 @@ export function loadRover(parent: THREE.Group): RoverModel {
       roverContainer.add(robot)
       robot.updateMatrixWorld()
 
-      // parse joints and initial positions
       robot.traverse((obj: THREE.Object3D) => {
-        const joint = obj as THREE.Object3D & {
-          jointType?: string
-          jointValue?: number
-          limit?: { lower: number; upper: number }
-          setJointValue?: (val: number) => void
-        }
+        const joint = obj as URDFJoint
         if (
           joint.jointType === 'revolute' ||
           joint.jointType === 'continuous' ||
           joint.jointType === 'prismatic'
         ) {
           const name = joint.name || 'unnamed_joint'
+          jointMap.set(name, joint)
+
           const initialValue =
             typeof DEFAULT_JOINT_VALUES[name] === 'number'
               ? DEFAULT_JOINT_VALUES[name]
@@ -85,22 +86,7 @@ export function loadRover(parent: THREE.Group): RoverModel {
                 ? joint.jointValue
                 : 0
           joint.setJointValue?.(initialValue)
-        }
-      })
 
-      // debug sliders
-      robot.traverse((obj: THREE.Object3D) => {
-        const joint = obj as THREE.Object3D & {
-          jointType?: string
-          limit?: { lower: number; upper: number }
-          setJointValue?: (val: number) => void
-        }
-        if (
-          joint.jointType === 'revolute' ||
-          joint.jointType === 'continuous' ||
-          joint.jointType === 'prismatic'
-        ) {
-          const name = joint.name || 'unnamed_joint'
           const min = joint.limit?.lower ?? -Math.PI
           const max = joint.limit?.upper ?? Math.PI
           const folder = gui.addFolder(name)
@@ -117,23 +103,10 @@ export function loadRover(parent: THREE.Group): RoverModel {
   )
 
   function updateJoints(joints: JointUpdate[]) {
-    if (!rover) return
-    rover.traverse((obj: THREE.Object3D) => {
-      const joint = obj as THREE.Object3D & {
-        jointType?: string
-        setJointValue?: (val: number) => void
-      }
-      if (
-        joint.jointType === 'revolute' ||
-        joint.jointType === 'continuous' ||
-        joint.jointType === 'prismatic'
-      ) {
-        const match = joints.find(j => j.name === joint.name)
-        if (match) {
-          joint.setJointValue?.(match.position)
-        }
-      }
-    })
+    if (jointMap.size === 0) return
+    for (const { name, position } of joints) {
+      jointMap.get(name)?.setJointValue?.(position)
+    }
   }
 
   return { updateJoints }

@@ -122,7 +122,7 @@
     mob_left_cam:
       address: 10.1.0.2
       port: 8094
-      dev_node: "/dev/port_c1_cam"
+      dev_node: "/dev/port_b1_cam"
       dev_path: ""
       stream:
         pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
@@ -139,7 +139,7 @@
     gps_left_cam:
       address: 10.1.0.2
       port: 8095
-      dev_node: "/dev/port_c2_cam"
+      dev_node: "/dev/port_b2_cam"
       dev_path: ""
       stream:
         pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
@@ -331,41 +331,4 @@ zed_streamer_annotated:
 long_range_streamer_annotated:
   ros__parameters:
     camera: "long_range_cam_annotated"
-
-camera_client:
-  ros__parameters:
-    test: 10
-    arm:
-      cameras:
-        - "ee1_cam"
-        - "ee2_cam"
-        - "ee3_cam"
-        - "ee4_cam"
-        - "ee5_cam"
-        - "mob_left_cam"
-        - "mob_right_cam"
-        - "gps_left_cam"
-        - "gps_right_cam"
-        - "zed_mini"
-        - "zed"
-    science:
-      cameras:
-        - "sp1_cam"
-        - "sp2_cam"
-        - "mob_left_cam"
-        - "mob_right_cam"
-        - "gps_left_cam"
-        - "gps_right_cam"
-        - "zed_mini"
-        - "zed"
-    auton:
-      cameras:
-        - "mob_left_cam"
-        - "mob_right_cam"
-        - "gps_left_cam"
-        - "gps_right_cam"
-        - "zed_mini"
-        - "zed_annotated"
-        - "long_range_cam_annotated"
-    rtp_jitter_ms: 50
 
