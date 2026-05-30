@@ -16,6 +16,7 @@ from backend.logging_config import LOGGING_CONFIG
 
 # API Routers
 from backend.routes.waypoints import router as waypoints_router
+from backend.routes.science_waypoints import router as science_waypoints_router
 from backend.routes.recordings import router as recordings_router
 from backend.routes.auton import router as auton_router
 from backend.routes.chassis import router as chassis_router
@@ -44,6 +45,7 @@ app.add_middleware(
 
 # Include Routers
 app.include_router(waypoints_router)
+app.include_router(science_waypoints_router)
 app.include_router(recordings_router)
 app.include_router(auton_router)
 app.include_router(chassis_router)

@@ -4,7 +4,12 @@
       <h4 class="component-header">SP Arm Controls</h4>
       <IndicatorDot :is-active="connected" />
     </div>
-    <GamepadDisplay :axes="axes" :buttons="buttons" class="grow min-h-0" />
+    <GamepadDisplay
+      :axes="axes"
+      :buttons="buttons"
+      layout="horizontal"
+      class="grow min-h-0"
+    />
   </div>
 </template>
 

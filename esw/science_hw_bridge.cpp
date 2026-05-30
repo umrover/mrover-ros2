@@ -1,5 +1,6 @@
 #include <cstddef>
 #include <cstring>
+#include <limits>
 #include <memory>
 
 #include <rclcpp/node.hpp>
@@ -28,7 +29,7 @@ namespace mrover {
         auto init() -> void {
             // parse parameters
             std::vector<ParameterWrapper> parameters = {
-                    {"u2d2_device", mU2D2DeviceName, "/dev/u2d2"},
+                    {"brush_step", mBrushStep.rep, 0.25},
             };
             ParameterWrapper::declareParameters(this, parameters);
 
@@ -83,7 +84,7 @@ namespace mrover {
         std::shared_ptr<Servo> mFunnelServo;
         std::shared_ptr<Servo> mBrushServo;
 
-        std::string mU2D2DeviceName;
+        Radians mBrushStep;
 
         rclcpp::CallbackGroup::SharedPtr mServiceGroup;
         rclcpp::Service<srv::ServoPosition>::SharedPtr mFunnelPositionService;
@@ -111,7 +112,7 @@ namespace mrover {
                         mLinearActuator->setDesiredThrottle(throttle);
                         break;
                     case 'b' + 'h':
-                        mBrushServo->setVelocityTarget(static_cast<double>(throttle.get()) * mBrushServo->getVelocityLimitRadPerSec());
+                        mBrushServo->setGoalPosition(mBrushServo->getPosition() + mBrushStep);
                         break;
                 }
             }
@@ -121,23 +122,9 @@ namespace mrover {
             if (req->names.size() != 1 || req->names.at(0) != "funnel") return;
 
             auto const pos = req->positions[0];
-            mFunnelServo->setPosition(pos);
+            mFunnelServo->setGoalPosition(Radians{pos});
             res->at_tgts.resize(1);
-
-            auto const start = this->now();
-            auto const timeout = rclcpp::Duration::from_seconds(3);
-            rclcpp::Rate loop_rate(10);
-
-            while ((this->now() - start) < timeout) {
-                auto const status = mFunnelServo->getTargetStatus();
-                bool const reached = status == U2D2::Status::Success;
-                res->at_tgts[0] = reached;
-
-                if (reached) return;
-                loop_rate.sleep();
-            }
-
-            RCLCPP_WARN(this->get_logger(), "servo position timeout reached!");
+            res->at_tgts[0] = true;
         }
 
         auto publishDataCallback() -> void {
@@ -165,34 +152,24 @@ namespace mrover {
                         mControllerState.currents[i] = mLinearActuator->getCurrent();
                         mControllerState.limits_hit[i] = mLinearActuator->getLimitsHitBits();
                         break;
-                    case 'f' + 'l': {
-                        double pos, vel, cur;
-                        U2D2::Status const status = mFunnelServo->getPosition(pos);
-                        mFunnelServo->getVelocity(vel);
-                        mFunnelServo->getCurrent(cur);
+                    case 'f' + 'l':
                         mControllerState.names[i] = name;
-                        mControllerState.states[i] = U2D2::stringifyStatus(mFunnelServo->getTargetStatus());
-                        mControllerState.errors[i] = U2D2::stringifyStatus(status);
-                        mControllerState.positions[i] = static_cast<float>(pos);
-                        mControllerState.velocities[i] = static_cast<float>(vel);
-                        mControllerState.currents[i] = static_cast<float>(cur);
-                        mControllerState.limits_hit[i] = mFunnelServo->getLimitStatus();
+                        mControllerState.states[i] = "";
+                        mControllerState.errors[i] = "";
+                        mControllerState.positions[i] = static_cast<float>(mFunnelServo->getPosition().get());
+                        mControllerState.velocities[i] = static_cast<float>(std::numeric_limits<float>::quiet_NaN());
+                        mControllerState.currents[i] = static_cast<float>(std::numeric_limits<float>::quiet_NaN());
+                        mControllerState.limits_hit[i] = 0u;
                         break;
-                    }
-                    case 'b' + 'h': {
-                        double pos, vel, cur;
-                        U2D2::Status const status = mBrushServo->getPosition(pos);
-                        mBrushServo->getVelocity(vel);
-                        mBrushServo->getCurrent(cur);
+                    case 'b' + 'h':
                         mControllerState.names[i] = name;
-                        mControllerState.states[i] = U2D2::stringifyStatus(mBrushServo->getTargetStatus());
-                        mControllerState.errors[i] = U2D2::stringifyStatus(status);
-                        mControllerState.positions[i] = static_cast<float>(pos);
-                        mControllerState.velocities[i] = static_cast<float>(vel);
-                        mControllerState.currents[i] = static_cast<float>(cur);
-                        mControllerState.limits_hit[i] = mBrushServo->getLimitStatus();
+                        mControllerState.states[i] = "";
+                        mControllerState.errors[i] = "";
+                        mControllerState.positions[i] = static_cast<float>(mBrushServo->getPosition().get());
+                        mControllerState.velocities[i] = static_cast<float>(std::numeric_limits<float>::quiet_NaN());
+                        mControllerState.currents[i] = static_cast<float>(std::numeric_limits<float>::quiet_NaN());
+                        mControllerState.limits_hit[i] = 0u;
                         break;
-                    }
                 }
             }
 
