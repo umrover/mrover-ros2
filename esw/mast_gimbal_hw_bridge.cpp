@@ -26,8 +26,7 @@ namespace mrover {
 
         auto init() -> void {
             // parse parameters
-            std::vector<ParameterWrapper> parameters = {
-            };
+            std::vector<ParameterWrapper> parameters = {};
             ParameterWrapper::declareParameters(this, parameters);
 
             for (std::string const& servoName: mServoNames) {
