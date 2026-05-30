@@ -49,14 +49,20 @@ def init_waypoints_db():
                 name TEXT NOT NULL,
                 latitude REAL NOT NULL,
                 longitude REAL NOT NULL,
-                altitude REAL DEFAULT NULL,
                 drone BOOLEAN DEFAULT 0
             )
         ''')
 
-        existing_cols = {row[1] for row in cursor.execute("PRAGMA table_info(basic_waypoints)").fetchall()}
-        if 'altitude' not in existing_cols:
-            cursor.execute('ALTER TABLE basic_waypoints ADD COLUMN altitude REAL DEFAULT NULL')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS science_waypoints (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                latitude REAL NOT NULL,
+                longitude REAL NOT NULL,
+                altitude REAL NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
 
         cursor.execute("SELECT count(*) FROM auton_waypoints")
         if cursor.fetchone()[0] == 0:

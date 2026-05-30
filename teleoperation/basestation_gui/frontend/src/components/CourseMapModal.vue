@@ -8,7 +8,7 @@
             <div class="flex items-center gap-2">
               <button
                 class="btn btn-sm btn-primary"
-                :disabled="erdStore.waypoints.length === 0 || isDownloading"
+                :disabled="scienceStore.waypoints.length === 0 || isDownloading"
                 @click="downloadMapPNG"
               >
                 <i class="bi bi-download"></i> PNG
@@ -21,7 +21,7 @@
 
           <div class="modal-body p-3 flex flex-col flex-1 min-h-0">
             <div
-              v-if="erdStore.waypoints.length === 0"
+              v-if="scienceStore.waypoints.length === 0"
               class="flex items-center justify-center h-full"
             >
               <div class="alert alert-warning mb-0" role="alert">
@@ -43,7 +43,7 @@
                 <l-polyline :lat-lngs="pathLatLngs" :color="'var(--accent)'" :weight="3" :opacity="0.7" />
 
                 <l-marker
-                  v-for="(wp, i) in erdStore.waypoints"
+                  v-for="(wp, i) in scienceStore.waypoints"
                   :key="wp.db_id ?? i"
                   :lat-lng="[wp.lat, wp.lon]"
                   :icon="waypointIcon"
@@ -61,23 +61,6 @@
                 </l-marker>
               </l-map>
             </div>
-
-            <div v-if="erdStore.waypoints.length > 0" class="mt-3 list-item m-0!">
-              <div class="grid grid-cols-3 gap-3 text-center">
-                <div class="flex flex-col">
-                  <span class="data-label text-[0.6rem]">Waypoints</span>
-                  <span class="text-sm font-bold font-mono">{{ erdStore.waypoints.length }}</span>
-                </div>
-                <div class="flex flex-col">
-                  <span class="data-label text-[0.6rem]">Start</span>
-                  <span class="text-xs font-mono">{{ erdStore.waypoints[0]?.name }}</span>
-                </div>
-                <div class="flex flex-col">
-                  <span class="data-label text-[0.6rem]">End</span>
-                  <span class="text-xs font-mono">{{ erdStore.waypoints[erdStore.waypoints.length - 1]?.name }}</span>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -92,14 +75,14 @@ import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import 'leaflet-rotatedmarker'
 import { toPng } from 'html-to-image'
-import { useErdStore } from '@/stores/erd'
+import { useScienceWaypointStore } from '@/stores/scienceWaypoints'
 import { useRoverMap } from '@/composables/useRoverMap'
 import { currentTimestamp } from '@/utils/formatNumber'
 
 const props = defineProps<{ show: boolean }>()
 defineEmits(['close'])
 
-const erdStore = useErdStore()
+const scienceStore = useScienceWaypointStore()
 const { mapRef, onlineUrl, onlineTileOptions, getMap } = useRoverMap()
 
 const mapCaptureRef = ref<HTMLElement | null>(null)
@@ -129,33 +112,33 @@ const endIcon = L.divIcon({
 }) as L.Icon
 
 const mapCenter = computed<[number, number]>(() => {
-  const first = erdStore.waypoints[0]
+  const first = scienceStore.waypoints[0]
   if (!first) return [0, 0]
   return [first.lat, first.lon]
 })
 
 const pathLatLngs = computed<[number, number][]>(() =>
-  erdStore.waypoints.map(wp => [wp.lat, wp.lon])
+  scienceStore.waypoints.map(wp => [wp.lat, wp.lon])
 )
 
 const startLatLng = computed<[number, number]>(() => {
-  const first = erdStore.waypoints[0]
+  const first = scienceStore.waypoints[0]
   return first ? [first.lat, first.lon] : [0, 0]
 })
 
 const endLatLng = computed<[number, number]>(() => {
-  const last = erdStore.waypoints[erdStore.waypoints.length - 1]
+  const last = scienceStore.waypoints[scienceStore.waypoints.length - 1]
   return last ? [last.lat, last.lon] : [0, 0]
 })
 
 watch(
   () => props.show,
   async (visible) => {
-    if (!visible || erdStore.waypoints.length === 0) return
+    if (!visible || scienceStore.waypoints.length === 0) return
     await nextTick()
     const map = getMap()
     if (map) {
-      const bounds = L.latLngBounds(erdStore.waypoints.map(wp => [wp.lat, wp.lon]))
+      const bounds = L.latLngBounds(scienceStore.waypoints.map(wp => [wp.lat, wp.lon]))
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 19 })
     }
   }
@@ -191,13 +174,6 @@ export default { name: 'CourseMapModal' }
   max-width: 900px;
   width: 85%;
   height: 75vh;
-}
-
-.data-label {
-  font-size: 0.6875rem;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
 }
 
 .btn-close {

@@ -1,4 +1,5 @@
 export { waypointsAPI } from './waypointsAPI'
+export { scienceWaypointsAPI } from './scienceWaypointsAPI'
 export { recordingAPI } from './recordingAPI'
 export { autonAPI } from './autonAPI'
 export { scienceAPI } from './scienceAPI'

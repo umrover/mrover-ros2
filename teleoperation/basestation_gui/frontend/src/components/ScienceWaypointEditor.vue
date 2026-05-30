@@ -49,14 +49,14 @@
         <div class="grid grid-cols-2 gap-2">
           <button
             class="btn btn-info btn-sm"
-            :disabled="erdStore.waypoints.length === 0"
-            @click="erdStore.exportToText()"
+            :disabled="scienceStore.waypoints.length === 0"
+            @click="scienceStore.exportToText()"
           >
             <i class="bi bi-download"></i> TXT
           </button>
           <button
             class="btn btn-primary btn-sm"
-            :disabled="erdStore.waypoints.length === 0"
+            :disabled="scienceStore.waypoints.length === 0"
             @click="showCourseMapModal = true"
           >
             <i class="bi bi-map"></i> Map
@@ -68,26 +68,31 @@
     <div class="flex flex-col w-full gap-2">
       <div class="p-1 border-b-2 flex justify-between items-center h-[var(--btn-height-md)]">
         <h4 class="component-header">Current Course</h4>
-        <button class="btn btn-danger btn-sm" @click="clearWaypointsModal?.open()">Clear</button>
+        <div class="flex gap-1">
+          <button class="btn btn-danger btn-sm" @click="clearWaypointsModal?.open()">Clear</button>
+          <button class="btn btn-outline-danger btn-sm btn-icon" title="Reset table" @click="resetTableModal?.open()">
+            <i class="bi bi-arrow-counterclockwise"></i>
+          </button>
+        </div>
       </div>
       <VueDraggable
-        v-model="erdStore.waypoints"
+        v-model="scienceStore.waypoints"
         handle=".drag-handle"
         ghost-class="drag-ghost"
         class="bg-theme-view p-2 rounded overflow-y-auto flex flex-col gap-2 grow relative border"
       >
-        <div v-if="erdStore.waypoints.length === 0" class="course-empty-state">
+        <div v-if="scienceStore.waypoints.length === 0" class="course-empty-state">
           <i class="bi bi-signpost-split"></i>
           <span>No waypoints in course</span>
         </div>
         <WaypointItem
-          v-for="(waypoint, i) in erdStore.waypoints"
+          v-for="(waypoint, i) in scienceStore.waypoints"
           :key="waypoint.db_id || i"
           :waypoint="waypoint"
           :index="i"
           @delete="handleDelete($event)"
-          @find="erdStore.setHighlighted($event.index)"
-          @search="erdStore.setSearch($event.index)"
+          @find="scienceStore.setHighlighted($event.index)"
+          @search="scienceStore.setSearch($event.index)"
         />
       </VueDraggable>
     </div>
@@ -105,6 +110,15 @@
       confirm-text="Clear"
       @confirm="handleConfirmClearWaypoints"
     />
+
+    <ConfirmModal
+      ref="resetTableModal"
+      modal-id="scienceResetTableModal"
+      title="Reset Waypoints Table"
+      message="This will drop and recreate the science_waypoints table. All data will be lost."
+      confirm-text="Reset"
+      @confirm="handleConfirmResetTable"
+    />
   </div>
 </template>
 
@@ -114,14 +128,14 @@ import { VueDraggable } from 'vue-draggable-plus'
 import WaypointItem from './BasicWaypointItem.vue'
 import CourseMapModal from './CourseMapModal.vue'
 import ConfirmModal from './ConfirmModal.vue'
-import { useErdStore } from '@/stores/erd'
+import { useScienceWaypointStore } from '@/stores/scienceWaypoints'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
-import { waypointsAPI } from '@/utils/api'
+import { scienceWaypointsAPI } from '@/utils/api'
 import type { GpsFixMessage } from '@/types/coordinates'
 
-const erdStore = useErdStore()
-const { clickPoint } = storeToRefs(erdStore)
+const scienceStore = useScienceWaypointStore()
+const { clickPoint, nextName } = storeToRefs(scienceStore)
 
 const websocketStore = useWebsocketStore()
 
@@ -130,7 +144,7 @@ const rover_longitude_deg = ref(0)
 const rover_altitude_m = ref<number | null>(null)
 
 const name = computed({
-  get: () => nameOverride.value ?? `Waypoint ${erdStore.waypoints.length + 1}`,
+  get: () => nameOverride.value ?? nextName.value,
   set: (val: string) => { nameOverride.value = val },
 })
 const nameOverride = ref<string | null>(null)
@@ -149,11 +163,7 @@ const canAddWaypoint = computed(() =>
 
 const showCourseMapModal = ref(false)
 const clearWaypointsModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
-
-const formatted_odom = computed(() => ({
-  lat: { d: rover_latitude_deg.value },
-  lon: { d: rover_longitude_deg.value },
-}))
+const resetTableModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 
 websocketStore.onMessage<GpsFixMessage>('nav', 'gps_fix', (msg) => {
   rover_latitude_deg.value = msg.latitude
@@ -167,18 +177,15 @@ watch(clickPoint, (pt) => {
 })
 
 onMounted(() => {
-  erdStore.highlightedWaypoint = -1
-  erdStore.searchWaypoint = -1
-  erdStore.fetchAll()
+  scienceStore.fetchAll()
 })
 
 async function handleDropWaypointAtRover() {
   let altitude = rover_altitude_m.value
 
-  // Fall back to backend snapshot if WS hasn't delivered altitude yet
   if (altitude === null) {
     try {
-      const snap = await waypointsAPI.getGpsSnapshot()
+      const snap = await scienceWaypointsAPI.getGpsSnapshot()
       if (snap.status === 'success') {
         altitude = snap.altitude ?? null
       }
@@ -187,13 +194,14 @@ async function handleDropWaypointAtRover() {
     }
   }
 
+  if (altitude === null) return
+
   try {
-    await erdStore.addWaypoint({
+    await scienceStore.addWaypoint({
       name: name.value,
-      lat: formatted_odom.value.lat.d,
-      lon: formatted_odom.value.lon.d,
+      lat: rover_latitude_deg.value,
+      lon: rover_longitude_deg.value,
       altitude,
-      drone: false,
     })
     nameOverride.value = null
   } catch (error) {
@@ -204,12 +212,11 @@ async function handleDropWaypointAtRover() {
 async function handleAddWaypoint(coord: { lat: { d: number | null }; lon: { d: number | null }; alt: number | null }) {
   if (!canAddWaypoint.value) return
   try {
-    await erdStore.addWaypoint({
+    await scienceStore.addWaypoint({
       name: name.value,
       lat: coord.lat.d as number,
       lon: coord.lon.d as number,
       altitude: coord.alt as number,
-      drone: false,
     })
     nameOverride.value = null
   } catch (error) {
@@ -218,14 +225,22 @@ async function handleAddWaypoint(coord: { lat: { d: number | null }; lon: { d: n
 }
 
 function handleDelete(payload: { index: number }) {
-  erdStore.deleteWaypoint(payload.index)
+  scienceStore.deleteWaypoint(payload.index)
 }
 
 async function handleConfirmClearWaypoints() {
   try {
-    await erdStore.clearAll()
+    await scienceStore.clearAll()
   } catch (error) {
     console.error('Failed to clear waypoints:', error)
+  }
+}
+
+async function handleConfirmResetTable() {
+  try {
+    await scienceStore.resetTable()
+  } catch (error) {
+    console.error('Failed to reset waypoints table:', error)
   }
 }
 </script>
@@ -245,5 +260,15 @@ export default {
 
 .field-label {
   min-width: 48px;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  font-size: 0.75rem;
 }
 </style>
