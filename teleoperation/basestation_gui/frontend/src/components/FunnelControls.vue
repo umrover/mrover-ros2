@@ -2,12 +2,18 @@
   <div class="relative w-full h-full" data-testid="pw-funnel-controls">
     <div class="absolute top-0 left-0 right-0 flex justify-between items-center z-10">
       <h4 class="component-header">Funnel</h4>
-      <div class="flex items-center">
+      <div class="flex items-center gap-2">
         <i
           v-if="!hasState"
-          class="bi bi-info-circle mr-1 text-sm text-muted"
+          class="bi bi-info-circle text-sm text-muted"
           title="Changes not allowed until funnel position received"
         ></i>
+        <button
+          class="tare-btn"
+          :disabled="!hasState || offsetDeg === 0"
+          title="Reset offset to 0"
+          @click="tare"
+        >Tare</button>
         <IndicatorDot :is-active="hasState" class="mr-2" />
       </div>
     </div>
@@ -180,6 +186,21 @@ async function adjustOffset(delta: number) {
   }
 }
 
+async function tare() {
+  if (!hasState.value || offsetDeg.value === 0) return
+  const previous = offsetDeg.value
+  offsetDeg.value = 0
+  if (currentSite.value === -1) {
+    localStorage.setItem(OFFSET_STORAGE_KEY, '0')
+    return
+  }
+  try {
+    await sendPosition(currentSite.value)
+  } catch {
+    offsetDeg.value = previous
+  }
+}
+
 function selectSite(index: number) {
   if (index === currentSite.value || isLoading.value || !hasState.value) return
   sendPosition(index)
@@ -310,6 +331,29 @@ websocketStore.onMessage<ControllerStateMessage>('science', 'sp_controller_state
   text-anchor: middle;
   pointer-events: none;
   user-select: none;
+}
+
+.tare-btn {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--input-border);
+  background: transparent;
+  color: var(--text-primary, currentColor);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tare-btn:hover:not(:disabled) {
+  background: var(--control-primary);
+  color: #fff;
+  border-color: var(--control-primary);
+}
+
+.tare-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .offset-readout {
