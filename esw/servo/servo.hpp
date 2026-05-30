@@ -1,19 +1,19 @@
 #pragma once
 
 #include <atomic>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <string>
 #include <vector>
-#include <chrono>
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <parameter.hpp>
-#include <units.hpp>
 #include <mrover/msg/servo_configure.hpp>
 #include <mrover/msg/servo_in.hpp>
 #include <mrover/msg/servo_out.hpp>
+#include <parameter.hpp>
+#include <units.hpp>
 
 namespace mrover {
 
@@ -48,24 +48,22 @@ namespace mrover {
         rclcpp::Subscription<msg::ServoOut>::SharedPtr mStateSub;
 
     public:
-        Servo(rclcpp::Node::SharedPtr node, std::string servoName) 
-            : mNode(std::move(node)), mServoName(std::move(servoName)) 
-        {
+        Servo(rclcpp::Node::SharedPtr node, std::string servoName)
+            : mNode(std::move(node)), mServoName(std::move(servoName)) {
             mConfigPub = mNode->create_publisher<msg::ServoConfigure>("/u2d2/configure", rclcpp::QoS(10).transient_local());
             mCmdPub = mNode->create_publisher<msg::ServoIn>("/u2d2/" + mServoName + "/in", 10);
 
             mStateSub = mNode->create_subscription<msg::ServoOut>(
-                "/u2d2/" + mServoName + "/out", 10,
-                [this](msg::ServoOut::ConstSharedPtr const& msg) {
-                    Radians const rawRads = ticksToRads(static_cast<int32_t>(msg->position));
+                    "/u2d2/" + mServoName + "/out", 10,
+                    [this](msg::ServoOut::ConstSharedPtr const& msg) {
+                        Radians const rawRads = ticksToRads(static_cast<int32_t>(msg->position));
 
-                    if (!mHasReceivedFirstMessage.exchange(true)) {
-                        mRadianOffset.store(mBootPosition.get() - rawRads.get());
-                    }
+                        if (!mHasReceivedFirstMessage.exchange(true)) {
+                            mRadianOffset.store(mBootPosition.get() - rawRads.get());
+                        }
 
-                    mCachedRads.store(rawRads.get());
-                }
-            );
+                        mCachedRads.store(rawRads.get());
+                    });
 
             initParametersAndHardware();
         }
@@ -102,16 +100,15 @@ namespace mrover {
             double boot_position;
 
             std::vector<ParameterWrapper> parameters = {
-                {mServoName + ".id", id, 1},
-                {mServoName + ".gear_ratio", mGearRatio, 1.0},
-                {mServoName + ".position_p", position_p, 400.0},
-                {mServoName + ".position_i", position_i, 0.0},
-                {mServoName + ".position_d", position_d, 0.0},
-                {mServoName + ".current_limit", current_limit, 1000.0},
-                {mServoName + ".profile_acceleration", profile_acceleration, 10.0},
-                {mServoName + ".profile_velocity", profile_velocity, 100.0},
-                {mServoName + ".boot_position", boot_position, 0.0}
-            };
+                    {mServoName + ".id", id, 1},
+                    {mServoName + ".gear_ratio", mGearRatio, 1.0},
+                    {mServoName + ".position_p", position_p, 400.0},
+                    {mServoName + ".position_i", position_i, 0.0},
+                    {mServoName + ".position_d", position_d, 0.0},
+                    {mServoName + ".current_limit", current_limit, 1000.0},
+                    {mServoName + ".profile_acceleration", profile_acceleration, 10.0},
+                    {mServoName + ".profile_velocity", profile_velocity, 100.0},
+                    {mServoName + ".boot_position", boot_position, 0.0}};
             ParameterWrapper::declareParameters(mNode.get(), parameters);
             mServoID = static_cast<uint8_t>(id);
             mBootPosition = Radians{boot_position};
