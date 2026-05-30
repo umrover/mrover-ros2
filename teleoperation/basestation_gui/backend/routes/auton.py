@@ -14,7 +14,7 @@ from std_srvs.srv import SetBool
 
 router = APIRouter(prefix="/api", tags=["auton"])
 
-BACKUP_LINEAR_SPEED = -0.5
+BACKUP_LINEAR_SPEED = -0.8
 BACKUP_PUBLISH_HZ = 10
 
 _backup_publisher = None
