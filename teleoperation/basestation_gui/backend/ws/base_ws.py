@@ -1,5 +1,6 @@
 import asyncio
 import math
+import numbers
 import threading
 import time
 import msgpack
@@ -10,7 +11,7 @@ from backend.managers.ros import get_node, get_logger
 
 
 def sanitize_floats(obj):
-    if isinstance(obj, float) and not math.isfinite(obj):
+    if isinstance(obj, numbers.Real) and not isinstance(obj, bool) and not math.isfinite(obj):
         return None
     if isinstance(obj, dict):
         return {k: sanitize_floats(v) for k, v in obj.items()}
