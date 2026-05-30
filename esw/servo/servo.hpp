@@ -118,7 +118,11 @@ namespace mrover {
             configMsg.name = mServoName;
             configMsg.id = mServoID;
             mConfigPub->publish(configMsg);
-            rclcpp::sleep_for(std::chrono::milliseconds(200));
+
+            while (mCmdPub->get_subscription_count() == 0) {
+                rclcpp::sleep_for(std::chrono::milliseconds(10));
+            }
+            rclcpp::sleep_for(std::chrono::milliseconds(50));
 
             // disable torque (control table)
             publishWrite(ADDR_TORQUE_ENABLE, 1, 0);

@@ -15,8 +15,8 @@ mast_gimbal_hw_bridge:
       gear_ratio: 6.25
       position_p: 4000.0
       position_i: 0.0
-      position_d: 0.0
-      current_limit: 1000.0
+      position_d: 1000.0
+      current_limit: 1750.0
       profile_acceleration: 100.0
       profile_velocity: 300.0
       boot_position: 3.1415
