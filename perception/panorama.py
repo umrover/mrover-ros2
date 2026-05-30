@@ -53,7 +53,7 @@ class Panorama(Node):
         # Heading variables
         self.heading_sub = self.create_subscription(Heading, "/heading/fix", self.heading_callback, 1)
         self.pano_dirs = ['E', 'S', 'W', 'N'] # E = 0, N = 270 (as per localization)
-        self.cur_heading = 0.0 # degrees
+        self.cur_heading = 0.0 # radians!!
 
         # PC/Image Stitching Variables
         self.pc_sub = message_filters.Subscriber(self, PointCloud2, f"/{self.zed_version}/left/points")
@@ -167,7 +167,6 @@ class Panorama(Node):
         self.cur_heading = heading.heading
 
     def label_pano(self, num_images, pano: np.ndarray):
-        # label hard coded NESW as a test
         fontFace = cv2.FONT_HERSHEY_SIMPLEX
         fontScale = 2.0
         color = (93, 236, 251)
@@ -176,7 +175,6 @@ class Panorama(Node):
         order = np.arange(0, num_images)
 
         # For each cardinal dir, find which image has closest heading to that direction
-        # Then find the image closest to that one in number from the order list
         # Put the direction where that image "starts" in the pano (assume each indiv.
         # image takes up roughly the same amount of space)
         y_org = int(pano.shape[0] / 4)
@@ -189,6 +187,7 @@ class Panorama(Node):
             diffs = np.abs(order - int(closest))
             pos = diffs.argmin()
 
+            # Only add the cardinal direction if the candidate image is within 20 degrees of it
             if abs(self.headings[int(pos)] - head) > (20 * np.pi / 180):
                 continue
             
