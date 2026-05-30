@@ -26,6 +26,13 @@
           :d="seg.labelArc"
           fill="none"
         />
+        <path
+          v-for="seg in segments"
+          :key="`target-path-${seg.index}`"
+          :id="`target-arc-${seg.index}`"
+          :d="seg.targetArc"
+          fill="none"
+        />
       </defs>
 
       <g
@@ -44,6 +51,13 @@
             text-anchor="middle"
           >{{ seg.label }}</textPath>
         </text>
+        <text class="seg-target">
+          <textPath
+            :href="`#target-arc-${seg.index}`"
+            startOffset="50%"
+            text-anchor="middle"
+          >{{ siteTargets[seg.index] }}&deg;</textPath>
+        </text>
       </g>
 
       <text :x="CX" :y="CY + 6" class="center-val">{{ currentDegrees }}&deg;</text>
@@ -58,101 +72,27 @@ import { useGamepadPolling } from '@/composables/useGamepadPolling'
 import { useWebsocketStore } from '@/stores/websocket'
 import type { ControllerStateMessage } from '@/types/websocket'
 import IndicatorDot from './IndicatorDot.vue'
+import {
+  CX,
+  CY,
+  RAD_TO_DEG,
+  SITES,
+  segments,
+  closestSiteIndex,
+  siteTargetDeg,
+  siteTargetRad,
+} from './funnelGeometry'
 
-const DEG_TO_RAD = Math.PI / 180
-const RAD_TO_DEG = 180 / Math.PI
+const OFFSET_STORAGE_KEY = 'funnel-offset-deg'
 
-interface Site {
-  label: string
-  radians: number
-}
+// State
+const funnelState = ref<ControllerStateMessage | null>(null)
+const currentSite = ref(-1)
+const pendingSite = ref<number | null>(null)
+const isLoading = ref(false)
+const offsetDeg = ref(Number(localStorage.getItem(OFFSET_STORAGE_KEY)) || 0)
 
-const SITES: Site[] = [
-  { label: 'Sample',   radians: 3.1415 },
-  { label: 'Buret A',  radians: 2.0071 },
-  { label: 'Griess A', radians: 1.1693 },
-  { label: 'Trash',    radians: 0.0 },
-  { label: 'Buret B',  radians: 5.1138 },
-  { label: 'Griess B', radians: 4.2586 },
-]
-
-const CX = 100
-const CY = 100
-const INNER_R = 40
-const OUTER_R = 100
-const LABEL_R = 80
-const LABEL_R_FLIP = 90
-const GAP_HALF = 3
-const SLOT_SIZE = 360 / SITES.length
-
-function polarToXY(angleDeg: number, r: number): { x: number; y: number } {
-  const rad = (angleDeg - 90) * DEG_TO_RAD
-  return { x: CX + r * Math.cos(rad), y: CY + r * Math.sin(rad) }
-}
-
-function gapEdgePoint(gapDeg: number, segCenterDeg: number, r: number): { x: number; y: number } {
-  const gRad = (gapDeg - 90) * DEG_TO_RAD
-  const offsetSign = Math.sign(Math.sin((segCenterDeg - gapDeg) * DEG_TO_RAD))
-  const t = Math.sqrt(r * r - GAP_HALF * GAP_HALF)
-  return {
-    x: CX + GAP_HALF * offsetSign * -Math.sin(gRad) + t * Math.cos(gRad),
-    y: CY + GAP_HALF * offsetSign * Math.cos(gRad) + t * Math.sin(gRad),
-  }
-}
-
-function arcPath(gap1: number, gap2: number, center: number, r1: number, r2: number): string {
-  const p1 = gapEdgePoint(gap1, center, r1)
-  const p2 = gapEdgePoint(gap2, center, r1)
-  const p3 = gapEdgePoint(gap2, center, r2)
-  const p4 = gapEdgePoint(gap1, center, r2)
-  const f = (n: number) => n.toFixed(2)
-  return [
-    `M${f(p1.x)},${f(p1.y)}`,
-    `A${r1},${r1} 0 0 1 ${f(p2.x)},${f(p2.y)}`,
-    `L${f(p3.x)},${f(p3.y)}`,
-    `A${r2},${r2} 0 0 0 ${f(p4.x)},${f(p4.y)}`,
-    'Z',
-  ].join(' ')
-}
-
-function labelArcPath(gap1: number, gap2: number, r: number, flip: boolean): string {
-  const from = flip ? gap2 : gap1
-  const to = flip ? gap1 : gap2
-  const p1 = polarToXY(from, r)
-  const p2 = polarToXY(to, r)
-  const f = (n: number) => n.toFixed(2)
-  return `M${f(p1.x)},${f(p1.y)} A${r},${r} 0 0 ${flip ? 0 : 1} ${f(p2.x)},${f(p2.y)}`
-}
-
-interface Segment {
-  index: number
-  label: string
-  path: string
-  labelArc: string
-}
-
-const segments: Segment[] = SITES.map((site, i) => {
-  const centerDeg = i * SLOT_SIZE
-  const gap1 = centerDeg - SLOT_SIZE / 2
-  const gap2 = centerDeg + SLOT_SIZE / 2
-  const flip = centerDeg > 90 && centerDeg < 270
-  return {
-    index: i,
-    label: site.label,
-    path: arcPath(gap1, gap2, centerDeg, INNER_R, OUTER_R),
-    labelArc: labelArcPath(gap1, gap2, flip ? LABEL_R_FLIP : LABEL_R, flip),
-  }
-})
-
-const websocketStore = useWebsocketStore()
-
-const funnelState = computed((): ControllerStateMessage | null => {
-  const msg = websocketStore.messages['science']
-  if (!msg) return null
-  const typedMsg = msg as ControllerStateMessage
-  return typedMsg.type === 'sp_controller_state' ? typedMsg : null
-})
-
+// Derived
 const hasState = computed(() => funnelState.value !== null)
 
 const currentDegrees = computed((): string => {
@@ -164,49 +104,25 @@ const currentDegrees = computed((): string => {
   return Object.is(Math.round(deg), -0) ? '0' : deg.toFixed(0)
 })
 
-const currentSite = ref(-1)
-const pendingSite = ref<number | null>(null)
-const isLoading = ref(false)
-const offsetDeg = ref(Number(localStorage.getItem('funnel-offset-deg')) || 0)
+const siteTargets = computed(() =>
+  SITES.map((_, i) => siteTargetDeg(i, offsetDeg.value))
+)
 
+// Match rover position to the nearest site whenever state or offset changes
 watch([funnelState, offsetDeg], ([state, offset]) => {
   if (!state || isLoading.value) return
   const idx = state.names.indexOf('funnel')
   if (idx < 0) return
-
-  const pos = state.positions[idx]
-  let closestIdx = -1
-  let minDiff = Infinity
-
-  for (let i = 0; i < SITES.length; i++) {
-    const siteRadWithOffset = SITES[i].radians + (offset as number) * DEG_TO_RAD
-    const diff = Math.abs(((siteRadWithOffset - pos + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI)
-    if (diff < minDiff) {
-      minDiff = diff
-      closestIdx = i
-    }
-  }
-
-  if (closestIdx !== -1 && minDiff < 0.2 && currentSite.value !== closestIdx) {
-    currentSite.value = closestIdx
+  const match = closestSiteIndex(state.positions[idx], offset as number)
+  if (match !== -1 && currentSite.value !== match) {
+    currentSite.value = match
   }
 }, { immediate: true })
 
-async function adjustOffset(delta: number) {
-  if (isLoading.value || !hasState.value) return
-  offsetDeg.value += delta
-  try {
-    await sendPosition(currentSite.value)
-    localStorage.setItem('funnel-offset-deg', String(offsetDeg.value))
-  } catch {
-    offsetDeg.value -= delta
-  }
-}
-
+// Actions
 async function sendPosition(index: number) {
   if (isLoading.value || !hasState.value || index === -1) return
-  const site = SITES[index]
-  if (!site) return
+  if (!SITES[index]) return
 
   const previousSite = currentSite.value
   currentSite.value = index
@@ -214,13 +130,28 @@ async function sendPosition(index: number) {
   isLoading.value = true
 
   try {
-    const radians = ((site.radians + offsetDeg.value * DEG_TO_RAD) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI)
-    await scienceAPI.setFunnelPosition(radians, false)
-  } catch {
+    await scienceAPI.setFunnelPosition(siteTargetRad(index, offsetDeg.value), false)
+    localStorage.setItem(OFFSET_STORAGE_KEY, String(offsetDeg.value))
+  } catch (err) {
     currentSite.value = previousSite
+    throw err
   } finally {
     isLoading.value = false
     pendingSite.value = null
+  }
+}
+
+async function adjustOffset(delta: number) {
+  if (isLoading.value || !hasState.value) return
+  offsetDeg.value += delta
+  if (currentSite.value === -1) {
+    localStorage.setItem(OFFSET_STORAGE_KEY, String(offsetDeg.value))
+    return
+  }
+  try {
+    await sendPosition(currentSite.value)
+  } catch {
+    offsetDeg.value -= delta
   }
 }
 
@@ -229,6 +160,13 @@ function selectSite(index: number) {
   sendPosition(index)
 }
 
+// WebSocket subscription
+const websocketStore = useWebsocketStore()
+websocketStore.onMessage<ControllerStateMessage>('science', 'sp_controller_state', (msg) => {
+  funnelState.value = msg
+})
+
+// Gamepad: dpad left/right nudges offset
 const { buttons, connected } = useGamepadPolling({ controllerIdFilter: 'Microsoft', hz: 10 })
 let prevLeft: boolean | undefined = undefined
 let prevRight: boolean | undefined = undefined
@@ -307,6 +245,25 @@ watch(buttons, (btns) => {
   fill: var(--control-primary);
   pointer-events: none;
   user-select: none;
+}
+
+.seg-target {
+  font-size: 13px;
+  font-weight: 500;
+  fill: var(--text-muted);
+  pointer-events: none;
+  user-select: none;
+  tab-size: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.segment.active .seg-target,
+.segment:hover:not(.disabled) .seg-target {
+  fill: #fff;
+}
+
+.segment.disabled .seg-target {
+  fill: var(--disabled-text, #9ca3af);
 }
 
 .micro-btn {

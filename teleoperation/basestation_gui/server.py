@@ -21,6 +21,7 @@ from backend.routes.auton import router as auton_router
 from backend.routes.chassis import router as chassis_router
 from backend.routes.science import router as science_router
 from backend.routes.arm import router as arm_router
+from backend.routes.led import router as led_router
 
 # Websocket Handlers
 from backend.ws.arm_ws import ArmHandler
@@ -48,6 +49,7 @@ app.include_router(auton_router)
 app.include_router(chassis_router)
 app.include_router(science_router)
 app.include_router(arm_router)
+app.include_router(led_router)
 
 MAX_WS_PAYLOAD_BYTES = 1024 * 1024  # 1 MB
 
