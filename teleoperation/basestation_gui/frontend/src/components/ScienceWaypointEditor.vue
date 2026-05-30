@@ -68,12 +68,9 @@
     <div class="flex flex-col w-full gap-2">
       <div class="p-1 border-b-2 flex justify-between items-center h-[var(--btn-height-md)]">
         <h4 class="component-header">Current Course</h4>
-        <div class="flex gap-1">
-          <button class="btn btn-danger btn-sm" @click="clearWaypointsModal?.open()">Clear</button>
-          <button class="btn btn-outline-danger btn-sm btn-icon" title="Reset table" @click="resetTableModal?.open()">
-            <i class="bi bi-arrow-counterclockwise"></i>
-          </button>
-        </div>
+        <button class="btn btn-danger btn-sm btn-icon" title="Reset table" @click="resetTableModal?.open()">
+          <i class="bi bi-arrow-counterclockwise"></i>
+        </button>
       </div>
       <VueDraggable
         v-model="scienceStore.waypoints"
@@ -100,15 +97,6 @@
     <CourseMapModal
       :show="showCourseMapModal"
       @close="showCourseMapModal = false"
-    />
-
-    <ConfirmModal
-      ref="clearWaypointsModal"
-      modal-id="scienceClearWaypointsModal"
-      title="Clear Waypoints"
-      message="Are you sure you want to delete all waypoints? This cannot be undone."
-      confirm-text="Clear"
-      @confirm="handleConfirmClearWaypoints"
     />
 
     <ConfirmModal
@@ -162,7 +150,6 @@ const canAddWaypoint = computed(() =>
 )
 
 const showCourseMapModal = ref(false)
-const clearWaypointsModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 const resetTableModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 
 websocketStore.onMessage<GpsFixMessage>('nav', 'gps_fix', (msg) => {
@@ -226,14 +213,6 @@ async function handleAddWaypoint(coord: { lat: { d: number | null }; lon: { d: n
 
 function handleDelete(payload: { index: number }) {
   scienceStore.deleteWaypoint(payload.index)
-}
-
-async function handleConfirmClearWaypoints() {
-  try {
-    await scienceStore.clearAll()
-  } catch (error) {
-    console.error('Failed to clear waypoints:', error)
-  }
 }
 
 async function handleConfirmResetTable() {
