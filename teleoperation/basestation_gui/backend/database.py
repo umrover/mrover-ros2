@@ -102,6 +102,7 @@ def init_recordings_db():
                 recording_id INTEGER NOT NULL,
                 latitude REAL NOT NULL,
                 longitude REAL NOT NULL,
+                altitude REAL,
                 sequence INTEGER NOT NULL,
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY(recording_id) REFERENCES recordings(id) ON DELETE CASCADE

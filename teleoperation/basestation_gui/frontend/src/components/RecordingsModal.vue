@@ -104,8 +104,8 @@
                     <div class="h-8 w-px bg-panel-border mx-1"></div>
                     <button
                       class="btn btn-sm btn-info"
-                      :disabled="erdStore.waypoints.length === 0"
-                      @click="erdStore.exportToText()"
+                      :disabled="!selectedRecording || waypoints.length === 0"
+                      @click="exportRecordingToText()"
                     >
                       <i class="bi bi-download"></i> TXT
                     </button>
@@ -507,6 +507,30 @@ const clearAll = async () => {
 
 const sanitizeFilename = (title: string): string => {
   return title.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '')
+}
+
+const exportRecordingToText = () => {
+  if (!selectedRecording.value || waypoints.value.length === 0) return
+
+  let textContent = `Recording: ${selectedRecording.value.name}\nGenerated: ${new Date().toLocaleString()}\n\n`
+  waypoints.value.forEach((wp, index) => {
+    textContent += `[${index + 1}] ${formatTimestamp(wp.timestamp)}\n`
+    textContent += `    Latitude:  ${wp.lat.toFixed(8)}\n`
+    textContent += `    Longitude: ${wp.lon.toFixed(8)}\n`
+    textContent += `    Altitude:  ${wp.altitude !== null ? wp.altitude.toFixed(4) + ' m' : 'N/A'}\n\n`
+  })
+
+  textContent += '\n0.01 m'
+  const blob = new Blob([textContent.trim()], { type: 'text/plain;charset=utf-8;' })
+  const link = document.createElement('a')
+  const url = URL.createObjectURL(blob)
+  link.setAttribute('href', url)
+  link.setAttribute('download', `${sanitizeFilename(selectedRecording.value.name)}_${currentTimestamp()}.txt`)
+  link.style.visibility = 'hidden'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }
 
 const downloadMapPNG = async () => {
