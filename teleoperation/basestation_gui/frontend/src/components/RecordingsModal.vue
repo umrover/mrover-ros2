@@ -11,10 +11,11 @@
             <h5 class="modal-title">Recordings Library</h5>
             <div class="flex items-center gap-2">
               <button
-                class="btn btn-sm btn-danger"
-                @click="clearAllRecordingsModal?.open()"
+                class="btn btn-sm btn-icon btn-outline-danger"
+                title="Reset recording database"
+                @click="resetSchemaModal?.open()"
               >
-                Clear All
+                <i class="bi bi-arrow-counterclockwise"></i>
               </button>
               <button
                 type="button"
@@ -224,12 +225,12 @@
   </Teleport>
 
   <ConfirmModal
-    ref="clearAllRecordingsModal"
-    modal-id="clearAllRecordingsModal"
-    title="Clear All Recordings"
-    message="Are you sure you want to delete all recordings? This cannot be undone."
-    confirm-text="Clear All"
-    @confirm="clearAll"
+    ref="resetSchemaModal"
+    modal-id="resetSchemaModal"
+    title="Reset Recording Database"
+    message="This will drop and recreate the recordings tables, deleting all existing data. This cannot be undone."
+    confirm-text="Reset"
+    @confirm="resetSchema"
   />
 </template>
 
@@ -284,7 +285,7 @@ const showCourseWaypoints = ref(false)
 const mapCaptureRef = ref<HTMLElement | null>(null)
 let playbackInterval: number | null = null
 
-const clearAllRecordingsModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
+const resetSchemaModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 
 const startIcon = L.divIcon({
   html: '<div class="map-marker-dot map-marker-start"></div>',
@@ -490,9 +491,9 @@ const deleteRecording = async (recordingId: number) => {
   }
 }
 
-const clearAll = async () => {
+const resetSchema = async () => {
   try {
-    await recordingAPI.deleteAll()
+    await recordingAPI.resetSchema()
     selectedRecording.value = null
     waypoints.value = []
     currentWaypointIndex.value = 0
@@ -501,7 +502,7 @@ const clearAll = async () => {
     playbackInterval = null
     await loadRecordings()
   } catch (error) {
-    console.error('Failed to clear recordings:', error)
+    console.error('Failed to reset recording schema:', error)
   }
 }
 
