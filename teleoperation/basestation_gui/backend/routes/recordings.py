@@ -85,40 +85,6 @@ def get_recording_waypoints(rec_id: int):
             conn.close()
 
 
-@router.post("/reset-schema/")
-def reset_recordings_schema():
-    conn = None
-    try:
-        conn = get_recordings_db()
-        conn.execute('DROP TABLE IF EXISTS recorded_waypoints')
-        conn.execute('DROP TABLE IF EXISTS recordings')
-        conn.execute('''
-            CREATE TABLE recordings (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                is_drone BOOLEAN NOT NULL DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        conn.execute('''
-            CREATE TABLE recorded_waypoints (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                recording_id INTEGER NOT NULL,
-                latitude REAL NOT NULL,
-                longitude REAL NOT NULL,
-                altitude REAL,
-                sequence INTEGER NOT NULL,
-                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(recording_id) REFERENCES recordings(id) ON DELETE CASCADE
-            )
-        ''')
-        conn.commit()
-        return {'status': 'success'}
-    finally:
-        if conn:
-            conn.close()
-
-
 @router.delete("/clear/")
 def clear_recordings():
     conn = None

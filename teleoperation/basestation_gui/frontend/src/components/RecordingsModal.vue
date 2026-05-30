@@ -11,11 +11,10 @@
             <h5 class="modal-title">Recordings Library</h5>
             <div class="flex items-center gap-2">
               <button
-                class="btn btn-sm btn-icon btn-outline-danger"
-                title="Reset recording database"
-                @click="resetSchemaModal?.open()"
+                class="btn btn-sm btn-danger"
+                @click="clearAllRecordingsModal?.open()"
               >
-                <i class="bi bi-arrow-counterclockwise"></i>
+                Clear All
               </button>
               <button
                 type="button"
@@ -105,8 +104,8 @@
                     <div class="h-8 w-px bg-panel-border mx-1"></div>
                     <button
                       class="btn btn-sm btn-info"
-                      :disabled="!selectedRecording || waypoints.length === 0"
-                      @click="exportRecordingToText()"
+                      :disabled="erdStore.waypoints.length === 0"
+                      @click="erdStore.exportToText()"
                     >
                       <i class="bi bi-download"></i> TXT
                     </button>
@@ -225,12 +224,12 @@
   </Teleport>
 
   <ConfirmModal
-    ref="resetSchemaModal"
-    modal-id="resetSchemaModal"
-    title="Reset Recording Database"
-    message="This will drop and recreate the recordings tables, deleting all existing data. This cannot be undone."
-    confirm-text="Reset"
-    @confirm="resetSchema"
+    ref="clearAllRecordingsModal"
+    modal-id="clearAllRecordingsModal"
+    title="Clear All Recordings"
+    message="Are you sure you want to delete all recordings? This cannot be undone."
+    confirm-text="Clear All"
+    @confirm="clearAll"
   />
 </template>
 
@@ -285,7 +284,7 @@ const showCourseWaypoints = ref(false)
 const mapCaptureRef = ref<HTMLElement | null>(null)
 let playbackInterval: number | null = null
 
-const resetSchemaModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
+const clearAllRecordingsModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
 
 const startIcon = L.divIcon({
   html: '<div class="map-marker-dot map-marker-start"></div>',
@@ -491,9 +490,9 @@ const deleteRecording = async (recordingId: number) => {
   }
 }
 
-const resetSchema = async () => {
+const clearAll = async () => {
   try {
-    await recordingAPI.resetSchema()
+    await recordingAPI.deleteAll()
     selectedRecording.value = null
     waypoints.value = []
     currentWaypointIndex.value = 0
@@ -502,36 +501,12 @@ const resetSchema = async () => {
     playbackInterval = null
     await loadRecordings()
   } catch (error) {
-    console.error('Failed to reset recording schema:', error)
+    console.error('Failed to clear recordings:', error)
   }
 }
 
 const sanitizeFilename = (title: string): string => {
   return title.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '')
-}
-
-const exportRecordingToText = () => {
-  if (!selectedRecording.value || waypoints.value.length === 0) return
-
-  let textContent = `Recording: ${selectedRecording.value.name}\nGenerated: ${new Date().toLocaleString()}\n\n`
-  waypoints.value.forEach((wp, index) => {
-    textContent += `[${index + 1}] ${formatTimestamp(wp.timestamp)}\n`
-    textContent += `    Latitude:  ${wp.lat.toFixed(8)}\n`
-    textContent += `    Longitude: ${wp.lon.toFixed(8)}\n`
-    textContent += `    Altitude:  ${wp.altitude !== null ? wp.altitude.toFixed(4) + ' m' : 'N/A'}\n\n`
-  })
-
-  textContent += '\n0.01 m'
-  const blob = new Blob([textContent.trim()], { type: 'text/plain;charset=utf-8;' })
-  const link = document.createElement('a')
-  const url = URL.createObjectURL(blob)
-  link.setAttribute('href', url)
-  link.setAttribute('download', `${sanitizeFilename(selectedRecording.value.name)}_${currentTimestamp()}.txt`)
-  link.style.visibility = 'hidden'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
 }
 
 const downloadMapPNG = async () => {
