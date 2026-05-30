@@ -11,8 +11,8 @@ export const SITES: Site[] = [
   { label: 'Buret A',  radians: 2.0071 },
   { label: 'Griess A', radians: 1.1693 },
   { label: 'Trash',    radians: 0.0 },
-  { label: 'Buret B',  radians: 5.1138 },
-  { label: 'Griess B', radians: 4.2586 },
+  { label: 'Buret B',  radians: 5.1662 },
+  { label: 'Griess B', radians: 4.3284 },
 ]
 
 export const CX = 100
