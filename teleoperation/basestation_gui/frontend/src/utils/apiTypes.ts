@@ -85,3 +85,25 @@ export interface ServoResponse extends APIResponse {
   position?: number
   at_tgt?: boolean
 }
+
+export interface GpsSnapshotResponse extends APIResponse {
+  lat?: number
+  lon?: number
+  altitude?: number
+}
+
+export interface ScienceWaypointRecord {
+  id?: number
+  name: string
+  lat: number
+  lon: number
+  altitude: number
+}
+
+export interface ScienceWaypointsResponse extends APIResponse {
+  waypoints?: ScienceWaypointRecord[]
+}
+
+export interface CreateScienceWaypointResponse extends APIResponse {
+  waypoint?: ScienceWaypointRecord
+}

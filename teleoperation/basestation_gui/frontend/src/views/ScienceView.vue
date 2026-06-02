@@ -72,21 +72,26 @@
 
     <template #waypoints>
       <div class="island p-2 rounded h-full">
-        <BasicWaypointEditor />
+        <ScienceWaypointEditor />
       </div>
     </template>
   </BaseGridView>
 </template>
 
 <script lang="ts" setup>
+import { onMounted, onUnmounted } from 'vue'
 import BaseGridView from '@/components/BaseGridView.vue'
 import SensorData from '@/components/SensorData.vue'
 import BasicMap from '@/components/BasicRoverMap.vue'
-import BasicWaypointEditor from '@/components/BasicWaypointEditor.vue'
+import ScienceWaypointEditor from '@/components/ScienceWaypointEditor.vue'
 import DriveControls from '@/components/DriveControls.vue'
 import GimbalControls from '@/components/GimbalControls.vue'
 import OdometryReading from '@/components/OdometryReading.vue'
 import ArmDataTable from '@/components/ControllerDataTable/ArmDataTable.vue'
+import { ledAPI } from '@/utils/ledAPI'
+
+onMounted(() => ledAPI.setMission('science'))
+onUnmounted(() => ledAPI.setMission('home'))
 import SPDataTable from '@/components/ControllerDataTable/SPDataTable.vue'
 import DriveDataTable from '@/components/ControllerDataTable/DriveDataTable.vue'
 import FunnelControls from '@/components/FunnelControls.vue'
@@ -97,9 +102,9 @@ const defaultLayout = [
   { x: 0, y: 0, w: 2, h: 2, i: 'sparm' },
   { x: 2, y: 0, w: 2, h: 2, i: 'gimbal' },
   { x: 4, y: 0, w: 2, h: 2, i: 'funnel' },
-  { x: 6, y: 0, w: 1, h: 1, i: 'drive' },
-  { x: 6, y: 1, w: 1, h: 1, i: 'panorama' },
-  { x: 0, y: 3, w: 7, h: 2, i: 'odometry' },
+  { x: 6, y: 0, w: 1, h: 2, i: 'drive' },
+  { x: 6, y: 2, w: 1, h: 2, i: 'panorama' },
+  { x: 0, y: 3, w: 6, h: 2, i: 'odometry' },
   { x: 0, y: 5, w: 7, h: 4, i: 'sensors' },
   { x: 0, y: 9, w: 3, h: 4, i: 'arm-data' },
   { x: 3, y: 9, w: 2, h: 4, i: 'drive-data' },

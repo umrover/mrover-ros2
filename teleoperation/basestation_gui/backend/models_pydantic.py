@@ -7,6 +7,12 @@ class BasicWaypoint(BaseModel):
     lon: float = Field(ge=-180.0, le=180.0)
     drone: bool = False
 
+class ScienceWaypoint(BaseModel):
+    name: str
+    lat: float = Field(ge=-90.0, le=90.0)
+    lon: float = Field(ge=-180.0, le=180.0)
+    altitude: float
+
 class BasicWaypointList(BaseModel):
     waypoints: List[BasicWaypoint]
 
@@ -58,6 +64,9 @@ class AutonEnableRequest(BaseModel):
 
 class TeleopEnableRequest(BaseModel):
     enabled: bool
+
+class DriveBackRequest(BaseModel):
+    duration_seconds: float = Field(ge=1.0, le=10.0)
 
 class GimbalPositionRequest(BaseModel):
     joint: str
