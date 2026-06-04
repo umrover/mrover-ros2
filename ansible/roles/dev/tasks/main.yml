@@ -22,18 +22,6 @@
     src: files/home/.oh-my-zsh/custom/themes/mrover.zsh-theme
     dest: ~/.oh-my-zsh/custom/themes/mrover.zsh-theme
 
-- name: Deploy mrover config
-  copy:
-    src: files/home/.mrover.zshenv
-    dest: ~/.mrover.zshenv
-
-- name: Source mrover config
-  blockinfile:
-    path: ~/.zshenv
-    marker: "# {mark} MROVER"
-    block: source ~/.mrover.zshenv
-    create: true
-
 - name: Deploy mrover tmux config
   copy:
     src: files/home/.mrover.tmux.conf
