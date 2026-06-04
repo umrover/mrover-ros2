@@ -9,7 +9,6 @@ python = "3.12.*"
 
 # ROS 2 Humble via RoboStack.
 ros-jazzy-ros-base = "*"
-ros-jazzy-rviz2 = "*"
 ros-jazzy-xacro = "*"
 ros-jazzy-rtcm-msgs = "*"
 ros-jazzy-dynamixel-sdk = "*"
@@ -18,22 +17,23 @@ ros-jazzy-ament-cmake = "*"
 ros-jazzy-ament-cmake-python = "*"
 ros-jazzy-rosidl-default-generators = "*"
 ros-jazzy-rosidl-default-runtime = "*"
-ros-jazzy-ament-lint-auto = "*"
-ros-jazzy-ament-lint-common = "*"
 
 cmake = "*"
 ninja = "*"
 pkg-config = "*"
 c-compiler = "*"
 cxx-compiler = "*"
+ccache = "*"
 colcon-common-extensions = "==0.3.0"
 
-magic_enum = "*"        # not in robostack-humble; use conda-forge
+magic_enum = "*"        # not in robostack-HUMBLE; use conda-forge
 numpy = ">=2.0"
+libboost-devel = "1.88.*"
 
 eigen = "*"
 opencv = "*"
 manif = "*"
+manifpy = ">=0.0.5,<0.0.6"
 glfw = "*"
 assimp = "*"
 bullet = "*"
@@ -41,9 +41,11 @@ qt-main = "*"
 gstreamer = "*"
 gst-plugins-base = "*"
 bun = "*"
+ros-jazzy-rviz2 = ">=14.1.19,<15"
 
 [target.linux-64.dependencies]
 tbb = "*"
+tbb-devel = "*"
 
 [pypi-dependencies]
 mrover = { path = ".", editable = true }

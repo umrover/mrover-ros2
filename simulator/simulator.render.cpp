@@ -1,4 +1,4 @@
-#define WEBGPU_CPP_IMPLEMENTATION
+    #define WEBGPU_CPP_IMPLEMENTATION
 
 #include "simulator.hpp"
 
@@ -57,7 +57,7 @@ namespace mrover {
 
         wgpu::DepthStencilState depthStencil;
         depthStencil.depthCompare = wgpu::CompareFunction::Less;
-        depthStencil.depthWriteEnabled = true;
+        depthStencil.depthWriteEnabled = WGPUOptionalBool_True;
         depthStencil.format = DEPTH_FORMAT;
         depthStencil.stencilFront.compare = wgpu::CompareFunction::Always;
         depthStencil.stencilFront.failOp = wgpu::StencilOperation::Keep;
@@ -91,7 +91,7 @@ namespace mrover {
         vertexBufferLayout[2].attributeCount = 1;
         vertexBufferLayout[2].attributes = attributes.data() + 2;
 
-        descriptor.vertex.entryPoint = "vs_main";
+        descriptor.vertex.entryPoint = {"vs_main", WGPU_STRLEN};
         descriptor.vertex.module = mShaderModule;
         descriptor.vertex.bufferCount = vertexBufferLayout.size();
         descriptor.vertex.buffers = vertexBufferLayout.data();
@@ -99,7 +99,7 @@ namespace mrover {
 
         wgpu::FragmentState fragment;
         fragment.module = mShaderModule;
-        fragment.entryPoint = "fs_main";
+        fragment.entryPoint = {"fs_main", WGPU_STRLEN};
 
         wgpu::BlendState colorBlend;
         colorBlend.color.srcFactor = wgpu::BlendFactor::SrcAlpha;
@@ -176,9 +176,9 @@ namespace mrover {
 
         // skybox stuff
         wgpu::RenderPipelineDescriptor skyboxDescriptor;
-        skyboxDescriptor.label = "skybox pipeline";
+        skyboxDescriptor.label = {"skybox pipeline", WGPU_STRLEN};
         skyboxDescriptor.vertex.module = mShaderModule;
-        skyboxDescriptor.vertex.entryPoint = "vs_skybox";
+        skyboxDescriptor.vertex.entryPoint = {"vs_skybox", WGPU_STRLEN};
         skyboxDescriptor.vertex.bufferCount = 0;
         skyboxDescriptor.vertex.buffers = nullptr;
         skyboxDescriptor.vertex.constantCount = 0;
@@ -189,7 +189,7 @@ namespace mrover {
 
         wgpu::FragmentState skyboxFragment;
         skyboxFragment.module = mShaderModule;
-        skyboxFragment.entryPoint = "fs_skybox";
+        skyboxFragment.entryPoint = {"fs_skybox", WGPU_STRLEN};
         skyboxFragment.constantCount = 0;
         skyboxFragment.constants = nullptr;
         skyboxDescriptor.fragment = &skyboxFragment;
@@ -204,7 +204,7 @@ namespace mrover {
 
         wgpu::DepthStencilState skyboxDepthStencil;
         skyboxDepthStencil.depthCompare = wgpu::CompareFunction::LessEqual;
-        skyboxDepthStencil.depthWriteEnabled = true;
+        skyboxDepthStencil.depthWriteEnabled = WGPUOptionalBool_True;
         skyboxDepthStencil.format = wgpu::TextureFormat::Depth32Float;
         skyboxDepthStencil.stencilReadMask = 0;
         skyboxDepthStencil.stencilWriteMask = 0;
@@ -261,6 +261,9 @@ namespace mrover {
     }
 
     auto Simulator::initWindow() -> void {
+        // Dawn's Linux prebuilt only supports X11 surfaces. Force GLFW onto X11
+        // (runs over XWayland on Wayland-only systems).
+        glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
         mGlfwInstance.init();
         glfwSetErrorCallback([](int error, char const* description) { throw std::runtime_error(std::format("GLFW Error {}: {}", error, description)); });
         RCLCPP_INFO_STREAM(get_logger(), std::format("Initialized GLFW Version: {}.{}.{}", GLFW_VERSION_MAJOR, GLFW_VERSION_MINOR, GLFW_VERSION_REVISION));
@@ -342,7 +345,7 @@ namespace mrover {
             if (!mWgpuInstance) throw std::runtime_error("Failed to create WGPU instance");
         }
         if (!mIsHeadless) {
-            mSurface = glfwGetWGPUSurface(mWgpuInstance, mWindow.get());
+            mSurface = glfwCreateWindowWGPUSurface(mWgpuInstance, mWindow.get());
             if (!mSurface) throw std::runtime_error("Failed to create WGPU surface");
         }
         {
@@ -352,36 +355,37 @@ namespace mrover {
             mAdapter = mWgpuInstance.requestAdapter(options);
             if (!mAdapter) throw std::runtime_error("Failed to request WGPU adapter");
 
-            wgpu::AdapterProperties properties;
-            mAdapter.getProperties(&properties);
+            wgpu::AdapterInfo properties;
+            mAdapter.getInfo(&properties);
 
-            RCLCPP_INFO_STREAM(get_logger(), std::format("\tWGPU Adapter Name: {}", properties.name));
-            RCLCPP_INFO_STREAM(get_logger(), std::format("\tWGPU Adapter Vendor: {}", properties.vendorName));
-            RCLCPP_INFO_STREAM(get_logger(), std::format("\tWGPU Adapter Driver: {}", properties.driverDescription));
+            RCLCPP_INFO_STREAM(get_logger(), std::format("\tWGPU Adapter Name: {}", std::string_view{properties.device.data, properties.device.length}));
+            RCLCPP_INFO_STREAM(get_logger(), std::format("\tWGPU Adapter Vendor: {}", std::string_view{properties.vendor.data, properties.vendor.length}));
+            RCLCPP_INFO_STREAM(get_logger(), std::format("\tWGPU Adapter Driver: {}", std::string_view{properties.description.data, properties.description.length}));
         }
 
-        wgpu::SupportedLimits limits;
+        wgpu::Limits limits;
         mAdapter.getLimits(&limits);
 
-        wgpu::RequiredLimits requiredLimits = wgpu::Default;
-        requiredLimits.limits.maxVertexAttributes = 4;
-        requiredLimits.limits.maxVertexBuffers = 8;
-        requiredLimits.limits.maxBindGroups = 2;
-        requiredLimits.limits.maxUniformBuffersPerShaderStage = 4;
-        requiredLimits.limits.maxUniformBufferBindingSize = 1024;
-        requiredLimits.limits.maxComputeWorkgroupsPerDimension = 2048;
-        requiredLimits.limits.minUniformBufferOffsetAlignment = 256;
-        requiredLimits.limits.minStorageBufferOffsetAlignment = 256;
+        wgpu::Limits requiredLimits = wgpu::Default;
+        requiredLimits.maxVertexAttributes = 4;
+        requiredLimits.maxVertexBuffers = 8;
+        requiredLimits.maxBindGroups = 2;
+        requiredLimits.maxUniformBuffersPerShaderStage = 4;
+        requiredLimits.maxUniformBufferBindingSize = 1024;
+        requiredLimits.maxComputeWorkgroupsPerDimension = 2048;
+        requiredLimits.minUniformBufferOffsetAlignment = 256;
+        requiredLimits.minStorageBufferOffsetAlignment = 256;
 
         wgpu::DeviceDescriptor deviceDescriptor;
         deviceDescriptor.requiredLimits = &requiredLimits;
+        deviceDescriptor.uncapturedErrorCallbackInfo.callback = [](WGPUDevice const*, WGPUErrorType type, WGPUStringView message, void* userdata1, void*) {
+            auto* node = static_cast<Simulator*>(userdata1);
+            RCLCPP_ERROR_STREAM(node->get_logger(), std::format("WGPU Error {}: {}", static_cast<int>(type), std::string_view{message.data, message.length}));
+        };
+        deviceDescriptor.uncapturedErrorCallbackInfo.userdata1 = this;
 
         mDevice = mAdapter.requestDevice(deviceDescriptor);
         if (!mDevice) throw std::runtime_error("Failed to create WGPU device");
-
-        mErrorCallback = mDevice.setUncapturedErrorCallback([&](wgpu::ErrorType type, char const* message) {
-            RCLCPP_ERROR_STREAM(get_logger(), std::format("WGPU Error {}: {}", static_cast<int>(type), message));
-        });
 
         mQueue = mDevice.getQueue();
         if (!mQueue) throw std::runtime_error("Failed to get WGPU queue");
@@ -393,11 +397,11 @@ namespace mrover {
         }
 
         {
-            wgpu::ShaderModuleWGSLDescriptor shaderSourceDescriptor;
+            wgpu::ShaderSourceWGSL shaderSourceDescriptor;
             auto shadersPath = std::filesystem::path{std::source_location::current().file_name()}.parent_path() / "shaders";
             std::string code = readTextFile(shadersPath / "shaders.wgsl");
-            shaderSourceDescriptor.code = code.c_str();
-            shaderSourceDescriptor.chain.sType = wgpu::SType::ShaderModuleWGSLDescriptor;
+            shaderSourceDescriptor.code = {code.c_str(), code.size()};
+            shaderSourceDescriptor.chain.sType = wgpu::SType::ShaderSourceWGSL;
 
             wgpu::ShaderModuleDescriptor shaderDescriptor;
             shaderDescriptor.nextInChain = &shaderSourceDescriptor.chain;
@@ -440,7 +444,7 @@ namespace mrover {
             wgpu::PipelineLayout layout = mDevice.createPipelineLayout(layoutDescriptor);
 
             wgpu::ComputePipelineDescriptor descriptor;
-            descriptor.compute.entryPoint = "cs_main";
+            descriptor.compute.entryPoint = {"cs_main", WGPU_STRLEN};
             descriptor.compute.module = mShaderModule;
             descriptor.layout = layout;
             mPointCloudPipeline = mDevice.createComputePipeline(descriptor);
@@ -727,10 +731,10 @@ namespace mrover {
                         stereoCamera.base.stagingBuffer = mDevice.createBuffer(descriptor);
                     }
 
-                    wgpu::ImageCopyTexture copyTexture;
+                    wgpu::TexelCopyTextureInfo copyTexture;
                     copyTexture.texture = stereoCamera.base.colorTexture;
                     copyTexture.aspect = wgpu::TextureAspect::All;
-                    wgpu::ImageCopyBuffer copyBuffer;
+                    wgpu::TexelCopyBufferInfo copyBuffer;
                     copyBuffer.buffer = stereoCamera.base.stagingBuffer;
                     copyBuffer.layout.bytesPerRow = stereoCamera.base.resolution.x() * 4;
                     copyBuffer.layout.rowsPerImage = stereoCamera.base.resolution.y();
@@ -791,10 +795,10 @@ namespace mrover {
                     camera.stagingBuffer = mDevice.createBuffer(descriptor);
                 }
 
-                wgpu::ImageCopyTexture copyTexture;
+                wgpu::TexelCopyTextureInfo copyTexture;
                 copyTexture.texture = camera.colorTexture;
                 copyTexture.aspect = wgpu::TextureAspect::All;
-                wgpu::ImageCopyBuffer copyBuffer;
+                wgpu::TexelCopyBufferInfo copyBuffer;
                 copyBuffer.buffer = camera.stagingBuffer;
                 copyBuffer.layout.bytesPerRow = camera.resolution.x() * 4;
                 copyBuffer.layout.rowsPerImage = camera.resolution.y();
@@ -842,7 +846,9 @@ namespace mrover {
         if (!mIsHeadless) {
             wgpu::SurfaceTexture surfaceTexture;
             mSurface.getCurrentTexture(&surfaceTexture);
-            if (surfaceTexture.status != wgpu::SurfaceGetCurrentTextureStatus::Success) throw std::runtime_error{"Failed to get WGPU surface texture"};
+            if (surfaceTexture.status != wgpu::SurfaceGetCurrentTextureStatus::SuccessOptimal &&
+                surfaceTexture.status != wgpu::SurfaceGetCurrentTextureStatus::SuccessSuboptimal)
+                throw std::runtime_error{"Failed to get WGPU surface texture"};
 
             wgpu::TextureViewDescriptor nextTextureViewDescriptor;
             nextTextureViewDescriptor.format = COLOR_FORMAT;
@@ -890,12 +896,33 @@ namespace mrover {
             Eigen::Matrix4f clipToWorld = mCameraInWorld.transform().cast<float>() * mSceneUniforms.value.cameraToClip.inverse().cast<float>();
             if (mRenderSkybox) renderSkybox(pass, clipToWorld, mSkyboxUniforms);
 
-            guiUpdate(pass);
-
             pass.end();
             pass.release();
 
             bindGroup.release();
+
+            // ImGui's pipeline is compiled for 1 color target; our main pass has 2 (color + normals).
+            // A separate single-attachment pass avoids the mismatch.
+            // TODO: imgui v1.91.9 does not call wgpuTextureViewAddRef after wgpuTextureCreateView.
+            // Dawn (post-2025) does not addRef views when they are bound in a bind group, so the
+            // font texture view is freed when the per-frame image bind group is released at end of
+            // frame 1. This causes a crash in frame 2. Fix alongside the physics engine refactor.
+            {
+                wgpu::RenderPassColorAttachment guiColorAttachment{};
+                guiColorAttachment.view = nextTextureView;
+                guiColorAttachment.loadOp = wgpu::LoadOp::Load;
+                guiColorAttachment.storeOp = wgpu::StoreOp::Store;
+                guiColorAttachment.depthSlice = -1;
+
+                wgpu::RenderPassDescriptor guiPassDescriptor{};
+                guiPassDescriptor.colorAttachmentCount = 1;
+                guiPassDescriptor.colorAttachments = &guiColorAttachment;
+
+                wgpu::RenderPassEncoder guiPass = encoder.beginRenderPass(guiPassDescriptor);
+                guiUpdate(guiPass);
+                guiPass.end();
+                guiPass.release();
+            }
 
             nextTextureView.release();
         }
@@ -919,21 +946,19 @@ namespace mrover {
 
         if (!mIsHeadless) mSurface.present();
 
-        wgpu::BufferMapCallbackInfo2 callbackInfo;
-        callbackInfo.mode = wgpu::CallbackMode::WaitAnyOnly;
-        callbackInfo.callback = [](WGPUMapAsyncStatus, char const*, void*, void*) -> void {};
+        auto noopMapCallback = [](wgpu::MapAsyncStatus, wgpu::StringView) {};
 
         // TODO(quintin): Remote duplicate code
         for (StereoCamera& stereoCamera: mStereoCameras) {
             if (stereoCamera.base.needsMap) {
-                stereoCamera.pointCloudFuture = stereoCamera.pointCloudStagingBuffer.mapAsync2(wgpu::MapMode::Read, 0, stereoCamera.pointCloudStagingBuffer.getSize(), callbackInfo);
-                stereoCamera.base.future = stereoCamera.base.stagingBuffer.mapAsync2(wgpu::MapMode::Read, 0, stereoCamera.base.stagingBuffer.getSize(), callbackInfo);
+                stereoCamera.pointCloudFuture = stereoCamera.pointCloudStagingBuffer.mapAsync(wgpu::MapMode::Read, 0, stereoCamera.pointCloudStagingBuffer.getSize(), wgpu::CallbackMode::WaitAnyOnly, noopMapCallback);
+                stereoCamera.base.future = stereoCamera.base.stagingBuffer.mapAsync(wgpu::MapMode::Read, 0, stereoCamera.base.stagingBuffer.getSize(), wgpu::CallbackMode::WaitAnyOnly, noopMapCallback);
                 stereoCamera.base.needsMap = false;
             }
         }
         for (Camera& camera: mCameras) {
             if (camera.needsMap) {
-                camera.future = camera.stagingBuffer.mapAsync2(wgpu::MapMode::Read, 0, camera.stagingBuffer.getSize(), callbackInfo);
+                camera.future = camera.stagingBuffer.mapAsync(wgpu::MapMode::Read, 0, camera.stagingBuffer.getSize(), wgpu::CallbackMode::WaitAnyOnly, noopMapCallback);
                 camera.needsMap = false;
             }
         }

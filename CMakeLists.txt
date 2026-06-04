@@ -60,8 +60,10 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(urdf REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(magic_enum REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
+find_package(yaml-cpp REQUIRED)
 find_package(dynamixel_sdk REQUIRED)
 
 find_package(Assimp NAMES Assimp assimp REQUIRED)
@@ -90,9 +92,42 @@ pkg_search_module(Gst gstreamer-1.0 IMPORTED_TARGET QUIET) # if this is failing 
 pkg_search_module(GstApp gstreamer-app-1.0 IMPORTED_TARGET QUIET)
 pkg_search_module(LibUdev libudev IMPORTED_TARGET QUIET)
 
-add_subdirectory(deps/imgui EXCLUDE_FROM_ALL SYSTEM)
-add_subdirectory(deps/webgpuhpp EXCLUDE_FROM_ALL SYSTEM)
-add_subdirectory(deps/glfw3webgpu EXCLUDE_FROM_ALL SYSTEM)
+include(FetchContent)
+
+FetchContent_Declare(
+    imgui
+    GIT_REPOSITORY https://github.com/ocornut/imgui.git
+    GIT_TAG        v1.91.9
+    GIT_SHALLOW    TRUE
+)
+FetchContent_Populate(imgui)
+file(GLOB IMGUI_SOURCES
+    ${imgui_SOURCE_DIR}/*.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_wgpu.cpp
+)
+add_library(imgui STATIC ${IMGUI_SOURCES})
+target_include_directories(imgui SYSTEM PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
+target_compile_definitions(imgui PUBLIC IMGUI_IMPL_WEBGPU_BACKEND_DAWN)
+target_link_libraries(imgui PUBLIC glfw webgpu)
+
+FetchContent_Declare(
+    glfw3webgpu
+    GIT_REPOSITORY https://github.com/eliemichel/glfw3webgpu.git
+    GIT_TAG        8f14534e79c590e8a7f7795ea42e01bedea9e137
+    GIT_SHALLOW    TRUE
+)
+FetchContent_MakeAvailable(glfw3webgpu)
+if (UNIX AND NOT APPLE)
+    # GLFW 3.4+ supports dynamic platform selection (X11 and Wayland in one binary).
+    # glfw3webgpu guards each native code path behind compile-time _GLFW_* macros,
+    # so define both to ensure the correct path compiles in regardless of host session.
+    target_compile_definitions(glfw3webgpu PRIVATE _GLFW_X11 _GLFW_WAYLAND)
+endif()
+
+add_library(webgpu_hpp INTERFACE)
+target_include_directories(webgpu_hpp SYSTEM INTERFACE deps/webgpuhpp)
+
 add_subdirectory(deps/mjbots EXCLUDE_FROM_ALL SYSTEM)
 
 if (BUILD_TESTING)
@@ -177,6 +212,7 @@ mrover_add_library(lie lie/*.cpp lie)
 target_link_libraries(lie MANIF::manif)
 ament_target_dependencies(lie rclcpp geometry_msgs tf2 tf2_ros)
 
+mrover_add_header_only_library(units units)
 mrover_add_header_only_library(loop_profiler loop_profiler)
 mrover_add_header_only_library(parameter_utils parameter_utils)
 mrover_add_header_only_library(gst_utils gst_utils)
@@ -189,12 +225,13 @@ endif ()
 # Simulator
 
 mrover_add_node(simulator simulator/*.cpp simulator simulator/pch.hpp)
-ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf yaml_cpp_vendor)
+ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf yaml_cpp_vendor ament_index_cpp)
 target_link_libraries(simulator
     assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
     ${BULLET_LIBRARIES}
     lie Eigen3::Eigen
     opencv_core opencv_imgcodecs opencv_imgproc
+    yaml-cpp::yaml-cpp
     loop_profiler
     parameter_utils
 )
@@ -325,11 +362,11 @@ if (EXISTS ${MROVER_EMBEDDED_ROOT_DIR} AND NOT APPLE)
     mrover_add_esw_bridge_node(mast_gimbal_hw_bridge esw/mast_gimbal_hw_bridge.cpp)
 endif()
 
-if (NOT MROVER_PORTABLE)
-    mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
-    ament_target_dependencies(differential_drive_controller rclcpp std_srvs)
-    target_link_libraries(differential_drive_controller units)
+mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
+ament_target_dependencies(differential_drive_controller rclcpp std_srvs)
+target_link_libraries(differential_drive_controller units)
 
+if (NOT MROVER_PORTABLE)
     mrover_add_node(u2d2_bridge esw/u2d2_bridge.cpp)
     ament_target_dependencies(u2d2_bridge rclcpp std_msgs std_srvs dynamixel_sdk)
     target_link_libraries(u2d2_bridge servo)

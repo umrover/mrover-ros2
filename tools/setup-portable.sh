@@ -17,32 +17,21 @@ if ! command -v pixi >/dev/null 2>&1; then
 fi
 
 echo -e "${GREY}Initializing submodules ...${NC}"
-git submodule update --init deps/imgui deps/webgpuhpp deps/glfw3webgpu
+git submodule update --init
 
 echo -e "${GREY}Installing packages ...${NC}"
 pixi install
 
 readonly REPO_DIR="$PWD"
-readonly ZSHENV="$HOME/.zshenv"
 readonly ZSHRC="$HOME/.zshrc"
 readonly MARKER="# MRover portable dev environment"
 
-zshenv_has=no
-zshrc_has=no
-if [ -f "$ZSHENV" ] && grep -qF "$MARKER" "$ZSHENV"; then zshenv_has=yes; fi
-if [ -f "$ZSHRC" ] && grep -qF "$MARKER" "$ZSHRC"; then zshrc_has=yes; fi
-
-if [ "$zshenv_has" = yes ] && [ "$zshrc_has" = yes ]; then
+if [ -f "$ZSHRC" ] && grep -qF "$MARKER" "$ZSHRC"; then
   echo -e "${GREY}'mrover' command already configured.${NC}"
 else
   read -r -p "Install the 'mrover' shell command? [y/N] " reply || reply=""
   if [[ "$reply" =~ ^[Yy] ]]; then
-    if [ "$zshenv_has" = no ]; then
-      { echo ""; echo "$MARKER"; echo "[ -f \"${REPO_DIR}/tools/mrover.zshenv\" ] && source \"${REPO_DIR}/tools/mrover.zshenv\""; } >> "$ZSHENV"
-    fi
-    if [ "$zshrc_has" = no ]; then
-      { echo ""; echo "$MARKER"; echo "alias mrover='activate_mrover'"; } >> "$ZSHRC"
-    fi
+    printf '\n%s\nsource "%s/tools/mrover.zshenv"\n' "$MARKER" "$REPO_DIR" >> "$ZSHRC"
     echo -e "${GREEN}Done. Open a new terminal and run 'mrover'.${NC}"
   fi
 fi

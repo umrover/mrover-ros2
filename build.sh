@@ -15,12 +15,20 @@ fi
 
 echo "Using build profile: $build_profile"
 
-export CC=clang
-export CXX=clang++
+# Cap parallel jobs to avoid OOM. Dawn and Boost headers push each TU to ~2 GB peak.
+# Use floor(MemAvailableKB / 2097152) i.e. one job per ~2 GB of available RAM,
+# capped to the number of cores.
+available_kb=$(awk '/MemAvailable/ {print $2}' /proc/meminfo 2>/dev/null || echo 8388608)
+jobs_by_mem=$(( available_kb / 2097152 ))
+jobs_by_cpu=$(nproc)
+parallel_jobs=$(( jobs_by_mem < jobs_by_cpu ? jobs_by_mem : jobs_by_cpu ))
+parallel_jobs=$(( parallel_jobs > 1 ? parallel_jobs : 1 ))
+echo "Parallel jobs: ${parallel_jobs}"
 
 if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
     bash tools/setup_dawn.sh
 
+    CMAKE_BUILD_PARALLEL_LEVEL="${parallel_jobs}" \
     COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification \
         colcon build \
         --cmake-args -G Ninja -W no-dev \
