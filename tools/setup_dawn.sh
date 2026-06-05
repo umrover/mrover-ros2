@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 # Downloads prebuilt Dawn to deps/dawn-prebuilt/. Pinned at v20260423.175430.
+#
+# Supported platforms (prebuilt only, no source builds):
+#   - Linux  x86_64  (amd64)         -> ubuntu-latest Release
+#   - macOS  arm64   (Apple Silicon) -> macos-latest  Release
+# Anything else is unsupported and exits non-zero.
 
 set -Eeuo pipefail
 
@@ -19,14 +24,26 @@ fi
 OS=$(uname -s)
 ARCH=$(uname -m)
 
-if [ "${OS}" = "Darwin" ] && [ "${ARCH}" = "arm64" ]; then
-    BINARY_TARBALL="Dawn-${DAWN_SHA}-macos-latest-Release.tar.gz"
-elif [ "${OS}" = "Linux" ] && [ "${ARCH}" = "x86_64" ]; then
-    BINARY_TARBALL="Dawn-${DAWN_SHA}-ubuntu-latest-Release.tar.gz"
-else
-    echo "Unsupported platform: ${OS}/${ARCH}" >&2
-    exit 1
-fi
+case "${OS}/${ARCH}" in
+    Linux/x86_64)
+        BINARY_TARBALL="Dawn-${DAWN_SHA}-ubuntu-latest-Release.tar.gz"
+        ;;
+    Darwin/arm64)
+        BINARY_TARBALL="Dawn-${DAWN_SHA}-macos-latest-Release.tar.gz"
+        ;;
+    *)
+        cat >&2 <<EOF
+Unsupported platform: ${OS}/${ARCH}
+
+This project only supports prebuilt Dawn on:
+  - Linux x86_64 (amd64)
+  - macOS arm64  (Apple Silicon)
+
+There is no supported build path for ${OS}/${ARCH}.
+EOF
+        exit 1
+        ;;
+esac
 
 tmpdir=$(mktemp -d)
 trap 'rm -rf "${tmpdir}"' EXIT
