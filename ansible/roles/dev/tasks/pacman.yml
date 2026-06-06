@@ -7,6 +7,7 @@
       - tmux
       - htop
       - github-cli
+      - git-lfs
     state: present
 
 - name: Install VSCode from AUR

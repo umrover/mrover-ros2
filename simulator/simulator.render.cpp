@@ -468,6 +468,7 @@ namespace mrover {
             initInfo.Device = mDevice;
             initInfo.NumFramesInFlight = 1;
             ImGui_ImplWGPU_Init(&initInfo);
+            mImGuiInitialized = true;
 
             int x, y, w, h;
             glfwGetMonitorWorkarea(glfwGetPrimaryMonitor(), &x, &y, &w, &h);

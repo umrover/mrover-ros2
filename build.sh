@@ -44,8 +44,6 @@ if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
 
     ln -sf "$(pwd)/build/mrover/compile_commands.json" "$(pwd)/compile_commands.json"
 else
-    pushd ../..
-
     if [ -x /usr/local/cuda-12/bin/nvcc ]; then
         export CUDAHOSTCXX=g++-9
         export CUDACXX=/usr/local/cuda-12/bin/nvcc
@@ -63,6 +61,6 @@ else
         --install-base "install/${build_profile}"
 
     rm -rf "$(pwd)/build/${build_profile}/mrover/.cmake/api"
-    ln -sf "$(pwd)/build/${build_profile}/compile_commands.json" \
-           "$(pwd)/src/mrover/compile_commands.json"
+    ln -sf "$(pwd)/build/${build_profile}/mrover/compile_commands.json" \
+           "$(pwd)/compile_commands.json"
 fi
