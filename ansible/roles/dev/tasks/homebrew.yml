@@ -7,7 +7,9 @@
       - gh
     state: present
 
-- name: Install VSCode
+- name: Install VSCode and Chromium casks
   community.general.homebrew_cask:
-    name: visual-studio-code
+    name:
+      - visual-studio-code
+      - chromium
     state: present
