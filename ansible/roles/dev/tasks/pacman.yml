@@ -13,7 +13,7 @@
 
 - name: Install VSCode from AUR
   become: false
-  shell: |
+  ansible.builtin.shell: |
     tmpdir=$(mktemp -d)
     git clone https://aur.archlinux.org/visual-studio-code-bin.git "$tmpdir"
     cd "$tmpdir" && makepkg -si --noconfirm

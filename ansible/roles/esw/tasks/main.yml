@@ -7,19 +7,19 @@
 
 - name: udev Reload Rules
   become: true
-  command: udevadm control --reload-rules
+  ansible.builtin.command: udevadm control --reload-rules
 
 - name: udev TTY Trigger
   become: true
-  command: udevadm trigger --subsystem-match=tty
+  ansible.builtin.command: udevadm trigger --subsystem-match=tty
 
 - name: Install fdcanusb Binary
   become: true
-  copy:
+  ansible.builtin.copy:
     src: files/bin/fdcanusb_daemon
     dest: /usr/local/bin/
     mode: 0755
 
 - name: Install Moteus GUI
-  pip:
+  ansible.builtin.pip:
     name: moteus-gui

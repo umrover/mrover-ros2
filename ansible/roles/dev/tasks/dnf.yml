@@ -1,18 +1,18 @@
 - name: Add GitHub CLI dnf repo
   become: true
-  command: dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
+  ansible.builtin.command: dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
   args:
     creates: /etc/yum.repos.d/gh-cli.repo
 
 - name: Import VSCode RPM key
   become: true
-  rpm_key:
+  ansible.builtin.rpm_key:
     key: https://packages.microsoft.com/keys/microsoft.asc
     state: present
 
 - name: Add VSCode dnf repo
   become: true
-  copy:
+  ansible.builtin.copy:
     dest: /etc/yum.repos.d/vscode.repo
     content: |
       [code]
@@ -24,8 +24,8 @@
 
 - name: Install dnf packages
   become: true
-  dnf:
-    state: latest
+  ansible.builtin.dnf:
+    state: present
     name:
       - zsh
       - fzf
