@@ -1,3 +1,12 @@
+- name: Block snapd via apt preferences
+  become: true
+  copy:
+    dest: /etc/apt/preferences.d/nosnap.pref
+    content: |
+      Package: snapd
+      Pin: release a=*
+      Pin-Priority: -10
+
 - name: Add Google Chrome apt key
   become: true
   apt_key:
