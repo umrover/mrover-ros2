@@ -7,7 +7,7 @@ import time
 from PyQt5.QtWidgets import *  # type: ignore
 from PyQt5.QtCore import *  # type: ignore
 from PyQt5.QtGui import QPainter  # type: ignore
-from PyQt5.QtSvg import QSvgRenderer  # type:ignore
+from PyQt5.QtSvg import QSvgRenderer  # type: ignore
 
 import rclpy
 import rclpy.time
