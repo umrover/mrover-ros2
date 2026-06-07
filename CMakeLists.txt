@@ -330,7 +330,7 @@ mrover_executable_from_component(cost_map perception/executables/cost_map.cpp co
 # Embedded
 
 set(MROVER_EMBEDDED_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/esw/fw/lib")
-if (EXISTS ${MROVER_EMBEDDED_ROOT_DIR} AND NOT APPLE)
+if (EXISTS ${MROVER_EMBEDDED_ROOT_DIR} AND NOT APPLE AND NOT MROVER_PORTABLE)
     add_subdirectory(esw/fw/lib)
 
     mrover_add_header_only_library(can_device esw/can_device)

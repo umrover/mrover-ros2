@@ -3,7 +3,7 @@
 
 set -Eeuo pipefail
 
-readonly GREY='\033[1;30m'
+readonly CYAN='\033[1;36m'
 readonly GREEN='\033[1;32m'
 readonly RED='\033[1;31m'
 readonly NC='\033[0m'
@@ -11,7 +11,7 @@ readonly NC='\033[0m'
 OS="$(uname -s)"
 
 if [[ "$OS" == "Darwin" ]] && ! command -v brew >/dev/null 2>&1; then
-  echo -e "${GREY}Installing Homebrew ...${NC}"
+  echo -e "${CYAN}Installing Homebrew ...${NC}"
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   if [ -f /opt/homebrew/bin/brew ]; then
     eval "$(/opt/homebrew/bin/brew shellenv)"
@@ -21,7 +21,7 @@ if [[ "$OS" == "Darwin" ]] && ! command -v brew >/dev/null 2>&1; then
 fi
 
 if ! command -v ansible-playbook >/dev/null 2>&1; then
-  echo -e "${GREY}Installing Ansible ...${NC}"
+  echo -e "${CYAN}Installing Ansible ...${NC}"
   case "$OS" in
     Darwin) brew install ansible ;;
     Linux)
@@ -41,7 +41,7 @@ if ! command -v ansible-playbook >/dev/null 2>&1; then
 fi
 
 if ! command -v pixi >/dev/null 2>&1; then
-  echo -e "${GREY}Installing pixi ...${NC}"
+  echo -e "${CYAN}Installing pixi ...${NC}"
   curl -fsSL https://pixi.sh/install.sh | sh
 fi
 export PATH="${HOME}/.pixi/bin:${PATH}"
@@ -49,16 +49,19 @@ export PATH="${HOME}/.pixi/bin:${PATH}"
 readonly MROVER_PATH=$(cd "$(dirname "$0")" && pwd)
 cd "${MROVER_PATH}"
 
-echo -e "${GREY}Updating submodules ...${NC}"
+echo -e "${CYAN}Updating submodules ...${NC}"
 git submodule update --init
 
-echo -e "${GREY}Installing pixi packages ...${NC}"
+echo -e "${CYAN}Fetching LFS objects ...${NC}"
+git lfs pull
+
+echo -e "${CYAN}Installing pixi packages ...${NC}"
 pixi install
 
-echo -e "${GREY}Installing Ansible collections ...${NC}"
+echo -e "${CYAN}Installing Ansible collections ...${NC}"
 ansible-galaxy collection install -r ansible/requirements.yml
 
-echo -e "${GREY}Running Ansible ...${NC}"
+echo -e "${CYAN}Running Ansible ...${NC}"
 "${MROVER_PATH}/ansible.sh" dev-portable.yml
 
 echo -e "${GREEN}Done. Open a new terminal and run 'mrover'.${NC}"
