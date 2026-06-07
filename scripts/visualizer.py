@@ -21,7 +21,6 @@ from dataclasses import dataclass
 from typing import Optional, List, Dict
 import threading
 
-
 STRUCTURE_TOPIC = "nav_structure"
 STATUS_TOPIC = "nav_state"
 
