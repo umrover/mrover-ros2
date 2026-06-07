@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Portable setup for macOS, Fedora, Arch, and other Linux distros.
-# Uses pixi for the build environment and Ansible for dev tooling.
+# First-time setup: clones the repo then runs setup.sh.
+# If you already have the repo, just run ./setup.sh directly.
 
 set -Eeuo pipefail
 
@@ -27,26 +27,6 @@ if [[ "$OS" == "Darwin" ]] && ! command -v brew >/dev/null 2>&1; then
   fi
 fi
 
-if ! command -v ansible-playbook >/dev/null 2>&1; then
-  echo -e "${GREY}Installing Ansible ...${NC}"
-  case "$OS" in
-    Darwin) brew install ansible ;;
-    Linux)
-      if command -v dnf >/dev/null 2>&1; then sudo dnf install -y ansible git git-lfs
-      elif command -v pacman >/dev/null 2>&1; then sudo pacman -S --noconfirm ansible git git-lfs
-      elif command -v apt-get >/dev/null 2>&1; then sudo apt-get install -y ansible git git-lfs
-      else
-        echo -e "${RED}Unsupported package manager. Install Ansible manually and re-run.${NC}"
-        exit 1
-      fi
-      ;;
-    *)
-      echo -e "${RED}Unsupported OS: ${OS}${NC}"
-      exit 1
-      ;;
-  esac
-fi
-
 if ! command -v git >/dev/null 2>&1; then
   echo -e "${GREY}Installing git ...${NC}"
   case "$OS" in
@@ -54,16 +34,11 @@ if ! command -v git >/dev/null 2>&1; then
     Linux)
       if command -v dnf >/dev/null 2>&1; then sudo dnf install -y git git-lfs
       elif command -v pacman >/dev/null 2>&1; then sudo pacman -S --noconfirm git git-lfs
+      elif command -v apt-get >/dev/null 2>&1; then sudo apt-get install -y git git-lfs
       fi
       ;;
   esac
 fi
-
-if ! command -v pixi >/dev/null 2>&1; then
-  echo -e "${GREY}Installing pixi ...${NC}"
-  curl -fsSL https://pixi.sh/install.sh | sh
-fi
-export PATH="${HOME}/.pixi/bin:${PATH}"
 
 readonly DEFAULT_MROVER_PATH=~/mrover
 read -r -p "$(echo -e "${GREY}Clone path [${DEFAULT_MROVER_PATH}]: ${NC}")" MROVER_PATH
@@ -73,17 +48,4 @@ if [ ! -d "${MROVER_PATH}/.git" ]; then
   git clone git@github.com:umrover/mrover-ros2 "${MROVER_PATH}"
 fi
 
-cd "${MROVER_PATH}"
-git submodule update --init
-
-echo -e "${GREY}Installing pixi packages ...${NC}"
-pixi install
-
-echo -e "${GREY}Installing Ansible collections ...${NC}"
-ansible-galaxy collection install -r ansible/requirements.yml
-
-echo -e "${GREY}Running Ansible ...${NC}"
-ansible-playbook -i "localhost," -c local ansible/dev-portable.yml \
-  --extra-vars "mrover_repo=${MROVER_PATH}"
-
-echo -e "${GREEN}Done. Open a new terminal and run 'mrover'.${NC}"
+exec "${MROVER_PATH}/setup.sh"
