@@ -106,14 +106,14 @@
   ansible.builtin.command: ./ansible/roles/jetson_flash/files/scripts/build_jetson_kernel.sh
   failed_when: false # this is not ideal
   args:
-    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
+    chdir: "{{ mrover_repo }}"
     # no creates here because it is always desired to recompile the kernel if running this ansible
 
 - name: Build PCAN
   become: true
   ansible.builtin.command: ./ansible/roles/jetson_flash/files/scripts/build_pcan_drivers.sh {{ pcan_version_major }} {{ pcan_version_minor }} {{ pcan_version_patch }}
   args:
-    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
+    chdir: "{{ mrover_repo }}"
     # no creates here because we always rebuild
 
 - name: Flash Jetson
