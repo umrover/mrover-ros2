@@ -9,6 +9,7 @@ readonly NC='\033[0m'
 BLACK_ARGS=(
   "--line-length=120"
   "--color"
+  "--target-version=py310"
 )
 
 # Just do a dry run if the "fix" argument is not passed
@@ -37,7 +38,7 @@ function find_executable() {
   echo "${path}"
 }
 
-readonly BLACK_PATH=$(find_executable black 23.9.1)
+readonly BLACK_PATH=$(find_executable black 26.5.1)
 
 echo
 echo "Style checking Python with black ..."
