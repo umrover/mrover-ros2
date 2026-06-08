@@ -14,7 +14,6 @@ readonly YELLOW_BOLD='\033[1;33m'
 BLACK_ARGS=(
   "--line-length=120"
   "--color"
-  "--target-version=py310"
 )
 CLANG_FORMAT_ARGS=(
   "-style=file"

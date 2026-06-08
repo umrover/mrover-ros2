@@ -50,3 +50,4 @@ build-backend = "flit_core.buildapi"
 
 [tool.black]
 line-length = 120
+target-version = ["py310"]

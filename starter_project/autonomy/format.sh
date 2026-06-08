@@ -9,7 +9,6 @@ readonly NC='\033[0m'
 BLACK_ARGS=(
   "--line-length=120"
   "--color"
-  "--target-version=py310"
 )
 
 # Just do a dry run if the "fix" argument is not passed
