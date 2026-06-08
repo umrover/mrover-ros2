@@ -37,7 +37,7 @@ function find_executable() {
   echo "${path}"
 }
 
-readonly BLACK_PATH=$(find_executable black 23.9.1)
+readonly BLACK_PATH=$(find_executable black 26.5.1)
 
 echo
 echo "Style checking Python with black ..."
