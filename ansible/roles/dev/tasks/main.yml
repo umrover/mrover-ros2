@@ -1,34 +1,34 @@
 - name: Install platform-specific packages
-  include_tasks: "{{ ansible_pkg_mgr }}.yml"
+  ansible.builtin.include_tasks: "{{ ansible_pkg_mgr }}.yml"
 
 - name: Install oh-my-zsh
-  git:
+  ansible.builtin.git:
     repo: https://github.com/ohmyzsh/ohmyzsh.git
     dest: ~/.oh-my-zsh
     version: master
 
 - name: Install zsh-autosuggestions
-  git:
+  ansible.builtin.git:
     repo: https://github.com/zsh-users/zsh-autosuggestions
     dest: ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
 
 - name: Install zsh-syntax-highlighting
-  git:
+  ansible.builtin.git:
     repo: https://github.com/zsh-users/zsh-syntax-highlighting
     dest: ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
 
 - name: Deploy mrover oh-my-zsh theme
-  copy:
+  ansible.builtin.copy:
     src: files/home/.oh-my-zsh/custom/themes/mrover.zsh-theme
     dest: ~/.oh-my-zsh/custom/themes/mrover.zsh-theme
 
 - name: Deploy mrover tmux config
-  copy:
+  ansible.builtin.copy:
     src: files/home/.mrover.tmux.conf
     dest: ~/.mrover.tmux.conf
 
 - name: Source mrover tmux config
-  blockinfile:
+  ansible.builtin.blockinfile:
     path: ~/.tmux.conf
     marker: "# {mark} MROVER"
     block: source-file ~/.mrover.tmux.conf
@@ -36,8 +36,9 @@
 
 - name: Set zsh as default shell
   become: true
-  command: chsh -s "$(which zsh)" "{{ ansible_user_id }}"
-  changed_when: false
+  ansible.builtin.user:
+    name: "{{ ansible_facts['user_id'] }}"
+    shell: /usr/bin/zsh
 
 - name: Install VSCode extension
-  command: code --install-extension ../pkg/file-selector-0.0.1.vsix
+  ansible.builtin.command: code --install-extension {{ mrover_repo }}/pkg/file-selector-0.0.1.vsix

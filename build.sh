@@ -15,15 +15,18 @@ fi
 
 echo "Using build profile: $build_profile"
 
-# Cap parallel jobs to avoid OOM. Dawn and Boost headers push each TU to ~2 GB peak.
-# Use floor(MemAvailableKB / 2097152) i.e. one job per ~2 GB of available RAM,
-# capped to the number of cores.
-available_kb=$(awk '/MemAvailable/ {print $2}' /proc/meminfo 2>/dev/null || echo 8388608)
-jobs_by_mem=$(( available_kb / 2097152 ))
-jobs_by_cpu=$(nproc)
-parallel_jobs=$(( jobs_by_mem < jobs_by_cpu ? jobs_by_mem : jobs_by_cpu ))
-parallel_jobs=$(( parallel_jobs > 1 ? parallel_jobs : 1 ))
-echo "Parallel jobs: ${parallel_jobs}"
+# Cap parallel jobs to avoid OOM. The simulator's TUs (Bullet + Eigen + Boost +
+# ImGui + webgpu PCH) can each peak well above 2 GB, so building N cores at once
+# easily exhausts RAM on weaker machines.
+#
+# Default to a SINGLE job (safe everywhere, including low-RAM laptops). Override
+# on a strong machine with: MROVER_BUILD_JOBS=N ./build.sh
+parallel_jobs="${MROVER_BUILD_JOBS:-1}"
+if ! [[ "${parallel_jobs}" =~ ^[1-9][0-9]*$ ]]; then
+    echo "MROVER_BUILD_JOBS must be a positive integer, got '${parallel_jobs}'" >&2
+    exit 1
+fi
+echo "Parallel jobs: ${parallel_jobs} (override with MROVER_BUILD_JOBS=N)"
 
 if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
     bash tools/setup_dawn.sh
@@ -31,6 +34,7 @@ if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
     CMAKE_BUILD_PARALLEL_LEVEL="${parallel_jobs}" \
     COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification \
         colcon build \
+        --parallel-workers "${parallel_jobs}" \
         --cmake-args -G Ninja -W no-dev \
             -DCMAKE_BUILD_TYPE="${build_profile}" \
             -DMROVER_PORTABLE=ON \
@@ -40,15 +44,15 @@ if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
 
     ln -sf "$(pwd)/build/mrover/compile_commands.json" "$(pwd)/compile_commands.json"
 else
-    pushd ../..
-
     if [ -x /usr/local/cuda-12/bin/nvcc ]; then
         export CUDAHOSTCXX=g++-9
         export CUDACXX=/usr/local/cuda-12/bin/nvcc
     fi
 
+    CMAKE_BUILD_PARALLEL_LEVEL="${parallel_jobs}" \
     COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification \
         colcon build \
+        --parallel-workers "${parallel_jobs}" \
         --cmake-args -G Ninja -W no-dev \
             -DCMAKE_BUILD_TYPE="${build_profile}" \
         --symlink-install \
@@ -57,6 +61,6 @@ else
         --install-base "install/${build_profile}"
 
     rm -rf "$(pwd)/build/${build_profile}/mrover/.cmake/api"
-    ln -sf "$(pwd)/build/${build_profile}/compile_commands.json" \
-           "$(pwd)/src/mrover/compile_commands.json"
+    ln -sf "$(pwd)/build/${build_profile}/mrover/compile_commands.json" \
+           "$(pwd)/compile_commands.json"
 fi

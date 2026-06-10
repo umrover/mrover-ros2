@@ -1,32 +1,57 @@
+- name: Block snapd via apt preferences
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/apt/preferences.d/nosnap.pref
+    content: |
+      Package: snapd
+      Pin: release a=*
+      Pin-Priority: -10
+
+- name: Add Google Chrome apt key
+  become: true
+  ansible.builtin.get_url:
+    url: https://dl.google.com/linux/linux_signing_key.pub
+    dest: /usr/share/keyrings/google-chrome.gpg
+    mode: '0644'
+
+- name: Add Google Chrome apt repo
+  become: true
+  ansible.builtin.apt_repository:
+    filename: google-chrome
+    repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main"
+
 - name: Add GitHub CLI apt key
   become: true
-  apt_key:
+  ansible.builtin.get_url:
     url: https://cli.github.com/packages/githubcli-archive-keyring.gpg
-    keyring: /usr/share/keyrings/githubcli-archive-keyring.gpg
+    dest: /usr/share/keyrings/githubcli-archive-keyring.gpg
+    mode: '0644'
 
 - name: Add GitHub CLI apt repo
   become: true
-  apt_repository:
-    repo: deb [signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main"
     filename: github-cli
 
 - name: Add VSCode apt key
   become: true
-  apt_key:
+  ansible.builtin.get_url:
     url: https://packages.microsoft.com/keys/microsoft.asc
-    keyring: /usr/share/keyrings/packages.microsoft.gpg
+    dest: /usr/share/keyrings/packages.microsoft.asc
+    mode: '0644'
 
 - name: Add VSCode apt repo
   become: true
-  apt_repository:
+  ansible.builtin.apt_repository:
     filename: vscode
-    repo: "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main"
+    repo: "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/packages.microsoft.asc] https://packages.microsoft.com/repos/code stable main"
 
 - name: Install apt packages
   become: true
-  apt:
+  ansible.builtin.apt:
     cache_valid_time: 3600
-    state: latest
+    update_cache: true
+    state: present
     name:
       - zsh
       - fzf
@@ -34,3 +59,5 @@
       - htop
       - gh
       - code
+      - git-lfs
+      - google-chrome-stable

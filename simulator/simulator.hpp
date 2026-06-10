@@ -338,6 +338,7 @@ namespace mrover {
 
         bool mHasFocus = false;
         bool mInGui = false;
+        bool mImGuiInitialized = false;
 
         Uniform<SceneUniforms> mSceneUniforms;
         Uniform<SkyboxUniforms> mSkyboxUniforms;

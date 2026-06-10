@@ -97,7 +97,7 @@ include(FetchContent)
 FetchContent_Declare(
     imgui
     GIT_REPOSITORY https://github.com/ocornut/imgui.git
-    GIT_TAG        v1.91.9
+    GIT_TAG        v1.92.8
     GIT_SHALLOW    TRUE
 )
 FetchContent_Populate(imgui)
@@ -330,7 +330,7 @@ mrover_executable_from_component(cost_map perception/executables/cost_map.cpp co
 # Embedded
 
 set(MROVER_EMBEDDED_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/esw/fw/lib")
-if (EXISTS ${MROVER_EMBEDDED_ROOT_DIR} AND NOT APPLE)
+if (EXISTS ${MROVER_EMBEDDED_ROOT_DIR} AND NOT APPLE AND NOT MROVER_PORTABLE)
     add_subdirectory(esw/fw/lib)
 
     mrover_add_header_only_library(can_device esw/can_device)
@@ -376,7 +376,7 @@ mrover_add_node(arm_controller navigation/arm_controller/arm_controller.cpp navi
 target_link_libraries(arm_controller lie)
 ament_target_dependencies(arm_controller rclcpp)
 
-if (Gst_FOUND AND GstApp_FOUND)
+if (NOT MROVER_PORTABLE AND Gst_FOUND AND GstApp_FOUND)
     if (LibUdev_FOUND)
         mrover_add_component(gst_camera_server esw/gst_camera_server/*.c* esw/gst_camera_server/pch.hpp GstCameraServer)
         mrover_link_component(gst_camera_server PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_videoio opencv_imgcodecs opencv_imgproc gst_utils parameter_utils)
@@ -386,7 +386,7 @@ if (Gst_FOUND AND GstApp_FOUND)
     endif ()
 endif ()
 
-if (NetLink_FOUND AND NetLinkRoute_FOUND)
+if (NOT MROVER_PORTABLE AND NetLink_FOUND AND NetLinkRoute_FOUND)
     mrover_add_node(can_bridge esw/can_bridge/*.cpp esw/can_bridge/pch.hpp esw/can_bridge/can_bridge.hpp)
     target_link_libraries(can_bridge dbc PkgConfig::NetLink PkgConfig::NetLinkRoute)
     ament_target_dependencies(can_bridge rclcpp)

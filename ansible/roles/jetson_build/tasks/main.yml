@@ -1,37 +1,37 @@
 - name: Jetson Stats
   become: true
-  pip:
+  ansible.builtin.pip:
     name: jetson-stats
 
 - name: Download CUDA Keyring
-  get_url:
+  ansible.builtin.get_url:
     url: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/arm64/cuda-keyring_1.1-1_all.deb
     dest: /tmp/cuda-keyring_1.1-1_all.deb
 
 - name: Install CUDA Keyring
   become: true
-  apt:
+  ansible.builtin.apt:
     deb: /tmp/cuda-keyring_1.1-1_all.deb
 
 - name: Install APT Packages
   become: true
-  apt:
+  ansible.builtin.apt:
     cache_valid_time: 604800
-    state: latest
+    state: present
     name:
       - zstd # Required to unpack ZED installer
       - g++-9
       - nvidia-jetpack
 
 - name: ZED SDK Download
-  get_url:
+  ansible.builtin.get_url:
     url: https://download.stereolabs.com/zedsdk/5.1/l4t36.4/jetsons
     dest: /tmp/ZED_SDK_Tegra_L4T36.4_v5.1.2.zstd.run
     mode: 0755
 
 - name: ZED SDK Install
   # Silent mode prevents any user input prompting
-  command: /tmp/ZED_SDK_Tegra_L4T36.4_v5.1.2.zstd.run -- silent
+  ansible.builtin.command: /tmp/ZED_SDK_Tegra_L4T36.4_v5.1.2.zstd.run -- silent
   args:
     creates: /usr/local/zed
 
@@ -44,11 +44,11 @@
 
 - name: Udev Reload Rules
   become: true
-  command: udevadm control --reload-rules
+  ansible.builtin.command: udevadm control --reload-rules
 
 - name: Udev TTY Trigger
   become: true
-  command: udevadm trigger --subsystem-match=tty
+  ansible.builtin.command: udevadm trigger --subsystem-match=tty
 
 - name: Sync blacklists
   become: true
@@ -59,7 +59,7 @@
 
 - name: Build OpenCV
   become: true
-  command: ./ansible/roles/jetson_build/files/scripts/build_opencv.sh
+  ansible.builtin.command: ./ansible/roles/jetson_build/files/scripts/build_opencv.sh
   args:
     chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
     creates: /usr/local/include/opencv4
@@ -79,7 +79,7 @@
     recursive: true
 
 - name: Reload Systemd Daemon
-  systemd_service:
+  ansible.builtin.systemd_service:
     state: restarted
     daemon_reload: true
     name: can

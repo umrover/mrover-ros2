@@ -459,11 +459,16 @@ namespace mrover {
             ImGui::CreateContext();
             ImGui_ImplGlfw_InitForOther(mWindow.get(), true);
             ImGui_ImplWGPU_InitInfo initInfo;
-            initInfo.DepthStencilFormat = DEPTH_FORMAT;
+            // The GUI overlay is drawn in its own color-only pass (see renderUpdate), so the imgui
+            // pipeline must NOT expect a depth-stencil attachment. Leaving this as a real depth
+            // format makes the pipeline's attachment state incompatible with the GUI pass and Dawn
+            // rejects SetPipeline, so the GUI never renders.
+            initInfo.DepthStencilFormat = wgpu::TextureFormat::Undefined;
             initInfo.RenderTargetFormat = COLOR_FORMAT;
             initInfo.Device = mDevice;
             initInfo.NumFramesInFlight = 1;
             ImGui_ImplWGPU_Init(&initInfo);
+            mImGuiInitialized = true;
 
             int x, y, w, h;
             glfwGetMonitorWorkarea(glfwGetPrimaryMonitor(), &x, &y, &w, &h);
