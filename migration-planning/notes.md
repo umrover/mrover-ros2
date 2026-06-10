@@ -1,0 +1,1 @@
+- current moteus version depends on numpy 1, ros2 jazzy built against numpy 2, moteus needs to be ugpraded
