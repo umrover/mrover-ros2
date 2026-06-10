@@ -142,6 +142,7 @@ endif ()
 
 include_directories(BEFORE SYSTEM preload)
 
+include(FetchContent)
 include(cmake/macros.cmake)
 # include(cmake/deps.cmake)
 
@@ -210,6 +211,7 @@ mrover_add_library(lie lie/*.cpp lie)
 target_link_libraries(lie MANIF::manif)
 ament_target_dependencies(lie rclcpp geometry_msgs tf2 tf2_ros)
 
+mrover_add_header_only_library(units units)
 mrover_add_header_only_library(loop_profiler loop_profiler)
 mrover_add_header_only_library(parameter_utils parameter_utils)
 mrover_add_header_only_library(gst_utils gst_utils)
@@ -321,9 +323,16 @@ mrover_executable_from_component(cost_map perception/executables/cost_map.cpp co
 
 # Embedded
 
-set(MROVER_EMBEDDED_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/esw/fw/lib")
-if (EXISTS ${MROVER_EMBEDDED_ROOT_DIR} AND NOT APPLE)
-    add_subdirectory(esw/fw/lib)
+# esw can messaging library (for dbc library)
+# NOTE: this needs to be upreved for every formal release of the esw can messaging library (lib/dbc/)
+set(MROVER_CAN_VERSION "v1.0.0")
+FetchContent_Declare(
+    mrover_can
+    URL "https://github.com/umrover/mrover-esw/releases/download/${MROVER_CAN_VERSION}/mrover_can.tar.gz"
+)
+FetchContent_MakeAvailable(mrover_can)
+
+if (NOT APPLE)
 
     mrover_add_header_only_library(can_device esw/can_device)
     target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES} moteus dbc)
