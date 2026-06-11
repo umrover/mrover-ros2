@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.x'
       - name: Install Python tools
@@ -27,7 +27,7 @@ jobs:
           sudo apt-get install -y clang-format-18
       - name: Install shellcheck
         run: sudo apt-get install -y shellcheck
-      - uses: oven-sh/setup-bun@v1
+      - uses: oven-sh/setup-bun@v2
       - name: Install Frontend Dependencies
         run: cd teleoperation/basestation_gui/frontend && bun install
       - name: Run Style Check
