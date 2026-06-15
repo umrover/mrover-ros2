@@ -43,7 +43,11 @@ function find_executable() {
 
 ## Check that all tools are installed
 
-readonly CLANG_FORMAT_PATH=$(find_executable clang-format-18)
+if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
+  readonly CLANG_FORMAT_PATH=$(find_executable clang-format)
+else
+  readonly CLANG_FORMAT_PATH=$(find_executable clang-format-18)
+fi
 readonly BLACK_PATH=$(find_executable black)
 readonly MYPY_PATH=$(find_executable mypy)
 

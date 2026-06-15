@@ -56,6 +56,8 @@ mypy = "*"
 ipython = "*"
 pytest = "*"
 pytest-asyncio = "*"
+clang-format = "18.*"
+shellcheck = "*"
 
 [environments]
 default = { solve-group = "default" }

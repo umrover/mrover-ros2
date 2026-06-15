@@ -8,67 +8,36 @@ on:
     branches:
       - main
       - integration
+
 jobs:
   style:
     name: Style Checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6.0.3
+      - uses: prefix-dev/setup-pixi@v0.9.6
         with:
-          python-version: '3.x'
-      - name: Install Python tools
-        run: pip install black==24.8.0 mypy==1.11.2
-      - name: Install clang-format
-        run: |
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo add-apt-repository 'deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main'
-          sudo apt-get update
-          sudo apt-get install -y clang-format-18
-      - name: Install shellcheck
-        run: sudo apt-get install -y shellcheck
-      - uses: oven-sh/setup-bun@v1
-      - name: Install Frontend Dependencies
-        run: cd teleoperation/basestation_gui/frontend && bun install
-      - name: Run Style Check
+          environments: dev
+          activate-environment: dev
+          cache: true
+      - name: Style Check
         run: ./style.sh
 
-  ci:
+  build:
     name: Build
     runs-on: ubuntu-latest
     needs: style
-    container:
-      image: umrover1/ros2:latest
-      # GitHub is silly and requires us to be running as root for their checkout action
-      # Our docker container exports the user mrover, so we have to specific this explicitly
-      options: --user root
     steps:
-      - uses: actions/checkout@v4
-        with:
-          # Re-enable when we put the simulator in the CI pipeline.
-          # lfs: "true"
-          # This makes sure that $GITHUB_WORKSPACE is the catkin workspace path
-          path: "src/mrover"
-      - name: Checkout ESW Submodule
-        if: github.event.pull_request.draft == false
-        # Use this instead of `submodules: true` above to avoid checking out all top-level submodules
-        run: git submodule update --init esw/fw
-        working-directory: "${{ github.workspace }}/src/mrover"
+      - uses: actions/checkout@v6.0.3
       - name: Compiler Cache
         if: github.event.pull_request.draft == false
-        uses: hendrikmuhs/ccache-action@v1.2
-      - name: manif Submodule Update
-        if: github.event.pull_request.draft == false
-        run: cd $GITHUB_WORKSPACE/src/mrover/ && git submodule update --init deps/manif
+        uses: hendrikmuhs/ccache-action@v1.2.23
+      - uses: prefix-dev/setup-pixi@v0.9.6
+        with:
+          activate-environment: true
+          cache: true
       - name: Build
         if: github.event.pull_request.draft == false
-        run: . /opt/ros/humble/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./build.sh
-      # - name: Build Without Static Analysis
-      #   if: github.event.pull_request.draft == false && github.event.pull_request.base.ref != 'refs/heads/main'
-      #   run: . /opt/ros/humble/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./build.sh
-      # - name: Build With Static Analysis
-      #   if: github.event_name == 'push' && github.event.pull_request.base.ref == 'refs/heads/main'
-      #   run: . /opt/ros/humble/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./build_ci.sh
-      # - name: Test
-      #   if: github.event.pull_request.draft == false
-      #   run: . /opt/ros/noetic/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && . $GITHUB_WORKSPACE/devel/setup.sh && catkin test && rostest mrover integration.test --text
+        env:
+          MROVER_BUILD_JOBS: 2
+        run: ./build.sh
