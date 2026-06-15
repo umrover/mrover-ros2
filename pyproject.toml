@@ -31,9 +31,10 @@ rover = [
     "moteus>=0.3.72",
 ]
 dev = [
-    "black>=24.8.0",
-    "mypy>=1.11.2",
-    "ipython>=8.27.0",
+    # If you update these, be sure to update the correspondig version checkers in style.sh
+    "black==26.5.1",
+    "mypy==1.11.2",
+    "ipython==8.27.0",
 ]
 test = [
     "pytest>=7.0.0",
@@ -51,3 +52,4 @@ build-backend = "flit_core.buildapi"
 
 [tool.black]
 line-length = 120
+target-version = ["py310"]
