@@ -60,27 +60,18 @@
     name: "{{ ansible_facts['user_id'] }}"
     shell: /usr/bin/zsh
 
-- name: Deploy mrover shell config (Linux)
-  ansible.builtin.copy:
-    src: home/.mrover.zshenv
-    dest: ~/.mrover.zshenv
-  when: ansible_system == 'Linux'
-
-- name: Wire mrover shell env (macOS)
+- name: Wire mrover shell env
   ansible.builtin.blockinfile:
     path: ~/.zshrc
     marker: "# {mark} MROVER"
-    block: '[[ -d "{{ mrover_repo }}" ]] && source "{{ mrover_repo }}/tools/mrover.zshenv"'
+    block: '[[ -f "${MROVER_REPO:-$HOME/mrover-ros2}/tools/mrover.zshenv" ]] && source "${MROVER_REPO:-$HOME/mrover-ros2}/tools/mrover.zshenv"'
     create: true
-  when: ansible_system == 'Darwin'
 
-- name: Wire mrover shell env (Linux)
-  ansible.builtin.blockinfile:
-    path: ~/.zshenv
-    marker: "# {mark} MROVER"
-    block: source ~/.mrover.zshenv
-    create: true
-  when: ansible_system == 'Linux'
+# - name: Remove legacy mrover zshenv wiring
+#   ansible.builtin.blockinfile:
+#     path: ~/.zshenv
+#     marker: "# {mark} MROVER"
+#     state: absent
 
 - name: Initialize Git LFS
   ansible.builtin.command: git lfs install

@@ -45,6 +45,9 @@ ros-jazzy-rviz2 = ">=14.1.19,<15"
 ipython = "*"
 pytest = "*"
 pytest-asyncio = "*"
+basedpyright = "*"
+black = ">=26.5.1,<27"
+clang-format = "18.*"
 
 [target.linux-64.dependencies]
 tbb = "*"
@@ -65,5 +68,4 @@ bun = "*"
 mrover = { path = ".", editable = true }
 
 [environments]
-mrover = { solve-group = "default" }
 style = { features = ["style"], solve-group = "style" }
