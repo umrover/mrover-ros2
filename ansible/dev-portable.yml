@@ -7,5 +7,5 @@
       blockinfile:
         path: ~/.zshrc
         marker: "# {mark} MROVER"
-        block: 'source "{{ mrover_repo }}/tools/mrover.zshenv"'
+        block: '[[ -d "{{ mrover_repo }}" ]] && source "{{ mrover_repo }}/tools/mrover.zshenv"'
         create: true
