@@ -42,13 +42,9 @@ gstreamer = "*"
 gst-plugins-base = "*"
 bun = "*"
 ros-jazzy-rviz2 = ">=14.1.19,<15"
-black = "*"
-mypy = "*"
 ipython = "*"
 pytest = "*"
 pytest-asyncio = "*"
-clang-format = "18.*"
-shellcheck = "*"
 
 [target.linux-64.dependencies]
 tbb = "*"
@@ -57,5 +53,17 @@ tbb-devel = "*"
 [pypi-dependencies]
 mrover = { path = ".", editable = true }
 
+[feature.style.dependencies]
+python = "3.12.*"
+black = "*"
+mypy = "*"
+clang-format = "18.*"
+shellcheck = "*"
+bun = "*"
+
+[feature.style.pypi-dependencies]
+mrover = { path = ".", editable = true }
+
 [environments]
 mrover = { solve-group = "default" }
+style = { features = ["style"], solve-group = "style" }
