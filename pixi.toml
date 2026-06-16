@@ -42,15 +42,6 @@ gstreamer = "*"
 gst-plugins-base = "*"
 bun = "*"
 ros-jazzy-rviz2 = ">=14.1.19,<15"
-
-[target.linux-64.dependencies]
-tbb = "*"
-tbb-devel = "*"
-
-[pypi-dependencies]
-mrover = { path = ".", editable = true }
-
-[feature.dev.dependencies]
 black = "*"
 mypy = "*"
 ipython = "*"
@@ -59,6 +50,12 @@ pytest-asyncio = "*"
 clang-format = "18.*"
 shellcheck = "*"
 
+[target.linux-64.dependencies]
+tbb = "*"
+tbb-devel = "*"
+
+[pypi-dependencies]
+mrover = { path = ".", editable = true }
+
 [environments]
-default = { solve-group = "default" }
-dev = { features = ["dev"], solve-group = "default" }
+mrover = { solve-group = "default" }
