@@ -16,12 +16,26 @@ fi
 echo "Using build profile: $build_profile"
 
 # Cap parallel jobs to avoid OOM. The simulator's TUs (Bullet + Eigen + Boost +
-# ImGui + webgpu PCH) can each peak well above 2 GB, so building N cores at once
-# easily exhausts RAM on weaker machines.
-#
-# Default to a SINGLE job (safe everywhere, including low-RAM laptops). Override
-# on a strong machine with: MROVER_BUILD_JOBS=N ./build.sh
-parallel_jobs="${MROVER_BUILD_JOBS:-1}"
+# ImGui + webgpu PCH) can each peak well above 2 GB, so we derive a safe default
+# from total RAM (assuming ~3 GB peak per job) rather than hardcoding 1.
+if [[ -z "${MROVER_BUILD_JOBS:-}" ]]; then
+    if page_size=$(sysctl -n hw.pagesize 2>/dev/null); then
+        # macOS: sum free + inactive pages (inactive can be reclaimed immediately)
+        free_pages=$(vm_stat | awk '/^Pages free:/{gsub(/\./,"",$3); print $3}')
+        inactive_pages=$(vm_stat | awk '/^Pages inactive:/{gsub(/\./,"",$3); print $3}')
+        avail_bytes=$(( (free_pages + inactive_pages) * page_size ))
+        auto_jobs=$(( avail_bytes / (3 * 1024 * 1024 * 1024) ))
+    elif [[ -r /proc/meminfo ]]; then
+        # Linux: MemAvailable already accounts for reclaimable caches
+        avail_kb=$(awk '/^MemAvailable:/{print $2}' /proc/meminfo)
+        auto_jobs=$(( avail_kb / (3 * 1024 * 1024) ))
+    else
+        auto_jobs=1
+    fi
+    parallel_jobs=$(( auto_jobs < 1 ? 1 : auto_jobs ))
+else
+    parallel_jobs="${MROVER_BUILD_JOBS}"
+fi
 if ! [[ "${parallel_jobs}" =~ ^[1-9][0-9]*$ ]]; then
     echo "MROVER_BUILD_JOBS must be a positive integer, got '${parallel_jobs}'" >&2
     exit 1
@@ -31,6 +45,8 @@ echo "Parallel jobs: ${parallel_jobs} (override with MROVER_BUILD_JOBS=N)"
 if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
     bash tools/setup_dawn.sh
 
+    macos_sysroot=$(xcrun --sdk macosx --show-sdk-path)
+
     CMAKE_BUILD_PARALLEL_LEVEL="${parallel_jobs}" \
     COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification \
         colcon build \
@@ -39,6 +55,7 @@ if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
             -DCMAKE_BUILD_TYPE="${build_profile}" \
             -DMROVER_PORTABLE=ON \
             -DCMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
+            -DCMAKE_OSX_SYSROOT="${macos_sysroot}" \
         --symlink-install \
         --event-handlers console_direct+
 

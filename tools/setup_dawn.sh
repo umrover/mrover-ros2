@@ -49,7 +49,7 @@ tmpdir=$(mktemp -d)
 trap 'rm -rf "${tmpdir}"' EXIT
 
 echo "Downloading Dawn ${DAWN_VERSION} for ${OS}/${ARCH}..."
-curl -fSL "${BASE_URL}/${BINARY_TARBALL}" -o "${tmpdir}/dawn.tar.gz"
+curl -fL --progress-bar "${BASE_URL}/${BINARY_TARBALL}" -o "${tmpdir}/dawn.tar.gz"
 
 rm -rf "${DEST}"
 mkdir -p "${DEST}"

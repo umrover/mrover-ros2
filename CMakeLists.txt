@@ -19,6 +19,10 @@ set(node_plugins "")
 
 if (APPLE)
     set(CMAKE_IGNORE_PATH /opt/homebrew)
+    # Everything lives in the pixi prefix; skip scanning system and environment
+    # paths for every find_package call -- this cuts configure time significantly.
+    set(CMAKE_FIND_USE_CMAKE_SYSTEM_PATH OFF)
+    set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH OFF)
     find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 endif ()
 
@@ -177,6 +181,22 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     ${MROVER_ACTION_FILE_PATHS}
     DEPENDENCIES nav_msgs sensor_msgs geometry_msgs action_msgs
 )
+
+# rosidl sets raw source-prefixed paths on INTERFACE_INCLUDE_DIRECTORIES, which
+# CMP0052 rejects. The policy explicitly permits such paths when wrapped in
+# $<BUILD_INTERFACE:...>, marking them as build-only (not exported).
+if(TARGET ${PROJECT_NAME}__rosidl_generator_py)
+    get_target_property(_py_iid ${PROJECT_NAME}__rosidl_generator_py INTERFACE_INCLUDE_DIRECTORIES)
+    if(_py_iid)
+        set(_py_iid_wrapped "")
+        foreach(_dir IN LISTS _py_iid)
+            list(APPEND _py_iid_wrapped "$<BUILD_INTERFACE:${_dir}>")
+        endforeach()
+        set_target_properties(${PROJECT_NAME}__rosidl_generator_py PROPERTIES
+            INTERFACE_INCLUDE_DIRECTORIES "${_py_iid_wrapped}"
+        )
+    endif()
+endif()
 
 # Starter project 
 # TODO (ali): delete once AutonomyStarterProject.cmake is fixed
