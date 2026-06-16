@@ -5,7 +5,7 @@ from state_machine.state import State
 from . import stuck_recovery
 from .approach_target import ApproachTargetState
 from .context import Context
-from coordinate_utils import is_high_cost_point
+from .coordinate_utils import is_high_cost_point
 from geometry_msgs.msg import Twist
 
 

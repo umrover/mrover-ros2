@@ -91,6 +91,8 @@ class RecordingManager:
             conn = get_recordings_db()
             cur = conn.execute("INSERT INTO recordings (name, is_drone) VALUES (?, ?)", (name, is_drone))
             recording_id = cur.lastrowid
+            if recording_id is None:
+                raise RuntimeError("Failed to create recording")
             conn.commit()
         finally:
             if conn:

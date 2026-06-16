@@ -69,9 +69,7 @@ class WebSocketHandler:
                 data_to_send = {"type": gui_msg_type, **message_to_ordereddict(ros_message)}
                 self.schedule_send(data_to_send)
 
-        sub = self.node.create_subscription(
-            topic_type, topic_name, callback, qos_profile=qos_profile_sensor_data
-        )
+        sub = self.node.create_subscription(topic_type, topic_name, callback, qos_profile=qos_profile_sensor_data)
         self.subscriptions.append(sub)
 
     async def cleanup(self):

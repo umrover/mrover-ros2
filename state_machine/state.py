@@ -59,11 +59,11 @@ class ExitState(State):
     State to be returned to signify that the state machine should exit.
     """
 
-    def on_enter(self, ctx):
+    def on_enter(self, context):
         pass
 
-    def on_exit(self, ctx):
+    def on_exit(self, context):
         pass
 
-    def on_loop(self, ctx) -> State:
+    def on_loop(self, context) -> State:
         return self

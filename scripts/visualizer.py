@@ -4,8 +4,8 @@ from __future__ import annotations
 import signal
 import graphviz  # type: ignore
 import time
-from PyQt5.QtWidgets import *  # type: ignore
-from PyQt5.QtCore import *  # type: ignore
+from PyQt5.QtWidgets import QApplication, QLabel, QWidget  # type: ignore
+from PyQt5.QtCore import QTimer  # type: ignore
 from PyQt5.QtGui import QPainter  # type: ignore
 from PyQt5.QtSvg import QSvgRenderer  # type: ignore
 

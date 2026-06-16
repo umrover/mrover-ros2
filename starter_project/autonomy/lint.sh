@@ -26,8 +26,8 @@ function find_executable() {
   echo "${path}"
 }
 
-readonly MYPY_PATH=$(find_executable mypy 1.5.1)
+readonly BASEDPYRIGHT_PATH=$(find_executable basedpyright "")
 
 echo
-echo "Style checking Python with mypy ..."
-"${MYPY_PATH}" --config-file=mypy.ini --check ./src
+echo "Type checking Python with basedpyright ..."
+"${BASEDPYRIGHT_PATH}" ./src --level error

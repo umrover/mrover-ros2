@@ -22,6 +22,7 @@ def get_node() -> Node:
         with lock:
             if not initialized.is_set():
                 init_ros()
+    assert node is not None
     return node
 
 
