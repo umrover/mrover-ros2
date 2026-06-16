@@ -2,10 +2,3 @@
 - hosts: all
   roles:
     - dev
-  post_tasks:
-    - name: Wire mrover portable shell env
-      blockinfile:
-        path: ~/.zshrc
-        marker: "# {mark} MROVER"
-        block: '[[ -d "{{ mrover_repo }}" ]] && source "{{ mrover_repo }}/tools/mrover.zshenv"'
-        create: true

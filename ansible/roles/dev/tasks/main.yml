@@ -1,6 +1,26 @@
 - name: Install platform-specific packages
   ansible.builtin.include_tasks: "{{ ansible_pkg_mgr }}.yml"
 
+- name: Ensure pixi bin directory exists (Linux)
+  ansible.builtin.file:
+    path: "{{ ansible_env.HOME }}/.pixi/bin"
+    state: directory
+    mode: '0755'
+  when: ansible_system == 'Linux'
+
+- name: Install pixi (Linux)
+  ansible.builtin.get_url:
+    url: "https://github.com/prefix-dev/pixi/releases/latest/download/pixi-{{ ansible_architecture }}-unknown-linux-musl"
+    dest: "{{ ansible_env.HOME }}/.pixi/bin/pixi"
+    mode: '0755'
+    force: false
+  when: ansible_system == 'Linux'
+
+- name: Update git submodules
+  ansible.builtin.command:
+    cmd: git submodule update --init
+    chdir: "{{ mrover_repo }}"
+
 - name: Install oh-my-zsh
   ansible.builtin.git:
     repo: https://github.com/ohmyzsh/ohmyzsh.git
@@ -39,6 +59,45 @@
   ansible.builtin.user:
     name: "{{ ansible_facts['user_id'] }}"
     shell: /usr/bin/zsh
+
+- name: Deploy mrover shell config (Linux)
+  ansible.builtin.copy:
+    src: home/.mrover.zshenv
+    dest: ~/.mrover.zshenv
+  when: ansible_system == 'Linux'
+
+- name: Wire mrover shell env (macOS)
+  ansible.builtin.blockinfile:
+    path: ~/.zshrc
+    marker: "# {mark} MROVER"
+    block: '[[ -d "{{ mrover_repo }}" ]] && source "{{ mrover_repo }}/tools/mrover.zshenv"'
+    create: true
+  when: ansible_system == 'Darwin'
+
+- name: Wire mrover shell env (Linux)
+  ansible.builtin.blockinfile:
+    path: ~/.zshenv
+    marker: "# {mark} MROVER"
+    block: source ~/.mrover.zshenv
+    create: true
+  when: ansible_system == 'Linux'
+
+- name: Initialize Git LFS
+  ansible.builtin.command: git lfs install
+  args:
+    chdir: "{{ mrover_repo }}"
+
+- name: Pull Git LFS objects
+  ansible.builtin.command: git lfs pull
+  args:
+    chdir: "{{ mrover_repo }}"
+
+- name: Install pixi packages
+  ansible.builtin.command:
+    cmd: pixi install
+    chdir: "{{ mrover_repo }}"
+  environment:
+    PATH: "{{ ansible_env.HOME }}/.pixi/bin:{{ ansible_env.PATH }}"
 
 - name: Install VSCode extension
   ansible.builtin.command: code --install-extension {{ mrover_repo }}/pkg/file-selector-0.0.1.vsix

@@ -5,6 +5,8 @@
       - tmux
       - htop
       - gh
+      - git-lfs
+      - pixi
     state: present
 
 - name: Install VSCode and Chromium casks

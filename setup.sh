@@ -40,23 +40,8 @@ if ! command -v ansible-playbook >/dev/null 2>&1; then
   esac
 fi
 
-if ! command -v pixi >/dev/null 2>&1; then
-  echo -e "${CYAN}Installing pixi ...${NC}"
-  curl -fsSL https://pixi.sh/install.sh | sh
-fi
-export PATH="${HOME}/.pixi/bin:${PATH}"
-
 readonly MROVER_PATH=$(cd "$(dirname "$0")" && pwd)
 cd "${MROVER_PATH}"
-
-echo -e "${CYAN}Updating submodules ...${NC}"
-git submodule update --init
-
-echo -e "${CYAN}Fetching LFS objects ...${NC}"
-git lfs pull
-
-echo -e "${CYAN}Installing pixi packages ...${NC}"
-pixi install
 
 echo -e "${CYAN}Installing Ansible collections ...${NC}"
 ansible-galaxy collection install -r ansible/requirements.yml

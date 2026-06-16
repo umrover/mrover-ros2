@@ -6,14 +6,3 @@
   roles:
     - build
     - dev
-  post_tasks:
-    - name: Deploy mrover shell config
-      copy:
-        src: "{{ playbook_dir }}/roles/dev/files/home/.mrover.zshenv"
-        dest: ~/.mrover.zshenv
-    - name: Source mrover shell config
-      blockinfile:
-        path: ~/.zshenv
-        marker: "# {mark} MROVER"
-        block: source ~/.mrover.zshenv
-        create: true
