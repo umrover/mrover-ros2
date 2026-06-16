@@ -1,4 +1,4 @@
-    #define WEBGPU_CPP_IMPLEMENTATION
+#define WEBGPU_CPP_IMPLEMENTATION
 
 #include "simulator.hpp"
 

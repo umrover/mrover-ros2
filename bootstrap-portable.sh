@@ -5,7 +5,6 @@
 set -Eeuo pipefail
 
 readonly GREY='\033[1;30m'
-readonly GREEN='\033[1;32m'
 readonly RED='\033[1;31m'
 readonly NC='\033[0m'
 
