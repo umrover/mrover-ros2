@@ -20,6 +20,11 @@ jobs:
           environments: style
           activate-environment: style
           cache: true
+      - uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ hashFiles('teleoperation/basestation_gui/frontend/bun.lockb') }}
+          restore-keys: bun-
       - name: Style Check
         run: ./style.sh
 
