@@ -19,10 +19,7 @@ set(node_plugins "")
 
 if (APPLE)
     set(CMAKE_IGNORE_PATH /opt/homebrew)
-    # Everything lives in the pixi prefix; skip scanning system and environment
-    # paths for every find_package call -- this cuts configure time significantly.
-    set(CMAKE_FIND_USE_CMAKE_SYSTEM_PATH OFF)
-    set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH OFF)
+    enable_language(OBJCXX)
     find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 endif ()
 
@@ -114,6 +111,14 @@ add_library(imgui STATIC ${IMGUI_SOURCES})
 target_include_directories(imgui SYSTEM PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
 target_compile_definitions(imgui PUBLIC IMGUI_IMPL_WEBGPU_BACKEND_DAWN)
 target_link_libraries(imgui PUBLIC glfw webgpu)
+if (APPLE)
+    # imgui_impl_wgpu.cpp includes Cocoa.h on macOS via Dawn's WebGPU backend,
+    # which contains Objective-C @class syntax invalid in plain C++.
+    set_source_files_properties(
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_wgpu.cpp
+        PROPERTIES LANGUAGE OBJCXX
+    )
+endif ()
 
 FetchContent_Declare(
     glfw3webgpu
@@ -127,6 +132,18 @@ if (UNIX AND NOT APPLE)
     # glfw3webgpu guards each native code path behind compile-time _GLFW_* macros,
     # so define both to ensure the correct path compiles in regardless of host session.
     target_compile_definitions(glfw3webgpu PRIVATE _GLFW_X11 _GLFW_WAYLAND)
+elseif (APPLE)
+    # GLFW_BUILD_COCOA is only set when building GLFW from source; with a prebuilt
+    # GLFW from pixi it's never set, so the upstream glfw3webgpu CMakeLists.txt
+    # skips the Cocoa block entirely. Replicate it here manually.
+    target_compile_definitions(glfw3webgpu PRIVATE GLFW_EXPOSE_NATIVE_COCOA)
+    target_compile_options(glfw3webgpu PRIVATE -x objective-c)
+    target_link_libraries(glfw3webgpu PRIVATE
+        "-framework Cocoa"
+        "-framework CoreVideo"
+        "-framework IOKit"
+        "-framework QuartzCore"
+    )
 endif()
 
 add_library(webgpu_hpp INTERFACE)
@@ -412,16 +429,16 @@ if (NOT MROVER_PORTABLE AND NetLink_FOUND AND NetLinkRoute_FOUND)
     ament_target_dependencies(can_bridge rclcpp)
 endif ()
 
-# Teleop Qt5 Camera Client
-find_package(Qt5 5.15 QUIET COMPONENTS Widgets Multimedia MultimediaWidgets)
-if (NOT Qt5_FOUND)
-    message(WARNING "Qt5 not found — camera_client will not be built. Add qt-main to your environment.")
+# Teleop Qt6 Camera Client
+find_package(Qt6 QUIET COMPONENTS Widgets Multimedia MultimediaWidgets)
+if (NOT Qt6_FOUND)
+    message(WARNING "Qt6 not found — camera_client will not be built. Add qt6-main to your environment.")
 endif ()
 
-if (Qt5_FOUND)
+if (Qt6_FOUND)
     mrover_add_node(camera_client teleoperation/camera_client/*.*pp teleoperation/camera_client/include/pch.hpp)
     target_include_directories(camera_client PRIVATE teleoperation/camera_client/include)
-    target_link_libraries(camera_client gst_utils Qt::Widgets Qt::Multimedia Qt::MultimediaWidgets opencv_core opencv_imgcodecs)
+    target_link_libraries(camera_client gst_utils Qt6::Widgets Qt6::Multimedia Qt6::MultimediaWidgets opencv_core opencv_imgcodecs)
     ament_target_dependencies(camera_client rclcpp std_srvs sensor_msgs)
     set_target_properties(camera_client PROPERTIES
         AUTOMOC ON

@@ -1,6 +1,7 @@
 #pragma once
 
 // STL
+#include <numbers>
 #include <algorithm>
 #include <array>
 #include <cstddef>

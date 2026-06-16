@@ -263,7 +263,10 @@ namespace mrover {
     auto Simulator::initWindow() -> void {
         // Dawn's Linux prebuilt only supports X11 surfaces. Force GLFW onto X11
         // (runs over XWayland on Wayland-only systems).
+        // On macOS, Cocoa is the only valid platform so we leave the hint unset.
+#ifndef __APPLE__
         glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
+#endif
         mGlfwInstance.init();
         glfwSetErrorCallback([](int error, char const* description) { throw std::runtime_error(std::format("GLFW Error {}: {}", error, description)); });
         RCLCPP_INFO_STREAM(get_logger(), std::format("Initialized GLFW Version: {}.{}.{}", GLFW_VERSION_MAJOR, GLFW_VERSION_MINOR, GLFW_VERSION_REVISION));
@@ -935,19 +938,6 @@ namespace mrover {
         wgpu::CommandBuffer commands = encoder.finish();
         mQueue.submit(commands);
 
-#ifdef __APPLE__
-        {
-            // Temporary fix...
-            // See: https://issues.chromium.org/issues/338710345
-            // This only happens on M2/M3 (M1 is fine)
-            wgpu::QueueWorkDoneCallbackInfo2 info;
-            info.mode = wgpu::CallbackMode::WaitAnyOnly;
-            wgpu::Future workDoneFuture = mQueue.onSubmittedWorkDone2(info);
-            wgpu::FutureWaitInfo waitInfo;
-            waitInfo.future = workDoneFuture;
-            mWgpuInstance.waitAny(1, &waitInfo, 1'000'000'000'000);
-        }
-#endif
 
         if (!mIsHeadless) mSurface.present();
 
