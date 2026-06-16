@@ -85,6 +85,9 @@ echo "Linting Python with mypy ..."
 
 if [ -d "./teleoperation/basestation_gui/frontend" ]; then
   echo
+  echo "Installing frontend dependencies ..."
+  (cd ./teleoperation/basestation_gui/frontend && bun install)
+  echo
   echo "Type checking TypeScript with vue-tsc ..."
   (cd ./teleoperation/basestation_gui/frontend && bun run type-check)
   echo "Done"
