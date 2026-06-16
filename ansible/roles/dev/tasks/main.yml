@@ -90,19 +90,5 @@
   environment:
     PATH: "{{ ansible_env.HOME }}/.pixi/bin:{{ ansible_env.PATH }}"
 
-- name: Install file-selector extension dependencies
-  ansible.builtin.command:
-    cmd: bun install
-    chdir: "{{ mrover_repo }}/dev-tools/vscode-file-selector"
-  environment:
-    PATH: "{{ ansible_env.HOME }}/.bun/bin:{{ ansible_env.PATH }}"
-
-- name: Build file-selector extension
-  ansible.builtin.command:
-    cmd: bun run package
-    chdir: "{{ mrover_repo }}/dev-tools/vscode-file-selector"
-  environment:
-    PATH: "{{ ansible_env.HOME }}/.bun/bin:{{ ansible_env.PATH }}"
-
 - name: Install VSCode extension
   ansible.builtin.command: code --install-extension {{ mrover_repo }}/pkg/file-selector-0.0.1.vsix

@@ -21,8 +21,7 @@
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter",
     },
-    // We use mypy for this, see style.sh
-    "python.analysis.typeCheckingMode": "off",
+    "basedpyright.importStrategy": "fromEnvironment",
     //// Miscellaneous
     "redhat.telemetry.enabled": false,
     "git.ignoreSubmodules": true,
