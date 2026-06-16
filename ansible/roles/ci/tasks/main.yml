@@ -94,12 +94,12 @@
       - libgstreamer-plugins-base1.0-dev
       # - vainfo
       # - x264
-      - ros-humble-ros-base
-      - ros-humble-rviz2
-      - ros-humble-xacro
-      - ros-humble-rtcm-msgs
-      - ros-humble-magic-enum
-      - ros-humble-dynamixel-sdk
+      - ros-jazzy-ros-base
+      - ros-jazzy-rviz2
+      - ros-jazzy-xacro
+      - ros-jazzy-rtcm-msgs
+      - ros-jazzy-magic-enum
+      - ros-jazzy-dynamixel-sdk
       # TODO (ali): why does this need to be installed manually
       - libboost-dev
       - qtmultimedia5-dev
