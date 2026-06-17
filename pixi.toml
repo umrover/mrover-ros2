@@ -60,7 +60,7 @@ mrover = { path = ".", editable = true }
 [feature.style.dependencies]
 python = "3.12.*"
 black = "*"
-basedpyright = "*"
+mypy = "*"
 clang-format = "18.*"
 shellcheck = "*"
 bun = "*"
