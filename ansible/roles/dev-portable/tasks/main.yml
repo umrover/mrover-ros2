@@ -1,0 +1,33 @@
+- name: Ensure pixi bin directory exists
+  ansible.builtin.file:
+    path: "{{ ansible_env.HOME }}/.pixi/bin"
+    state: directory
+    mode: '0755'
+  when: ansible_system == 'Linux'
+
+- name: Install pixi
+  ansible.builtin.get_url:
+    url: "https://github.com/prefix-dev/pixi/releases/latest/download/pixi-{{ ansible_architecture }}-unknown-linux-musl"
+    dest: "{{ ansible_env.HOME }}/.pixi/bin/pixi"
+    mode: '0755'
+    force: false
+  when: ansible_system == 'Linux'
+
+- name: Update git submodules
+  ansible.builtin.command:
+    cmd: git submodule update --init
+    chdir: "{{ mrover_repo }}"
+
+- name: Wire mrover shell env
+  ansible.builtin.blockinfile:
+    path: ~/.zshrc
+    marker: "# {mark} MROVER"
+    block: '[[ -f "${MROVER_REPO:-$HOME/mrover-ros2}/tools/mrover.zshenv" ]] && source "${MROVER_REPO:-$HOME/mrover-ros2}/tools/mrover.zshenv"'
+    create: true
+
+- name: Install pixi packages
+  ansible.builtin.command:
+    cmd: pixi install
+    chdir: "{{ mrover_repo }}"
+  environment:
+    PATH: "{{ ansible_env.HOME }}/.pixi/bin:{{ ansible_env.PATH }}"
