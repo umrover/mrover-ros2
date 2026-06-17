@@ -43,10 +43,12 @@ def send_joystick_twist(joystick: DeviceInputs, pub: Publisher) -> None:
     linear = joystick_linear + joystick_micro_linear
     angular = joystick_angular + joystick_micro_angular
 
-    pub.publish(Twist(
-        linear=Vector3(x=linear),
-        angular=Vector3(z=angular),
-    ))
+    pub.publish(
+        Twist(
+            linear=Vector3(x=linear),
+            angular=Vector3(z=angular),
+        )
+    )
 
 
 def send_controller_twist(controller: DeviceInputs, pub: Publisher) -> None:
