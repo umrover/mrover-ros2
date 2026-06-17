@@ -45,7 +45,11 @@ echo "Parallel jobs: ${parallel_jobs} (override with MROVER_BUILD_JOBS=N)"
 if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
     bash tools/setup_dawn.sh
 
-    macos_sysroot=$(xcrun --sdk macosx --show-sdk-path)
+    os_cmake_args=()
+    if [[ "$(uname)" == "Darwin" ]]; then
+        macos_sysroot=$(xcrun --sdk macosx --show-sdk-path)
+        os_cmake_args=("-DCMAKE_OSX_SYSROOT=${macos_sysroot}")
+    fi
 
     CMAKE_BUILD_PARALLEL_LEVEL="${parallel_jobs}" \
     COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification \
@@ -55,7 +59,7 @@ if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
             -DCMAKE_BUILD_TYPE="${build_profile}" \
             -DMROVER_PORTABLE=ON \
             -DCMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
-            -DCMAKE_OSX_SYSROOT="${macos_sysroot}" \
+            "${os_cmake_args[@]}" \
         --symlink-install \
         --event-handlers console_direct+
 
