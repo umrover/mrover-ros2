@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import cast
 
 import numpy as np
 import pymap3d
@@ -242,7 +243,7 @@ class Course:
             return None
         if self.waypoint_index >= len(self.course_data.waypoints):
             return None
-        return self.course_data.waypoints[self.waypoint_index]
+        return cast(Waypoint, self.course_data.waypoints[self.waypoint_index])
 
     def look_for_post(self) -> bool:
         """

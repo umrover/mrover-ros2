@@ -1,7 +1,6 @@
 #pragma once
 
 // STL
-#include <numbers>
 #include <algorithm>
 #include <array>
 #include <cstddef>
@@ -10,6 +9,7 @@
 #include <execution>
 #include <format>
 #include <memory>
+#include <numbers>
 #include <numeric>
 #include <random>
 #include <utility>
