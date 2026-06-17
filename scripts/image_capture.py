@@ -61,7 +61,6 @@ def main() -> None:
             amount += 1
             print(f"Amount {amount}")
             rclpy.spin_once(imgNode)
-        rclpy.shutdown()
     except KeyboardInterrupt:
         pass
     except ExternalShutdownException:

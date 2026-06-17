@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import override
 
 
 class State(ABC):
@@ -38,18 +39,23 @@ class State(ABC):
         """
         raise NotImplementedError
 
+    @override
     def __repr__(self) -> str:
         return self.__class__.__name__
 
+    @override
     def __str__(self) -> str:
         return self.__repr__()
 
+    @override
     def __eq__(self, other) -> bool:
         return self.__class__ == other.__class__
 
+    @override
     def __hash__(self) -> int:
         return hash(self.__class__)
 
+    @override
     def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
@@ -59,11 +65,14 @@ class ExitState(State):
     State to be returned to signify that the state machine should exit.
     """
 
-    def on_enter(self, ctx):
+    @override
+    def on_enter(self, context):
         pass
 
-    def on_exit(self, ctx):
+    @override
+    def on_exit(self, context):
         pass
 
-    def on_loop(self, ctx) -> State:
+    @override
+    def on_loop(self, context) -> State:
         return self

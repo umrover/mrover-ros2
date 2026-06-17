@@ -11,7 +11,7 @@ from backend.managers.ros import get_node, get_logger
 
 
 def sanitize_floats(obj):
-    if isinstance(obj, numbers.Real) and not isinstance(obj, bool) and not math.isfinite(obj):
+    if isinstance(obj, numbers.Real) and not math.isfinite(float(obj)):
         return None
     if isinstance(obj, dict):
         return {k: sanitize_floats(v) for k, v in obj.items()}
@@ -69,9 +69,7 @@ class WebSocketHandler:
                 data_to_send = {"type": gui_msg_type, **message_to_ordereddict(ros_message)}
                 self.schedule_send(data_to_send)
 
-        sub = self.node.create_subscription(
-            topic_type, topic_name, callback, qos_profile=qos_profile_sensor_data
-        )
+        sub = self.node.create_subscription(topic_type, topic_name, callback, qos_profile=qos_profile_sensor_data)
         self.subscriptions.append(sub)
 
     async def cleanup(self):

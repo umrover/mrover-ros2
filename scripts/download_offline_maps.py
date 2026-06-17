@@ -7,7 +7,8 @@ import shutil
 import logging
 import argparse
 from pathlib import Path
-from typing import NamedTuple, Generator
+from typing import NamedTuple
+from collections.abc import Generator
 from concurrent.futures import ThreadPoolExecutor
 from urllib.request import Request, urlopen
 from urllib.error import URLError

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import cast
 
 import numpy as np
 import pymap3d
-import rclpy
 from scipy import ndimage
 from rclpy.parameter import Parameter
 
@@ -24,7 +24,6 @@ from mrover.srv import MoveCostMap, DilateCostMap, EnableAuton, ToggleObjectDete
 from nav_msgs.msg import Path, OccupancyGrid
 from visualization_msgs.msg import Marker
 from std_srvs.srv import SetBool
-from rclpy import Parameter
 from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.publisher import Publisher
@@ -37,7 +36,6 @@ from state_machine.state import State
 from std_msgs.msg import Bool, Header
 from .drive import DriveController
 from copy import deepcopy
-from visualization_msgs.msg import Marker
 
 NO_TAG: int = -1
 
@@ -153,7 +151,7 @@ class ImageTargetsStore:
         increment_weight = self._context.node.get_parameter("image_targets.increment_weight").value
         decrement_weight = self._context.node.get_parameter("image_targets.decrement_weight").value
         # TODO(quintin): Seems like this was never used in 2024, might have been an oversight
-        min_hits = self._context.node.get_parameter("image_targets.min_hits").value
+        _min_hits = self._context.node.get_parameter("image_targets.min_hits").value
         max_hits = self._context.node.get_parameter("image_targets.max_hits").value
 
         # Update our current targets
@@ -238,11 +236,9 @@ class Course:
         """
         :return: The currently active waypoint if we have an active course
         """
-        if self.course_data is None:
-            return None
         if self.waypoint_index >= len(self.course_data.waypoints):
             return None
-        return self.course_data.waypoints[self.waypoint_index]
+        return cast(Waypoint, self.course_data.waypoints[self.waypoint_index])
 
     def look_for_post(self) -> bool:
         """

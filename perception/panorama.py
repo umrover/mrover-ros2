@@ -14,6 +14,7 @@ import cv2
 import time
 import message_filters
 import os
+from pathlib import Path
 import numpy as np
 import copy
 import datetime
@@ -285,11 +286,10 @@ class Panorama(Node):
 
         # Save the images
         unique_id = "{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
-        share_dir = get_package_share_directory("mrover")
-        new_path = f"{share_dir}/../../../../../src/mrover/data/raw-pano-images/{unique_id}/"
-        os.mkdir(new_path)
+        new_path = Path(get_package_share_directory("mrover")).parents[2] / "data" / "raw-pano-images" / unique_id
+        new_path.mkdir(parents=True, exist_ok=True)
         for i, img in enumerate(self.img_list):
-            name = f"{new_path}/{str(i).zfill(2)}.png" # TODO: pathlib
+            name = str(new_path / f"{str(i).zfill(2)}.png")
             cv2.imwrite(name, img)
 
         # stitch the pano together
