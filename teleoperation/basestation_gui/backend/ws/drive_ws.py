@@ -9,7 +9,7 @@ from nav_msgs.msg import OccupancyGrid
 
 class DriveHandler(WebSocketHandler):
     def __init__(self, websocket):
-        super().__init__(websocket, 'drive')
+        super().__init__(websocket, "drive")
 
     async def setup(self):
         self.joystick_twist_pub = self.node.create_publisher(Twist, "/joystick_vel_cmd", 1)
@@ -20,15 +20,15 @@ class DriveHandler(WebSocketHandler):
         self.forward_ros_topic("/costmap", OccupancyGrid, "costmap")
 
     async def handle_message(self, data):
-        msg_type = data.get('type')
+        msg_type = data.get("type")
 
-        if msg_type == 'joystick':
-            axes = data.get('axes', [])
-            buttons = data.get('buttons', [])
+        if msg_type == "joystick":
+            axes = data.get("axes", [])
+            buttons = data.get("buttons", [])
             send_joystick_twist(DeviceInputs(axes, buttons), self.joystick_twist_pub)
-        elif msg_type == 'controller':
-            axes = data.get('axes', [])
-            buttons = data.get('buttons', [])
+        elif msg_type == "controller":
+            axes = data.get("axes", [])
+            buttons = data.get("buttons", [])
             send_controller_twist(DeviceInputs(axes, buttons), self.controller_twist_pub)
         else:
             get_logger().warning(f"Unhandled DRIVE message: {msg_type}")
