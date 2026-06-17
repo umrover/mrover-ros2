@@ -1,14 +1,11 @@
 import numpy as np
-from typing import Any
+from typing import override
 from navigation.trajectory import Trajectory
-from navigation.astar import AStar, NoPath, OutOfBounds
-from . import costmap_search, stuck_recovery, waypoint, backup, state
+from navigation.astar import AStar
+from . import costmap_search, stuck_recovery, waypoint, state
 from .context import Context
 from state_machine.state import State
 from geometry_msgs.msg import Twist
-from nav_msgs.msg import Path
-from visualization_msgs.msg import Marker
-from rclpy.publisher import Publisher
 from rclpy.time import Time
 from rclpy.timer import Timer
 from rclpy.duration import Duration
@@ -28,6 +25,7 @@ class ApproachTargetState(State):
     marker_timer: Timer
     update_timer: Timer
 
+    @override
     def on_enter(self, context: Context) -> None:
         from .long_range import LongRangeState
 
@@ -61,6 +59,7 @@ class ApproachTargetState(State):
             self.UPDATE_DELAY, lambda: self.update_target_position(context=context)
         )
 
+    @override
     def on_exit(self, context: Context) -> None:
         self.marker_timer.cancel()
         self.update_timer.cancel()
@@ -148,7 +147,7 @@ class ApproachTargetState(State):
             context.node.get_logger().info("Awaiting dilation future to complete")
             return self
 
-        if context.env.cost_map is None or not hasattr(context.env.cost_map, "data"):
+        if not hasattr(context.env.cost_map, "data"):
             context.node.get_logger().warn("Costmap is enabled but costmap has no data")
             return self
 
@@ -168,9 +167,7 @@ class ApproachTargetState(State):
             self.target_traj = segment_path(context=context, dest=self.target_position[0:2])
 
         # Check the current point in the trajectory; if it's high cost, move to the next point and check again
-        while self.target_traj.get_current_point() is not None and is_high_cost_point(
-            context=context, point=self.target_traj.get_current_point()
-        ):
+        while is_high_cost_point(context=context, point=self.target_traj.get_current_point()):
             context.node.get_logger().info(f"Skipped high cost point")
             self.target_traj.increment_point()
 
@@ -308,6 +305,7 @@ class ApproachTargetState(State):
         self.target_traj.clear()
         self.astar_traj.clear()
 
+    @override
     def on_loop(self, context: Context) -> State:
         from .long_range import LongRangeState
 

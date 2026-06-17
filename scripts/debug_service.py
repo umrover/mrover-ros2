@@ -3,8 +3,6 @@
 import rclpy
 from rclpy.node import Node
 
-# import service
-from std_srvs.srv import SetBool
 from mrover.srv import EnableBool
 
 SERVICE_TYPE = EnableBool

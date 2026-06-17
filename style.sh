@@ -108,7 +108,7 @@ echo "Style checking Python with black ..."
 
 echo
 echo "Type checking Python with basedpyright ..."
-"${BASEDPYRIGHT_PATH}" "${PYTHON_LINT_DIRS[@]}" --level error
+"${BASEDPYRIGHT_PATH}" "${PYTHON_LINT_DIRS[@]}"
 
 if [ -d "./teleoperation/basestation_gui/frontend" ]; then
   echo

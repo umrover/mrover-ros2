@@ -1,7 +1,9 @@
 import logging
+from typing import override
 
 
 class ROS2Formatter(logging.Formatter):
+    @override
     def format(self, record):
         return f"[{record.levelname.upper()}] {record.getMessage()}"
 

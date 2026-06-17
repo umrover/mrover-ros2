@@ -1,5 +1,6 @@
 import asyncio
 import time
+from typing import override
 from backend.ws.base_ws import WebSocketHandler
 
 JETSON_IP = "10.1.0.10"
@@ -57,6 +58,7 @@ class LatencyHandler(WebSocketHandler):
                 }
             )
 
+    @override
     async def cleanup(self):
         if self._ping_task:
             self._ping_task.cancel()

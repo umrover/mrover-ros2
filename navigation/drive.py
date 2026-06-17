@@ -11,7 +11,6 @@ from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.publisher import Publisher
 from .trajectory import Trajectory
-from visualization_msgs.msg import Marker
 
 
 class DriveController:
@@ -549,11 +548,6 @@ class DriveController:
         :modifies: nothing
         """
         intersections: list = []
-
-        # Ensure a trajectory was passed through
-        if waypoints is None:
-            raise ValueError("Attempt to detect intersection with no waypoints")
-            return
 
         x1 = waypoints.get_current_point()[0]
         y1 = waypoints.get_current_point()[1]

@@ -6,7 +6,7 @@ from std_msgs.msg import Header
 from geometry_msgs.msg import Point
 
 
-def gen_marker(time: Time, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], size=0.2, lifetime=5, id=0, delete=False) -> Marker:
+def gen_marker(time: Time, point=None, color=None, size=0.2, lifetime=5, id=0, delete=False) -> Marker:
     """
     Creates a single spherical marker at the specified (x, y, z) coordinates.
 
@@ -16,6 +16,10 @@ def gen_marker(time: Time, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], size=0.2, li
 
     :return: A Marker object representing the spherical marker with predefined size and color.
     """
+    if point is None:
+        point = [0.0, 0.0]
+    if color is None:
+        color = [1.0, 1.0, 1.0]
 
     marker = Marker()
     marker.lifetime = Duration(seconds=lifetime).to_msg()
@@ -54,9 +58,7 @@ def gen_marker(time: Time, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], size=0.2, li
     return marker
 
 
-def ring_marker(
-    time: Time, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], radius=0.5, size=0.1, lifetime=5, id=0, delete=False
-) -> Marker:
+def ring_marker(time: Time, point=None, color=None, radius=0.5, size=0.1, lifetime=5, id=0, delete=False) -> Marker:
     """
     Creates a ring around the specified (x, y, z) coordinates with the given radius.
 
@@ -66,6 +68,11 @@ def ring_marker(
 
     :return: A Marker object representing the spherical marker with predefined size and color.
     """
+
+    if point is None:
+        point = [0.0, 0.0]
+    if color is None:
+        color = [1.0, 1.0, 1.0]
 
     marker = Marker()
     marker.lifetime = Duration(seconds=lifetime).to_msg()

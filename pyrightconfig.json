@@ -7,6 +7,7 @@
     ],
     "reportMissingImports": "none",
     "reportMissingModuleSource": "none",
+    "reportMissingTypeStubs": "none",
     "reportUnusedCallResult": "none",
     "reportUnknownMemberType": "none",
     "reportUnknownVariableType": "none",

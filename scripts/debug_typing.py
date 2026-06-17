@@ -4,15 +4,13 @@ import sys
 import rclpy
 from mrover.action import TypingPosition
 from rclpy.node import Node
-from rclpy.action import ActionClient
+from rclpy.action.client import ActionClient
 from rclpy.executors import ExternalShutdownException
 from rclpy.client import Client
 from rclpy.task import Future
-from rclpy.time import Time
 from rclpy.duration import Duration
 import tkinter as tk
 from mrover.srv import IkMode
-import time
 
 
 class DebugTyping(Node):
@@ -38,7 +36,7 @@ class DebugTyping(Node):
 
         self.goal_entries = []
         NUM_ENTRIES = 10
-        for i in range(NUM_ENTRIES):
+        for _i in range(NUM_ENTRIES):
             entry_box = tk.Entry(root)
             entry_box.pack()
             self.goal_entries.append(entry_box)

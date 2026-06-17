@@ -49,9 +49,9 @@ async def enable_auton(data: AutonEnableRequest):
         if data.enabled:
             set_teleop_enabled(False)
 
-        result = await call_service_async(client, auton_request)
+        result, error = await call_service_async(client, auton_request)
         if result is None:
-            raise HTTPException(status_code=500, detail="Service /enable_auton is not available or timed out")
+            raise HTTPException(status_code=500, detail=f"Service /enable_auton is not available or timed out: {error}")
 
         return {"status": "success", "enabled": data.enabled, "waypoint_count": len(data.waypoints)}
 
@@ -77,9 +77,11 @@ def enable_teleop(data: TeleopEnableRequest):
 async def toggle_pure_pursuit(data: TeleopEnableRequest):
     client = get_service_client(SetBool, "/toggle_pure_pursuit")
     request = SetBool.Request(data=data.enabled)
-    result = await call_service_async(client, request)
+    result, error = await call_service_async(client, request)
     if result is None:
-        raise HTTPException(status_code=500, detail="Service /toggle_pure_pursuit is not available or timed out")
+        raise HTTPException(
+            status_code=500, detail=f"Service /toggle_pure_pursuit is not available or timed out: {error}"
+        )
     return {"status": "success", "enabled": data.enabled}
 
 
@@ -87,9 +89,11 @@ async def toggle_pure_pursuit(data: TeleopEnableRequest):
 async def toggle_path_relaxation(data: TeleopEnableRequest):
     client = get_service_client(SetBool, "/toggle_path_relaxation")
     request = SetBool.Request(data=data.enabled)
-    result = await call_service_async(client, request)
+    result, error = await call_service_async(client, request)
     if result is None:
-        raise HTTPException(status_code=500, detail="Service /toggle_path_relaxation is not available or timed out")
+        raise HTTPException(
+            status_code=500, detail=f"Service /toggle_path_relaxation is not available or timed out: {error}"
+        )
     return {"status": "success", "enabled": data.enabled}
 
 
@@ -97,9 +101,11 @@ async def toggle_path_relaxation(data: TeleopEnableRequest):
 async def toggle_path_interpolation(data: TeleopEnableRequest):
     client = get_service_client(SetBool, "/toggle_path_interpolation")
     request = SetBool.Request(data=data.enabled)
-    result = await call_service_async(client, request)
+    result, error = await call_service_async(client, request)
     if result is None:
-        raise HTTPException(status_code=500, detail="Service /toggle_path_interpolation is not available or timed out")
+        raise HTTPException(
+            status_code=500, detail=f"Service /toggle_path_interpolation is not available or timed out: {error}"
+        )
     return {"status": "success", "enabled": data.enabled}
 
 

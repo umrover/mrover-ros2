@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import override
 
 import numpy as np
 from shapely.geometry import Point, LineString
@@ -86,9 +87,11 @@ class AvoidPostTrajectory(Trajectory):
 class PostBackupState(State):
     trajectory: AvoidPostTrajectory | None
 
+    @override
     def on_exit(self, context: Context) -> None:
         self.trajectory = None
 
+    @override
     def on_enter(self, context: Context) -> None:
         assert context.course is not None
 
@@ -107,6 +110,7 @@ class PostBackupState(State):
         )
         self.trajectory.cur_pt = 0
 
+    @override
     def on_loop(self, context: Context) -> State:
         if self.trajectory is None:
             return waypoint.WaypointState()

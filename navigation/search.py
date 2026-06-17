@@ -1,5 +1,6 @@
 import numpy as np
 
+from typing import override
 from mrover.msg import GPSPointList, WaypointType
 from state_machine.state import State
 from . import recovery, waypoint
@@ -12,13 +13,16 @@ class SearchState(State):
     prev_target_pos_in_map: np.ndarray | None = None
     is_recovering: bool = False
 
+    @override
     def on_enter(self, context: Context) -> None:
         if SearchState.trajectory is None:
             self.new_trajectory(context)
 
+    @override
     def on_exit(self, context: Context) -> None:
         pass
 
+    @override
     def on_loop(self, context: Context) -> State:
         rover_in_map = context.rover.get_pose_in_map()
 

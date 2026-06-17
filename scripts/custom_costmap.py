@@ -3,7 +3,7 @@ import sys
 import tkinter as tk
 import rclpy
 from rclpy.node import Node
-from rclpy import Parameter
+from rclpy.utilities import ok
 from nav_msgs.msg import OccupancyGrid
 from nav_msgs.msg import MapMetaData
 from std_msgs.msg import Header
@@ -54,7 +54,7 @@ class GridUI:
         self.canvas.bind("<B1-Motion>", self.on_mouse_drag)
         master.bind("<space>", self.toggle_brush)
 
-    def toggle_brush(self, event):
+    def toggle_brush(self, _event):
         """Cycle the brush size between 1x1, 2x2, and 3x3."""
         if self.brush_size == 1:
             self.brush_size = 2
@@ -158,7 +158,7 @@ class CustomCostmapNode(Node):
         self.publisher_.publish(msg)
 
 
-def main(args=None):
+def main(_args=None):
     rclpy.init(args=sys.argv)
 
     # Create a temporary node to get the parameter values before creating the UI.
@@ -177,7 +177,7 @@ def main(args=None):
     node = CustomCostmapNode(ui, n=grid_size)
 
     try:
-        while rclpy.ok():
+        while ok():
             root.update()
             rclpy.spin_once(node, timeout_sec=0.1)
     except tk.TclError:

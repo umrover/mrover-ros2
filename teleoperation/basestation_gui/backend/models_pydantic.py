@@ -1,5 +1,4 @@
 from pydantic import BaseModel, Field, model_validator
-from typing import List, Optional
 
 
 class BasicWaypoint(BaseModel):
@@ -17,7 +16,7 @@ class ScienceWaypoint(BaseModel):
 
 
 class BasicWaypointList(BaseModel):
-    waypoints: List[BasicWaypoint]
+    waypoints: list[BasicWaypoint]
 
 
 class AutonWaypoint(BaseModel):
@@ -32,7 +31,7 @@ class AutonWaypoint(BaseModel):
 
 
 class AutonWaypointList(BaseModel):
-    waypoints: List[AutonWaypoint]
+    waypoints: list[AutonWaypoint]
 
 
 class CreateAutonWaypoint(BaseModel):
@@ -70,7 +69,7 @@ class AutonEnableWaypoint(BaseModel):
 
 class AutonEnableRequest(BaseModel):
     enabled: bool
-    waypoints: List[AutonEnableWaypoint] = []
+    waypoints: list[AutonEnableWaypoint] = []
 
 
 class TeleopEnableRequest(BaseModel):
@@ -113,8 +112,8 @@ class RAModeRequest(BaseModel):
 
 
 class ServoPositionRequest(BaseModel):
-    names: List[str]
-    positions: List[float]
+    names: list[str]
+    positions: list[float]
 
     @model_validator(mode="after")
     def check_lengths_match(self):

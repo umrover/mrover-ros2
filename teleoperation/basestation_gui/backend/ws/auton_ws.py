@@ -1,7 +1,8 @@
 import asyncio
+from typing import override
 from backend.ws.base_ws import WebSocketHandler
 from backend.managers.ros import get_logger
-from rclpy.action import ActionClient
+from rclpy.action.client import ActionClient
 from mrover.action import TypingCode
 from mrover.msg import KeyboardYaw
 
@@ -63,6 +64,7 @@ class AutonHandler(WebSocketHandler):
             self.current_goal_handle = None
             self.schedule_send({"type": "typing_cancelled"})
 
+    @override
     async def cleanup(self):
         if self.current_goal_handle:
             try:

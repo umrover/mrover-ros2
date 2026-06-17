@@ -1,5 +1,4 @@
 import threading
-from typing import Optional
 from backend.managers.ros import get_node, get_logger
 from backend.database import get_recordings_db
 from sensor_msgs.msg import NavSatFix
@@ -12,7 +11,7 @@ class RecordingManager:
     def __init__(self):
         self.node = get_node()
         self.is_recording = False
-        self.current_recording_id: Optional[int] = None
+        self.current_recording_id: int | None = None
         self.recording_sequence = 0
         self.is_drone_recording = False
         self.timer = None

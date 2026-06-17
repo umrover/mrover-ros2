@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import override
 
 import numpy as np
 
@@ -27,13 +28,16 @@ class RecoveryState(State):
         context.rover.stuck = False
         self.start_time = None
 
+    @override
     def on_enter(self, context: Context) -> None:
         self.reset(context)
         self.start_time = context.node.get_clock().now()
 
+    @override
     def on_exit(self, context: Context) -> None:
         self.reset(context)
 
+    @override
     def on_loop(self, context: Context) -> State:
         give_up_time = context.node.get_parameter("recovery.give_up_time").value
         recovery_distance = context.node.get_parameter("recovery.recovery_distance").value

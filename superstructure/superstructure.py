@@ -6,7 +6,7 @@ from functools import partial
 
 import rclpy
 from geometry_msgs.msg import Twist
-from rclpy import Parameter
+from rclpy.parameter import Parameter
 from rclpy.duration import Duration
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node

@@ -12,7 +12,8 @@ from serial import Serial
 from pymap3d.ecef import ecef2geodetic
 
 import rclpy
-from rclpy import Parameter
+from rclpy.parameter import Parameter
+from rclpy.utilities import ok
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rtcm_msgs.msg import Message as RTCMMessage
@@ -64,7 +65,7 @@ class BaseStationDriverNode(Node):
 
     def spin(self) -> None:
 
-        while rclpy.ok():
+        while ok():
             if self.serial.in_waiting:
                 raw_msg, msg = self.reader.read()
 
