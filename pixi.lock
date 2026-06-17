@@ -24000,7 +24000,7 @@ packages:
   - uvicorn>=0.38.0
   - moteus>=0.3.72 ; extra == 'rover'
   - black==26.5.1 ; extra == 'dev'
-  - basedpyright ; extra == 'dev'
+  - mypy==1.11.2 ; extra == 'dev'
   - ipython==8.27.0 ; extra == 'dev'
   - pytest>=7.0.0 ; extra == 'test'
   - pytest-asyncio>=0.21.0 ; extra == 'test'
