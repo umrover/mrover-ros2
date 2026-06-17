@@ -64,13 +64,13 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1
       - name: Install ansible
         run: |
-          sudo apt-add-repository ppa:ansible/ansible -y
+          sudo apt-get update
           sudo apt-get install -y ansible
           ansible-galaxy collection install -r ansible/requirements.yml
       - name: Setup environment
         run: >
           ansible-playbook -i "localhost," -c local ansible/ci.yml
-          --extra-vars "mrover_repo=$(pwd) ros2_workspace=$(pwd)/../.."
+          --extra-vars "mrover_repo=$(pwd)"
       - name: Build
         env:
           MROVER_BUILD_JOBS: 2

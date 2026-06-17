@@ -1,56 +1,16 @@
-# Allows us to install Python versions newer than 3.10
-- name: Add Python PPA Key
-  become: true
-  ansible.builtin.get_url:
-    url: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xF23C5A6CF475977595C89F51BA6932366A755776"
-    dest: /usr/share/keyrings/deadsnakes-ppa-keyring.gpg
-    mode: '0644'
-
-- name: Add Python PPA
-  become: true
-  ansible.builtin.apt_repository:
-    repo: "deb [signed-by=/usr/share/keyrings/deadsnakes-ppa-keyring.gpg] http://ppa.launchpad.net/deadsnakes/ppa/ubuntu {{ ubuntu_release }} main"
-
-# Allows us to install G++13, so we can use an updated libstdc++ which provides more standard library features (C++20)
-- name: Add GCC PPA Key
-  become: true
-  ansible.builtin.get_url:
-    url: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x60C317803A41BA51845E371A1E9377A2BA9EF27F"
-    dest: /usr/share/keyrings/ubuntu-toolchain-r-ppa-keyring.gpg
-    mode: '0644'
-
-- name: Add GCC PPA
-  become: true
-  ansible.builtin.apt_repository:
-    repo: "deb [signed-by=/usr/share/keyrings/ubuntu-toolchain-r-ppa-keyring.gpg] http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu {{ ubuntu_release }} main"
-
 - name: Add LLVM APT Key
   become: true
   ansible.builtin.get_url:
     url: https://apt.llvm.org/llvm-snapshot.gpg.key
-    dest: /usr/share/keyrings/llvm-archive-keyring.gpg
+    dest: /usr/share/keyrings/llvm-archive-keyring.asc
     mode: '0644'
 
 # Allows us to install LLVM tools
 - name: Add LLVM APT List
   become: true
   ansible.builtin.apt_repository:
-    repo: "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.gpg] https://apt.llvm.org/{{ ubuntu_release }}/ llvm-toolchain-{{ ubuntu_release }}-18 main"
+    repo: "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.asc] https://apt.llvm.org/{{ ubuntu_release }}/ llvm-toolchain-{{ ubuntu_release }}-18 main"
     filename: llvm
-
-- name: Add CMake APT Key
-  become: true
-  ansible.builtin.get_url:
-    url: https://apt.kitware.com/keys/kitware-archive-latest.asc
-    dest: /usr/share/keyrings/kitware-archive-keyring.gpg
-    mode: '0644'
-
-# Allows us to install CMake versions newer than 3.22
-- name: Add CMake APT List
-  become: true
-  ansible.builtin.apt_repository:
-    repo: "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ {{ ubuntu_release }} main"
-    filename: kitware
 
 - name: Add ROS APT Key
   become: true
@@ -133,16 +93,16 @@
       - qt6-base-dev
       - qt6-multimedia-dev
 
-- name: Build and Install Manif
-  ansible.builtin.command: ./scripts/build_manif.sh
-  args:
-    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
-    creates: /usr/local/lib/python3.12/dist-packages/manifpy/__init__.py
+- name: Install manifpy
+  become: true
+  ansible.builtin.pip:
+    name: manifpy==0.0.5
+    extra_args: "--break-system-packages"
 
 - name: Download prebuilt Dawn
   ansible.builtin.command: ./tools/setup_dawn.sh
   args:
-    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
+    chdir: "{{ mrover_repo }}"
 
 - name: Initialize rosdep
   become: true
@@ -217,22 +177,22 @@
   ansible.builtin.pip:
     name:
       # Installs from pyproject.toml
-      - "{{ ros2_workspace }}/src/mrover[dev]"
-    virtualenv: "{{ ros2_workspace }}/src/mrover/venv"
-    virtualenv_command: /usr/bin/python3.12 -m venv
+      - "{{ mrover_repo }}[dev]"
+    virtualenv: "{{ mrover_repo }}/venv"
+    virtualenv_command: /usr/bin/python3 -m venv
 
 - name: Add Google Chrome apt key
   become: true
   ansible.builtin.get_url:
     url: https://dl.google.com/linux/linux_signing_key.pub
-    dest: /usr/share/keyrings/google-chrome.gpg
+    dest: /usr/share/keyrings/google-chrome.asc
     mode: '0644'
 
 - name: Add Google Chrome apt repo
   become: true
   ansible.builtin.apt_repository:
     filename: google-chrome
-    repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main"
+    repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.asc] https://dl.google.com/linux/chrome/deb/ stable main"
 
 - name: Install Google Chrome
   become: true
@@ -256,4 +216,4 @@
 - name: Install Bun Packages
   ansible.builtin.command: "{{ ansible_env.HOME }}/.bun/bin/bun install"
   args:
-    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/teleoperation/basestation_gui/frontend"
+    chdir: "{{ mrover_repo }}/teleoperation/basestation_gui/frontend"
