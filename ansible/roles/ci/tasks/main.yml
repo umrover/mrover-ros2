@@ -102,16 +102,18 @@
       - ros-jazzy-dynamixel-sdk
       # TODO (ali): why does this need to be installed manually
       - libboost-dev
-      - qtmultimedia5-dev
+      - qt6-multimedia-dev
 
-- name: Install Local APT Packages
-  become: true
-  ansible.builtin.apt:
-    state: present
-    deb: "{{ ros2_workspace }}/src/mrover/pkg/{{ item }}"
-  loop:
-    - libmanif-dev.deb
-    - libdawn-dev.deb
+- name: Build and Install Manif
+  ansible.builtin.command: ./scripts/build_manif.sh
+  args:
+    chdir: "{{ ros2_workspace }}/src/mrover/"
+    creates: /usr/local/lib/python3.12/dist-packages/manifpy/__init__.py
+
+- name: Download prebuilt Dawn
+  ansible.builtin.command: ./tools/setup_dawn.sh
+  args:
+    chdir: "{{ ros2_workspace }}/src/mrover/"
 
 - name: Initialize rosdep
   become: true
