@@ -19,7 +19,7 @@ from geometry_msgs.msg import Twist
 from mrover.msg import StateMachineStateUpdate
 from nav_msgs.msg import Odometry
 from navigation.stuck_recovery import StuckRecoveryState
-from rclpy.parameter import Parameter
+from rclpy import Parameter
 from rclpy.duration import Duration
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node

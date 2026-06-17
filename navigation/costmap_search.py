@@ -1,14 +1,18 @@
+from typing import Optional
 import numpy as np
 
-from typing import override
+import rclpy
+from rclpy.publisher import Publisher
 from rclpy.time import Time
 from rclpy.timer import Timer
 from rclpy.duration import Duration
-from navigation import stuck_recovery, waypoint, state
-from navigation.astar import AStar
-from navigation.coordinate_utils import is_high_cost_point, cartesian_to_ij
+import time
+from navigation import approach_target, stuck_recovery, waypoint, state
+from navigation.astar import AStar, SpiralEnd, NoPath, OutOfBounds
+from navigation.coordinate_utils import d_calc, is_high_cost_point, cartesian_to_ij
 from navigation.context import Context
 from navigation.trajectory import Trajectory, SearchTrajectory
+from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Twist
 from state_machine.state import State
 from rclpy.publisher import Publisher
@@ -29,7 +33,7 @@ class CostmapSearchState(State):
 
     spiral_traj: SearchTrajectory
     astar_traj: Trajectory  # returned by astar
-    prev_target_pos_in_map: np.ndarray | None = None
+    prev_target_pos_in_map: Optional[np.ndarray] = None
     is_recovering: bool = False
     path_pub: Publisher
     astar: AStar
@@ -41,7 +45,6 @@ class CostmapSearchState(State):
     DRIVE_FWD_THRESH: float
     UPDATE_DELAY: float
 
-    @override
     def on_enter(self, context: Context) -> None:
         context.node.get_logger().info("Entered Costmap Search State")
         context.rover.previous_state = CostmapSearchState()
@@ -77,7 +80,6 @@ class CostmapSearchState(State):
         )
         self.update_astar_timer = None
 
-    @override
     def on_exit(self, context: Context) -> None:
         self.marker_timer.cancel()
         if self.update_astar_timer is not None:
@@ -136,7 +138,7 @@ class CostmapSearchState(State):
             )
             return self
 
-        if not hasattr(context.env.cost_map, "data"):
+        if context.env.cost_map is None or not hasattr(context.env.cost_map, "data"):
             context.node.get_logger().warn("Costmap is enabled but costmap has no data")
             return self
 
@@ -254,7 +256,6 @@ class CostmapSearchState(State):
         context.rover.send_drive_command(cmd_vel)
         return self
 
-    @override
     def on_loop(self, context: Context) -> State:
         # Wait until the costmap is ready
         if not hasattr(context.env.cost_map, "data") and context.node.get_parameter("costmap.use_costmap").value:

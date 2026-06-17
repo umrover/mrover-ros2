@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, model_validator
-
+from typing import List, Optional
 
 class BasicWaypoint(BaseModel):
     name: str
@@ -7,17 +7,14 @@ class BasicWaypoint(BaseModel):
     lon: float = Field(ge=-180.0, le=180.0)
     drone: bool = False
 
-
 class ScienceWaypoint(BaseModel):
     name: str
     lat: float = Field(ge=-90.0, le=90.0)
     lon: float = Field(ge=-180.0, le=180.0)
     altitude: float
 
-
 class BasicWaypointList(BaseModel):
-    waypoints: list[BasicWaypoint]
-
+    waypoints: List[BasicWaypoint]
 
 class AutonWaypoint(BaseModel):
     name: str
@@ -29,10 +26,8 @@ class AutonWaypoint(BaseModel):
     deletable: bool = True
     db_id: int | None = None
 
-
 class AutonWaypointList(BaseModel):
-    waypoints: list[AutonWaypoint]
-
+    waypoints: List[AutonWaypoint]
 
 class CreateAutonWaypoint(BaseModel):
     name: str
@@ -42,7 +37,6 @@ class CreateAutonWaypoint(BaseModel):
     lon: float = Field(default=0.0, ge=-180.0, le=180.0)
     enable_costmap: bool = True
 
-
 class UpdateAutonWaypoint(BaseModel):
     name: str | None = None
     tag_id: int | None = None
@@ -51,13 +45,11 @@ class UpdateAutonWaypoint(BaseModel):
     lon: float | None = Field(default=None, ge=-180.0, le=180.0)
     enable_costmap: bool | None = None
 
-
 class UpdateBasicWaypoint(BaseModel):
     name: str | None = None
     lat: float | None = Field(default=None, ge=-90.0, le=90.0)
     lon: float | None = Field(default=None, ge=-180.0, le=180.0)
     drone: bool | None = None
-
 
 class AutonEnableWaypoint(BaseModel):
     latitude_degrees: float = Field(ge=-90.0, le=90.0)
@@ -66,57 +58,47 @@ class AutonEnableWaypoint(BaseModel):
     type: int = 0
     enable_costmap: bool = True
 
-
 class AutonEnableRequest(BaseModel):
     enabled: bool
-    waypoints: list[AutonEnableWaypoint] = []
-
+    waypoints: List[AutonEnableWaypoint] = []
 
 class TeleopEnableRequest(BaseModel):
     enabled: bool
 
-
 class DriveBackRequest(BaseModel):
     duration_seconds: float = Field(ge=1.0, le=10.0)
-
 
 class GimbalPositionRequest(BaseModel):
     joint: str
     position: float
-
 
 class GimbalAdjustRequest(BaseModel):
     joint: str
     adjustment: float = Field(ge=-3.14159, le=3.14159)
     absolute: bool = False
 
-
 class ServoPositionCommand(BaseModel):
     position: float = Field(ge=0.0, le=6.28318)
     is_counterclockwise: bool = False
 
-
 class RecordingCreateRequest(BaseModel):
     name: str
     is_drone: bool = False
-
 
 class RecordingWaypointRequest(BaseModel):
     lat: float = Field(ge=-90.0, le=90.0)
     lon: float = Field(ge=-180.0, le=180.0)
     sequence: int
 
-
 class RAModeRequest(BaseModel):
     mode: str
 
-
 class ServoPositionRequest(BaseModel):
-    names: list[str]
-    positions: list[float]
+    names: List[str]
+    positions: List[float]
 
-    @model_validator(mode="after")
+    @model_validator(mode='after')
     def check_lengths_match(self):
         if len(self.names) != len(self.positions):
-            raise ValueError(f"names length ({len(self.names)}) != positions length ({len(self.positions)})")
+            raise ValueError(f'names length ({len(self.names)}) != positions length ({len(self.positions)})')
         return self

@@ -8,9 +8,9 @@ from lie import SE3, normalized, angle_to_rotate_2d
 from geometry_msgs.msg import Twist, Vector3
 from navigation.marker_utils import gen_marker, ring_marker
 from rclpy.node import Node
-from rclpy.parameter import Parameter
 from rclpy.publisher import Publisher
-from .trajectory import Trajectory
+from trajectory import Trajectory
+from visualization_msgs.msg import Marker
 
 
 class DriveController:
@@ -33,9 +33,7 @@ class DriveController:
         self._last_target = None
         self._last_lookahead_dist = self.node.get_parameter("pure_pursuit.min_lookahead_distance").value
         self._last_point = None
-        self.USE_PURE_PURSUIT = self.node.get_parameter_or(
-            "pure_pursuit.use_pure_pursuit", Parameter("pure_pursuit.use_pure_pursuit", value=True)
-        ).value
+        self.USE_PURE_PURSUIT = self.node.get_parameter_or("pure_pursuit.use_pure_pursuit", True).value
         self.lookahead_pub = lookahead_pub
         self.intersection_pub = intersect_pub
         self._driver_state = self.DriveMode.STOPPED
@@ -345,7 +343,7 @@ class DriveController:
         rover_pos[2] = 0
 
         # Check and set if there is a new farther found point in the path
-        self.set_farthest_path_point(waypoints, rover_pos)
+        self.set_farthest_path_point(self, waypoints, rover_pos)
 
         # If we are at the end of the traj, return a zero command
         if waypoints.done():
@@ -479,6 +477,7 @@ class DriveController:
 
         return target_pos
 
+    @staticmethod
     def set_farthest_path_point(
         self,
         waypoints: Trajectory,
@@ -548,6 +547,11 @@ class DriveController:
         :modifies: nothing
         """
         intersections: list = []
+
+        # Ensure a trajectory was passed through
+        if waypoints is None:
+            raise ValueError("Attempt to detect intersection with no waypoints")
+            return
 
         x1 = waypoints.get_current_point()[0]
         y1 = waypoints.get_current_point()[1]

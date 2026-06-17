@@ -1,4 +1,3 @@
-from typing import override
 from geometry_msgs.msg import Twist
 from mrover.msg import WaypointType
 from state_machine.state import State
@@ -7,16 +6,13 @@ from .context import Context
 
 
 class DoneState(State):
-    @override
     def on_enter(self, context: Context) -> None:
         context.node.get_logger().info("Entered done state!")
         pass
 
-    @override
     def on_exit(self, context) -> None:
         pass
 
-    @override
     def on_loop(self, context) -> State:
         # Check if we have a course to traverse
         if context.course and not context.course.is_complete():
@@ -29,16 +25,13 @@ class DoneState(State):
 
 
 class OffState(State):
-    @override
     def on_enter(self, context) -> None:
         context.toggle_object_detector(WaypointType.NO_SEARCH)
         pass
 
-    @override
     def on_exit(self, context) -> None:
         pass
 
-    @override
     def on_loop(self, context) -> State:
         # Ensure Object Detector service has finished
         if not context.obj_detector_service_is_done():

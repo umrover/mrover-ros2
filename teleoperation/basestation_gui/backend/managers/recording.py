@@ -1,4 +1,5 @@
 import threading
+from typing import Optional
 from backend.managers.ros import get_node, get_logger
 from backend.database import get_recordings_db
 from sensor_msgs.msg import NavSatFix
@@ -11,7 +12,7 @@ class RecordingManager:
     def __init__(self):
         self.node = get_node()
         self.is_recording = False
-        self.current_recording_id: int | None = None
+        self.current_recording_id: Optional[int] = None
         self.recording_sequence = 0
         self.is_drone_recording = False
         self.timer = None
@@ -90,8 +91,6 @@ class RecordingManager:
             conn = get_recordings_db()
             cur = conn.execute("INSERT INTO recordings (name, is_drone) VALUES (?, ?)", (name, is_drone))
             recording_id = cur.lastrowid
-            if recording_id is None:
-                raise RuntimeError("Failed to create recording")
             conn.commit()
         finally:
             if conn:

@@ -62,7 +62,7 @@ class SearchTrajectory(Trajectory):
         coverage_radius: float,
         distance_between_spirals: float,
         num_segments_per_rotation: int,
-        _insert_extra: bool,
+        insert_extra: bool,
         max_segment_length: float,  # New parameter for max segment length
     ) -> np.ndarray:
         """

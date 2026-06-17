@@ -3,8 +3,9 @@
 from __future__ import annotations
 import signal
 import graphviz  # type: ignore
-from PyQt5.QtWidgets import QApplication, QLabel, QWidget  # type: ignore
-from PyQt5.QtCore import QTimer  # type: ignore
+import time
+from PyQt5.QtWidgets import *  # type: ignore
+from PyQt5.QtCore import *  # type: ignore
 from PyQt5.QtGui import QPainter  # type: ignore
 from PyQt5.QtSvg import QSvgRenderer  # type: ignore
 
@@ -17,6 +18,8 @@ import sys
 from mrover.msg import StateMachineStructure, StateMachineStateUpdate
 from threading import Lock
 from dataclasses import dataclass
+from typing import Optional, List, Dict
+import threading
 
 STRUCTURE_TOPIC = "nav_structure"
 STATUS_TOPIC = "nav_state"
@@ -25,13 +28,13 @@ STATUS_TOPIC = "nav_state"
 @dataclass
 class State:
     name: str
-    children: list[State]
+    children: List[State]
 
 
 class StateMachine:
     def __init__(self):
-        self.states: dict[str, State] = {}
-        self.structure: StateMachineStructure | None = None
+        self.states: Dict[str, State] = {}
+        self.structure: Optional[StateMachineStructure] = None
         self.mutex: Lock = Lock()
         self.cur_active: str = ""
         self.previous_state: str = ""
@@ -88,7 +91,7 @@ class GUI(QWidget):  # type: ignore
         self.renderer: QSvgRenderer = QSvgRenderer()
         self.timer.timeout.connect(self.update)
         self.timer.start(1)
-        self.graph: graphviz.Digraph | None = None
+        self.graph: Optional[graphviz.Digraph] = None
         self.img = None
         self.state_machine: StateMachine = state_machine_instance
         self.viz = Node("Visualizer")
@@ -101,7 +104,7 @@ class GUI(QWidget):  # type: ignore
             StateMachineStateUpdate, STATUS_TOPIC, self.state_machine.container_status_callback, 1
         )
 
-    def paintEvent(self, _event):
+    def paintEvent(self, event):
         painter = QPainter(self)
         if self.img is not None:
             self.renderer.load(self.img)

@@ -1,4 +1,3 @@
-from typing import override
 from state_machine.state import State
 from . import (
     backup,
@@ -7,14 +6,23 @@ from . import (
     stuck_recovery,
 )
 from mrover.msg import WaypointType
+from mrover.srv import MoveCostMap
 from .context import Context
-from navigation.astar import AStar
+import rclpy
+from .context import Context
+from navigation.astar import AStar, SpiralEnd, NoPath, OutOfBounds
 from navigation.coordinate_utils import segment_path, is_high_cost_point, d_calc, cartesian_to_ij
-from navigation.trajectory import Trajectory
+from navigation.trajectory import Trajectory, SearchTrajectory
+from typing import Optional
+from rclpy.publisher import Publisher
 from rclpy.time import Time
 from rclpy.timer import Timer
+import time
 from rclpy.duration import Duration
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Pose, PoseStamped, Point, Quaternion, Twist
+from nav_msgs.msg import Path
+from std_msgs.msg import Header
+from visualization_msgs.msg import Marker
 import numpy as np
 from navigation.smoothing import smoothing
 
@@ -26,9 +34,9 @@ class WaypointState(State):
     # NO_TAG: int = -1
     astar_traj: Trajectory
     waypoint_traj: Trajectory
-    prev_target_pos_in_map: np.ndarray | None = None
+    prev_target_pos_in_map: Optional[np.ndarray] = None
     is_recovering: bool = False
-    time_no_search_wait: Time | None = None
+    time_no_search_wait: Optional[Time] = None
     time_begin: Time
     start_time: Time
     marker_timer: Timer
@@ -41,7 +49,6 @@ class WaypointState(State):
     USE_RELAXATION: bool
     USE_INTERPOLATION: bool
 
-    @override
     def on_enter(self, context: Context) -> None:
         if context.course is None:
             return
@@ -86,13 +93,12 @@ class WaypointState(State):
 
         context.node.get_logger().info("On Enter finished")
 
-    @override
     def on_exit(self, context: Context) -> None:
         self.marker_timer.cancel()
         self.waypoint_timer.cancel()
         context.delete_path_marker(ns=str(type(self)))
 
-    def update_waypoint(self, _context: Context) -> None:
+    def update_waypoint(self, context: Context) -> None:
         self.waypoint_traj.clear()
         self.astar_traj.clear()
 
@@ -222,7 +228,6 @@ class WaypointState(State):
 
         return self
 
-    @override
     def on_loop(self, context: Context) -> State:
         """
         Handle driving to a waypoint defined by a linearized cartesian position.

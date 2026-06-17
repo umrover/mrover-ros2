@@ -2,10 +2,8 @@ import logging
 import rclpy
 import threading
 import atexit
-from rclpy.context import Context
 from rclpy.node import Node
 from rclpy.executors import SingleThreadedExecutor
-from rclpy.utilities import ok
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +22,6 @@ def get_node() -> Node:
         with lock:
             if not initialized.is_set():
                 init_ros()
-    assert node is not None
     return node
 
 
@@ -65,7 +62,7 @@ def init_ros():
     global context, node, ros_thread
 
     logger.info("Initializing ROS Manager...")
-    context = Context()
+    context = rclpy.Context()
     rclpy.init(context=context)
 
     node = Node("gui_backend_node", context=context)
@@ -81,7 +78,7 @@ def init_ros():
 def shutdown_ros():
     global context, node
     logger.info("Shutting down ROS Manager...")
-    if context and ok(context=context):
+    if context and rclpy.ok(context=context):
         if node:
             node.destroy_node()
         rclpy.shutdown(context=context)

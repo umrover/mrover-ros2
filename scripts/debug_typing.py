@@ -4,13 +4,15 @@ import sys
 import rclpy
 from mrover.action import TypingPosition
 from rclpy.node import Node
-from rclpy.action.client import ActionClient
+from rclpy.action import ActionClient
 from rclpy.executors import ExternalShutdownException
 from rclpy.client import Client
 from rclpy.task import Future
+from rclpy.time import Time
 from rclpy.duration import Duration
 import tkinter as tk
 from mrover.srv import IkMode
+import time
 
 
 class DebugTyping(Node):
@@ -36,7 +38,7 @@ class DebugTyping(Node):
 
         self.goal_entries = []
         NUM_ENTRIES = 10
-        for _i in range(NUM_ENTRIES):
+        for i in range(NUM_ENTRIES):
             entry_box = tk.Entry(root)
             entry_box.pack()
             self.goal_entries.append(entry_box)
@@ -84,13 +86,13 @@ class DebugTyping(Node):
 
             self.current_goal_handle = self.typing_future.result()
 
-            if not self.current_goal_handle.accepted:  # type: ignore[union-attr]
+            if not self.current_goal_handle.accepted:
                 self.get_logger().info("Goal rejected")
                 continue
 
             self.get_logger().info("Goal accepted")
 
-            result_future = self.current_goal_handle.get_result_async()  # type: ignore[union-attr]
+            result_future = self.current_goal_handle.get_result_async()
             while not result_future.done():
                 rclpy.spin_once(self, timeout_sec=0)
                 self.root.update()
@@ -108,7 +110,7 @@ class DebugTyping(Node):
         self.cancel = True
         if self.current_goal_handle is not None:
             self.get_logger().info("Canceling goal...")
-            self.current_goal_handle.cancel_goal_async()  # type: ignore[attr-defined]
+            self.current_goal_handle.cancel_goal_async()
 
 
 if __name__ == "__main__":

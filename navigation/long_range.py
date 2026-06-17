@@ -1,12 +1,11 @@
 import numpy as np
 
-from typing import override
 from lie import SO2
 from state_machine.state import State
 from . import stuck_recovery
 from .approach_target import ApproachTargetState
 from .context import Context
-from .coordinate_utils import is_high_cost_point
+from coordinate_utils import is_high_cost_point
 from geometry_msgs.msg import Twist
 
 
@@ -20,11 +19,9 @@ class LongRangeState(ApproachTargetState):
     -Stuck?
     """
 
-    @override
     def on_exit(self, context: Context) -> None:
         pass
 
-    @override
     def get_target_position(self, context: Context) -> np.ndarray | None:
         if context.course is None:
             return None
@@ -68,7 +65,6 @@ class LongRangeState(ApproachTargetState):
         context.node.get_logger().info(f"Long range target: {str(tag_position)}")
         return tag_position
 
-    @override
     def next_state(self, context: Context, is_finished: bool) -> State:
         tag_position = context.env.current_target_pos()
         if tag_position is None:

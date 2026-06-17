@@ -218,7 +218,7 @@ class Relaxation:
 
 class SplineInterpolation:
     @staticmethod
-    def interpolate(ctx: Context, trajectory: Trajectory, spacing: float = 2.0, _k: int = 2) -> Trajectory:
+    def interpolate(ctx: Context, trajectory: Trajectory, spacing: float = 2.0, k: int = 2) -> Trajectory:
         """
         Fits k-degree splines to the given trajectory and returns a new trajectory with
         evenly spaced points sampled from the splines. We approximate the total distance

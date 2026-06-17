@@ -9,7 +9,7 @@ import sys
 import rclpy
 from navigation.context import Context, CostMap, Environment, ImageTargetsStore
 from navigation.astar import AStar
-from rclpy.parameter import Parameter
+from rclpy import Parameter
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 import tkinter as tk
@@ -90,7 +90,7 @@ class SimWindow:
                 self.root.bind("<space>", self.toggle_animation)
             self.animate_path()
 
-    def toggle_animation(self, _event):
+    def toggle_animation(self, event):
         self.pause = not self.pause
         if not self.pause:
             self.animate_path()
@@ -200,7 +200,7 @@ class SimWindow:
                 self.curr_cell = (row, col)
                 self.draw_grid()
 
-    def stop_drag(self, _event):
+    def stop_drag(self, event):
         self.dragging = False
         self.grid_copy = np.copy(self.grid)
 

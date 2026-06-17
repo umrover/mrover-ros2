@@ -3,7 +3,7 @@ __author__ = "Ankith Udupa"
 import time
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Callable, TypeVar, Generic
+from typing import DefaultDict, Callable, TypeVar, Generic
 
 from rclpy.impl.rcutils_logger import RcutilsLogger
 from state_machine.state import State
@@ -21,7 +21,8 @@ ContextType = TypeVar("ContextType")
 
 class StateMachine(Generic[ContextType]):
     current_state: State
-    state_transitions: defaultdict[type[State], set[type[State]]]
+    state_transitions: DefaultDict[type[State], set[type[State]]]
+    transition_log: list[TransitionRecord]
     context: ContextType
     name: str
     off_lambda: Callable[[ContextType], bool] | None

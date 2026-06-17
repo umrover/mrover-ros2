@@ -14,7 +14,7 @@ import rclpy
 from lie import SE3
 from mrover.msg import Waypoint, WaypointType, GPSWaypoint
 from mrover.srv import EnableAuton
-from rclpy.parameter import Parameter
+from rclpy import Parameter
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 

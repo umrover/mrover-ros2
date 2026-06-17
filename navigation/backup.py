@@ -1,13 +1,14 @@
 import numpy as np
 
-from typing import override
+from lie import SO2
 from rclpy.duration import Duration
 from rclpy.time import Time
 from state_machine.state import State
 from . import state, waypoint
 from .context import Context
 from .trajectory import Trajectory
-from geometry_msgs.msg import Twist, PoseStamped
+from .coordinate_utils import is_high_cost_point
+from geometry_msgs.msg import Twist, PoseStamped, Point
 
 
 class BackupState(State):
@@ -20,11 +21,10 @@ class BackupState(State):
     prev_pos: np.ndarray
     start_time: Time
 
-    @override
     def on_enter(self, context: Context) -> None:
         context.node.get_logger().info("Entered Backup State")
 
-        if len(context.rover.path_history.poses) < 1:
+        if context.rover.path_history is None or len(context.rover.path_history.poses) < 1:
             context.node.get_logger().warn("Cannot backup: no path history")
             return
 
@@ -51,7 +51,6 @@ class BackupState(State):
         self.BACKUP_DIST = context.node.get_parameter("backup.backup_distance").value
         self.WAIT_TIME = context.node.get_parameter("backup.wait_time").value
 
-    @override
     def on_exit(self, context: Context) -> None:
         pass
 
@@ -61,7 +60,6 @@ class BackupState(State):
 
         return waypoint.WaypointState()
 
-    @override
     def on_loop(self, context: Context) -> State:
         if len(context.rover.path_history.poses) == 0 or self.backtrack_traj.done():
             return self.next_state(context)

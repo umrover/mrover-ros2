@@ -56,8 +56,8 @@ CLANG_FORMAT_PATH=$(find_first_executable clang-format clang-format-18)
 readonly CLANG_FORMAT_PATH
 BLACK_PATH=$(find_executable black)
 readonly BLACK_PATH
-BASEDPYRIGHT_PATH=$(find_executable basedpyright)
-readonly BASEDPYRIGHT_PATH
+MYPY_PATH=$(find_executable mypy)
+readonly MYPY_PATH
 
 ## Run checks
 
@@ -107,8 +107,8 @@ echo "Style checking Python with black ..."
 "${BLACK_PATH}" "${BLACK_ARGS[@]}" "${PYTHON_STYLE_DIRS[@]}"
 
 echo
-echo "Type checking Python with basedpyright ..."
-"${BASEDPYRIGHT_PATH}" "${PYTHON_LINT_DIRS[@]}"
+echo "Linting Python with mypy ..."
+"${MYPY_PATH}" --config-file=mypy.ini --check "${PYTHON_LINT_DIRS[@]}"
 
 if [ -d "./teleoperation/basestation_gui/frontend" ]; then
   echo

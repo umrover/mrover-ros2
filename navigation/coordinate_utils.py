@@ -1,6 +1,10 @@
 import numpy as np
 from navigation.context import Context
+from rclpy.duration import Duration
+from rclpy.time import Time
+from std_msgs.msg import Header
 from navigation.trajectory import Trajectory
+from lie import SE3
 
 
 def cartesian_to_ij(context: Context, cart_coord: np.ndarray) -> np.ndarray:
@@ -41,7 +45,7 @@ def d_calc(start: tuple, end: tuple) -> float:
     return np.sqrt((start[0] - end[0]) ** 2 + (start[1] - end[1]) ** 2)
 
 
-def vec_angle(v1: tuple, v2: tuple) -> float:
+def vec_angle(self, v1: tuple, v2: tuple) -> float:
     """
     Calculates angle between two vectors
     """

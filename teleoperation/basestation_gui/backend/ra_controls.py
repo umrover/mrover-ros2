@@ -1,3 +1,4 @@
+import asyncio
 from enum import Enum
 import threading
 
@@ -189,5 +190,3 @@ def send_ra_controls(
                     throttle_msg.names = ["cam"]
                     throttle_msg.throttles = [cam_throttle]
                     thr_pub.publish(throttle_msg)
-        case _:
-            pass

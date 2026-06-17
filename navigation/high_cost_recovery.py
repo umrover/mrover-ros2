@@ -1,6 +1,8 @@
 import numpy as np
 
-from typing import override
+from lie import SO2
+from rclpy.duration import Duration
+from rclpy.time import Time
 from state_machine.state import State
 from .context import Context
 from .trajectory import Trajectory
@@ -20,7 +22,6 @@ class HighCostRecoveryState(State):
     STOP_THRESH: float
     DRIVE_FWD_THRESH: float
 
-    @override
     def on_enter(self, context: Context) -> None:
         assert context.rover.path_history is not None
         context.node.get_logger().info("Entered HighCostRecoveryState")
@@ -35,11 +36,9 @@ class HighCostRecoveryState(State):
         self.STOP_THRESH = context.node.get_parameter("recovery.stop_threshold").value
         self.DRIVE_FWD_THRESH = context.node.get_parameter("recovery.drive_forward_threshold").value
 
-    @override
     def on_exit(self, context: Context) -> None:
         pass
 
-    @override
     def on_loop(self, context: Context) -> State:
         rover_pose = context.rover.get_pose_in_map()
         assert rover_pose is not None

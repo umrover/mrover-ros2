@@ -1,7 +1,5 @@
 import numpy as np
-from manifpy import SE3, SO2
-
-__all__ = ["SE3", "SO2", "normalized", "angle_to_rotate_2d", "perpendicular_2d"]
+from manifpy import SE3, SE3Tangent, SO3, SO3Tangent, SE2, SE2Tangent, SO2, SO2Tangent
 
 from lie.conversions import from_position_orientation, from_tf_tree, to_tf_tree, from_tf_tree_with_time
 

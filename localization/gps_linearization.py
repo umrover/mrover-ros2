@@ -12,11 +12,12 @@ At competition, it should be moved from the Wilson Center to MDRS, or better yet
 
 import sys
 
+import numpy as np
 from pymap3d.enu import geodetic2enu
 
 import rclpy
 from geometry_msgs.msg import Vector3Stamped, Vector3
-from rclpy.parameter import Parameter
+from rclpy import Parameter
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from sensor_msgs.msg import NavSatFix
