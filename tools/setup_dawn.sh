@@ -17,7 +17,7 @@ cd "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly DEST="deps/dawn-prebuilt"
 readonly VERSION_FILE="${DEST}/.version"
 
-if [ -f "${VERSION_FILE}" ] && [ "$(cat "${VERSION_FILE}")" = "${DAWN_SHA}" ]; then
+if [ -f "${VERSION_FILE}" ] && [ "$(cat "${VERSION_FILE}")" = "${DAWN_SHA}" ] && [ -f "${DEST}/lib/cmake/Dawn/DawnConfig.cmake" ]; then
     exit 0
 fi
 
