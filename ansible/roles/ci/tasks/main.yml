@@ -1,9 +1,3 @@
-# Allows us to install G++13, so we can use an updated libstdc++ which provides more standard library features (C++20)
-- name: Add GCC PPA
-  become: true
-  ansible.builtin.apt_repository:
-    repo: ppa:ubuntu-toolchain-r/test
-
 - name: Add LLVM APT Key
   become: true
   ansible.builtin.get_url:
@@ -17,20 +11,6 @@
   ansible.builtin.apt_repository:
     repo: "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.asc] http://apt.llvm.org/{{ ubuntu_release }}/ llvm-toolchain-{{ ubuntu_release }}-18 main"
     filename: llvm
-
-- name: Add CMake APT Key
-  become: true
-  ansible.builtin.get_url:
-    url: https://apt.kitware.com/keys/kitware-archive-latest.asc
-    dest: /usr/share/keyrings/kitware-archive-keyring.asc
-    mode: '0644'
-
-# Allows us to install CMake versions newer than 3.22
-- name: Add CMake APT List
-  become: true
-  ansible.builtin.apt_repository:
-    repo: "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.asc] https://apt.kitware.com/ubuntu/ {{ ubuntu_release }} main"
-    filename: kitware
 
 - name: Add ROS APT Key
   become: true
