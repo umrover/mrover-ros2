@@ -28,7 +28,7 @@ jobs:
         run: ./style.sh
 
   build:
-    name: Build (pixi)
+    name: Build (pixi Ubuntu 26)
     runs-on: ubuntu-26.04
     needs: style
     steps:
