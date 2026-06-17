@@ -84,16 +84,16 @@
       - libboost-dev
       - qt6-multimedia-dev
 
-- name: Build and Install Manif
-  ansible.builtin.command: ./scripts/build_manif.sh
-  args:
-    chdir: "{{ ros2_workspace }}/src/mrover/"
-    creates: /usr/local/lib/python3.12/dist-packages/manifpy/__init__.py
+- name: Install manifpy
+  become: true
+  ansible.builtin.pip:
+    name: manifpy==0.0.5
+    extra_args: "--break-system-packages"
 
 - name: Download prebuilt Dawn
   ansible.builtin.command: ./tools/setup_dawn.sh
   args:
-    chdir: "{{ ros2_workspace }}/src/mrover/"
+    chdir: "{{ mrover_repo }}"
 
 - name: Initialize rosdep
   become: true
@@ -165,6 +165,6 @@
   ansible.builtin.pip:
     name:
       # Installs from pyproject.toml
-      - "{{ ros2_workspace }}/src/mrover[dev]"
-    virtualenv: "{{ ros2_workspace }}/src/mrover/venv"
+      - "{{ mrover_repo }}[dev]"
+    virtualenv: "{{ mrover_repo }}/venv"
     virtualenv_command: /usr/bin/python3 -m venv
