@@ -6,7 +6,7 @@
     path: "{{ ansible_env.HOME }}/.pixi/bin"
     state: directory
     mode: '0755'
-  when: portable and ansible_system == 'Linux'
+  when: ansible_system == 'Linux'
 
 - name: Install pixi (Linux)
   ansible.builtin.get_url:
@@ -14,13 +14,12 @@
     dest: "{{ ansible_env.HOME }}/.pixi/bin/pixi"
     mode: '0755'
     force: false
-  when: portable and ansible_system == 'Linux'
+  when: ansible_system == 'Linux'
 
 - name: Update git submodules
   ansible.builtin.command:
     cmd: git submodule update --init
     chdir: "{{ mrover_repo }}"
-  when: portable
 
 - name: Install oh-my-zsh
   ansible.builtin.git:
@@ -67,7 +66,6 @@
     marker: "# {mark} MROVER"
     block: '[[ -f "${MROVER_REPO:-$HOME/mrover-ros2}/tools/mrover.zshenv" ]] && source "${MROVER_REPO:-$HOME/mrover-ros2}/tools/mrover.zshenv"'
     create: true
-  when: portable
 
 # - name: Remove legacy mrover zshenv wiring
 #   ansible.builtin.blockinfile:
@@ -91,7 +89,6 @@
     chdir: "{{ mrover_repo }}"
   environment:
     PATH: "{{ ansible_env.HOME }}/.pixi/bin:{{ ansible_env.PATH }}"
-  when: portable
 
 - name: Install VSCode extension
   ansible.builtin.command: code --install-extension {{ mrover_repo }}/pkg/file-selector-0.0.1.vsix
