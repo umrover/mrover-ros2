@@ -46,7 +46,6 @@ ros-jazzy-rviz2 = ">=14.1.19,<15"
 ipython = "*"
 pytest = "*"
 pytest-asyncio = "*"
-basedpyright = "*"
 black = ">=26.5.1,<27"
 clang-format = "18.*"
 
