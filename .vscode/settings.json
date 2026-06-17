@@ -6,22 +6,23 @@
     "python.analysis.inlayHints.variableTypes": true,
     "python.analysis.inlayHints.callArgumentNames": "all",
     "python.analysis.inlayHints.functionReturnTypes": true,
-    // install/{profile}/mrover/lib/python3.12/site-packages is already in PYTHONPATH,
+    // ~/ros2_ws/install/{profile}/mrover/lib/python3.10/site-packages is already in PYTHONPATH,
     // but Pylance currently has a bug where it cannot handle the symlinks in it.
     // Below we are just putting directly where those symlinks go for all build profiles
     "python.analysis.extraPaths": [
-        "/opt/ros/jazzy/lib/python3/dist-packages",
-        "${workspaceFolder}/install/Debug/mrover/lib/python3.12/site-packages",
-        "${workspaceFolder}/install/Release/mrover/lib/python3.12/site-packages",
-        "${workspaceFolder}/install/RelWithDebInfo/mrover/lib/python3.12/site-packages",
-        "${workspaceFolder}/build/Debug/mrover/rosidl_generator_py",
-        "${workspaceFolder}/build/Release/mrover/rosidl_generator_py",
-        "${workspaceFolder}/build/RelWithDebInfo/mrover/rosidl_generator_py",
+        "/opt/ros/humble/lib/python3/dist-packages",
+        "../../install/Debug/mrover/lib/python3.10/site-packages",
+        "../../install/Release/mrover/lib/python3.10/site-packages",
+        "../../install/RelWithDebInfo/mrover/lib/python3.10/site-packages",
+        "../../build/Debug/mrover/rosidl_generator_py",
+        "../../build/Release/mrover/rosidl_generator_py",
+        "../../build/RelWithDebInfo/mrover/rosidl_generator_py",
     ],
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter",
     },
-    "basedpyright.importStrategy": "fromEnvironment",
+    // We use mypy for this, see style.sh
+    "python.analysis.typeCheckingMode": "off",
     //// Miscellaneous
     "redhat.telemetry.enabled": false,
     "git.ignoreSubmodules": true,
