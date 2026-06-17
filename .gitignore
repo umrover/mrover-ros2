@@ -2,6 +2,7 @@
 /build/
 /install/
 /log/
+/build_out.txt
 
 # pixi environment directory (pixi.lock IS committed, envs are not)
 /.pixi/*
