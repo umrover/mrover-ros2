@@ -65,7 +65,7 @@ jobs:
       - name: Install ansible
         run: |
           sudo apt-get update
-          sudo apt-get install -y ansible
+          sudo apt-get install -y ansible-core
           ansible-galaxy collection install -r ansible/requirements.yml
       - name: Setup environment
         run: >
