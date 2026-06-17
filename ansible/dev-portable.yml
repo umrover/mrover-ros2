@@ -1,4 +1,6 @@
 ---
 - hosts: all
+  vars:
+    portable: true
   roles:
     - dev
