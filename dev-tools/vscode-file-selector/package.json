@@ -1,0 +1,36 @@
+{
+    "name": "file-selector",
+    "displayName": "file-selector",
+    "description": "Prompt users with a list of options to select which executable they would like to debug.",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.100.2"
+    },
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [],
+    "main": "./out/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "file-selector.fileSelect",
+                "title": "File Select"
+            }
+        ]
+    },
+    "scripts": {
+        "vscode:prepublish": "bun run compile",
+        "compile": "tsc -p ./",
+        "package": "bunx @vscode/vsce package --no-dependencies -o ../../pkg/file-selector-0.0.1.vsix"
+    },
+    "devDependencies": {
+        "@types/vscode": "^1.100.2",
+        "@types/node": "22.x",
+        "@typescript-eslint/eslint-plugin": "^8.45.0",
+        "@typescript-eslint/parser": "^8.45.0",
+        "eslint": "^9.36.0",
+        "typescript": "^5.9.3",
+        "@vscode/vsce": "^3.0.0"
+    }
+}

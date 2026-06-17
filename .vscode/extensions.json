@@ -1,7 +1,7 @@
 {
     "recommendations": [
         "ms-vscode.cpptools",
-        "ms-python.vscode-pylance",
+        "detachhead.basedpyright",
         "ms-python.black-formatter",
         "ms-python.debugpy",
         "dbaeumer.vscode-eslint",
@@ -9,6 +9,5 @@
         "redhat.vscode-yaml",
         "llvm-vs-code-extensions.vscode-clangd",
         "eamodio.gitlens",
-        "streetsidesoftware.code-spell-checker",
     ],
 }

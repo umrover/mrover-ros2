@@ -8,14 +8,14 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/../../install/Debug/mrover/lib/mrover/${input:myStringInput}",
+            "program": "${workspaceFolder}/install/Debug/mrover/lib/mrover/${input:myStringInput}",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [
                 {
                     "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/../../install/Debug/mrover/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/aarch64-linux-gnu:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib"
+                    "value": "${workspaceFolder}/install/Debug/mrover/lib:/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/aarch64-linux-gnu:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/lib"
                 },
                 {
                     "name": "ROS_DOMAIN_ID",
@@ -38,13 +38,35 @@
             ]
         },
         {
+            "name": "(lldb) Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/install/Debug/mrover/lib/mrover/${input:myStringInput}",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "MIMode": "lldb",
+            "miDebuggerPath": "/opt/homebrew/opt/llvm/bin/lldb",
+            "environment": [
+                {
+                    "name": "DYLD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/install/Debug/mrover/lib"
+                },
+                {
+                    "name": "ROS_DOMAIN_ID",
+                    "value": "5"
+                }
+            ],
+            "externalConsole": false
+        },
+        {
             "name": "(pdb) Launch",
             "type": "debugpy",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
             "env": {
-                "LD_LIBRARY_PATH": "${workspaceFolder}/../../install/Debug/mrover/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/aarch64-linux-gnu:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib",
+                "LD_LIBRARY_PATH": "${workspaceFolder}/install/Debug/mrover/lib:/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/aarch64-linux-gnu:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/lib",
                 "ROS_DOMAIN_ID": "5"
             }
         }
@@ -56,7 +78,7 @@
             "type": "command",
             "command": "file-selector.fileSelect",
             // exclude the absolute prefix path here
-            "args": "../../install/Debug/mrover/lib/mrover"
+            "args": "install/Debug/mrover/lib/mrover"
         }
     ]
 }
