@@ -8,14 +8,14 @@
   become: true
   ansible.builtin.get_url:
     url: https://apt.llvm.org/llvm-snapshot.gpg.key
-    dest: /usr/share/keyrings/llvm-archive-keyring.gpg
+    dest: /usr/share/keyrings/llvm-archive-keyring.asc
     mode: '0644'
 
 # Allows us to install LLVM tools
 - name: Add LLVM APT List
   become: true
   ansible.builtin.apt_repository:
-    repo: "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.gpg] http://apt.llvm.org/{{ ubuntu_release }}/ llvm-toolchain-{{ ubuntu_release }}-18 main"
+    repo: "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.asc] http://apt.llvm.org/{{ ubuntu_release }}/ llvm-toolchain-{{ ubuntu_release }}-18 main"
     filename: llvm
 
 - name: Add CMake APT Key
