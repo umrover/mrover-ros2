@@ -25,7 +25,7 @@ async def funnel_servo_position(data: ServoPositionCommand):
             raise HTTPException(status_code=500, detail=err or "Service call failed")
 
         at_tgt = result.at_tgts[0] if result.at_tgts else False
-        return {"status": "success", "position": data.position, "at_tgt": at_tgt}
+        return {'status': 'success', 'position': data.position, 'at_tgt': at_tgt}
 
     except HTTPException:
         raise

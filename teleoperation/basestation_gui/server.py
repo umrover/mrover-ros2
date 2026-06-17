@@ -55,7 +55,6 @@ app.include_router(led_router)
 
 MAX_WS_PAYLOAD_BYTES = 1024 * 1024  # 1 MB
 
-
 # WebSocket Handlers
 async def handle_websocket(websocket: WebSocket, ConsumerClass):
     await websocket.accept()
@@ -76,41 +75,33 @@ async def handle_websocket(websocket: WebSocket, ConsumerClass):
     finally:
         await handler.cleanup()
 
-
 @app.websocket("/ws/arm")
 async def ws_arm(websocket: WebSocket):
     await handle_websocket(websocket, ArmHandler)
-
 
 @app.websocket("/ws/drive")
 async def ws_drive(websocket: WebSocket):
     await handle_websocket(websocket, DriveHandler)
 
-
 @app.websocket("/ws/chassis")
 async def ws_chassis(websocket: WebSocket):
     await handle_websocket(websocket, ChassisHandler)
-
 
 @app.websocket("/ws/nav")
 async def ws_nav(websocket: WebSocket):
     await handle_websocket(websocket, NavHandler)
 
-
 @app.websocket("/ws/science")
 async def ws_science(websocket: WebSocket):
     await handle_websocket(websocket, ScienceHandler)
-
 
 @app.websocket("/ws/latency")
 async def ws_latency(websocket: WebSocket):
     await handle_websocket(websocket, LatencyHandler)
 
-
 @app.websocket("/ws/auton")
 async def ws_auton(websocket: WebSocket):
     await handle_websocket(websocket, AutonHandler)
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -121,7 +112,6 @@ if __name__ == "__main__":
     get_node()
 
     from backend.database import ensure_initialized
-
     ensure_initialized()
 
     if args.serve_static:

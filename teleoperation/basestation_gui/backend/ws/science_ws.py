@@ -4,10 +4,9 @@ from backend.input import DeviceInputs
 from backend.sp_controls import send_sp_controls
 from mrover.msg import Throttle, ControllerState, Humidity, Temperature, Oxygen, UV, Ozone, CO2, Pressure, SensorStates
 
-
 class ScienceHandler(WebSocketHandler):
     def __init__(self, websocket):
-        super().__init__(websocket, "science")
+        super().__init__(websocket, 'science')
 
     async def setup(self):
         self.sp_thr_pub = self.node.create_publisher(Throttle, "/sp_thr_cmd", 1)
@@ -24,11 +23,11 @@ class ScienceHandler(WebSocketHandler):
         self.forward_ros_topic("/sp_sensor_states", SensorStates, "sp_sensor_state")
 
     async def handle_message(self, data):
-        msg_type = data.get("type")
+        msg_type = data.get('type')
 
-        if msg_type == "sp_controller":
-            axes = data.get("axes", [])
-            buttons = data.get("buttons", [])
+        if msg_type == 'sp_controller':
+            axes = data.get('axes', [])
+            buttons = data.get('buttons', [])
             device_input = DeviceInputs(axes, buttons)
             send_sp_controls(device_input, self.sp_thr_pub)
         else:
