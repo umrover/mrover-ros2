@@ -45,7 +45,7 @@ async def panorama_stop():
             raise HTTPException(status_code=500, detail="Panorama failed")
 
         img_msg = result.img
-        img_np = np.frombuffer(img_msg.data, dtype=np.uint8).reshape(img_msg.height, img_msg.width, -1)
+        img_np: np.ndarray = np.frombuffer(img_msg.data, dtype=np.uint8).reshape(img_msg.height, img_msg.width, -1)
 
         if img_np.shape[2] == 4:
             img_np = cv2.cvtColor(img_np, cv2.COLOR_RGBA2BGR)

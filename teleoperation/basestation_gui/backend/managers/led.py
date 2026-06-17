@@ -3,7 +3,8 @@ from backend.managers.ros import get_node
 
 
 class LEDManager:
-    instance = None
+    instance: "LEDManager | None" = None
+    initialized: bool
 
     def __new__(cls):
         if cls.instance is None:
