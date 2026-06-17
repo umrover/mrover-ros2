@@ -22,14 +22,14 @@
   become: true
   ansible.builtin.get_url:
     url: https://apt.kitware.com/keys/kitware-archive-latest.asc
-    dest: /usr/share/keyrings/kitware-archive-keyring.gpg
+    dest: /usr/share/keyrings/kitware-archive-keyring.asc
     mode: '0644'
 
 # Allows us to install CMake versions newer than 3.22
 - name: Add CMake APT List
   become: true
   ansible.builtin.apt_repository:
-    repo: "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ {{ ubuntu_release }} main"
+    repo: "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.asc] https://apt.kitware.com/ubuntu/ {{ ubuntu_release }} main"
     filename: kitware
 
 - name: Add ROS APT Key
