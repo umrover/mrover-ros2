@@ -47,7 +47,9 @@ ipython = "*"
 pytest = "*"
 pytest-asyncio = "*"
 black = ">=26.5.1,<27"
+mypy = "*"
 clang-format = "18.*"
+shellcheck = "*"
 
 [target.linux-64.dependencies]
 tbb = "*"
@@ -55,17 +57,3 @@ tbb-devel = "*"
 
 [pypi-dependencies]
 mrover = { path = ".", editable = true }
-
-[feature.style.dependencies]
-python = "3.12.*"
-black = "*"
-mypy = "*"
-clang-format = "18.*"
-shellcheck = "*"
-bun = "*"
-
-[feature.style.pypi-dependencies]
-mrover = { path = ".", editable = true }
-
-[environments]
-style = { features = ["style"], solve-group = "style" }
