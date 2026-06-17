@@ -25,6 +25,13 @@
     repo: "deb [signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu {{ ubuntu_release }} main"
     filename: ros
 
+- name: Upgrade APT Packages
+  become: true
+  ansible.builtin.apt:
+    cache_valid_time: 604800
+    state: present
+    upgrade: yes
+
 - name: Install APT Packages
   become: true
   ansible.builtin.apt:
