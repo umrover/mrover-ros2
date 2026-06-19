@@ -100,7 +100,13 @@ if (NOT manif_FOUND)
         GIT_TAG        0.0.5
         GIT_SHALLOW    TRUE
     )
-    FetchContent_MakeAvailable(manif)
+    FetchContent_GetProperties(manif)
+    if (NOT manif_POPULATED)
+        FetchContent_Populate(manif)
+    endif ()
+    add_library(MANIF::manif INTERFACE IMPORTED GLOBAL)
+    target_include_directories(MANIF::manif INTERFACE "${manif_SOURCE_DIR}/include")
+    target_link_libraries(MANIF::manif INTERFACE Eigen3::Eigen)
 endif ()
 
 FetchContent_Declare(
