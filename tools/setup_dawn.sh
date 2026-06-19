@@ -36,8 +36,8 @@ case "${OS}/${ARCH}" in
 Unsupported platform: ${OS}/${ARCH}
 
 This project only supports prebuilt Dawn on:
-  - Linux x86_64 (amd64)
-  - macOS arm64  (Apple Silicon)
+- Linux x86_64 (amd64)
+- macOS arm64  (Apple Silicon)
 
 There is no supported build path for ${OS}/${ARCH}.
 EOF
@@ -54,6 +54,12 @@ curl -fL --progress-bar "${BASE_URL}/${BINARY_TARBALL}" -o "${tmpdir}/dawn.tar.g
 rm -rf "${DEST}"
 mkdir -p "${DEST}"
 tar -xzf "${tmpdir}/dawn.tar.gz" -C "${DEST}" --strip-components 1
+
+# Normalize: Linux tarballs install to lib64/, but CMake's prefix path search
+# reliably checks lib/. Symlink lib -> lib64 so both work.
+if [ -d "${DEST}/lib64" ] && [ ! -e "${DEST}/lib" ]; then
+    ln -sf lib64 "${DEST}/lib"
+fi
 
 echo "${DAWN_SHA}" > "${VERSION_FILE}"
 echo "Dawn ${DAWN_VERSION} installed."
