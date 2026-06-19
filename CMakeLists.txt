@@ -84,8 +84,6 @@ if (NOT Dawn_FOUND)
 endif ()
 add_library(webgpu ALIAS dawn::webgpu_dawn)
 
-find_package(manif REQUIRED)
-
 find_package(PkgConfig REQUIRED)
 pkg_search_module(NetLink libnl-3.0 IMPORTED_TARGET QUIET)
 pkg_search_module(NetLinkRoute libnl-route-3.0 IMPORTED_TARGET QUIET)
@@ -94,6 +92,16 @@ pkg_search_module(GstApp gstreamer-app-1.0 IMPORTED_TARGET QUIET)
 pkg_search_module(LibUdev libudev IMPORTED_TARGET QUIET)
 
 include(FetchContent)
+
+find_package(manif QUIET)
+if (NOT manif_FOUND)
+    FetchContent_Declare(manif
+        GIT_REPOSITORY https://github.com/artivis/manif.git
+        GIT_TAG        0.0.5
+        GIT_SHALLOW    TRUE
+    )
+    FetchContent_MakeAvailable(manif)
+endif ()
 
 FetchContent_Declare(
     imgui
