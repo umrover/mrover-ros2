@@ -132,31 +132,7 @@ if (APPLE)
     )
 endif ()
 
-FetchContent_Declare(
-    glfw3webgpu
-    GIT_REPOSITORY https://github.com/eliemichel/glfw3webgpu.git
-    GIT_TAG        8f14534e79c590e8a7f7795ea42e01bedea9e137
-    GIT_SHALLOW    TRUE
-)
-FetchContent_MakeAvailable(glfw3webgpu)
-if (UNIX AND NOT APPLE)
-    # GLFW 3.4+ supports dynamic platform selection (X11 and Wayland in one binary).
-    # glfw3webgpu guards each native code path behind compile-time _GLFW_* macros,
-    # so define both to ensure the correct path compiles in regardless of host session.
-    target_compile_definitions(glfw3webgpu PRIVATE _GLFW_X11 _GLFW_WAYLAND)
-elseif (APPLE)
-    # GLFW_BUILD_COCOA is only set when building GLFW from source; with a prebuilt
-    # GLFW from pixi it's never set, so the upstream glfw3webgpu CMakeLists.txt
-    # skips the Cocoa block entirely. Replicate it here manually.
-    target_compile_definitions(glfw3webgpu PRIVATE GLFW_EXPOSE_NATIVE_COCOA)
-    target_compile_options(glfw3webgpu PRIVATE -x objective-c)
-    target_link_libraries(glfw3webgpu PRIVATE
-        "-framework Cocoa"
-        "-framework CoreVideo"
-        "-framework IOKit"
-        "-framework QuartzCore"
-    )
-endif()
+add_subdirectory(deps/glfw3webgpu EXCLUDE_FROM_ALL SYSTEM)
 
 add_library(webgpu_hpp INTERFACE)
 target_include_directories(webgpu_hpp SYSTEM INTERFACE deps/webgpuhpp)

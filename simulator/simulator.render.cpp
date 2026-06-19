@@ -261,12 +261,6 @@ namespace mrover {
     }
 
     auto Simulator::initWindow() -> void {
-        // Dawn's Linux prebuilt only supports X11 surfaces. Force GLFW onto X11
-        // (runs over XWayland on Wayland-only systems).
-        // On macOS, Cocoa is the only valid platform so we leave the hint unset.
-#ifndef __APPLE__
-        glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
-#endif
         mGlfwInstance.init();
         glfwSetErrorCallback([](int error, char const* description) { throw std::runtime_error(std::format("GLFW Error {}: {}", error, description)); });
         RCLCPP_INFO_STREAM(get_logger(), std::format("Initialized GLFW Version: {}.{}.{}", GLFW_VERSION_MAJOR, GLFW_VERSION_MINOR, GLFW_VERSION_REVISION));
@@ -348,7 +342,7 @@ namespace mrover {
             if (!mWgpuInstance) throw std::runtime_error("Failed to create WGPU instance");
         }
         if (!mIsHeadless) {
-            mSurface = glfwCreateWindowWGPUSurface(mWgpuInstance, mWindow.get());
+            mSurface = glfwGetWGPUSurface(mWgpuInstance, mWindow.get());
             if (!mSurface) throw std::runtime_error("Failed to create WGPU surface");
         }
         {

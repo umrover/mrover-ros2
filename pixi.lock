@@ -65,7 +65,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/gettext-0.25.1-h3f43e3d_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/gettext-tools-0.25.1-h3f43e3d_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/glew-2.3.0-h71661d4_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/glfw-3.4-hb03c661_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/glfw-3.3.10-hd590300_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/glib-2.88.1-hd810c12_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/glib-tools-2.88.1-hee1de02_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/glslang-16.3.0-h96af755_0.conda
@@ -845,7 +845,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/gettext-0.25.1-h3dcc1bd_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/gettext-tools-0.25.1-h493aca8_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/glew-2.3.0-hf163413_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/glfw-3.4-hc919400_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/glfw-3.3.10-h93a5062_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/glib-2.88.1-h92d5a4f_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/glib-tools-2.88.1-h37541a8_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/glslang-16.3.0-h7cb4797_0.conda
@@ -2238,26 +2238,22 @@ packages:
     - glew >=2.3.0,<2.4.0a0
   size: 492673
   timestamp: 1766373546677
-- conda: https://conda.anaconda.org/conda-forge/linux-64/glfw-3.4-hb03c661_1.conda
-  sha256: 8586f786e71a52dc37be6a78c37fd8526b80539082352196f6f7440392ce33d0
-  md5: bf1df8613072b03a7fb4b77b9fa54048
+- conda: https://conda.anaconda.org/conda-forge/linux-64/glfw-3.3.10-hd590300_0.conda
+  sha256: e3ec7d4fe1c00a86559fbdd9498ef3f7c2319ff48c269268d275ee7042190a17
+  md5: e15d33b7a67257a40aa67fce6eac527d
   depends:
-  - __glibc >=2.17,<3.0.a0
-  - libgcc >=14
-  - libxkbcommon >=1.11.0,<2.0a0
-  - wayland >=1.24.0,<2.0a0
-  - xorg-libx11 >=1.8.12,<2.0a0
-  - xorg-libxcursor >=1.2.3,<2.0a0
-  - xorg-libxi >=1.8.2,<2.0a0
+  - libgcc-ng >=12
+  - xorg-libx11 >=1.8.7,<2.0a0
+  - xorg-libxcursor
   - xorg-libxinerama >=1.1.5,<1.2.0a0
-  - xorg-libxrandr >=1.5.4,<2.0a0
+  - xorg-libxrandr
   license: Zlib
   purls: []
   run_exports:
     weak:
-    - glfw >=3.4,<4.0a0
-  size: 166432
-  timestamp: 1758809197097
+    - glfw >=3.3.10,<4.0a0
+  size: 128367
+  timestamp: 1708574344427
 - conda: https://conda.anaconda.org/conda-forge/linux-64/glib-2.88.1-hd810c12_2.conda
   sha256: 6a97b61cfb30a85c2f4a95f1f7525a873eea0b540f9f11b9cf31ad70d6635fce
   md5: 9add1716591862a115c885dda4fcbeb5
@@ -8810,18 +8806,16 @@ packages:
     - glew >=2.3.0,<2.4.0a0
   size: 458581
   timestamp: 1766373683267
-- conda: https://conda.anaconda.org/conda-forge/osx-arm64/glfw-3.4-hc919400_1.conda
-  sha256: 1399137b5ca52e73760aeb98235247c90cd4cee43f946aaf39ed69f69a00a956
-  md5: 77d80914f04ad95f9ed0338735986b95
-  depends:
-  - __osx >=11.0
+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/glfw-3.3.10-h93a5062_0.conda
+  sha256: 67bba96c95ab34221e3053e2f8ad1885684e815e57ab6748c8563001d631e108
+  md5: 6e8c55b1905580f2c284e36e5ed2437f
   license: Zlib
   purls: []
   run_exports:
     weak:
-    - glfw >=3.4,<4.0a0
-  size: 113494
-  timestamp: 1758809831689
+    - glfw >=3.3.10,<4.0a0
+  size: 103190
+  timestamp: 1708574688167
 - conda: https://conda.anaconda.org/conda-forge/osx-arm64/glib-2.88.1-h92d5a4f_2.conda
   sha256: e6804164a3d771d369d97fd08a2db739321d452c9ffa6803f9bbf309aa1f4dfe
   md5: 937bab93d8e05d664f45f1aed40291ba
