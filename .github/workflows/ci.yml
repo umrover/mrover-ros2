@@ -52,20 +52,20 @@ jobs:
   build-native:
     name: Build (native Ubuntu 24)
     runs-on: ubuntu-24.04
+    container:
+      image: ${{ secrets.DOCKERHUB_USERNAME }}/mrover-ci:latest
     needs: style
     steps:
       - uses: actions/checkout@v6
+      - name: Dawn Cache
+        uses: actions/cache@v5
+        with:
+          path: deps/dawn-prebuilt
+          key: dawn-${{ hashFiles('tools/setup_dawn.sh') }}
+      - name: Setup Dawn
+        run: ./tools/setup_dawn.sh
       - name: Compiler Cache
         uses: hendrikmuhs/ccache-action@v1.2.23
-      - name: Install ansible
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ansible-core
-          ansible-galaxy collection install -r ansible/requirements.yml
-      - name: Setup environment
-        run: >
-          ansible-playbook -i "localhost," -c local ansible/ci.yml
-          --extra-vars "mrover_repo=$(pwd)"
       - name: Build
         env:
           MROVER_BUILD_JOBS: 2
