@@ -99,6 +99,7 @@ if (NOT manif_FOUND)
         GIT_REPOSITORY https://github.com/artivis/manif.git
         GIT_TAG        0.0.5
         GIT_SHALLOW    TRUE
+        SYSTEM
     )
     set(BUILD_TESTING OFF)
     FetchContent_MakeAvailable(manif)
