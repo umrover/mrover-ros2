@@ -75,6 +75,7 @@
       - ros-jazzy-rtcm-msgs
       - ros-jazzy-magic-enum
       - ros-jazzy-dynamixel-sdk
+      - ros-jazzy-manif
       # TODO (ali): why does this need to be installed manually
       - libboost-dev
       - qt6-multimedia-dev
