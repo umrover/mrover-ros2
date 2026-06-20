@@ -78,43 +78,28 @@ if (NOT APPLE)
     link_libraries(TBB::tbb)
 endif()
 
-find_package(dawn QUIET)
-if (dawn_FOUND)
-    message(STATUS "Using Dawn system install")
-else ()
-    message(STATUS "Using Dawn from source")
-    add_library(webgpu SHARED IMPORTED)
-
-    set(WEBGPU_BUILD_DIR ${CMAKE_CURRENT_LIST_DIR}/deps/dawn/out/Release)
-    if (APPLE)
-        set(WEBGPU_SHARED_LIB ${WEBGPU_BUILD_DIR}/src/dawn/native/libwebgpu_dawn.dylib)
-    else ()
-        set(WEBGPU_SHARED_LIB ${WEBGPU_BUILD_DIR}/src/dawn/native/libwebgpu_dawn.so)
-    endif ()
-    if (EXISTS ${WEBGPU_SHARED_LIB})
-        target_include_directories(webgpu INTERFACE ${CMAKE_CURRENT_LIST_DIR}/deps/dawn/include ${WEBGPU_BUILD_DIR}/gen/include)
-        set_property(TARGET webgpu PROPERTY IMPORTED_LOCATION ${WEBGPU_SHARED_LIB})
-
-        set(dawn_FOUND TRUE)
-    else ()
-        message(WARNING "Dawn not found. If on Ubuntu install with 'sudo apt install -f ./pkg/libdawn-dev.deb'. Or build from source with ./scripts/build_dawn.sh")
-    endif ()
+list(PREPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_LIST_DIR}/deps/dawn-prebuilt")
+find_package(Dawn QUIET)
+if (NOT Dawn_FOUND)
+    message(FATAL_ERROR "Dawn not found. Run 'tools/setup_dawn.sh' before building.")
 endif ()
+add_library(webgpu ALIAS dawn::webgpu_dawn)
 
-find_package(MANIF::manif QUIET)
+include(FetchContent)
+
+find_package(manif QUIET)
 if (NOT manif_FOUND)
-    if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/manif/include/manif)
-        set(BUILD_TESTING_OLD ${BUILD_TESTING})
-        set(BUILD_TESTING OFF)
-        add_subdirectory(deps/manif EXCLUDE_FROM_ALL SYSTEM)
-        set(BUILD_TESTING ${BUILD_TESTING_OLD})
-        add_library(MANIF::manif ALIAS manif)
-
-        set(manif_FOUND TRUE)
-    else()
-        message(FATAL_ERROR "Manif not found. If on Ubuntu install with 'sudo apt install -f ./pkg/libmanif-dev.deb'. Or build from source with 'git submodule update --init deps/manif' and make sure it is non-empty")
-    endif()
-endif()
+    FetchContent_Declare(manif
+        GIT_REPOSITORY https://github.com/artivis/manif.git
+        GIT_TAG        0.0.5
+        GIT_SHALLOW    TRUE
+        SYSTEM
+    )
+    set(BUILD_TESTING OFF)
+    FetchContent_MakeAvailable(manif)
+    unset(BUILD_TESTING)
+    add_library(MANIF::manif ALIAS manif)
+endif ()
 
 find_package(PkgConfig REQUIRED)
 pkg_search_module(NetLink libnl-3.0 IMPORTED_TARGET QUIET)
@@ -124,7 +109,8 @@ pkg_search_module(GstApp gstreamer-app-1.0 IMPORTED_TARGET QUIET)
 pkg_search_module(LibUdev libudev IMPORTED_TARGET QUIET)
 
 add_subdirectory(deps/imgui EXCLUDE_FROM_ALL SYSTEM)
-add_subdirectory(deps/webgpuhpp EXCLUDE_FROM_ALL SYSTEM)
+add_library(webgpu_hpp INTERFACE)
+target_include_directories(webgpu_hpp SYSTEM INTERFACE deps/webgpuhpp)
 add_subdirectory(deps/glfw3webgpu EXCLUDE_FROM_ALL SYSTEM)
 add_subdirectory(deps/mjbots EXCLUDE_FROM_ALL SYSTEM)
 
