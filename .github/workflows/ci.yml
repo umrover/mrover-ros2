@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: style
     container:
-      image: kevinjin0420/mrover-ci:latest
+      image: umrover1/ros2:latest
       options: --user root
     steps:
       - uses: actions/checkout@v6
