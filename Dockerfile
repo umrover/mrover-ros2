@@ -42,7 +42,6 @@ RUN apt-get update -y && apt-get install -y \
     libtbb-dev \
     libassimp-dev \
     libeigen3-dev \
-    pybind11-dev \
     libopencv-dev \
     libgstreamer1.0-dev \
     libgstreamer-plugins-base1.0-dev \
