@@ -19,6 +19,7 @@ class LEDManager:
         self.teleop_enabled = False
         self.nav_state = "OffState"
         self.current_led_color = "red"
+        self.mission = "home"
         self.led_pub = None
 
     def get_led_publisher(self):
@@ -27,6 +28,10 @@ class LEDManager:
             self.led_pub = node.create_publisher(LED, "/led", 1)
             node.create_timer(0.5, self.publish_led)
         return self.led_pub
+
+    def set_mission(self, mission: str):
+        self.mission = mission
+        self.update_led()
 
     def set_teleop_enabled(self, enabled: bool):
         self.teleop_enabled = enabled
@@ -37,10 +42,15 @@ class LEDManager:
         self.update_led()
 
     def update_led(self):
-        if self.teleop_enabled:
+        if self.mission == "auton":
+            if self.teleop_enabled:
+                self.current_led_color = "blue"
+            elif self.nav_state == "DoneState":
+                self.current_led_color = "blinking-green"
+            else:
+                self.current_led_color = "red"
+        elif self.mission in ("dm", "es", "science"):
             self.current_led_color = "blue"
-        elif self.nav_state == "DoneState":
-            self.current_led_color = "blinking-green"
         else:
             self.current_led_color = "red"
         self.publish_led()
@@ -57,6 +67,10 @@ class LEDManager:
 
 
 manager = LEDManager()
+
+
+def set_mission(mission: str):
+    manager.set_mission(mission)
 
 
 def set_teleop_enabled(enabled: bool):

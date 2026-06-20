@@ -74,7 +74,7 @@ def get_recording_waypoints(rec_id: int):
     try:
         conn = get_recordings_db()
         waypoints = conn.execute('''
-            SELECT id, latitude as lat, longitude as lon, timestamp, sequence
+            SELECT id, latitude as lat, longitude as lon, altitude, timestamp, sequence
             FROM recorded_waypoints
             WHERE recording_id = ?
             ORDER BY sequence ASC

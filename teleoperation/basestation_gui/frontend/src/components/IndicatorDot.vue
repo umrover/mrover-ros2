@@ -1,7 +1,7 @@
 <template>
   <div
     class="shrink-0 rounded-full"
-    :class="isActive ? 'bg-cmd-success' : 'bg-cmd-danger'"
+    :class="isActive ? 'bg-success' : 'bg-danger'"
     :style="{ width: `${size}px`, height: `${size}px` }"
   ></div>
 </template>

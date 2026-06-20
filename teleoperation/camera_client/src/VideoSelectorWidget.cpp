@@ -33,6 +33,8 @@ namespace mrover {
         createVisibilityCheckBox(selector, callbacks);
         createMediaControls(selector, name, callbacks);
         createScreenshotButton(selector, callbacks);
+        createRotateButton(selector, callbacks);
+        createScaleSlider(selector, callbacks);
 
         mSelectors.emplace(name, selector);
 
@@ -100,6 +102,38 @@ namespace mrover {
         });
 
         selector.layout->addWidget(selector.screenshotButton);
+    }
+
+    auto VideoSelectorWidget::createScaleSlider(Selector& selector, CameraCallbacks const& callbacks) -> void {
+        selector.scaleSlider = new QSlider(Qt::Horizontal, selector.widget);
+        selector.scaleSlider->setRange(50, 200);
+        selector.scaleSlider->setValue(100);
+        selector.scaleSlider->setFixedWidth(80);
+        auto resizeCallback = callbacks.onResize;
+        connect(selector.scaleSlider, &QSlider::valueChanged, this, [resizeCallback](int value) {
+            float scale = value / 100.0f;
+            int w = static_cast<int>(640 * scale);
+            int h = static_cast<int>(480 * scale);
+            resizeCallback(w, h);
+        });
+        selector.layout->addWidget(selector.scaleSlider);
+    }
+
+    auto VideoSelectorWidget::createRotateButton(Selector& selector, CameraCallbacks const& callbacks) -> void {
+        if (mUsingIcons && QIcon::hasThemeIcon("object-rotate-right")) {
+            selector.rotateButton = new QPushButton(QIcon::fromTheme("object-rotate-right"), QString(), selector.widget);
+        } else {
+            selector.rotateButton = new QPushButton("Rotate", selector.widget);
+        }
+
+        auto rotateCallback = callbacks.onRotate;
+        connect(selector.rotateButton, &QPushButton::clicked, this, [rotateCallback]() {
+            if (rotateCallback) {
+                rotateCallback();
+            }
+        });
+
+        selector.layout->addWidget(selector.rotateButton);
     }
 
 } // namespace mrover

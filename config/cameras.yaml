@@ -1,65 +1,12 @@
 /**:
   ros__parameters:
-    static_cam:
-      address: 10.1.0.2 # if using RTP, should be set to IP of basestation
-      port: 8081
-      # camera source can be one of three options: dev_node, dev_path, or image_topic
-      # if no camera source is specified, defaults to videotestsrc
-      dev_node: "/dev/static_cam"
-      # crop_left: PIXELS
-      # crop_right: PIXELS
-      # crop_top: PIXELS
-      # crop_bottom: PIXELS
-      stream:
-        pixel_format: YUYV # from v4l2-ctl -d DEV_NODE --list-formats-ext
-        width: 640
-        height: 480
-        framerate: 30
-        codec: H265
-        bitrate: 1000000
-      image_capture:
-        pixel_format: YUYV
-        width: 1280
-        height: 720
-        framerate: 5
-    boom_cam:
+    ee1_cam:
       address: 10.1.0.2
-      port: 8082
-      dev_node: "/dev/boomcam"
+      port: 8087
+      dev_node: "/dev/port_a1_cam"
+      dev_path: ""
       stream:
-        pixel_format: YUYV
-        width: 640
-        height: 480
-        framerate: 30
-        codec: H265
-        bitrate: 1000000
-      image_capture:
-        pixel_format: YUYV
-        width: 1280
-        height: 720
-        framerate: 5
-    mob_cam_left:
-      address: 10.1.0.2
-      port: 8083
-      dev_node: "/dev/mob_cam_left"
-      stream:
-        pixel_format: YUYV
-        width: 640
-        height: 480
-        framerate: 30
-        codec: H265
-        bitrate: 1000000
-      image_capture:
-        pixel_format: YUYV
-        width: 1280
-        height: 720
-        framerate: 5
-    mob_cam_right:
-      address: 10.1.0.2
-      port: 8084
-      dev_node: "/dev/mob_cam_right"
-      stream:
-        pixel_format: MJPG
+        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
         width: 640
         height: 480
         framerate: 15
@@ -67,45 +14,198 @@
         bitrate: 1000000
       image_capture:
         pixel_format: YUYV
-        width: 1280
-        height: 720
-        framerate: 5
-    long_range_cam:
-      address: 10.1.0.2
-      port: 8085
-      image_topic: "/long_range_cam/image"
-      stream:
-        pixel_format: ABGR32
         width: 640
         height: 480
-        framerate: 30
+        framerate: 5
+    ee2_cam:
+      address: 10.1.0.2
+      port: 8088
+      dev_node: "/dev/port_a2_cam"
+      dev_path: ""
+      stream:
+        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
+        width: 640
+        height: 480
+        framerate: 15
         codec: H265
         bitrate: 1000000
       image_capture:
-        pixel_format: ABGR32
+        pixel_format: YUYV
         width: 640
         height: 480
-        framerate: 30
+        framerate: 5
+    ee3_cam:
+      address: 10.1.0.2
+      port: 8089
+      dev_node: "/dev/port_a3_cam"
+      dev_path: ""
+      stream:
+        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
+        width: 640
+        height: 480
+        framerate: 15
+        codec: H265
+        bitrate: 1000000
+      image_capture:
+        pixel_format: YUYV
+        width: 640
+        height: 480
+        framerate: 5
+    sp1_cam:
+      address: 10.1.0.2
+      port: 8090
+      dev_node: "/dev/port_a1_cam"
+      dev_path: ""
+      stream:
+        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
+        width: 640
+        height: 480
+        framerate: 15
+        codec: H265
+        bitrate: 1000000
+      image_capture:
+        pixel_format: YUYV
+        width: 640
+        height: 480
+        framerate: 5
+    sp2_cam:
+      address: 10.1.0.2
+      port: 8091
+      dev_node: "/dev/port_a2_cam"
+      dev_path: ""
+      stream:
+        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
+        width: 640
+        height: 480
+        framerate: 15
+        codec: H265
+        bitrate: 1000000
+      image_capture:
+        pixel_format: YUYV
+        width: 640
+        height: 480
+        framerate: 5
+    ee4_cam:
+      address: 10.1.0.2
+      port: 8092
+      dev_node: "/dev/port_b1_cam"
+      dev_path: ""
+      stream:
+        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
+        width: 640
+        height: 480
+        framerate: 15
+        codec: H265
+        bitrate: 1000000
+      image_capture:
+        pixel_format: YUYV
+        width: 640
+        height: 480
+        framerate: 5
+    ee5_cam:
+      address: 10.1.0.2
+      port: 8093
+      dev_node: "/dev/port_b2_cam"
+      dev_path: ""
+      stream:
+        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
+        width: 640
+        height: 480
+        framerate: 15
+        codec: H265
+        bitrate: 1000000
+      image_capture:
+        pixel_format: YUYV
+        width: 640
+        height: 480
+        framerate: 5
+    mob_left_cam:
+      address: 10.1.0.2
+      port: 8094
+      dev_node: "/dev/port_b1_cam"
+      dev_path: ""
+      stream:
+        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
+        width: 640
+        height: 480
+        framerate: 15
+        codec: H265
+        bitrate: 1000000
+      image_capture:
+        pixel_format: YUYV
+        width: 640
+        height: 480
+        framerate: 5
+    gps_left_cam:
+      address: 10.1.0.2
+      port: 8095
+      dev_node: "/dev/port_b2_cam"
+      dev_path: ""
+      stream:
+        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
+        width: 640
+        height: 480
+        framerate: 15
+        codec: H265
+        bitrate: 1000000
+      image_capture:
+        pixel_format: YUYV
+        width: 640
+        height: 480
+        framerate: 5
+    mob_right_cam:
+      address: 10.1.0.2
+      port: 8096
+      dev_node: "/dev/port_d1_cam"
+      dev_path: ""
+      stream:
+        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
+        width: 640
+        height: 480
+        framerate: 15
+        codec: H265
+        bitrate: 1000000
+      image_capture:
+        pixel_format: YUYV
+        width: 640
+        height: 480
+        framerate: 5
+    gps_right_cam:
+      address: 10.1.0.2
+      port: 8097
+      dev_node: "/dev/port_d2_cam"
+      dev_path: ""
+      stream:
+        pixel_format: MJPG # from v4l2-ctl -d DEV_NODE --list-formats-ext
+        width: 640
+        height: 480
+        framerate: 15
+        codec: H265
+        bitrate: 1000000
+      image_capture:
+        pixel_format: YUYV
+        width: 640
+        height: 480
+        framerate: 5
     zed_mini:
       address: 10.1.0.2
-      port: 8086
-      dev_node: "/dev/zed_mini"
-      crop_right: 672
+      port: 8082
+      image_topic: "/zed_mini/left/image"
       stream:
-        pixel_format: YUYV
-        width: 1344
-        height: 376
+        pixel_format: ABGR32 # https://www.kernel.org/doc/html/v4.9/media/uapi/v4l/pixfmt-packed-rgb.html
+        width: 1280
+        height: 720
         framerate: 15
         codec: H265
         bitrate: 1000000
       image_capture:
-        pixel_format: YUYV
-        width: 2560
+        pixel_format: ABGR32
+        width: 1280
         height: 720
         framerate: 15
     zed:
       address: 10.1.0.2
-      port: 8087
+      port: 8083
       image_topic: "/zed/left/image"
       stream:
         pixel_format: ABGR32 # https://www.kernel.org/doc/html/v4.9/media/uapi/v4l/pixfmt-packed-rgb.html
@@ -119,26 +219,98 @@
         width: 1280
         height: 720
         framerate: 15
+    long_range_cam:
+      address: 10.1.0.2
+      port: 8084
+      image_topic: "/long_range_cam/image"
+      stream:
+        pixel_format: ABGR32 # https://www.kernel.org/doc/html/v4.9/media/uapi/v4l/pixfmt-packed-rgb.html
+        width: 640
+        height: 480
+        framerate: 15
+        codec: H265
+        bitrate: 1000000
+      image_capture:
+        pixel_format: ABGR32
+        width: 640
+        height: 480
+        framerate: 15
+    long_range_cam_annotated:
+      address: 10.1.0.2
+      port: 8085
+      image_topic: "/long_range_object_detector/annotated_img"
+      stream:
+        pixel_format: ABGR32 # https://www.kernel.org/doc/html/v4.9/media/uapi/v4l/pixfmt-packed-rgb.html
+        width: 640
+        height: 480
+        framerate: 15
+        codec: H265
+        bitrate: 1000000
+      image_capture:
+        pixel_format: ABGR32
+        width: 640
+        height: 480
+        framerate: 15
+    zed_annotated:
+      address: 10.1.0.2
+      port: 8086
+      image_topic: "/stereo_object_detector/annotated_img"
+      stream:
+        pixel_format: ABGR32 # https://www.kernel.org/doc/html/v4.9/media/uapi/v4l/pixfmt-packed-rgb.html
+        width: 1280
+        height: 720
+        framerate: 15
+        codec: H265
+        bitrate: 1000000
+      image_capture:
+        pixel_format: ABGR32
+        width: 1280
+        height: 720
+        framerate: 15
 
-boom_streamer:
+ee1_streamer:
   ros__parameters:
-    camera: "boom_cam"
+    camera: "ee1_cam"
+
+ee2_streamer:
+  ros__parameters:
+    camera: "ee2_cam"
+
+ee3_streamer:
+  ros__parameters:
+    camera: "ee3_cam"
+
+sp1_streamer:
+  ros__parameters:
+    camera: "sp1_cam"
+
+sp2_streamer:
+  ros__parameters:
+    camera: "sp2_cam"
+
+ee4_streamer:
+  ros__parameters:
+    camera: "ee4_cam"
+
+ee5_streamer:
+  ros__parameters:
+    camera: "ee5_cam"
 
 mob_left_streamer:
   ros__parameters:
-    camera: "mob_cam_left"
+    camera: "mob_left_cam"
 
 mob_right_streamer:
   ros__parameters:
-    camera: "mob_cam_right"
+    camera: "mob_right_cam"
 
-long_range_streamer:
+gps_left_streamer:
   ros__parameters:
-    camera: "long_range_cam"
+    camera: "gps_left_cam"
 
-static_streamer:
+gps_right_streamer:
   ros__parameters:
-    camera: "static_cam"
+    camera: "gps_right_cam"
 
 zed_mini_streamer:
   ros__parameters:
@@ -148,15 +320,15 @@ zed_streamer:
   ros__parameters:
     camera: "zed"
 
-camera_client:
+long_range_streamer:
   ros__parameters:
-    test: 10
-    cameras:
-      - "boom_cam"
-      - "mob_cam_left"
-      - "static_cam"
-      - "long_range_cam"
-      - "zed_mini"
-      - "zed"
-    rtp_jitter_ms: 50
+    camera: "long_range_cam"
+
+zed_streamer_annotated:
+  ros__parameters:
+    camera: "zed_annotated"
+
+long_range_streamer_annotated:
+  ros__parameters:
+    camera: "long_range_cam_annotated"
 

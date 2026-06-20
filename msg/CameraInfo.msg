@@ -1,0 +1,2 @@
+sensor_msgs/CameraInfo info
+float32 fov

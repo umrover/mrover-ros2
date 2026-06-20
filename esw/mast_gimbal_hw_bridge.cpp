@@ -1,4 +1,5 @@
 #include <chrono>
+#include <limits>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -25,16 +26,8 @@ namespace mrover {
 
         auto init() -> void {
             // parse parameters
-            std::vector<ParameterWrapper> parameters = {
-                    {"u2d2_device", mU2D2DeviceName, "/dev/u2d2"},
-            };
+            std::vector<ParameterWrapper> parameters = {};
             ParameterWrapper::declareParameters(this, parameters);
-
-            mU2D2 = U2D2::getSharedInstance();
-            if (mU2D2->init(mU2D2DeviceName) != U2D2::Status::Success) {
-                RCLCPP_FATAL(this->get_logger(), "failed to initialize U2D2 on %s", mU2D2DeviceName.c_str());
-                rclcpp::shutdown();
-            }
 
             for (std::string const& servoName: mServoNames) {
                 auto servo = std::make_shared<Servo>(shared_from_this(), servoName);
@@ -50,7 +43,7 @@ namespace mrover {
 
             mPositionService = this->create_service<srv::ServoPosition>(
                     "gimbal_servo",
-                    [this](srv::ServoPosition::Request::SharedPtr const& req, srv::ServoPosition::Response::SharedPtr const& res) {
+                    [this](srv::ServoPosition::Request::SharedPtr const& req, srv::ServoPosition::Response::SharedPtr const& res) -> void {
                         servoPositionCallback(req, res);
                     },
                     rmw_qos_profile_services_default,
@@ -58,7 +51,7 @@ namespace mrover {
 
             mPublishTimer = this->create_wall_timer(
                     std::chrono::milliseconds(100),
-                    [this]() { publishDataCallback(); },
+                    [this]() -> void { publishDataCallback(); },
                     mTimerGroup);
 
             mGimbalStatePub = this->create_publisher<msg::ControllerState>("gimbal_controller_state", 10);
@@ -67,9 +60,6 @@ namespace mrover {
     private:
         std::vector<std::string> mServoNames = {"gimbal_pitch", "gimbal_yaw"};
         std::unordered_map<std::string, std::shared_ptr<Servo>> mServos;
-
-        std::shared_ptr<U2D2> mU2D2;
-        std::string mU2D2DeviceName;
 
         rclcpp::CallbackGroup::SharedPtr mServiceGroup;
         rclcpp::CallbackGroup::SharedPtr mTimerGroup;
@@ -85,33 +75,10 @@ namespace mrover {
 
             for (size_t i = 0; i < n; ++i) {
                 if (auto const it = mServos.find(req->names[i]); it != mServos.end()) {
-                    it->second->setPosition(req->positions[i], Servo::ServoMode::Limited);
+                    it->second->setGoalPosition(Radians{req->positions[i]});
+                    res->at_tgts[i] = true;
                 }
             }
-
-            auto const start = this->now();
-            auto const timeout = rclcpp::Duration::from_seconds(3);
-            rclcpp::Rate loop_rate(10);
-
-            while ((this->now() - start) < timeout) {
-                bool all_done = true;
-
-                for (size_t i = 0; i < n; ++i) {
-                    auto it = mServos.find(req->names[i]);
-                    if (it == mServos.end()) continue;
-
-                    auto const status = it->second->getTargetStatus();
-                    bool const reached = status == U2D2::Status::Success;
-                    res->at_tgts[i] = reached;
-
-                    if (!reached) all_done = false;
-                }
-
-                if (all_done) return;
-                loop_rate.sleep();
-            }
-
-            RCLCPP_WARN(this->get_logger(), "servo position timeout reached!");
         }
 
         auto publishDataCallback() -> void {
@@ -123,19 +90,16 @@ namespace mrover {
             mControllerState.states.clear();
             mControllerState.limits_hit.clear();
 
-            for (auto const& [name, servo]: mServos) {
-                double pos, vel, cur;
-                U2D2::Status const status = servo->getPosition(pos);
-                servo->getVelocity(vel);
-                servo->getCurrent(cur);
+            mControllerState.header.stamp = now();
 
+            for (auto const& [name, servo]: mServos) {
                 mControllerState.names.push_back(name);
-                mControllerState.positions.push_back(static_cast<float>(pos));
-                mControllerState.velocities.push_back(static_cast<float>(vel));
-                mControllerState.currents.push_back(static_cast<float>(cur));
-                mControllerState.errors.push_back(U2D2::stringifyStatus(status));
-                mControllerState.states.push_back(U2D2::stringifyStatus(servo->getTargetStatus()));
-                mControllerState.limits_hit.push_back(servo->getLimitStatus());
+                mControllerState.positions.push_back(static_cast<float>(servo->getPosition().get()));
+                mControllerState.velocities.push_back(std::numeric_limits<float>::quiet_NaN());
+                mControllerState.currents.push_back(std::numeric_limits<float>::quiet_NaN());
+                mControllerState.errors.emplace_back("");
+                mControllerState.states.emplace_back("");
+                mControllerState.limits_hit.push_back(0);
             }
 
             mGimbalStatePub->publish(mControllerState);

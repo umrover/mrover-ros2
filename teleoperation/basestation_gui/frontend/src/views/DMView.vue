@@ -16,15 +16,15 @@
       </div>
     </template>
 
-    <template #arm-moteus>
+    <template #arm-data>
       <div class="island p-2 rounded h-full">
-        <ControllerDataTable mode="arm" header="Arm" />
+        <ArmDataTable />
       </div>
     </template>
 
-    <template #drive-moteus>
+    <template #drive-data>
       <div class="island p-2 rounded h-full">
-        <ControllerDataTable mode="drive" header="Drive" />
+        <DriveDataTable />
       </div>
     </template>
 
@@ -61,13 +61,19 @@
 </template>
 
 <script lang="ts" setup>
+import { onMounted, onUnmounted } from 'vue'
 import BaseGridView from '@/components/BaseGridView.vue'
-import ControllerDataTable from '@/components/ControllerDataTable.vue'
+import ArmDataTable from '@/components/ControllerDataTable/ArmDataTable.vue'
+import DriveDataTable from '@/components/ControllerDataTable/DriveDataTable.vue'
 import ArmControls from '@/components/ArmControls.vue'
 import BasicMap from '@/components/BasicRoverMap.vue'
 import BasicWaypointEditor from '@/components/BasicWaypointEditor.vue'
 import OdometryReading from '@/components/OdometryReading.vue'
 import DriveControls from '@/components/DriveControls.vue'
+import { ledAPI } from '@/utils/ledAPI'
+
+onMounted(() => ledAPI.setMission('dm'))
+onUnmounted(() => ledAPI.setMission('home'))
 import GimbalControls from '@/components/GimbalControls.vue'
 import Rover3D from '@/components/Rover3D.vue'
 
@@ -77,8 +83,8 @@ const defaultLayout = [
   { x: 0, y: 6, w: 3, h: 2, i: 'arm-controls' },
   { x: 3, y: 6, w: 2, h: 2, i: 'gimbal-controls' },
   { x: 5, y: 6, w: 1, h: 2, i: 'drive-controls' },
-  { x: 0, y: 8, w: 3, h: 4, i: 'arm-moteus' },
-  { x: 3, y: 8, w: 3, h: 4, i: 'drive-moteus' },
+  { x: 0, y: 8, w: 3, h: 4, i: 'arm-data' },
+  { x: 3, y: 8, w: 3, h: 4, i: 'drive-data' },
   { x: 6, y: 0, w: 6, h: 6, i: 'map' },
   { x: 6, y: 6, w: 6, h: 6, i: 'waypoints' },
 ]

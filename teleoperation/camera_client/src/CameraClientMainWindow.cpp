@@ -1,4 +1,6 @@
 #include "CameraClientMainWindow.hpp"
+#include "CameraClientNode.hpp"
+#include "CameraConfigWidget.hpp"
 
 namespace mrover {
 
@@ -18,6 +20,11 @@ namespace mrover {
         mGstRtpVideoCreatorDock->setAutoFillBackground(true);
         mGstRtpVideoCreatorDock->setPalette(pal);
 
+        // Dock for selecting configuration
+        mCameraConfigDock = new QDockWidget("Config Selector", this);
+        mCameraConfigWidget = new CameraConfigWidget();
+        mCameraConfigDock->setWidget(mCameraConfigWidget);
+        QObject::connect(mCameraConfigWidget, &CameraConfigWidget::loadCameraConfigSignal, this, &CameraClientMainWindow::loadCameraConfigSlot);
 
         mCentralScrollArea->setWidget(mCameraGridWidget);
         mCentralScrollArea->setWidgetResizable(true);
@@ -25,6 +32,7 @@ namespace mrover {
 
         addDockWidget(Qt::LeftDockWidgetArea, mCameraSelectorDock);
         splitDockWidget(mCameraSelectorDock, mGstRtpVideoCreatorDock, Qt::Vertical);
+        splitDockWidget(mCameraSelectorDock, mCameraConfigDock, Qt::Vertical);
 
         connect(mGstRtpVideoCreatorWidget, &GstRtpVideoCreatorWidget::createRequested,
                 this, [this](std::string const& name, std::string const& pipeline) {
@@ -47,6 +55,7 @@ namespace mrover {
                             .onPlay = []() { return true; },
                             .onStop = []() { return true; },
                             .onScreenshot = []() { return true; },
+                            .onResize = [this, name](int w, int h) { mCameraGridWidget->resizeCamera(name, w, h); },
                     };
 
                     if (bool success = createCamera(name, pipeline, std::move(callbacks)); !success) {
@@ -88,4 +97,15 @@ namespace mrover {
         QMainWindow::closeEvent(event);
     }
 
+    void CameraClientMainWindow::loadCameraConfigSlot(std::string const& config) {
+        mCameraGridWidget->hideAll();
+        for (auto const& name: mConfigs[config]) {
+            mCameraGridWidget->showVideo(name);
+        }
+    }
+
+    auto CameraClientMainWindow::setConfigs(std::unordered_map<std::string, std::vector<std::string>>&& configs) -> void {
+        mConfigs = configs;
+        loadCameraConfigSlot(CAMERA_CONFIGS[CAMERA_CONFIG::ARM]);
+    }
 } // namespace mrover

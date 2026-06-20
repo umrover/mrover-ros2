@@ -9,6 +9,7 @@ interface TypedMessage {
 type MessageCallback = (msg: unknown) => void
 const messageHandlers: Map<string, Map<string, Set<MessageCallback>>> = new Map()
 
+
 const webSockets: Record<string, WebSocket> = {}
 const refCounts: Record<string, number> = {}
 const flashTimersIn: Record<string, ReturnType<typeof setTimeout>> = {}

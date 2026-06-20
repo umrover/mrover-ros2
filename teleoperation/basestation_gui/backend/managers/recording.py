@@ -19,21 +19,17 @@ class RecordingManager:
 
         self.rover_lat = 0.0
         self.rover_lon = 0.0
+        self.rover_alt = 0.0
         self.drone_lat = 0.0
         self.drone_lon = 0.0
+        self.drone_alt = 0.0
 
         self.rover_gps_sub = self.node.create_subscription(
-            NavSatFix,
-            "/gps/fix",
-            self.handle_rover_gps,
-            qos_profile=qos_profile_sensor_data
+            NavSatFix, "/gps/fix", self.handle_rover_gps, qos_profile=qos_profile_sensor_data
         )
 
         self.drone_gps_sub = self.node.create_subscription(
-            NavSatFix,
-            "/drone_odometry",
-            self.handle_drone_gps,
-            qos_profile=qos_profile_sensor_data
+            NavSatFix, "/drone_odom", self.handle_drone_gps, qos_profile=qos_profile_sensor_data
         )
 
     def shutdown(self):
@@ -50,10 +46,12 @@ class RecordingManager:
     def handle_rover_gps(self, msg: NavSatFix):
         self.rover_lat = msg.latitude
         self.rover_lon = msg.longitude
+        self.rover_alt = msg.altitude
 
     def handle_drone_gps(self, msg: NavSatFix):
         self.drone_lat = msg.latitude
         self.drone_lon = msg.longitude
+        self.drone_alt = msg.altitude
 
     def recording_callback(self):
         if not self.is_recording or self.current_recording_id is None:
@@ -61,6 +59,7 @@ class RecordingManager:
 
         lat = self.drone_lat if self.is_drone_recording else self.rover_lat
         lon = self.drone_lon if self.is_drone_recording else self.rover_lon
+        alt = self.drone_alt if self.is_drone_recording else self.rover_alt
 
         if lat == 0.0 and lon == 0.0:
             return
@@ -68,10 +67,13 @@ class RecordingManager:
         conn = None
         try:
             conn = get_recordings_db()
-            conn.execute('''
-                INSERT INTO recorded_waypoints (recording_id, latitude, longitude, sequence)
-                VALUES (?, ?, ?, ?)
-            ''', (self.current_recording_id, lat, lon, self.recording_sequence))
+            conn.execute(
+                """
+                INSERT INTO recorded_waypoints (recording_id, latitude, longitude, altitude, sequence)
+                VALUES (?, ?, ?, ?, ?)
+            """,
+                (self.current_recording_id, lat, lon, alt, self.recording_sequence),
+            )
             conn.commit()
             self.recording_sequence += 1
         except Exception as e:
@@ -87,7 +89,7 @@ class RecordingManager:
         conn = None
         try:
             conn = get_recordings_db()
-            cur = conn.execute('INSERT INTO recordings (name, is_drone) VALUES (?, ?)', (name, is_drone))
+            cur = conn.execute("INSERT INTO recordings (name, is_drone) VALUES (?, ?)", (name, is_drone))
             recording_id = cur.lastrowid
             conn.commit()
         finally:
@@ -99,10 +101,7 @@ class RecordingManager:
         self.is_drone_recording = is_drone
         self.is_recording = True
 
-        self.timer = self.node.create_timer(
-            1.0 / RECORDING_RATE_HZ,
-            self.recording_callback
-        )
+        self.timer = self.node.create_timer(1.0 / RECORDING_RATE_HZ, self.recording_callback)
 
         get_logger().info(f"Started recording: {name} (ID: {recording_id}) at {RECORDING_RATE_HZ}Hz")
 
@@ -126,17 +125,14 @@ class RecordingManager:
 
         get_logger().info(f"Stopped recording ID: {recording_id} with {waypoint_count} waypoints")
 
-        return {
-            "recording_id": recording_id,
-            "waypoint_count": waypoint_count
-        }
+        return {"recording_id": recording_id, "waypoint_count": waypoint_count}
 
     def get_status(self) -> dict:
         return {
             "is_recording": self.is_recording,
             "recording_id": self.current_recording_id,
             "waypoint_count": self.recording_sequence,
-            "is_drone": self.is_drone_recording
+            "is_drone": self.is_drone_recording,
         }
 
 

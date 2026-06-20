@@ -4,53 +4,62 @@
       class="modal-backdrop flex justify-center items-center"
       @click.self="$emit('close')"
     >
-      <div class="sensor-modal-content cmd-panel">
-      <div class="sensor-modal-header">
-        <h4 class="component-header">All Sensor Charts</h4>
-        <div class="flex gap-2">
-          <button class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary" @click="$emit('reset')">
-            <i class="bi bi-arrow-counterclockwise"></i> Reset
-          </button>
-          <button class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary close-btn" @click="$emit('close')">
+      <div class="sensor-modal-content panel">
+        <div class="sensor-modal-header">
+          <h4 class="component-header">All Sensor Charts</h4>
+          <button class="btn btn-sm btn-outline-danger close-btn" @click="$emit('close')">
             <i class="bi bi-x-lg"></i>
           </button>
         </div>
-      </div>
 
-      <div class="sensor-charts-container">
-        <div
-          v-for="(config, index) in chartConfigs"
-          :key="index"
-          class="sensor-chart-panel"
-        >
-          <div class="sensor-chart-sidebar">
-            <h5 class="sensor-chart-title">{{ config.title }}</h5>
-            <div class="flex flex-col gap-1">
-              <button class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary" @click="downloadPNG(index)">
-                <i class="bi bi-download"></i> PNG
-              </button>
-              <button class="cmd-btn cmd-btn-sm cmd-btn-outline-secondary" @click="downloadCSV(index)">
-                <i class="bi bi-download"></i> CSV
-              </button>
+        <div class="sensor-grid">
+          <div class="sensor-title-cell">
+            <span class="config-section-label">Display</span>
+            <div class="config-row">
+              <span class="config-label">Zero Baseline</span>
+              <input type="checkbox" v-model="configBeginAtZero" class="config-checkbox" />
+            </div>
+            <div class="config-row">
+              <span class="config-label">Smooth Lines</span>
+              <input type="checkbox" v-model="configSmooth" class="config-checkbox" />
+            </div>
+            <div class="config-divider"></div>
+            <button class="btn btn-sm btn-outline-danger w-full" @click="$emit('reset')">
+              <i class="bi bi-arrow-counterclockwise"></i> Reset History
+            </button>
+          </div>
+
+          <div
+            v-for="(config, index) in chartConfigs"
+            :key="index"
+            class="sensor-chart-cell"
+          >
+            <div class="sensor-chart-cell-header">
+              <span class="sensor-chart-title">{{ config.title }}</span>
+              <div class="flex gap-1">
+                <button class="btn btn-sm btn-outline-secondary" @click="downloadPNG(index)">
+                  <i class="bi bi-download"></i> PNG
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" @click="downloadCSV(index)">
+                  <i class="bi bi-download"></i> CSV
+                </button>
+              </div>
+            </div>
+            <div class="sensor-chart-canvas">
+              <canvas :id="`modal-chart-${index}`" style="width: 100%; height: 100%"></canvas>
             </div>
           </div>
-          <div class="sensor-chart-canvas">
-            <canvas
-              :id="`modal-chart-${index}`"
-              style="width: 100%; height: 100%"
-            ></canvas>
-          </div>
         </div>
-      </div>
       </div>
     </div>
   </Teleport>
 </template>
 
 <script lang="ts" setup>
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import Chart from 'chart.js/auto'
 import type { Chart as ChartType } from 'chart.js/auto'
+import { currentTimestamp } from '@/utils/formatNumber'
 
 interface ChartDataset {
   label: string
@@ -109,6 +118,29 @@ const chartConfigs: readonly ChartConfig[] = [
 
 const charts: (ChartType | null)[] = Array(chartConfigs.length).fill(null)
 
+const configWindow = 30
+const configBeginAtZero = ref(false)
+const configSmooth = ref(false)
+
+watch(configBeginAtZero, (val) => {
+  for (const chart of charts) {
+    const yScale = chart?.options.scales?.['y'] as { beginAtZero?: boolean } | undefined
+    if (!yScale) continue
+    yScale.beginAtZero = val
+    chart!.update()
+  }
+})
+
+watch(configSmooth, (val) => {
+  for (const chart of charts) {
+    if (!chart) continue
+    chart.data.datasets.forEach(ds => {
+      (ds as { tension: number }).tension = val ? 0.4 : 0.1
+    })
+    chart.update()
+  }
+})
+
 const sanitizeFilename = (title: string): string => {
   return title.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '')
 }
@@ -122,7 +154,7 @@ const downloadPNG = (chartIndex: number): void => {
   const url = canvas.toDataURL('image/png')
   const anchor = document.createElement('a')
   anchor.href = url
-  anchor.download = `${sanitizeFilename(config.title)}.png`
+  anchor.download = `${sanitizeFilename(config.title)}_${currentTimestamp()}.png`
   anchor.click()
 }
 
@@ -141,13 +173,15 @@ const downloadCSV = (chartIndex: number): void => {
 
   const anchor = document.createElement('a')
   anchor.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv)
-  anchor.download = `${sanitizeFilename(config.title)}.csv`
+  anchor.download = `${sanitizeFilename(config.title)}_${currentTimestamp()}.csv`
   anchor.click()
 }
 
 const updateCharts = (): void => {
   const firstHistory = props.sensorHistory[0]
   if (!firstHistory) return
+
+  const windowLen = Math.min(firstHistory.length, configWindow)
 
   for (let i = 0; i < chartConfigs.length; i++) {
     const chart = charts[i]
@@ -158,15 +192,12 @@ const updateCharts = (): void => {
       const dataset = chart.data.datasets[idx]
       const historyData = props.sensorHistory[ds.historyIndex]
       if (dataset && historyData) {
-        dataset.data = [...historyData]
+        dataset.data = historyData.slice(-windowLen)
       }
     })
 
-    const startTime = Math.max(0, props.timeCounter - firstHistory.length + 1)
-    chart.data.labels = Array.from(
-      { length: firstHistory.length },
-      (_, i) => startTime + i,
-    )
+    const startTime = Math.max(0, props.timeCounter - windowLen + 1)
+    chart.data.labels = Array.from({ length: windowLen }, (_, i) => startTime + i)
     chart.update()
   }
 }
@@ -191,26 +222,24 @@ onMounted(() => {
     const config = chartConfigs[i]
     if (!canvasElement || !config) continue
 
+    const windowLen = Math.min(firstHistory.length, configWindow)
     const datasets = config.datasets.map(ds => {
       const historyData = props.sensorHistory[ds.historyIndex]
       return {
         label: ds.label,
-        data: historyData ? [...historyData] : [],
+        data: historyData ? historyData.slice(-windowLen) : [],
         fill: false,
         borderColor: ds.color,
-        tension: 0.1,
+        tension: configSmooth.value ? 0.4 : 0.1,
       }
     })
 
-    const startTime = Math.max(0, props.timeCounter - firstHistory.length + 1)
+    const startTime = Math.max(0, props.timeCounter - windowLen + 1)
 
     charts[i] = new Chart(canvasElement, {
       type: 'line',
       data: {
-        labels: Array.from(
-          { length: firstHistory.length },
-          (_, i) => startTime + i,
-        ),
+        labels: Array.from({ length: windowLen }, (_, i) => startTime + i),
         datasets,
       },
       options: {
@@ -225,10 +254,22 @@ onMounted(() => {
         },
         scales: {
           y: {
-            beginAtZero: false,
+            beginAtZero: configBeginAtZero.value,
+            title: {
+              display: true,
+              text: config.title,
+              font: { size: 13 },
+            },
             ticks: {
               maxTicksLimit: 10,
               precision: 2,
+            },
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Time (s)',
+              font: { size: 13 },
             },
           },
         },
@@ -254,14 +295,14 @@ onMounted(() => {
   z-index: 1000;
   width: 100%;
   height: 100%;
-  background-color: var(--cmd-backdrop);
+  background-color: var(--backdrop);
 }
 
 .sensor-modal-content {
   display: flex;
   flex-direction: column;
   width: 90%;
-  max-width: 1200px;
+  max-width: 1400px;
   height: 90vh;
   overflow: hidden;
 }
@@ -270,9 +311,10 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
   padding-bottom: 0.5rem;
   margin-bottom: 0.5rem;
-  border-bottom: 2px solid var(--cmd-panel-border);
+  border-bottom: 2px solid var(--panel-border);
 }
 
 .close-btn {
@@ -280,35 +322,74 @@ onMounted(() => {
   padding: 0.25rem;
 }
 
-.sensor-charts-container {
-  display: flex;
+.sensor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: repeat(4, 1fr);
+  gap: 0.5rem;
   flex: 1;
+  min-height: 0;
+}
+
+.sensor-title-cell {
+  display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  overflow: hidden;
+  padding: 0.75rem;
+  border: var(--border-width) solid var(--panel-border);
+  border-radius: var(--radius-sm);
 }
 
-.sensor-chart-panel {
+.config-section-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+}
+
+.config-row {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.config-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.config-checkbox {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.config-divider {
   flex: 1;
-  flex-direction: row;
-  gap: 0.75rem;
+}
+
+.sensor-chart-cell {
+  display: flex;
+  flex-direction: column;
   min-height: 0;
   padding: 0.5rem;
-  border: var(--cmd-border-width) solid var(--cmd-panel-border);
-  border-radius: var(--cmd-radius-sm);
+  border: var(--border-width) solid var(--panel-border);
+  border-radius: var(--radius-sm);
 }
 
-.sensor-chart-sidebar {
+.sensor-chart-cell-header {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   flex-shrink: 0;
-  flex-direction: column;
-  align-items: flex-start;
-  width: 160px;
+  margin-bottom: 0.25rem;
 }
 
 .sensor-chart-title {
-  margin-bottom: 0.5rem;
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-muted);
@@ -317,17 +398,13 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-.sensor-chart-sidebar .cmd-btn {
+.sensor-chart-cell .btn {
   font-size: 0.6875rem;
 }
 
-.sensor-modal-content .cmd-btn:hover {
-  background-color: var(--table-header-bg);
-}
-
 .sensor-chart-canvas {
-  display: flex;
   flex: 1;
-  min-width: 0;
+  min-height: 0;
+  position: relative;
 }
 </style>

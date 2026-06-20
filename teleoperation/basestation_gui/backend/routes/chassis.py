@@ -18,10 +18,10 @@ async def panorama_start():
     try:
         client = get_service_client(PanoramaStart, "/panorama/start")
         pano_request = PanoramaStart.Request()
-        result = await call_service_async(client, pano_request)
+        result, err = await call_service_async(client, pano_request)
 
         if result is None:
-            raise HTTPException(status_code=500, detail="Service call failed")
+            raise HTTPException(status_code=500, detail=err or "Service call failed")
 
         return {'status': 'success'}
 
@@ -36,10 +36,10 @@ async def panorama_stop():
     try:
         client = get_service_client(PanoramaEnd, "/panorama/end")
         pano_request = PanoramaEnd.Request()
-        result = await call_service_async(client, pano_request, timeout=30.0)
+        result, err = await call_service_async(client, pano_request, timeout=120.0)
 
         if result is None:
-            raise HTTPException(status_code=500, detail="Service call failed")
+            raise HTTPException(status_code=500, detail=err or "Service call failed")
 
         if not result.success:
             raise HTTPException(status_code=500, detail="Panorama failed")
@@ -86,10 +86,10 @@ async def gimbal_adjust(data: GimbalAdjustRequest):
         gimbal_request.names = [data.joint]
         gimbal_request.positions = [data.adjustment]
 
-        result = await call_service_async(client, gimbal_request)
+        result, err = await call_service_async(client, gimbal_request)
 
         if result is None:
-            raise HTTPException(status_code=500, detail="Service call failed")
+            raise HTTPException(status_code=500, detail=err or "Service call failed")
 
         if not result.at_tgts or not result.at_tgts[0]:
             raise HTTPException(status_code=500, detail="Gimbal adjustment failed")
@@ -118,10 +118,10 @@ async def sp_funnel_servo(data: ServoPositionRequest):
         servo_request.names = data.names
         servo_request.positions = data.positions
 
-        result = await call_service_async(client, servo_request)
+        result, err = await call_service_async(client, servo_request)
 
         if result is None:
-            raise HTTPException(status_code=500, detail="Service call failed")
+            raise HTTPException(status_code=500, detail=err or "Service call failed")
 
         return {
             'status': 'success',

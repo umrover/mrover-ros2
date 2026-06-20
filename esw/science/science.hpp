@@ -34,7 +34,7 @@ namespace mrover {
             mOzonePub = mNode->create_publisher<msg::Ozone>("sp_ozone_data", 10);
             mCO2Pub = mNode->create_publisher<msg::CO2>("sp_co2_data", 10);
             mUVPub = mNode->create_publisher<msg::UV>("sp_uv_data", 10);
-            mSensorStatesPub = mNode->create_publisher<msg::SensorStates>("sensor_states", 10);
+            mSensorStatesPub = mNode->create_publisher<msg::SensorStates>("sp_sensor_states", 10);
 
             // initialize services
             mSBReset = mNode->create_service<srv::ScienceBoardReset>("sb_reset",

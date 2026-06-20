@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include <limits>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
 
@@ -67,12 +68,13 @@ namespace mrover {
         using OutputVelocity = compound_unit<OutputPosition, inverse<Seconds>>;
 
         struct Options {
+            double abs_units_multiplier{2.0 * M_PI};
+            double abs_position_offset{0.0};
             bool query_abs_position{false};
             bool use_abs_position{false};
-            double abs_position_offset{0.0};
             bool query_abs_velocity{false};
             bool use_abs_velocity{false};
-            double abs_units_multiplier{2.0 * M_PI};
+            bool require_homing{false};
         };
 
     private:
@@ -114,15 +116,15 @@ namespace mrover {
         };
 
         constexpr static std::size_t MAX_NUM_LIMIT_SWITCHES = 2;
-        static_assert(MAX_NUM_LIMIT_SWITCHES <= 2, "Only 2 limit switches are supported");
+        static_assert(MAX_NUM_LIMIT_SWITCHES <= 2, "only 2 limit switches are supported");
 
         Options mOptions;
         int mAbsPosExtraIndex = -1;
         int mAbsVelExtraIndex = -1;
         OutputVelocity mMinVelocity = OutputVelocity{-1.0};
         OutputVelocity mMaxVelocity = OutputVelocity{1.0};
-        OutputPosition mMinPosition = OutputPosition{-1.0};
-        OutputPosition mMaxPosition = OutputPosition{1.0};
+        OutputPosition mMinPosition = OutputPosition{-std::numeric_limits<double>::infinity()};
+        OutputPosition mMaxPosition = OutputPosition{std::numeric_limits<double>::infinity()};
         double mMaxTorque = 0.3;
         double mWatchdogTimeout = 0.25;
         double mCurrentEffort{std::numeric_limits<double>::quiet_NaN()};
@@ -131,18 +133,23 @@ namespace mrover {
         std::optional<moteus::Controller> mMoteus;
         std::int8_t mMoteusAux1Info{}, mMoteusAux2Info{};
         bool mHasLimit{};
+        bool mIsFwdLimitHit{false};
+        bool mIsBwdLimitHit{false};
+        bool mExtSoftFwd{false};
+        bool mExtSoftBwd{false};
+        bool mIsHomed{false};
 
     public:
         BrushlessController(rclcpp::Node::SharedPtr node, std::string masterName, std::string controllerName, Options options = Options{})
-            : Base{std::move(node), std::move(masterName), std::move(controllerName)}, mOptions{options} {
+            : Base{std::move(node), std::move(masterName), std::move(controllerName)}, mOptions{options}, mIsHomed{!options.require_homing} {
 
             double minVelocity, maxVelocity;
             double minPosition, maxPosition;
             std::vector<ParameterWrapper> parameters = {
                     {std::format("{}.min_velocity", mControllerName), minVelocity, -1.0},
                     {std::format("{}.max_velocity", mControllerName), maxVelocity, 1.0},
-                    {std::format("{}.min_position", mControllerName), minPosition, -1.0},
-                    {std::format("{}.max_position", mControllerName), maxPosition, 1.0},
+                    {std::format("{}.min_position", mControllerName), minPosition, -std::numeric_limits<double>::infinity()},
+                    {std::format("{}.max_position", mControllerName), maxPosition, std::numeric_limits<double>::infinity()},
                     {std::format("{}.max_torque", mControllerName), mMaxTorque, 0.3},
                     {std::format("{}.watchdog_timeout", mControllerName), mWatchdogTimeout, 0.25},
             };
@@ -214,15 +221,11 @@ namespace mrover {
 
         auto setDesiredVelocity(OutputVelocity velocity) -> void {
             sendQuery();
-            // Only check for limit switches if at least one limit switch exists and is enabled
-            if (mHasLimit) {
 
-                if (auto [isFwdPressed, isBwdPressed] = getPressedLimitSwitchInfo();
-                    (velocity > OutputVelocity{0} && isFwdPressed) ||
-                    (velocity < OutputVelocity{0} && isBwdPressed)) {
-                    setBrake();
-                    return;
-                }
+            if ((velocity > OutputVelocity{0} && mIsFwdLimitHit) ||
+                (velocity < OutputVelocity{0} && mIsBwdLimitHit)) {
+                setBrake();
+                return;
             }
 
             velocity = std::clamp(velocity, mMinVelocity, mMaxVelocity);
@@ -250,14 +253,11 @@ namespace mrover {
 
         auto setDesiredPosition(OutputPosition position) -> void {
             sendQuery();
-            // Only check for limit switches if at least one limit switch exists and is enabled
-            if (mHasLimit) {
-                if (auto [isFwdPressed, isBwdPressed] = getPressedLimitSwitchInfo();
-                    (mPosition < position.get() && isFwdPressed) ||
-                    (mPosition > position.get() && isBwdPressed)) {
-                    setBrake();
-                    return;
-                }
+
+            if ((mPosition < position.get() && mIsFwdLimitHit) ||
+                (mPosition > position.get() && mIsBwdLimitHit)) {
+                setBrake();
+                return;
             }
 
             position = std::clamp(position, mMinPosition, mMaxPosition);
@@ -288,6 +288,8 @@ namespace mrover {
                     if (mOptions.use_abs_position && mAbsPosExtraIndex != -1) {
                         double const rawPos = (result.extra[mAbsPosExtraIndex].value * mOptions.abs_units_multiplier) - mOptions.abs_position_offset;
                         mPosition = static_cast<float>(std::remainder(rawPos, mOptions.abs_units_multiplier));
+                    } else if (!mIsHomed) {
+                        mPosition = std::numeric_limits<float>::quiet_NaN();
                     } else {
                         mPosition = static_cast<float>(result.position);
                     }
@@ -304,6 +306,8 @@ namespace mrover {
 
                     mMoteusAux1Info = result.aux1_gpio;
                     mMoteusAux2Info = result.aux2_gpio;
+
+                    updateLimitSwitchInfo();
 
                     if (result.mode == moteus::Mode::kPositionTimeout) {
                         setStop();
@@ -329,23 +333,59 @@ namespace mrover {
             mDevice.publishMessage(brakeFrame);
         }
 
-        auto getPressedLimitSwitchInfo() -> MoteusLimitSwitchInfo {
-            MoteusLimitSwitchInfo result{};
+        auto setExternalSoftLimits(bool fwd, bool bwd) -> void {
+            mExtSoftFwd = fwd;
+            mExtSoftBwd = bwd;
+        }
+
+        auto updateLimitSwitchInfo() -> void {
+            bool const internalFwd = (mPosition >= mMaxPosition.get());
+            bool const internalBwd = (mPosition <= mMinPosition.get());
+
+            bool fwdPressed = internalFwd || mExtSoftFwd;
+            bool bwdPressed = internalBwd || mExtSoftBwd;
+
+            bool fwdMapped = false;
+            bool bwdMapped = false;
+
             for (std::size_t i = 0; i < MAX_NUM_LIMIT_SWITCHES; ++i) {
                 if (mLimitSwitchesInfo[i].present && mLimitSwitchesInfo[i].enabled) {
                     std::uint8_t const auxInfo = (mLimitSwitchesInfo[i].auxNumber == MoteusAuxNumber::AUX1) ? mMoteusAux1Info : mMoteusAux2Info;
                     bool gpioState = auxInfo & (1 << static_cast<std::size_t>(mLimitSwitchesInfo[i].auxPin));
+                    bool hardwareHit = (gpioState == mLimitSwitchesInfo[i].activeHigh);
 
-                    // Assign to Base m_limit_hit
-                    mLimitHit[i] = (gpioState == mLimitSwitchesInfo[i].activeHigh);
-                }
-                result.isForwardPressed = (mLimitHit[i] && mLimitSwitchesInfo[i].limitsForward) || result.isForwardPressed;
-                result.isBackwardPressed = (mLimitHit[i] && !mLimitSwitchesInfo[i].limitsForward) || result.isBackwardPressed;
-                if (mLimitSwitchesInfo[i].usedForReadjustment && mLimitHit[i]) {
-                    adjust(mLimitSwitchesInfo[i].readjustPosition);
+                    if (mLimitSwitchesInfo[i].limitsForward) {
+                        mLimitHit[i] = hardwareHit || fwdPressed;
+                        fwdPressed = fwdPressed || hardwareHit;
+                        fwdMapped = true;
+                    } else {
+                        mLimitHit[i] = hardwareHit || bwdPressed;
+                        bwdPressed = bwdPressed || hardwareHit;
+                        bwdMapped = true;
+                    }
+
+                    if (mLimitSwitchesInfo[i].usedForReadjustment && hardwareHit) {
+                        adjust(mLimitSwitchesInfo[i].readjustPosition);
+                    }
+                } else {
+                    mLimitHit[i] = false;
                 }
             }
-            return result;
+
+            for (std::size_t i = 0; i < MAX_NUM_LIMIT_SWITCHES; ++i) {
+                if (!mLimitSwitchesInfo[i].present || !mLimitSwitchesInfo[i].enabled) {
+                    if (!fwdMapped) {
+                        mLimitHit[i] = fwdPressed;
+                        fwdMapped = true;
+                    } else if (!bwdMapped) {
+                        mLimitHit[i] = bwdPressed;
+                        bwdMapped = true;
+                    }
+                }
+            }
+
+            mIsFwdLimitHit = fwdPressed;
+            mIsBwdLimitHit = bwdPressed;
         }
 
         auto adjust(OutputPosition position) -> void {
@@ -356,6 +396,7 @@ namespace mrover {
             moteus::OutputExact::Command const outputExactCmd{command};
             moteus::CanFdFrame positionFrame = mMoteus->MakeOutputExact(outputExactCmd);
             mDevice.publishMessage(positionFrame);
+            mIsHomed = true;
         }
 
         auto sendQuery() -> void {

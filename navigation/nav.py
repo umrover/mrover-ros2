@@ -45,6 +45,7 @@ class Navigation(Node):
                 ("ref_lon", Parameter.Type.DOUBLE),
                 ("ref_alt", Parameter.Type.DOUBLE),
                 ("target_expiration_duration", Parameter.Type.DOUBLE),
+                ("zed_fov", Parameter.Type.DOUBLE),
                 # Pure Pursuit
                 ("pure_pursuit.min_lookahead_distance", Parameter.Type.DOUBLE),
                 ("pure_pursuit.max_lookahead_distance", Parameter.Type.DOUBLE),
@@ -79,6 +80,7 @@ class Navigation(Node):
                 ("long_range.bearing_expiration_duration", Parameter.Type.DOUBLE),
                 # Search
                 ("search.stop_threshold", Parameter.Type.DOUBLE),
+                ("search.object_stop_threshold", Parameter.Type.DOUBLE),
                 ("search.drive_forward_threshold", Parameter.Type.DOUBLE),
                 ("search.coverage_radius", Parameter.Type.DOUBLE),
                 ("search.segments_per_rotation", Parameter.Type.INTEGER),
@@ -88,7 +90,6 @@ class Navigation(Node):
                 ("search.update_delay", Parameter.Type.DOUBLE),
                 ("search.safe_approach_distance", Parameter.Type.DOUBLE),
                 ("search.angle_thresh", Parameter.Type.DOUBLE),
-                ("search.distance_threshold", Parameter.Type.DOUBLE),
                 # Image Targets
                 ("image_targets.increment_weight", Parameter.Type.INTEGER),
                 ("image_targets.decrement_weight", Parameter.Type.INTEGER),

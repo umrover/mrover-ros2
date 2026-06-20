@@ -10,6 +10,8 @@ async def call_service_async(client, request, timeout=10.0) -> tuple:
         logger.warning(reason)
         return None, reason
 
+    logger.info(f"Service {client.srv_name} is ready, sending request")
+
     loop = asyncio.get_running_loop()
     future = client.call_async(request)
     event = asyncio.Event()
@@ -20,6 +22,7 @@ async def call_service_async(client, request, timeout=10.0) -> tuple:
         nonlocal result, error
         try:
             result = fut.result()
+            logger.info(f"Service {client.srv_name} call completed successfully")
         except Exception as exc:
             error = f"Service call to {client.srv_name} failed: {exc}"
             logger.error(error)
@@ -31,5 +34,6 @@ async def call_service_async(client, request, timeout=10.0) -> tuple:
         await asyncio.wait_for(event.wait(), timeout=timeout)
         return result, error
     except asyncio.TimeoutError:
+        logger.error(f"Service {client.srv_name} call timed out after {timeout}s")
         future.cancel()
         return None, f"Service {client.srv_name} timed out after {timeout}s"

@@ -50,7 +50,7 @@ namespace mrover {
             }
         } catch (std::exception const& e) {
             RCLCPP_ERROR_STREAM(get_logger(), std::format("Exception encoding frame: {}", e.what()));
-            rclcpp::shutdown();
+            stopStreamPipelines();
         }
     }
 
@@ -85,6 +85,9 @@ namespace mrover {
                         pipeline.pushBack(std::format("videocrop left={} right={} top={} bottom={}", mCropLeft, mCropRight, mCropTop, mCropBottom));
                     }
 
+                    pipeline.pushBack("videoconvert");
+                    pipeline.pushBack("video/x-raw,format=I420");
+
                     pipeline.pushBack("nvvidconv");
                     pipeline.pushBack("video/x-raw(memory:NVMM),format=NV12");
                     break;
@@ -103,28 +106,21 @@ namespace mrover {
                 case gst::video::Codec::H265: {
                     pipeline.pushBack("nvv4l2h265enc",
                                       gst::addProperty("bitrate", mBitrate),
-                                      gst::addProperty("iframeinterval", 300),
-                                      gst::addProperty("vbv-size", 33333),
-                                      gst::addProperty("insert-sps-pps", true),
-                                      gst::addProperty("control-rate", "constant_bitrate"),
-                                      gst::addProperty("profile", "main"),
-                                      gst::addProperty("num-B-Frames", 0),
-                                      gst::addProperty("ratecontrol-enable", true),
-                                      gst::addProperty("preset-level", "UltraFastPreset"),
-                                      gst::addProperty("EnableTwopassCBR", false),
-                                      gst::addProperty("maxperf-enable", true));
+                                      gst::addProperty("insert-sps-pps", true));
                     pipeline.pushBack("h265parse");
                     break;
                 }
                 case gst::video::Codec::H264: {
-                    pipeline.pushBack("nvv4l2h265enc",
-                                      gst::addProperty("bitrate", mBitrate));
+                    pipeline.pushBack("nvv4l2h264enc",
+                                      gst::addProperty("bitrate", mBitrate),
+                                      gst::addProperty("insert-sps-pps", true));
                     pipeline.pushBack("h264parse");
                     break;
                 }
                 case gst::video::Codec::AV1: {
                     pipeline.pushBack("nvv4l2av1enc",
-                                      gst::addProperty("bitrate", mBitrate));
+                                      gst::addProperty("bitrate", mBitrate),
+                                      gst::addProperty("insert-sps-pps", true));
                     break;
                 }
                 default: {
@@ -235,6 +231,14 @@ namespace mrover {
         }};
 
         RCLCPP_INFO_STREAM(get_logger(), "Initialized GStreamer stream pipeline");
+    }
+
+    auto GstCameraServer::stopStreamPipelines() -> void {
+        try {
+            mStreamPipelineWrapper.stop();
+        } catch (std::runtime_error const& e) {
+            RCLCPP_ERROR_STREAM(get_logger(), std::format("Failed to stop GStreamer pipeline: {}", e.what()));
+        }
     }
 
     auto GstCameraServer::mediaControlServerCallback(srv::MediaControl::Request::ConstSharedPtr const& req, srv::MediaControl::Response::SharedPtr const& res) -> void {
@@ -479,7 +483,6 @@ namespace mrover {
 
         } catch (std::exception const& e) {
             RCLCPP_ERROR_STREAM(get_logger(), std::format("Exception initializing GStreamer V4L2 streamer: {}", e.what()));
-            rclcpp::shutdown();
         }
     }
 
@@ -511,8 +514,8 @@ namespace mrover {
                         break;
                     case GST_MESSAGE_ERROR:
                         gst_message_parse_error(message, &error, &debug);
-                        RCLCPP_FATAL_STREAM(logger, std::format("{} ({})", error->message, debug));
-                        rclcpp::shutdown();
+                        RCLCPP_ERROR_STREAM(logger, std::format("{} ({})", error->message, debug));
+                        node->stopStreamPipelines();
                         break;
                     default:
                         std::abort();
@@ -523,7 +526,7 @@ namespace mrover {
             }
             case GST_MESSAGE_EOS: {
                 RCLCPP_ERROR_STREAM(node->get_logger().get_child("gstreamer"), "End of stream");
-                rclcpp::shutdown();
+                node->stopStreamPipelines();
                 break;
             }
             default:

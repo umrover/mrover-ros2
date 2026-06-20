@@ -1,7 +1,8 @@
 import type {
   AutonEnableResponse,
   TeleopEnableResponse,
-  AutonEnableWaypoint
+  AutonEnableWaypoint,
+  APIResponse
 } from './apiTypes'
 import { apiFetch } from './apiFetch'
 
@@ -39,5 +40,12 @@ export const autonAPI = {
       method: 'POST',
       body: JSON.stringify({ enabled })
     })
-  }
+  },
+
+  driveBack(durationSeconds: number): Promise<APIResponse> {
+    return apiFetch('/drive_back/', {
+      method: 'POST',
+      body: JSON.stringify({ duration_seconds: durationSeconds })
+    })
+  },
 }

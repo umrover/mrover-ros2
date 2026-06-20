@@ -24,15 +24,21 @@ dependencies = [
     "pydantic>=2.0.0",
     "websockets>=12.0",
     "msgpack>=1.0.0",
-    "uvicorn>=0.38.0"
+    "uvicorn>=0.38.0",
 ]
 
 [project.optional-dependencies]
 dev = [
     # If you update these, be sure to update the correspondig version checkers in style.sh
-    "black==24.8.0",
+    "black==26.5.1",
     "mypy==1.11.2",
     "ipython==8.27.0",
+]
+test = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "websocket-client>=1.6.0",
+    "requests>=2.28.0",
 ]
 
 [build-system]
@@ -44,3 +50,4 @@ build-backend = "flit_core.buildapi"
 
 [tool.black]
 line-length = 120
+target-version = ["py310"]

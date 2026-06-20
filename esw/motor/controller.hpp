@@ -17,7 +17,7 @@ namespace mrover {
               mMasterName{std::move(masterName)},
               mControllerName{std::move(controllerName)},
               mDevice{mNode, mMasterName, mControllerName,
-                      [this](CANMsg_t const& msg) {
+                      [this](CANMsg_t const& msg) -> void {
                           static_cast<Derived*>(this)->processMessage(msg);
                       }} {}
 

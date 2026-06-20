@@ -1,6 +1,7 @@
 <template>
-  <div class="flex flex-row gap-2">
-    <div class="flex flex-col gap-1" style="flex: 1;">
+  <div class="flex flex-col gap-2">
+    <div class="flex flex-col gap-1">
+      <span class="data-label">General</span>
       <FeedbackButton
         ref="autonCheckbox"
         class="w-full"
@@ -19,8 +20,51 @@
         :action="teleopAction"
         @toggle="handleTeleopToggle"
       />
+      <div class="flex flex-col gap-1 mt-1">
+        <div class="flex justify-between items-center">
+          <span class="text-sm">Drive Back: {{ backupDuration }}s</span>
+        </div>
+        <input
+          v-model.number="backupDuration"
+          type="range"
+          min="1"
+          max="10"
+          step="1"
+          class="w-full"
+          data-testid="pw-drive-back-slider"
+        />
+        <button
+          class="btn btn-sm w-full"
+          :class="backingUp ? 'btn-warning' : 'btn-danger'"
+          :disabled="backingUp"
+          data-testid="pw-drive-back-btn"
+          @click="handleDriveBack"
+        >{{ backingUp ? `Backing up... (${backupCountdown}s)` : 'Drive Back' }}</button>
+      </div>
     </div>
-    <div class="flex flex-col gap-1" style="flex: 1;">
+    <div class="flex flex-col gap-1">
+      <span class="data-label">Costmap</span>
+      <div class="flex gap-1">
+        <button
+          class="btn btn-sm flex-1 btn-success"
+          data-testid="pw-costmap-all-on"
+          @click="autonomyStore.setAllCostmaps(true)"
+        >All On</button>
+        <button
+          class="btn btn-sm flex-1 btn-danger"
+          data-testid="pw-costmap-all-off"
+          @click="autonomyStore.setAllCostmaps(false)"
+        >All Off</button>
+      </div>
+      <button
+        class="btn btn-sm w-full"
+        :class="autonomyStore.defaultCostmapEnabled ? 'btn-success' : 'btn-danger'"
+        data-testid="pw-costmap-default-toggle"
+        @click="autonomyStore.toggleDefaultCostmap()"
+      >Default: {{ autonomyStore.defaultCostmapEnabled ? 'On' : 'Off' }}</button>
+    </div>
+    <div class="flex flex-col gap-1">
+      <span class="data-label">Navigation</span>
       <FeedbackButton
         class="w-full"
         data-testid="pw-pure-pursuit-toggle"
@@ -50,7 +94,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import FeedbackButton from './FeedbackButton.vue'
 import { useAutonomyStore } from '@/stores/autonomy'
 import { autonAPI } from '@/utils/api'
@@ -59,6 +103,20 @@ const emit = defineEmits<{
   toggleTeleop: [enabled: boolean]
 }>()
 
+const autonAction = (newState: boolean) => {
+  const waypoints = newState
+    ? autonomyStore.execution.map(wp => ({
+        latitude_degrees: wp.lat,
+        longitude_degrees: wp.lon,
+        tag_id: wp.tag_id,
+        type: wp.type,
+        enable_costmap: wp.enable_costmap,
+      }))
+    : []
+
+  return autonAPI.enable(newState, waypoints)
+}
+
 const autonomyStore = useAutonomyStore()
 
 const autonEnabled = computed(() => autonomyStore.autonEnabled)
@@ -66,28 +124,13 @@ const teleopEnabled = computed(() => autonomyStore.teleopEnabled)
 const purePursuitEnabled = computed(() => autonomyStore.purePursuitEnabled)
 const pathRelaxationEnabled = computed(() => autonomyStore.pathRelaxationEnabled)
 const pathInterpolationEnabled = computed(() => autonomyStore.pathInterpolationEnabled)
-
-const autonAction = (newState: boolean) => {
-  const routeMap = autonomyStore.routeForMap
-  const waypoints = newState
-    ? routeMap.map((waypoint) => ({
-        latitude_degrees: waypoint.latLng.lat,
-        longitude_degrees: waypoint.latLng.lng,
-        tag_id: waypoint.tag_id,
-        type: waypoint.type,
-        enable_costmap: waypoint.enable_costmap,
-      }))
-    : []
-
-  return autonAPI.enable(newState, waypoints)
-}
+const teleopAction = (newState: boolean) => autonAPI.enableTeleop(newState)
+const purePursuitAction = (newState: boolean) => autonAPI.togglePurePursuit(newState)
+const pathRelaxationAction = (newState: boolean) => autonAPI.togglePathRelaxation(newState)
+const pathInterpolationAction = (newState: boolean) => autonAPI.togglePathInterpolation(newState)
 
 const handleAutonToggle = (newState: boolean) => {
   autonomyStore.autonEnabled = newState
-}
-
-const teleopAction = (newState: boolean) => {
-  return autonAPI.enableTeleop(newState)
 }
 
 const handleTeleopToggle = (newState: boolean) => {
@@ -95,28 +138,38 @@ const handleTeleopToggle = (newState: boolean) => {
   emit('toggleTeleop', newState)
 }
 
-const purePursuitAction = (newState: boolean) => {
-  return autonAPI.togglePurePursuit(newState)
-}
-
 const handlePurePursuitToggle = (newState: boolean) => {
   autonomyStore.purePursuitEnabled = newState
-}
-
-const pathRelaxationAction = (newState: boolean) => {
-  return autonAPI.togglePathRelaxation(newState)
 }
 
 const handlePathRelaxationToggle = (newState: boolean) => {
   autonomyStore.pathRelaxationEnabled = newState
 }
 
-const pathInterpolationAction = (newState: boolean) => {
-  return autonAPI.togglePathInterpolation(newState)
-}
-
 const handlePathInterpolationToggle = (newState: boolean) => {
   autonomyStore.pathInterpolationEnabled = newState
 }
-</script>
 
+const backupDuration = ref(3)
+const backingUp = ref(false)
+const backupCountdown = ref(0)
+
+const handleDriveBack = async () => {
+  if (backingUp.value) return
+  backingUp.value = true
+  backupCountdown.value = backupDuration.value
+
+  const interval = setInterval(() => {
+    backupCountdown.value -= 1
+    if (backupCountdown.value <= 0) clearInterval(interval)
+  }, 1000)
+
+  try {
+    await autonAPI.driveBack(backupDuration.value)
+  } finally {
+    clearInterval(interval)
+    backingUp.value = false
+    backupCountdown.value = 0
+  }
+}
+</script>

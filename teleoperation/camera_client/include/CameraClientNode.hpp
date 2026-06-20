@@ -9,6 +9,15 @@ namespace mrover {
         std::string pipeline;
     };
 
+    enum CAMERA_CONFIG : unsigned char {
+        ARM = 0,
+        SCIENCE = 1,
+        AUTON = 2,
+        COUNT
+    };
+
+    static constexpr std::array<char const*, CAMERA_CONFIG::COUNT> CAMERA_CONFIGS = {"arm", "science", "auton"};
+
     // inherits from both QObject (for signals) and rclcpp::Node (for ROS)
     class CameraClientNode : public QObject, public rclcpp::Node {
         Q_OBJECT
@@ -24,8 +33,7 @@ namespace mrover {
     public:
         explicit CameraClientNode();
 
-        // call after connecting signals to discover cameras from parameters
-        auto discoverCameras() -> void;
+        auto loadCameraConfigs() -> std::unordered_map<std::string, std::vector<std::string>>;
 
     signals:
         void cameraDiscovered(CameraInfo info);

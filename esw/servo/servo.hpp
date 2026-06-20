@@ -1,323 +1,155 @@
 #pragma once
 
-#include <parameter.hpp>
-#include <rclcpp/logging.hpp>
+#include <atomic>
+#include <chrono>
+#include <cmath>
+#include <cstdint>
 #include <string>
-#include <utility>
+#include <vector>
 
-#include "u2d2.hpp"
+#include <rclcpp/rclcpp.hpp>
+
+#include <mrover/msg/servo_configure.hpp>
+#include <mrover/msg/servo_in.hpp>
+#include <mrover/msg/servo_out.hpp>
+#include <parameter.hpp>
+#include <units.hpp>
 
 namespace mrover {
 
     class Servo {
-        using ServoID = uint8_t;
-        using ServoPosition = double; // Degrees
-        using ServoVelocity = double; // rot/sec
-        using ServoCurrent = double;  // mA
-        using ServoAddr = uint16_t;
-
         static constexpr uint8_t ADDR_OPERATING_MODE = 11;
+        static constexpr uint8_t ADDR_CURRENT_LIMIT = 38;
         static constexpr uint8_t ADDR_TORQUE_ENABLE = 64;
+        static constexpr uint8_t ADDR_POSITION_D_GAIN = 80;
+        static constexpr uint8_t ADDR_POSITION_I_GAIN = 82;
+        static constexpr uint8_t ADDR_POSITION_P_GAIN = 84;
+        static constexpr uint8_t ADDR_PROFILE_ACCELERATION = 108;
+        static constexpr uint8_t ADDR_PROFILE_VELOCITY = 112;
         static constexpr uint8_t ADDR_GOAL_POSITION = 116;
-        static constexpr uint8_t ADDR_PRESENT_POSITION = 132;
-        static constexpr uint8_t ADDR_PRESENT_VELOCITY = 128;
-        static constexpr uint8_t ADDR_PRESENT_CURRENT = 126;
 
-        static constexpr int32_t SERVO_TICKS = 4096;
-        static constexpr uint8_t SERVO_POSITION_DEAD_ZONE = 5;
-
-        static constexpr double TAU = 2 * M_PI;
-
-        [[nodiscard]] constexpr auto getUpper(int64_t const val) const -> auto { return val == 0 ? SERVO_TICKS : val; }
-
-        ServoID mServoID;
-        std::string mServoName;
-        int64_t mLimitAdjustment;
-        int64_t mAdjustedForwardLimit;
-        int64_t mAdjustedReverseLimit;
-        int64_t mGoalPosition;
-        uint32_t mPositionOffsetTicks;
-        double mPositionMultiplier;
-
-        bool mAtLimit = false;
+        static constexpr int32_t SERVO_TICKS_PER_REV = 4096;
+        static constexpr double TAU = 2.0 * M_PI;
 
         rclcpp::Node::SharedPtr mNode;
+        std::string mServoName;
+        uint8_t mServoID{0};
+        double mGearRatio{1.0};
+
+        Radians mGoalPosition{0.0};
+        Radians mBootPosition{0.0};
+
+        std::atomic<bool> mHasReceivedFirstMessage{false};
+        std::atomic<double> mRadianOffset{0.0};
+        std::atomic<double> mCachedRads{0.0};
+
+        rclcpp::Publisher<msg::ServoConfigure>::SharedPtr mConfigPub;
+        rclcpp::Publisher<msg::ServoIn>::SharedPtr mCmdPub;
+        rclcpp::Subscription<msg::ServoOut>::SharedPtr mStateSub;
 
     public:
-        enum class ServoProperty {
-            PositionPGain = 84,
-            PositionIGain = 82,
-            PositionDGain = 80,
-            VelocityPGain = 78,
-            VelocityIGain = 76,
-            CurrentLimit = 102,
-            ProfileVelocity = 112,
-            ProfileAcceleration = 108,
-        };
+        Servo(rclcpp::Node::SharedPtr node, std::string servoName)
+            : mNode(std::move(node)), mServoName(std::move(servoName)) {
+            mConfigPub = mNode->create_publisher<msg::ServoConfigure>("/u2d2/configure", rclcpp::QoS(10).transient_local());
+            mCmdPub = mNode->create_publisher<msg::ServoIn>("/u2d2/" + mServoName + "/in", 10);
 
-        enum class ServoMode {
-            Optimal,
-            Clockwise,
-            CounterClockwise,
-            Limited,
-        };
+            mStateSub = mNode->create_subscription<msg::ServoOut>(
+                    "/u2d2/" + mServoName + "/out", 10,
+                    [this](msg::ServoOut::ConstSharedPtr const& msg) {
+                        Radians const rawRads = ticksToRads(static_cast<int32_t>(msg->position));
 
-        Servo(rclcpp::Node::SharedPtr node, std::string servoName) : mServoName{std::move(servoName)}, mLimitAdjustment{0}, mAdjustedForwardLimit{0},
-                                                                     mAdjustedReverseLimit{0}, mGoalPosition{0}, mPositionOffsetTicks{0}, mPositionMultiplier{1}, mNode{std::move(node)} {
+                        if (!mHasReceivedFirstMessage.exchange(true)) {
+                            mRadianOffset.store(mBootPosition.get() - rawRads.get());
+                        }
 
-            int id;
-            std::vector<ParameterWrapper> parameters = {
-                    {std::format("{}.id", mServoName), id, 0},
-            };
-            ParameterWrapper::declareParameters(mNode.get(), parameters);
-            mServoID = static_cast<ServoID>(id);
+                        mCachedRads.store(rawRads.get());
+                    });
 
-            U2D2::getInstance()->registerServo(mServoID);
-            updateConfigFromParameters();
-
-            uint8_t hardwareStatus;
-
-            // Use Position Control Mode
-            U2D2::getInstance()->write1Byte(ADDR_OPERATING_MODE, 4, mServoID, &hardwareStatus);
-
-            // Enable torque
-            U2D2::getInstance()->write1Byte(ADDR_TORQUE_ENABLE, 1, mServoID, &hardwareStatus);
+            initParametersAndHardware();
         }
 
-
-        auto setPosition(ServoPosition const position, ServoMode const mode) -> U2D2::Status {
-            // Convert degrees to ticks (0.0 - 360.0) to (0 to SERVO_TICKS)
-            mGoalPosition = static_cast<int64_t>((position / TAU) * static_cast<double>(SERVO_TICKS));
-
-
-            auto currentPositionAndStatus = getCurrentServoPosition();
-
-            if (currentPositionAndStatus.second != U2D2::Status::Success) {
-                return currentPositionAndStatus.second;
-            }
-
-            // Calculate the signed difference (accounting for overflow)
-            auto normalizedDifference = static_cast<int64_t>(mGoalPosition - currentPositionAndStatus.first);
-
-            mAtLimit = false;
-
-            switch (mode) {
-                case ServoMode::Optimal:
-                    if (normalizedDifference > (SERVO_TICKS / 2)) {
-                        mGoalPosition -= SERVO_TICKS; // Go the other (shorter) way around
-                    } else if (normalizedDifference < -(SERVO_TICKS / 2)) {
-                        mGoalPosition += SERVO_TICKS; // Go the other (shorter) way around
-                    }
-                    break;
-                case ServoMode::Clockwise: // clockwise
-                    if (normalizedDifference < 0) {
-                        mGoalPosition += SERVO_TICKS;
-                    }
-                    break;
-                case ServoMode::CounterClockwise: // counter clockwise
-                    if (normalizedDifference > 0) {
-                        mGoalPosition -= SERVO_TICKS;
-                    }
-                    break;
-                case ServoMode::Limited: {
-
-                    // Adjust target and current position
-                    int64_t const adjustedCurrentPosition = (currentPositionAndStatus.first - mLimitAdjustment + SERVO_TICKS) % SERVO_TICKS;
-                    int64_t const adjustedTargetPosition = (mGoalPosition - mLimitAdjustment + SERVO_TICKS) % SERVO_TICKS;
-
-                    // If the current path to the final position goes over the middle limit, go the other way
-                    if (0 > adjustedCurrentPosition && 0 < adjustedTargetPosition) {
-
-                        if (normalizedDifference > 0)
-                            mGoalPosition -= SERVO_TICKS;
-                        else if (normalizedDifference < 0)
-                            mGoalPosition += SERVO_TICKS;
-                    }
-
-                    mAtLimit = false;
-
-                    // Limit destination if between mForwardLimit and middleLimit
-                    if (getUpper(adjustedTargetPosition) > mAdjustedForwardLimit) {
-                        mGoalPosition = (mAdjustedForwardLimit - adjustedCurrentPosition) % SERVO_TICKS;
-                        if (normalizedDifference < 0 && !(getUpper(adjustedCurrentPosition) > mAdjustedForwardLimit && adjustedCurrentPosition < SERVO_TICKS)) mGoalPosition += SERVO_TICKS;
-                        mAtLimit = true;
-                    }
-
-                    // Limit destination if between mReverseLimit and middleLimit
-                    else if (adjustedTargetPosition < getUpper(mAdjustedReverseLimit)) {
-
-                        mGoalPosition = (mAdjustedReverseLimit - adjustedCurrentPosition) % SERVO_TICKS;
-                        if (normalizedDifference > 0 && !(getUpper(adjustedCurrentPosition) > 0 && adjustedCurrentPosition < getUpper(mAdjustedReverseLimit))) mGoalPosition -= SERVO_TICKS;
-                        mAtLimit = true;
-                    }
-                }
-            }
-
-            // Write goal position
-            uint8_t hardwareStatus;
-            uint32_t rawGoal = offsetToRaw(mGoalPosition);
-            return U2D2::getInstance()->write4Byte(ADDR_GOAL_POSITION, rawGoal, mServoID, &hardwareStatus);
+        void setGoalPosition(Radians rads) {
+            if (rads.get() < 0.0) rads = Radians{0.0};
+            mGoalPosition = rads;
+            Radians const hardwareRads{rads.get() - mRadianOffset.load()};
+            int32_t const hardwareTicks = radsToTicks(hardwareRads);
+            publishWrite(ADDR_GOAL_POSITION, 4, static_cast<uint32_t>(hardwareTicks));
         }
 
-
-        auto getPosition(ServoPosition& position) const -> U2D2::Status {
-            auto const positionTicks = getCurrentServoPosition();
-            position = (static_cast<double>(positionTicks.first) / static_cast<double>(SERVO_TICKS)) * TAU;
-            return positionTicks.second;
-        }
-
-        auto getVelocity(ServoVelocity& velocity) const -> U2D2::Status {
-            uint8_t hardwareStatus;
-            uint32_t velocity_int;
-            U2D2::Status const status = U2D2::getInstance()->read4Byte(ADDR_PRESENT_VELOCITY, velocity_int, mServoID, &hardwareStatus);
-            velocity = (static_cast<double>(velocity_int) * 0.22888); // 0.22888f Conversion factor to get rot/sec (found in dynamixel wizard)
-            return status;
-        }
-
-        auto getCurrent(ServoCurrent& current) const -> U2D2::Status {
-            uint8_t hardwareStatus;
-            uint16_t currentInt;
-            U2D2::Status const status = U2D2::getInstance()->read2Byte(ADDR_PRESENT_CURRENT, currentInt, mServoID, &hardwareStatus);
-            current = static_cast<double>(currentInt) / 1000.0;
-            return status;
-        }
-
-        [[nodiscard]] auto setProperty(ServoProperty prop, uint16_t const value) const -> U2D2::Status {
-            uint8_t hardwareStatus;
-            if (prop == ServoProperty::ProfileVelocity || prop == ServoProperty::ProfileAcceleration) {
-                return U2D2::getInstance()->write4Byte(static_cast<ServoAddr>(prop), value, mServoID, &hardwareStatus);
-            }
-            return U2D2::getInstance()->write2Byte(static_cast<ServoAddr>(prop), value, mServoID, &hardwareStatus);
-        }
-
-        [[nodiscard]] auto getTargetStatus() const -> U2D2::Status {
-            auto const currentPositionAndStatus = getCurrentServoPosition();
-
-            if (currentPositionAndStatus.second != U2D2::Status::Success) return currentPositionAndStatus.second;
-
-            if (std::abs(currentPositionAndStatus.first - mGoalPosition) < SERVO_POSITION_DEAD_ZONE) {
-                return U2D2::Status::Success;
-            }
-
-            return U2D2::Status::Active;
-        }
-
-        [[nodiscard]] auto getLimitStatus() const -> bool {
-            return mAtLimit;
+        [[nodiscard]] auto getPosition() const -> Radians {
+            return Radians{mCachedRads.load() + mRadianOffset.load()};
         }
 
     private:
-        auto check(bool const condition, std::string const& errMsg) const -> void {
-            if (!condition) RCLCPP_ERROR(mNode->get_logger(), "%s", errMsg.c_str());
+        [[nodiscard]] auto radsToTicks(Radians rads) const -> int32_t {
+            double const motorRevs = (rads.get() / TAU) * mGearRatio;
+            return static_cast<int32_t>(motorRevs * SERVO_TICKS_PER_REV);
         }
 
-        auto updateConfigFromParameters() -> void {
-            double forwardLimit;
-            double reverseLimit;
-            double positionPGain;
-            double positionIGain;
-            double positionDGain;
-            double velocityPGain;
-            double velocityIGain;
-            double currentLimit;
-            double profileAcceleration;
-            double profileVelocity;
+        [[nodiscard]] auto ticksToRads(int32_t ticks) const -> Radians {
+            double const motorRevs = static_cast<double>(ticks) / SERVO_TICKS_PER_REV;
+            double const jointRevs = motorRevs / mGearRatio;
+            return Radians{jointRevs * TAU};
+        }
+
+        void initParametersAndHardware() {
+            int id;
+            double position_p, position_i, position_d;
+            double current_limit;
+            double profile_acceleration, profile_velocity;
+            double boot_position;
 
             std::vector<ParameterWrapper> parameters = {
-                    {std::format("{}.position_multiplier", mServoName), mPositionMultiplier, 1.0},
-                    {std::format("{}.reverse_limit", mServoName), reverseLimit, 0.0},
-                    {std::format("{}.forward_limit", mServoName), forwardLimit, 340.0},
-                    {std::format("{}.position_p", mServoName), positionPGain, 400.0},
-                    {std::format("{}.position_i", mServoName), positionIGain, 0.0},
-                    {std::format("{}.position_d", mServoName), positionDGain, 0.0},
-                    {std::format("{}.velocity_p", mServoName), velocityPGain, 180.0},
-                    {std::format("{}.velocity_i", mServoName), velocityIGain, 90.0},
-                    {std::format("{}.current_limit", mServoName), currentLimit, 1750.0},
-                    {std::format("{}.profile_acceleration", mServoName), profileAcceleration, 100.0},
-                    {std::format("{}.profile_velocity", mServoName), profileVelocity, 100.0}};
-
+                    {mServoName + ".id", id, 1},
+                    {mServoName + ".gear_ratio", mGearRatio, 1.0},
+                    {mServoName + ".position_p", position_p, 400.0},
+                    {mServoName + ".position_i", position_i, 0.0},
+                    {mServoName + ".position_d", position_d, 0.0},
+                    {mServoName + ".current_limit", current_limit, 1000.0},
+                    {mServoName + ".profile_acceleration", profile_acceleration, 10.0},
+                    {mServoName + ".profile_velocity", profile_velocity, 100.0},
+                    {mServoName + ".boot_position", boot_position, 0.0}};
             ParameterWrapper::declareParameters(mNode.get(), parameters);
+            mServoID = static_cast<uint8_t>(id);
+            mBootPosition = Radians{boot_position};
 
-            check(setProperty(ServoProperty::PositionPGain, static_cast<uint16_t>(positionPGain)) == U2D2::Status::Success, "pos p gain error");
-            check(setProperty(ServoProperty::PositionIGain, static_cast<uint16_t>(positionIGain)) == U2D2::Status::Success, "pos i gain error");
-            check(setProperty(ServoProperty::PositionDGain, static_cast<uint16_t>(positionDGain)) == U2D2::Status::Success, "pos d gain error");
-            check(setProperty(ServoProperty::VelocityPGain, static_cast<uint16_t>(velocityPGain)) == U2D2::Status::Success, "vel p gain error");
-            check(setProperty(ServoProperty::VelocityIGain, static_cast<uint16_t>(velocityIGain)) == U2D2::Status::Success, "vel i gain error");
-            check(setProperty(ServoProperty::CurrentLimit, static_cast<uint16_t>(currentLimit)) == U2D2::Status::Success, "current limit gain error");
-            check(setProperty(ServoProperty::ProfileAcceleration, static_cast<uint16_t>(profileAcceleration)) == U2D2::Status::Success, "profile accel gain error");
-            check(setProperty(ServoProperty::ProfileVelocity, static_cast<uint16_t>(profileVelocity)) == U2D2::Status::Success, "profile vel gain error");
+            // register with u2d2 node
+            msg::ServoConfigure configMsg;
+            configMsg.name = mServoName;
+            configMsg.id = mServoID;
+            mConfigPub->publish(configMsg);
 
-            ParameterWrapper::declareParameters(mNode.get(), parameters);
-
-            int const reverseLimitTicks = static_cast<int>((reverseLimit / TAU) * SERVO_TICKS);
-            int const forwardLimitTicks = static_cast<int>((forwardLimit / TAU) * SERVO_TICKS);
-
-            mLimitAdjustment = (forwardLimitTicks + reverseLimitTicks) / 2;
-
-            if (forwardLimitTicks > reverseLimitTicks) {
-                mLimitAdjustment = (forwardLimitTicks + reverseLimitTicks + SERVO_TICKS) / 2;
+            while (mCmdPub->get_subscription_count() == 0) {
+                rclcpp::sleep_for(std::chrono::milliseconds(10));
             }
-            mLimitAdjustment %= SERVO_TICKS;
+            rclcpp::sleep_for(std::chrono::milliseconds(50));
 
-            mAdjustedReverseLimit = (static_cast<int64_t>((reverseLimit / TAU) * SERVO_TICKS) - mLimitAdjustment + SERVO_TICKS) % SERVO_TICKS;
-            mAdjustedForwardLimit = (static_cast<int>((forwardLimit / TAU) * static_cast<double>(SERVO_TICKS)) - mLimitAdjustment + SERVO_TICKS) % SERVO_TICKS;
+            // disable torque (control table)
+            publishWrite(ADDR_TORQUE_ENABLE, 1, 0);
+            rclcpp::sleep_for(std::chrono::milliseconds(10));
 
-            setOffset();
+            // extended position mode
+            publishWrite(ADDR_OPERATING_MODE, 1, 4);
+
+            // write user params
+            publishWrite(ADDR_POSITION_P_GAIN, 2, static_cast<uint32_t>(position_p));
+            publishWrite(ADDR_POSITION_I_GAIN, 2, static_cast<uint32_t>(position_i));
+            publishWrite(ADDR_POSITION_D_GAIN, 2, static_cast<uint32_t>(position_d));
+            publishWrite(ADDR_CURRENT_LIMIT, 2, static_cast<uint32_t>(current_limit));
+            publishWrite(ADDR_PROFILE_ACCELERATION, 4, static_cast<uint32_t>(profile_acceleration));
+            publishWrite(ADDR_PROFILE_VELOCITY, 4, static_cast<uint32_t>(profile_velocity));
+
+            // enable torque (control table)
+            publishWrite(ADDR_TORQUE_ENABLE, 1, 1);
         }
 
-        auto setOffset() -> void {
-            // Read the servos current position
-            uint8_t hardwareStatus;
-            uint32_t presentPosition;
-            U2D2::getInstance()->read4Byte(ADDR_PRESENT_POSITION, presentPosition, mServoID, &hardwareStatus);
-
-            // Update the offset of the servo
-            mPositionOffsetTicks = presentPosition;
-        }
-
-        [[nodiscard]] auto rawToOffset(uint32_t position) const -> int64_t {
-            // apply the offset to the position of the servos
-            int64_t updatedPosition = static_cast<int64_t>(position / mPositionMultiplier) - mPositionOffsetTicks;
-
-            // correct for an underflow
-            while (updatedPosition < 0) {
-                updatedPosition += SERVO_TICKS;
-            }
-
-            // correct for an overflow
-            while (updatedPosition > std::numeric_limits<uint32_t>::max()) {
-                updatedPosition -= SERVO_TICKS;
-            }
-
-            return updatedPosition;
-        }
-
-        [[nodiscard]] auto offsetToRaw(int64_t position) const -> uint32_t {
-            // apply the offset to the position of the servos
-            int64_t updatedPosition = static_cast<int64_t>(static_cast<double>(position) * mPositionMultiplier) + mPositionOffsetTicks;
-
-            // correct for an underflow
-            while (updatedPosition < 0) {
-                updatedPosition += SERVO_TICKS;
-            }
-
-            // correct for an overflow
-            while (updatedPosition > std::numeric_limits<uint32_t>::max()) {
-                updatedPosition -= SERVO_TICKS;
-            }
-
-            return updatedPosition;
-        }
-
-        [[nodiscard]] auto getCurrentServoPosition() const -> std::pair<int64_t, U2D2::Status> {
-            uint8_t hardwareStatus;
-            uint32_t presentPosition;
-            U2D2::Status const status = U2D2::getInstance()->read4Byte(ADDR_PRESENT_POSITION, presentPosition, mServoID, &hardwareStatus);
-
-            int64_t offsetPosition = rawToOffset(presentPosition);
-
-
-            return std::make_pair(offsetPosition, status);
+        void publishWrite(uint8_t addr, uint8_t len, uint32_t val) {
+            msg::ServoIn msg;
+            msg.addr = addr;
+            msg.length = len;
+            msg.value = val;
+            mCmdPub->publish(msg);
         }
     };
+
 } // namespace mrover

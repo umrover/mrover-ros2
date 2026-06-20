@@ -30,4 +30,39 @@ def generate_launch_description():
 
     panorama_node = Node(package="mrover", executable="panorama.py", name="panorama", respawn=True)
 
-    return LaunchDescription([launch_include_jetson_base, science_hw_bridge_node, panorama_node])
+    cameras_config_path = str(Path(get_package_share_directory("mrover"), "config", "cameras.yaml"))
+
+    cameras = [
+        "sp1_streamer",
+        "sp2_streamer",
+    ]
+
+    cam_composable_nodes = [
+        ComposableNode(
+            package="mrover",
+            plugin="mrover::GstCameraServer",
+            name=name,
+            parameters=[cameras_config_path],
+            extra_arguments=[{"use_intra_process_comms": True}],
+        )
+        for name in cameras
+    ]
+
+    cam_container = ComposableNodeContainer(
+        name="webcam_streamer_container",
+        namespace="",
+        package="rclcpp_components",
+        executable="component_container_mt",
+        composable_node_descriptions=cam_composable_nodes,
+        output="screen",
+    )
+
+    launch_localization = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            Path(get_package_share_directory("mrover"), "launch/localization.launch.py").__str__()
+        )
+    )
+
+    return LaunchDescription(
+        [launch_include_jetson_base, science_hw_bridge_node, panorama_node, cam_container, launch_localization]
+    )

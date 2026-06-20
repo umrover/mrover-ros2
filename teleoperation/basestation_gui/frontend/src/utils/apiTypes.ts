@@ -44,7 +44,7 @@ export interface CreateBasicWaypointResponse extends APIResponse {
 export interface AutonEnableWaypoint {
   latitude_degrees: number
   longitude_degrees: number
-  tag_id: number
+  tag_id: number | null
   type: number
   enable_costmap: boolean
 }
@@ -79,4 +79,31 @@ export interface RecordingWaypointsResponse extends APIResponse {
 
 export interface RAModeResponse extends APIResponse {
   mode?: string
+}
+
+export interface ServoResponse extends APIResponse {
+  position?: number
+  at_tgt?: boolean
+}
+
+export interface GpsSnapshotResponse extends APIResponse {
+  lat?: number
+  lon?: number
+  altitude?: number
+}
+
+export interface ScienceWaypointRecord {
+  id?: number
+  name: string
+  lat: number
+  lon: number
+  altitude: number
+}
+
+export interface ScienceWaypointsResponse extends APIResponse {
+  waypoints?: ScienceWaypointRecord[]
+}
+
+export interface CreateScienceWaypointResponse extends APIResponse {
+  waypoint?: ScienceWaypointRecord
 }

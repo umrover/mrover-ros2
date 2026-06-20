@@ -5,13 +5,14 @@ from lie import SE3
 from backend.ws.base_ws import WebSocketHandler
 from backend.managers.ros import get_logger
 from backend.managers.led import set_nav_state
-from mrover.msg import StateMachineStateUpdate
+from mrover.msg import StateMachineStateUpdate, CalibrationStatus
 from sensor_msgs.msg import NavSatFix
+from geometry_msgs.msg import Twist
 
 
 class NavHandler(WebSocketHandler):
     def __init__(self, websocket):
-        super().__init__(websocket, 'nav')
+        super().__init__(websocket, "nav")
         self.buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.buffer, self.node, spin_thread=False)
 
@@ -23,7 +24,9 @@ class NavHandler(WebSocketHandler):
 
         self.forward_ros_topic("/gps/fix", NavSatFix, "gps_fix")
         self.forward_ros_topic("basestation/position", NavSatFix, "basestation_position")
-        self.forward_ros_topic("/drone_odometry", NavSatFix, "drone_waypoint")
+        self.forward_ros_topic("/drone_odom", NavSatFix, "drone_waypoint")
+        self.forward_ros_topic("/calibration", CalibrationStatus, "calibration")
+        self.forward_ros_topic("/cmd_vel", Twist, "cmd_vel")
 
         timer = self.node.create_timer(0.1, self.send_localization_callback)
         self.timers.append(timer)
@@ -32,8 +35,10 @@ class NavHandler(WebSocketHandler):
         try:
             if not self.buffer.can_transform("map", "base_link", rclpy.time.Time()):
                 return
-            base_link_in_map = SE3.from_tf_tree(self.buffer, "map", "base_link")
-            quat = base_link_in_map.quat().tolist()
+            map_to_base_link = SE3.from_tf_tree(self.buffer, "map", "base_link")
+            quat = map_to_base_link.quat().tolist()
+            rover_in_map = map_to_base_link.inverse()
+            tx, ty, tz = rover_in_map.translation()
             data_to_send = {
                 "type": "orientation",
                 "orientation": {
@@ -41,6 +46,11 @@ class NavHandler(WebSocketHandler):
                     "y": quat[1],
                     "z": quat[2],
                     "w": quat[3],
+                },
+                "position": {
+                    "x": float(tx),
+                    "y": float(ty),
+                    "z": float(tz),
                 },
             }
             self.schedule_send(data_to_send)

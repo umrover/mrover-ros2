@@ -15,5 +15,7 @@ async def change_ra_mode(data: RAModeRequest):
             status_code=400, detail=f"Invalid mode '{mode}'. Must be one of: {', '.join(VALID_RA_MODES)}"
         )
 
-    await update_ra_mode(mode)
+    if not await update_ra_mode(mode):
+        raise HTTPException(status_code=503, detail="Failed to set RA mode (ROS service might be unavailable)")
+
     return {"status": "success", "mode": mode}
