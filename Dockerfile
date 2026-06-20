@@ -3,7 +3,7 @@ FROM ubuntu:noble
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Add LLVM 18 apt repository
-RUN apt-get update -y && apt-get install -y curl ca-certificates && \
+RUN apt-get update -y && apt-get install -y curl ca-certificates git && \
     curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key \
       -o /usr/share/keyrings/llvm-archive-keyring.asc && \
     echo "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.asc] \
