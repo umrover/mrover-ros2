@@ -70,6 +70,7 @@ jobs:
       - name: Compiler Cache
         uses: hendrikmuhs/ccache-action@v1.2.23
       - name: Build
+        shell: bash
         env:
           MROVER_BUILD_JOBS: 2
         run: |
