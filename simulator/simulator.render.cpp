@@ -932,6 +932,8 @@ namespace mrover {
         wgpu::CommandBuffer commands = encoder.finish();
         mQueue.submit(commands);
 
+        // Quintin's temporary fix seems to be no longer needed. 
+        // These changes have been tested on an M3 mac using pixi on the newer toolchain
 
         if (!mIsHeadless) mSurface.present();
 
