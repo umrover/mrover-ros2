@@ -22,7 +22,7 @@ jobs:
       - name: Install clang-format
         run: |
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo add-apt-repository 'deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main'
+          sudo add-apt-repository 'deb https://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main'
           sudo apt-get update
           sudo apt-get install -y clang-format-18
       - name: Install shellcheck
