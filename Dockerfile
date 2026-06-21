@@ -27,7 +27,6 @@ RUN apt-get update -y && apt-get install -y \
     python3-dev \
     python3-venv \
     python3-rosdep \
-    python3-colcon-common-extensions \
     clang-18 \
     clang-tidy-18 \
     clang-format-18 \

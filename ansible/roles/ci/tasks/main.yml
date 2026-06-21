@@ -9,7 +9,7 @@
 - name: Add LLVM APT List
   become: true
   ansible.builtin.apt_repository:
-    repo: "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.asc] http://apt.llvm.org/{{ ubuntu_release }}/ llvm-toolchain-{{ ubuntu_release }}-18 main"
+    repo: "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.asc] https://apt.llvm.org/{{ ubuntu_release }}/ llvm-toolchain-{{ ubuntu_release }}-18 main"
     filename: llvm
 
 - name: Add ROS APT Key
