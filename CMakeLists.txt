@@ -104,7 +104,31 @@ pkg_search_module(Gst gstreamer-1.0 IMPORTED_TARGET QUIET) # if this is failing 
 pkg_search_module(GstApp gstreamer-app-1.0 IMPORTED_TARGET QUIET)
 pkg_search_module(LibUdev libudev IMPORTED_TARGET QUIET)
 
-add_subdirectory(deps/imgui EXCLUDE_FROM_ALL SYSTEM)
+FetchContent_Declare(
+    imgui
+    GIT_REPOSITORY https://github.com/ocornut/imgui.git
+    GIT_TAG        v1.92.8
+    GIT_SHALLOW    TRUE
+)
+FetchContent_Populate(imgui)
+file(GLOB IMGUI_SOURCES
+    ${imgui_SOURCE_DIR}/*.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_wgpu.cpp
+)
+add_library(imgui STATIC ${IMGUI_SOURCES})
+target_include_directories(imgui SYSTEM PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
+target_compile_definitions(imgui PUBLIC IMGUI_IMPL_WEBGPU_BACKEND_DAWN)
+target_link_libraries(imgui PUBLIC glfw webgpu)
+if (APPLE)
+    # imgui_impl_wgpu.cpp includes Cocoa.h on macOS via Dawn's WebGPU backend,
+    # which contains Objective-C @class syntax invalid in plain C++.
+    set_source_files_properties(
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_wgpu.cpp
+        PROPERTIES LANGUAGE OBJCXX
+    )
+endif ()
+
 add_library(webgpu_hpp INTERFACE)
 target_include_directories(webgpu_hpp SYSTEM INTERFACE deps/webgpuhpp)
 add_subdirectory(deps/glfw3webgpu EXCLUDE_FROM_ALL SYSTEM)
