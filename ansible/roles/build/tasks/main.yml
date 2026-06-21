@@ -139,7 +139,6 @@
   become: True
   pip:
     name: "git+https://github.com/artivis/manif.git"
-    extra_args: "--break-system-packages"
 
 - name: Download prebuilt Dawn
   command: ./tools/setup_dawn.sh
