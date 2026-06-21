@@ -87,19 +87,15 @@ add_library(webgpu ALIAS dawn::webgpu_dawn)
 
 include(FetchContent)
 
-find_package(manif QUIET)
-if (NOT manif_FOUND)
-    FetchContent_Declare(manif
-        GIT_REPOSITORY https://github.com/artivis/manif.git
-        GIT_TAG        0.0.5
-        GIT_SHALLOW    TRUE
-        SYSTEM
-    )
-    set(BUILD_TESTING OFF)
-    FetchContent_MakeAvailable(manif)
-    unset(BUILD_TESTING)
-    add_library(MANIF::manif ALIAS manif)
-endif ()
+FetchContent_Declare(manif
+    GIT_REPOSITORY https://github.com/artivis/manif.git
+    GIT_TAG        0.0.5
+    GIT_SHALLOW    TRUE
+    SYSTEM
+)
+set(BUILD_TESTING OFF)
+FetchContent_MakeAvailable(manif)
+unset(BUILD_TESTING)
 
 find_package(PkgConfig REQUIRED)
 pkg_search_module(NetLink libnl-3.0 IMPORTED_TARGET QUIET)
@@ -193,7 +189,7 @@ ament_python_install_package(state_machine)
 include_directories(perception)
 
 mrover_add_library(lie lie/*.cpp lie)
-target_link_libraries(lie MANIF::manif)
+target_link_libraries(lie manif)
 ament_target_dependencies(lie rclcpp geometry_msgs tf2 tf2_ros)
 
 mrover_add_header_only_library(loop_profiler loop_profiler)
@@ -260,7 +256,7 @@ if(ZED_FOUND AND CUDA_FOUND)
 
     mrover_add_component(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp ZedWrapper)
     target_compile_options(zed_component PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=c++20>)
-    mrover_link_component(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)
+    mrover_link_component(zed parameter_utils lie manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)
     mrover_ament_component(zed rclcpp rclcpp_components sensor_msgs ZED CUDA tf2 tf2_ros)
 
     mrover_executable_from_component(zed perception/executables/zed.cpp zed_component)
