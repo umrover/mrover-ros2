@@ -1,73 +1,36 @@
 FROM ubuntu:jammy
 
+# DEBIAN_FRONTEND=noninteractive prevents apt from asking for user input
+# software-properties-common is needed for apt-add-repository
+# sudo is needed for ansible since it escalates from a normal user to root
 ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update -y && apt-get install software-properties-common sudo -y
+RUN apt-add-repository ppa:ansible/ansible -y && apt-get install -y git git-lfs ansible
 
-# GCC 13 is not in Ubuntu 22 default repos
-RUN apt-get update -y && apt-get install -y curl ca-certificates git software-properties-common && \
-    add-apt-repository ppa:ubuntu-toolchain-r/test -y
+RUN useradd --create-home --groups sudo --shell /bin/zsh mrover
+# Give mrover user sudo access with no password
+RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
-# Add LLVM 18 apt repository
-RUN curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key \
-      -o /usr/share/keyrings/llvm-archive-keyring.asc && \
-    echo "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.asc] \
-      http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main" \
-      > /etc/apt/sources.list.d/llvm.list
+USER mrover
+RUN mkdir -p /home/mrover/ros2_ws/src/mrover
+WORKDIR /home/mrover/ros2_ws/src/mrover
+# Defines the APT packages that need to be installed
+# rosdep is called from Ansible to install them
+ADD --chown=mrover:mrover ./package.xml .
+# Defines the Python packages that need to be installed
+# pip is called from Ansible to install them
+ADD --chown=mrover:mrover ./pyproject.toml ./README.md ./LICENSE.md .
+ADD --chown=mrover:mrover ./mrover ./mrover
+# Copy over all Ansible files
+ADD --chown=mrover:mrover ./ansible ./ansible
+ADD --chown=mrover:mrover ./ansible.sh .
+ADD --chown=mrover:mrover ./pkg ./pkg
+RUN ./ansible.sh ci.yml
 
-# Add ROS 2 Humble apt repository
-RUN curl -fsSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
-      -o /usr/share/keyrings/ros-archive-keyring.gpg && \
-    echo "deb [signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \
-      http://packages.ros.org/ros2/ubuntu jammy main" \
-      > /etc/apt/sources.list.d/ros.list
+USER root
+RUN apt-get purge ansible -y && apt-get autoremove -y
+# Remove apt cache to free up space in the image
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update -y && apt-get install -y \
-    cmake \
-    ccache \
-    ninja-build \
-    curl \
-    rsync \
-    python3-pip \
-    python3-dev \
-    python3-venv \
-    python3-rosdep \
-    python3-colcon-common-extensions \
-    clang-18 \
-    clang-tidy-18 \
-    clang-format-18 \
-    lld-18 \
-    gcc-13 \
-    g++-13 \
-    libbullet-dev \
-    libglfw3-dev \
-    libx11-xcb-dev \
-    libnl-3-dev \
-    libnl-route-3-dev \
-    libtbb-dev \
-    libassimp-dev \
-    libeigen3-dev \
-    pybind11-dev \
-    libopencv-dev \
-    libgstreamer1.0-dev \
-    libgstreamer-plugins-base1.0-dev \
-    ros-humble-ros-base \
-    ros-humble-rviz2 \
-    ros-humble-xacro \
-    ros-humble-rtcm-msgs \
-    ros-humble-magic-enum \
-    ros-humble-dynamixel-sdk \
-    libboost-dev \
-    qtmultimedia5-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN pip3 install --break-system-packages "git+https://github.com/artivis/manif.git"
-
-RUN rosdep init && rosdep update
-
-RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 130 && \
-    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 130 && \
-    update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-18 180 && \
-    update-alternatives --install /usr/bin/clang clang /usr/bin/clang-18 180 && \
-    update-alternatives --install /usr/bin/lld lld /usr/bin/lld-18 180 && \
-    update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-18 180
-
-ENTRYPOINT ["/bin/bash"]
+USER mrover
+ENTRYPOINT [ "/bin/bash" ]
