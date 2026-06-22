@@ -141,7 +141,7 @@
     name: "git+https://github.com/artivis/manif.git"
 
 - name: Download prebuilt Dawn
-  command: ./tools/setup_dawn.sh
+  command: ./scripts/setup_dawn.sh
   args:
     chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
 

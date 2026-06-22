@@ -96,7 +96,7 @@
     extra_args: "--break-system-packages"
 
 - name: Download prebuilt Dawn
-  command: ./tools/setup_dawn.sh
+  command: ./scripts/setup_dawn.sh
   args:
     chdir: "{{ mrover_repo }}"
 

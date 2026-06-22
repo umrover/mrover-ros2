@@ -81,7 +81,7 @@ endif()
 list(PREPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_LIST_DIR}/deps/dawn-prebuilt")
 find_package(Dawn QUIET)
 if (NOT Dawn_FOUND)
-    message(FATAL_ERROR "Dawn not found. Run 'tools/setup_dawn.sh' before building.")
+    message(FATAL_ERROR "Dawn not found. Run 'scripts/setup_dawn.sh' before building.")
 endif ()
 add_library(webgpu ALIAS dawn::webgpu_dawn)
 

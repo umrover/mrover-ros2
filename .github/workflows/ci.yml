@@ -62,10 +62,10 @@ jobs:
         uses: actions/cache@v5
         with:
           path: src/mrover/deps/dawn-prebuilt
-          key: dawn-${{ hashFiles('src/mrover/tools/setup_dawn.sh') }}
+          key: dawn-${{ hashFiles('src/mrover/scripts/setup_dawn.sh') }}
       - name: Setup Dawn
         if: github.event.pull_request.draft == false
-        run: ./tools/setup_dawn.sh
+        run: ./scripts/setup_dawn.sh
         working-directory: "${{ github.workspace }}/src/mrover"
       - name: Build
         if: github.event.pull_request.draft == false
