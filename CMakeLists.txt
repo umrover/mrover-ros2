@@ -88,6 +88,7 @@ add_library(webgpu ALIAS dawn::webgpu_dawn)
 include(FetchContent)
 
 set(FETCHCONTENT_BASE_DIR "${CMAKE_CURRENT_LIST_DIR}/deps/.fetchcontent")
+set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
 
 FetchContent_Declare(manif
     GIT_REPOSITORY https://github.com/artivis/manif.git
@@ -95,9 +96,10 @@ FetchContent_Declare(manif
     GIT_SHALLOW    TRUE
     SYSTEM
 )
+set(BUILD_TESTING_PREV ${BUILD_TESTING})
 set(BUILD_TESTING OFF)
 FetchContent_MakeAvailable(manif)
-unset(BUILD_TESTING)
+set(BUILD_TESTING ${BUILD_TESTING_PREV})
 
 find_package(PkgConfig REQUIRED)
 pkg_search_module(NetLink libnl-3.0 IMPORTED_TARGET QUIET)
@@ -112,7 +114,7 @@ FetchContent_Declare(
     GIT_TAG        v1.92.8
     GIT_SHALLOW    TRUE
 )
-FetchContent_Populate(imgui)
+FetchContent_MakeAvailable(imgui)
 file(GLOB IMGUI_SOURCES
     ${imgui_SOURCE_DIR}/*.cpp
     ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
