@@ -138,7 +138,7 @@
 - name: Install manifpy
   become: True
   pip:
-    name: "git+https://github.com/artivis/manif.git"
+    name: "git+https://github.com/artivis/manif.git@0.0.5"
 
 - name: Download prebuilt Dawn
   command: ./scripts/setup_dawn.sh

@@ -92,7 +92,7 @@
 - name: Install manifpy
   become: True
   pip:
-    name: "git+https://github.com/artivis/manif.git"
+    name: "git+https://github.com/artivis/manif.git@0.0.5"
     extra_args: "--break-system-packages"
 
 - name: Download prebuilt Dawn
