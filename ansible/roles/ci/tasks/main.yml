@@ -24,6 +24,19 @@
     repo: "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.asc] https://apt.llvm.org/{{ ubuntu_release }}/ llvm-toolchain-{{ ubuntu_release }}-18 main"
     filename: llvm
 
+- name: Add CMake APT Key
+  become: True
+  apt_key:
+    url: https://apt.kitware.com/keys/kitware-archive-latest.asc
+    keyring: /usr/share/keyrings/kitware-archive-keyring.gpg
+
+# Allows us to install CMake versions newer than 3.22
+- name: Add CMake APT List
+  become: True
+  apt_repository:
+    repo: deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ {{ ubuntu_release }} main
+    filename: kitware
+
 - name: Add ROS APT Key
   become: True
   ansible.builtin.get_url:
@@ -93,7 +106,6 @@
   become: True
   pip:
     name: "git+https://github.com/artivis/manif.git@0.0.5"
-    extra_args: "--break-system-packages"
 
 - name: Download prebuilt Dawn
   command: ./scripts/setup_dawn.sh
