@@ -87,6 +87,8 @@ add_library(webgpu ALIAS dawn::webgpu_dawn)
 
 include(FetchContent)
 
+set(FETCHCONTENT_BASE_DIR "${CMAKE_CURRENT_LIST_DIR}/deps/.fetchcontent")
+
 FetchContent_Declare(manif
     GIT_REPOSITORY https://github.com/artivis/manif.git
     GIT_TAG        0.0.5
