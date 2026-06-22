@@ -281,8 +281,11 @@ namespace mrover {
         RCLCPP_INFO_STREAM(get_logger(), std::format("Created window of size: {}x{}", w, h));
 
 #ifndef __APPLE__
-        if (cv::Mat logo = imread(std::filesystem::path{std::source_location::current().file_name()}.parent_path() / "mrover_logo.png", cv::IMREAD_UNCHANGED);
-            logo.type() == CV_8UC4) {
+        // Wayland does not support programmatically setting the window icon, so skip it to avoid a fatal GLFW error.
+        if (glfwGetPlatform() == GLFW_PLATFORM_WAYLAND) {
+            RCLCPP_INFO_STREAM(get_logger(), "Running on Wayland; skipping window icon (not supported)");
+        } else if (cv::Mat logo = imread(std::filesystem::path{std::source_location::current().file_name()}.parent_path() / "mrover_logo.png", cv::IMREAD_UNCHANGED);
+                   logo.type() == CV_8UC4) {
             cvtColor(logo, logo, cv::COLOR_BGRA2RGBA);
             GLFWimage logoImage{
                     .width = logo.cols,

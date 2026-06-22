@@ -36,9 +36,8 @@
 #include <webgpu/webgpu.h>
 
 #define WGPU_TARGET_MACOS 1
-#define WGPU_TARGET_LINUX_X11 2
+#define WGPU_TARGET_LINUX 2
 #define WGPU_TARGET_WINDOWS 3
-#define WGPU_TARGET_LINUX_WAYLAND 4
 #define WGPU_TARGET_EMSCRIPTEN 5
 
 #if defined(__EMSCRIPTEN__)
@@ -47,10 +46,10 @@
 #define WGPU_TARGET WGPU_TARGET_WINDOWS
 #elif defined(__APPLE__)
 #define WGPU_TARGET WGPU_TARGET_MACOS
-#elif defined(_GLFW_WAYLAND)
-#define WGPU_TARGET WGPU_TARGET_LINUX_WAYLAND
 #else
-#define WGPU_TARGET WGPU_TARGET_LINUX_X11
+// On Linux GLFW selects the platform (X11 or Wayland) at runtime, so we must
+// compile both backends and pick the right one via glfwGetPlatform() below.
+#define WGPU_TARGET WGPU_TARGET_LINUX
 #endif
 
 #if WGPU_TARGET == WGPU_TARGET_MACOS
@@ -61,9 +60,8 @@
 #include <GLFW/glfw3.h>
 #if WGPU_TARGET == WGPU_TARGET_MACOS
 #define GLFW_EXPOSE_NATIVE_COCOA
-#elif WGPU_TARGET == WGPU_TARGET_LINUX_X11
+#elif WGPU_TARGET == WGPU_TARGET_LINUX
 #define GLFW_EXPOSE_NATIVE_X11
-#elif WGPU_TARGET == WGPU_TARGET_LINUX_WAYLAND
 #define GLFW_EXPOSE_NATIVE_WAYLAND
 #elif WGPU_TARGET == WGPU_TARGET_WINDOWS
 #define GLFW_EXPOSE_NATIVE_WIN32
@@ -93,25 +91,8 @@ WGPUSurface glfwGetWGPUSurface(WGPUInstance instance, GLFWwindow* window) {
 
         return wgpuInstanceCreateSurface(instance, &surfaceDescriptor);
     }
-#elif WGPU_TARGET == WGPU_TARGET_LINUX_X11
-    {
-        Display* x11_display = glfwGetX11Display();
-        Window x11_window = glfwGetX11Window(window);
-
-        WGPUSurfaceSourceXlibWindow fromXlibWindow;
-        fromXlibWindow.chain.next = NULL;
-        fromXlibWindow.chain.sType = WGPUSType_SurfaceSourceXlibWindow;
-        fromXlibWindow.display = x11_display;
-        fromXlibWindow.window = x11_window;
-
-        WGPUSurfaceDescriptor surfaceDescriptor;
-        surfaceDescriptor.nextInChain = &fromXlibWindow.chain;
-        surfaceDescriptor.label = (WGPUStringView){ NULL, WGPU_STRLEN };
-
-        return wgpuInstanceCreateSurface(instance, &surfaceDescriptor);
-    }
-#elif WGPU_TARGET == WGPU_TARGET_LINUX_WAYLAND
-    {
+#elif WGPU_TARGET == WGPU_TARGET_LINUX
+    if (glfwGetPlatform() == GLFW_PLATFORM_WAYLAND) {
         struct wl_display* wayland_display = glfwGetWaylandDisplay();
         struct wl_surface* wayland_surface = glfwGetWaylandWindow(window);
 
@@ -123,6 +104,21 @@ WGPUSurface glfwGetWGPUSurface(WGPUInstance instance, GLFWwindow* window) {
 
         WGPUSurfaceDescriptor surfaceDescriptor;
         surfaceDescriptor.nextInChain = &fromWaylandSurface.chain;
+        surfaceDescriptor.label = (WGPUStringView){ NULL, WGPU_STRLEN };
+
+        return wgpuInstanceCreateSurface(instance, &surfaceDescriptor);
+    } else {
+        Display* x11_display = glfwGetX11Display();
+        Window x11_window = glfwGetX11Window(window);
+
+        WGPUSurfaceSourceXlibWindow fromXlibWindow;
+        fromXlibWindow.chain.next = NULL;
+        fromXlibWindow.chain.sType = WGPUSType_SurfaceSourceXlibWindow;
+        fromXlibWindow.display = x11_display;
+        fromXlibWindow.window = x11_window;
+
+        WGPUSurfaceDescriptor surfaceDescriptor;
+        surfaceDescriptor.nextInChain = &fromXlibWindow.chain;
         surfaceDescriptor.label = (WGPUStringView){ NULL, WGPU_STRLEN };
 
         return wgpuInstanceCreateSurface(instance, &surfaceDescriptor);

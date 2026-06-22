@@ -37,6 +37,13 @@ namespace mrover {
         GlfwInstance() = default;
 
         void init() {
+            // Prefer X11 (via XWayland) over native Wayland. Our WebGPU/GLFW path has
+            // several unsupported features and instabilities under native Wayland
+            // (window icon, surface creation, swapchain segfaults), so use X11 when available.
+            if (glfwPlatformSupported(GLFW_PLATFORM_X11)) {
+                glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
+            }
+
             if (glfwInit() != GLFW_TRUE) throw std::runtime_error("Failed to initialize GLFW");
 
             mWasInitialized = true;
