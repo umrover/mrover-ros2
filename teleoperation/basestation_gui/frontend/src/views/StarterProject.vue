@@ -32,15 +32,11 @@
         // TODO add necessary sockets
     })
 
-    // Send a bunch of messages to the "starter" websocket
     const spamTestMessages = () => {
 
         // Send a message every 1000 milliseconds
         const interval = setInterval(() => {
-            sendMessage('starter', {
-                type: 'debug',
-                timestamp: new Date().toISOString(),
-            })
+          console.log("Sent a message at " + new Date().toISOString())
         }, 1000)
 
         // Stop sending messages after 5000 miliseconds
