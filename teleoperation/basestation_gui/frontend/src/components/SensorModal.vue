@@ -309,9 +309,9 @@ onMounted(() => {
 
 .sensor-modal-header {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
-  flex-shrink: 0;
   padding-bottom: 0.5rem;
   margin-bottom: 0.5rem;
   border-bottom: 2px solid var(--panel-border);
@@ -324,10 +324,10 @@ onMounted(() => {
 
 .sensor-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: repeat(4, 1fr);
-  gap: 0.5rem;
   flex: 1;
+  grid-template-rows: repeat(4, 1fr);
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
   min-height: 0;
 }
 
@@ -343,16 +343,16 @@ onMounted(() => {
 .config-section-label {
   font-size: 0.65rem;
   font-weight: 700;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: var(--text-muted);
 }
 
 .config-row {
   display: flex;
+  gap: 0.5rem;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
 }
 
 .config-label {
@@ -362,10 +362,10 @@ onMounted(() => {
 }
 
 .config-checkbox {
+  flex-shrink: 0;
   width: 1rem;
   height: 1rem;
   cursor: pointer;
-  flex-shrink: 0;
 }
 
 .config-divider {
@@ -383,9 +383,9 @@ onMounted(() => {
 
 .sensor-chart-cell-header {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
-  flex-shrink: 0;
   margin-bottom: 0.25rem;
 }
 
@@ -403,8 +403,8 @@ onMounted(() => {
 }
 
 .sensor-chart-canvas {
+  position: relative;
   flex: 1;
   min-height: 0;
-  position: relative;
 }
 </style>
