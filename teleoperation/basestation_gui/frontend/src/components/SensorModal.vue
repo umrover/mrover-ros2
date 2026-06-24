@@ -46,7 +46,7 @@
               </div>
             </div>
             <div class="sensor-chart-canvas">
-              <canvas :id="`modal-chart-${index}`" style="width: 100%; height: 100%"></canvas>
+              <canvas :id="`modal-chart-${index}`" class="w-full h-full"></canvas>
             </div>
           </div>
         </div>
