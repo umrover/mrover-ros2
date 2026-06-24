@@ -317,6 +317,7 @@ namespace mrover {
         wgpu::Surface mSurface;
         wgpu::Adapter mAdapter;
         wgpu::Device mDevice;
+        std::unique_ptr<wgpu::ErrorCallback> mErrorCallback;
         wgpu::Queue mQueue;
         wgpu::Texture mDepthTexture;
         wgpu::TextureView mDepthTextureView;
@@ -338,7 +339,6 @@ namespace mrover {
 
         bool mHasFocus = false;
         bool mInGui = false;
-        bool mImGuiInitialized = false;
 
         Uniform<SceneUniforms> mSceneUniforms;
         Uniform<SkyboxUniforms> mSkyboxUniforms;

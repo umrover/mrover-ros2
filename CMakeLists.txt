@@ -111,30 +111,35 @@ pkg_search_module(LibUdev libudev IMPORTED_TARGET QUIET)
 FetchContent_Declare(
     imgui
     GIT_REPOSITORY https://github.com/ocornut/imgui.git
-    GIT_TAG        v1.92.8
+    GIT_TAG        v1.90.1
     GIT_SHALLOW    TRUE
 )
 FetchContent_MakeAvailable(imgui)
 file(GLOB IMGUI_SOURCES
     ${imgui_SOURCE_DIR}/*.cpp
     ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
-    ${imgui_SOURCE_DIR}/backends/imgui_impl_wgpu.cpp
 )
-add_library(imgui STATIC ${IMGUI_SOURCES})
-target_include_directories(imgui SYSTEM PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
-target_compile_definitions(imgui PUBLIC IMGUI_IMPL_WEBGPU_BACKEND_DAWN)
+add_library(imgui STATIC
+    ${IMGUI_SOURCES}
+    ${CMAKE_CURRENT_LIST_DIR}/deps/imgui/backends/imgui_impl_wgpu.cpp
+)
+# Our backends dir is listed first so our imgui_impl_wgpu.h shadows the fetched one.
+target_include_directories(imgui SYSTEM PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}/deps/imgui/backends
+    ${imgui_SOURCE_DIR}
+    ${imgui_SOURCE_DIR}/backends
+)
+target_compile_definitions(imgui PRIVATE GLFW_INCLUDE_NONE)
 target_link_libraries(imgui PUBLIC glfw webgpu)
 if (APPLE)
-    # imgui_impl_wgpu.cpp includes Cocoa.h on macOS via Dawn's WebGPU backend,
-    # which contains Objective-C @class syntax invalid in plain C++.
+    # imgui_impl_wgpu.cpp includes Cocoa.h on macOS via Dawn's WebGPU backend which contains Objective-C @class syntax invalid in plain C++.
     set_source_files_properties(
-        ${imgui_SOURCE_DIR}/backends/imgui_impl_wgpu.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/deps/imgui/backends/imgui_impl_wgpu.cpp
         PROPERTIES LANGUAGE OBJCXX
     )
 endif ()
 
-add_library(webgpu_hpp INTERFACE)
-target_include_directories(webgpu_hpp SYSTEM INTERFACE deps/webgpuhpp)
+add_subdirectory(deps/webgpuhpp EXCLUDE_FROM_ALL SYSTEM)
 add_subdirectory(deps/glfw3webgpu EXCLUDE_FROM_ALL SYSTEM)
 add_subdirectory(deps/mjbots EXCLUDE_FROM_ALL SYSTEM)
 

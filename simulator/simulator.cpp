@@ -138,7 +138,7 @@ namespace mrover {
     }
 
     Simulator::~Simulator() {
-        if (mImGuiInitialized) {
+        if (!mIsHeadless) {
             ImGui_ImplWGPU_Shutdown();
             ImGui_ImplGlfw_Shutdown();
             ImGui::DestroyContext();

@@ -6,11 +6,6 @@ namespace mrover {
         return btVector3{static_cast<btScalar>(r3.x()), static_cast<btScalar>(r3.y()), static_cast<btScalar>(r3.z())};
     }
 
-    // ImTextureID is ImU64 since imgui 1.91.4; implicit conversion picks operator bool() -> 1, not the pointer.
-    auto toImTextureID(wgpu::TextureView const& view) -> ImTextureID {
-        return reinterpret_cast<ImTextureID>(static_cast<WGPUTextureView>(view));
-    }
-
     auto Simulator::guiUpdate(wgpu::RenderPassEncoder& pass) -> void {
         if (mSaveTask.shouldUpdate() && mEnablePhysics) {
             if (auto it = mUrdfs.find("rover"); it != mUrdfs.end()) {
@@ -177,11 +172,11 @@ namespace mrover {
 
             for (Camera const& camera: mCameras) {
                 float aspect = static_cast<float>(camera.resolution.x()) / static_cast<float>(camera.resolution.y());
-                ImGui::Image(toImTextureID(camera.colorTextureView), {320, 320 / aspect}, {0, 0}, {1, 1});
+                ImGui::Image(camera.colorTextureView, {320, 320 / aspect}, {0, 0}, {1, 1});
             }
             for (StereoCamera const& stereoCamera: mStereoCameras) {
                 float aspect = static_cast<float>(stereoCamera.base.resolution.x()) / static_cast<float>(stereoCamera.base.resolution.y());
-                ImGui::Image(toImTextureID(stereoCamera.base.colorTextureView), {320, 320 / aspect}, {0, 0}, {1, 1});
+                ImGui::Image(stereoCamera.base.colorTextureView, {320, 320 / aspect}, {0, 0}, {1, 1});
             }
 
             ImGui::End();

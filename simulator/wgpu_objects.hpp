@@ -123,7 +123,7 @@ namespace mrover {
             viewDescriptor.format = descriptor.format;
             view = texture.createView(viewDescriptor);
 
-            wgpu::TexelCopyTextureInfo destination;
+            wgpu::ImageCopyTexture destination;
             destination.texture = texture;
 
             wgpu::SamplerDescriptor samplerDescriptor;
@@ -138,7 +138,7 @@ namespace mrover {
             sampler = device.createSampler(samplerDescriptor);
 
             for (; destination.mipLevel < descriptor.mipLevelCount; ++destination.mipLevel) {
-                wgpu::TexelCopyBufferLayout source;
+                wgpu::TextureDataLayout source;
                 source.bytesPerRow = static_cast<std::uint32_t>(dataToWrite.step);
                 source.rowsPerImage = static_cast<std::uint32_t>(dataToWrite.rows);
                 device.getQueue().writeTexture(
@@ -206,7 +206,7 @@ namespace mrover {
             viewDescriptor.format = descriptor.format;
             view = texture.createView(viewDescriptor);
 
-            wgpu::TexelCopyTextureInfo destination;
+            wgpu::ImageCopyTexture destination;
             destination.texture = texture;
 
             wgpu::SamplerDescriptor samplerDescriptor;
@@ -220,7 +220,7 @@ namespace mrover {
             sampler = device.createSampler(samplerDescriptor);
 
             for (size_t layer = 0; layer < dataToWrite.size(); ++layer) {
-                wgpu::TexelCopyBufferLayout source;
+                wgpu::TextureDataLayout source;
                 source.bytesPerRow = static_cast<std::uint32_t>(dataToWrite[layer].step);
                 source.rowsPerImage = static_cast<std::uint32_t>(dataToWrite[layer].rows);
                 destination.origin = {0, 0, static_cast<std::uint32_t>(layer)};
