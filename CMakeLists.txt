@@ -67,9 +67,6 @@ find_package(yaml_cpp_vendor REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(dynamixel_sdk REQUIRED)
 
-find_package(Assimp NAMES Assimp assimp REQUIRED)
-find_package(Bullet REQUIRED)
-find_package(glfw3 REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
 if (NOT APPLE)
@@ -77,12 +74,17 @@ if (NOT APPLE)
     link_libraries(TBB::tbb)
 endif()
 
-list(PREPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_LIST_DIR}/deps/dawn-prebuilt")
-find_package(Dawn QUIET)
-if (NOT Dawn_FOUND)
-    message(FATAL_ERROR "Dawn not found. Run 'tools/setup_dawn.sh' before building.")
+# Prebuilt MuJoCo (scripts/setup_mujoco.sh) ships a single shared lib + headers
+# with no CMake config, so define the 'mujoco' imported target by hand.
+set(MUJOCO_PREBUILT_DIR "${CMAKE_CURRENT_LIST_DIR}/deps/mujoco-prebuilt")
+file(GLOB MUJOCO_LIB "${MUJOCO_PREBUILT_DIR}/lib/libmujoco.so")
+if (NOT MUJOCO_LIB)
+    message(FATAL_ERROR "MuJoCo not found. Run 'scripts/setup_mujoco.sh' before building.")
 endif ()
-add_library(webgpu ALIAS dawn::webgpu_dawn)
+add_library(mujoco SHARED IMPORTED)
+set_target_properties(mujoco PROPERTIES
+    IMPORTED_LOCATION "${MUJOCO_LIB}"
+    INTERFACE_INCLUDE_DIRECTORIES "${MUJOCO_PREBUILT_DIR}/include")
 
 find_package(PkgConfig REQUIRED)
 pkg_search_module(NetLink libnl-3.0 IMPORTED_TARGET QUIET)
@@ -106,36 +108,6 @@ if (NOT manif_FOUND)
     unset(BUILD_TESTING)
     add_library(MANIF::manif ALIAS manif)
 endif ()
-
-FetchContent_Declare(
-    imgui
-    GIT_REPOSITORY https://github.com/ocornut/imgui.git
-    GIT_TAG        v1.92.8
-    GIT_SHALLOW    TRUE
-)
-FetchContent_Populate(imgui)
-file(GLOB IMGUI_SOURCES
-    ${imgui_SOURCE_DIR}/*.cpp
-    ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
-    ${imgui_SOURCE_DIR}/backends/imgui_impl_wgpu.cpp
-)
-add_library(imgui STATIC ${IMGUI_SOURCES})
-target_include_directories(imgui SYSTEM PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
-target_compile_definitions(imgui PUBLIC IMGUI_IMPL_WEBGPU_BACKEND_DAWN)
-target_link_libraries(imgui PUBLIC glfw webgpu)
-if (APPLE)
-    # imgui_impl_wgpu.cpp includes Cocoa.h on macOS via Dawn's WebGPU backend,
-    # which contains Objective-C @class syntax invalid in plain C++.
-    set_source_files_properties(
-        ${imgui_SOURCE_DIR}/backends/imgui_impl_wgpu.cpp
-        PROPERTIES LANGUAGE OBJCXX
-    )
-endif ()
-
-add_subdirectory(deps/glfw3webgpu EXCLUDE_FROM_ALL SYSTEM)
-
-add_library(webgpu_hpp INTERFACE)
-target_include_directories(webgpu_hpp SYSTEM INTERFACE deps/webgpuhpp)
 
 add_subdirectory(deps/mjbots EXCLUDE_FROM_ALL SYSTEM)
 
@@ -249,18 +221,21 @@ endif ()
 
 # Simulator
 
-mrover_add_node(simulator simulator/*.cpp simulator simulator/pch.hpp)
+mrover_add_node(simulator simulator/*.cpp)
 ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf yaml_cpp_vendor ament_index_cpp)
 target_link_libraries(simulator
-    assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
-    ${BULLET_LIBRARIES}
+    mujoco
     lie Eigen3::Eigen
     opencv_core opencv_imgcodecs opencv_imgproc
     yaml-cpp::yaml-cpp
     loop_profiler
     parameter_utils
 )
-target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
+target_include_directories(simulator SYSTEM PRIVATE ${OPENCV_INCLUDE_DIRS})
+# Prebuilt MuJoCo lives outside the install tree; embed its path so the executable finds libmujoco at runtime.
+set_target_properties(simulator PROPERTIES
+    BUILD_RPATH "${MUJOCO_PREBUILT_DIR}/lib"
+    INSTALL_RPATH "${MUJOCO_PREBUILT_DIR}/lib")
 
 
 # Localization

@@ -83,8 +83,8 @@
     name: "git+https://github.com/artivis/manif.git"
     extra_args: "--break-system-packages"
 
-- name: Download prebuilt Dawn
-  ansible.builtin.command: ./scripts/setup_dawn.sh
+- name: Download prebuilt MuJoCo
+  ansible.builtin.command: ./scripts/setup_mujoco.sh
   args:
     chdir: "{{ mrover_repo }}"
 
