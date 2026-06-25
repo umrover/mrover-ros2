@@ -78,12 +78,25 @@ if (NOT APPLE)
     link_libraries(TBB::tbb)
 endif()
 
-list(PREPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_LIST_DIR}/deps/dawn-prebuilt")
-find_package(Dawn QUIET)
-if (NOT Dawn_FOUND)
+# Prebuilt Dawn from scripts/setup_dawn.sh: raw static libs + headers, no
+# DawnConfig.cmake. Hand-wire 'webgpu' and link all archives as one group
+# (their interdependencies are circular).
+set(DAWN_PREBUILT_DIR "${CMAKE_CURRENT_LIST_DIR}/deps/dawn-prebuilt")
+if (NOT EXISTS "${DAWN_PREBUILT_DIR}/include/webgpu/webgpu.h")
     message(FATAL_ERROR "Dawn not found. Run 'scripts/setup_dawn.sh' before building.")
 endif ()
-add_library(webgpu ALIAS dawn::webgpu_dawn)
+file(GLOB DAWN_STATIC_LIBS "${DAWN_PREBUILT_DIR}/lib/*.a")
+if (NOT DAWN_STATIC_LIBS)
+    message(FATAL_ERROR "No Dawn static libs in ${DAWN_PREBUILT_DIR}/lib. Re-run 'scripts/setup_dawn.sh'.")
+endif ()
+find_package(Threads REQUIRED)
+add_library(webgpu INTERFACE)
+target_include_directories(webgpu SYSTEM INTERFACE "${DAWN_PREBUILT_DIR}/include")
+target_link_libraries(webgpu INTERFACE
+    -Wl,--start-group ${DAWN_STATIC_LIBS} -Wl,--end-group
+    Threads::Threads
+    ${CMAKE_DL_LIBS}
+)
 
 include(FetchContent)
 
