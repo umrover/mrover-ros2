@@ -43,7 +43,7 @@ fi
 echo "Parallel jobs: ${parallel_jobs} (override with MROVER_BUILD_JOBS=N)"
 
 if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
-    bash tools/setup_dawn.sh
+    bash scripts/setup_dawn.sh
 
     os_cmake_args=()
     if [[ "$(uname)" == "Darwin" ]]; then
