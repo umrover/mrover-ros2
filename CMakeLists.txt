@@ -78,16 +78,13 @@ if (NOT APPLE)
     link_libraries(TBB::tbb)
 endif()
 
-# Prebuilt Dawn from scripts/setup_dawn.sh: raw static libs + headers, no
-# DawnConfig.cmake. Hand-wire 'webgpu' and link all archives as one group
-# (their interdependencies are circular).
+# Prebuilt Dawn (scripts/setup_dawn.sh) ships raw static libs + headers but no
+# DawnConfig.cmake, so define the 'webgpu' target by hand. The archives are
+# circularly dependent, hence the single --start-group/--end-group link.
 set(DAWN_PREBUILT_DIR "${CMAKE_CURRENT_LIST_DIR}/deps/dawn-prebuilt")
-if (NOT EXISTS "${DAWN_PREBUILT_DIR}/include/webgpu/webgpu.h")
-    message(FATAL_ERROR "Dawn not found. Run 'scripts/setup_dawn.sh' before building.")
-endif ()
 file(GLOB DAWN_STATIC_LIBS "${DAWN_PREBUILT_DIR}/lib/*.a")
 if (NOT DAWN_STATIC_LIBS)
-    message(FATAL_ERROR "No Dawn static libs in ${DAWN_PREBUILT_DIR}/lib. Re-run 'scripts/setup_dawn.sh'.")
+    message(FATAL_ERROR "Dawn not found. Run 'scripts/setup_dawn.sh' before building.")
 endif ()
 find_package(Threads REQUIRED)
 add_library(webgpu INTERFACE)
