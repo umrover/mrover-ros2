@@ -136,9 +136,9 @@ add_library(imgui STATIC
     ${IMGUI_SOURCES}
     ${CMAKE_CURRENT_LIST_DIR}/deps/imgui/backends/imgui_impl_wgpu.cpp
 )
-# Our backends dir is listed first so our imgui_impl_wgpu.h shadows the fetched one.
+# deps/imgui is listed before the fetched root so <backends/imgui_impl_wgpu.h> is our patched version
 target_include_directories(imgui SYSTEM PUBLIC
-    ${CMAKE_CURRENT_LIST_DIR}/deps/imgui/backends
+    ${CMAKE_CURRENT_LIST_DIR}/deps/imgui
     ${imgui_SOURCE_DIR}
     ${imgui_SOURCE_DIR}/backends
 )
