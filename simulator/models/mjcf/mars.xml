@@ -1,0 +1,14 @@
+<mujoco model="rover">
+  <compiler angle="radian" meshdir="../meshes" boundmass="0.001" boundinertia="1e-05"/>
+
+  <asset>
+    <mesh name="mars-sol-239-decimated" content_type="model/obj" file="mars-sol-239-decimated.obj" scale="0.01 0.01 0.01"/>
+  </asset>
+
+  <worldbody>
+    <body name="base_link">
+      <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05"/>
+      <geom type="mesh" mesh="mars-sol-239-decimated"/>
+    </body>
+  </worldbody>
+</mujoco>

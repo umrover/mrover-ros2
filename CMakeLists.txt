@@ -237,6 +237,11 @@ set_target_properties(simulator PROPERTIES
     BUILD_RPATH "${MUJOCO_PREBUILT_DIR}/lib"
     INSTALL_RPATH "${MUJOCO_PREBUILT_DIR}/lib")
 
+# Mujoco Viewer
+
+find_package(glfw3 REQUIRED)
+find_package(OpenGL REQUIRED)
+target_link_libraries(simulator glfw OpenGL::GL)
 
 # Localization
 
@@ -443,5 +448,7 @@ install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY urdf DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY rviz DESTINATION share/${PROJECT_NAME})
+# Native MuJoCo models: committed mjcf/ + meshes/ (meshes via LFS; regenerate both with scripts/convert_models.sh).
+install(DIRECTORY simulator/models DESTINATION share/${PROJECT_NAME})
 
 ament_package()

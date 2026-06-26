@@ -1,0 +1,197 @@
+<mujoco model="rover">
+  <compiler angle="radian" meshdir="../meshes" boundmass="0.001" boundinertia="1e-05"/>
+
+  <worldbody>
+    <body name="base_link">
+      <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05"/>
+      <body name="arm_base_link" pos="0.199228 -0.200235 0.540196">
+        <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05"/>
+      </body>
+      <body name="chassis_link" pos="0 0 0.439675">
+        <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="15" diaginertia="0.732789 0.489046 0.327466"/>
+        <geom size="0.1385 0.29906 0.0915" pos="-0.185906 0 0" type="box"/>
+        <geom size="0.0835 0.29906 0.04455" pos="0 0 -0.049449" type="box"/>
+        <body name="diff_bar_link" pos="-0.37633 0 -0.00587">
+          <inertial pos="0 0 0" mass="1" diaginertia="0.00166667 0.00166667 0.00166667"/>
+          <joint name="chassis_link_to_diff_bar_link" pos="0 0 0" axis="1 0 0"/>
+          <geom size="0.015 0.325 0.015" pos="-0.013 0 0" type="box"/>
+          <body name="left_diff_bar_connector_x_link" pos="-0.01143 0.35547 0">
+            <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05"/>
+            <joint name="diff_bar_link_to_left_diff_bar_connector_x_link" pos="0 0 0" axis="1 0 0"/>
+            <body name="left_diff_bar_connector_link">
+              <inertial pos="0 0 0" mass="0.5" diaginertia="0.000833333 0.000833333 0.000833333"/>
+              <joint name="left_diff_bar_connector_x_link_to_left_diff_bar_connector_link" pos="0 0 0" axis="0 1 0"/>
+              <geom size="0.005 0.005 0.025" pos="0 0 -0.04605" type="box"/>
+            </body>
+          </body>
+          <body name="right_diff_bar_connector_x_link" pos="-0.01143 -0.35547 0">
+            <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05"/>
+            <joint name="diff_bar_link_to_right_diff_bar_connector_x_link" pos="0 0 0" axis="1 0 0"/>
+            <body name="right_diff_bar_connector_link">
+              <inertial pos="0 0 0" mass="0.5" diaginertia="0.000833333 0.000833333 0.000833333"/>
+              <joint name="right_diff_bar_connector_x_link_to_right_diff_bar_connector_link" pos="0 0 0" axis="0 1 0"/>
+              <geom size="0.005 0.005 0.025" pos="0 0 -0.04605" type="box"/>
+            </body>
+          </body>
+        </body>
+        <body name="arm_a_link" pos="0 -0.200235 0.10011">
+          <inertial pos="0 0 0" quat="0.707107 0 0 0.707107" mass="1" diaginertia="0.00166667 0.00136667 0.00136667"/>
+          <joint name="chassis_link_to_arm_a_link" pos="0 0 0" axis="0 1 0" type="slide" range="0 0.4"/>
+          <geom size="0.034 0.05 0.05" pos="0.04 0 0" type="box"/>
+          <body name="arm_b_link" pos="0.04452 0 0.05163">
+            <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="1" diaginertia="0.0281667 0.0281667 0.000266667"/>
+            <joint name="arm_a_link_to_arm_b_link" pos="0 0 0" axis="0 1 0" range="-1.1344 0.2617"/>
+            <geom size="0.2465 0.02 0.02" pos="0.29 0 0" type="box"/>
+            <body name="arm_c_link" pos="0.53271 0 0">
+              <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="1" diaginertia="0.0103417 0.0103417 0.000266667"/>
+              <joint name="arm_b_link_to_arm_c_link" pos="0 0 0" axis="0 1 0" range="-1.0471 3.0543"/>
+              <geom size="0.14875 0.02 0.02" pos="0.175 0 0.1" type="box"/>
+              <body name="arm_d_link" pos="0.39525 0 0.08329">
+                <inertial pos="0 0 0" quat="0.5 0.5 0.5 0.5" mass="1" diaginertia="0.00118542 0.00118542 0.000704167"/>
+                <joint name="arm_c_link_to_arm_d_link" pos="0 0 0" axis="0 1 0" range="-1.1344 1.1344"/>
+                <geom size="0.027625 0.05 0.0325" type="box"/>
+                <body name="arm_e_link">
+                  <inertial pos="0 0 0" quat="0.5 0.5 0.5 0.5" mass="1" diaginertia="0.00196033 0.00196033 0.000170667"/>
+                  <joint name="arm_d_link_to_arm_e_link" pos="0 0 0" axis="1 0 0" range="-2.35619 2.35619"/>
+                  <geom size="0.0136 0.075 0.016" pos="0.066 0 0" type="box"/>
+                  <body name="arm_gripper_link" pos="0.08375 0 0">
+                    <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="1" diaginertia="0.00148333 0.00144167 0.000108333"/>
+                    <joint name="arm_e_link_to_arm_gripper_link" pos="0 0 0" axis="0 1 0" type="slide" range="0 0.088"/>
+                    <geom size="0.0425 0.01 0.015" pos="0.075 0 0" type="box"/>
+                  </body>
+                  <body name="finger_camera_frame">
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05"/>
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+          <body name="arm_la_base_link" pos="-0.00441 0 0.20149">
+            <inertial pos="0 0 0" mass="0.1" diaginertia="5.41667e-05 5.41667e-05 1e-05"/>
+            <joint name="arm_a_link_to_arm_la_base_link" pos="0 0 0" axis="0 1 0" range="0 2"/>
+            <geom size="0.00425 0.005 0.04" pos="0.005 0 0.1" type="box"/>
+            <body name="arm_la_piston_link" pos="0 0 0.32">
+              <inertial pos="0 0 0" mass="0.1" diaginertia="2.16667e-05 2.16667e-05 1e-05"/>
+              <joint name="arm_la_base_link_to_arm_la_piston_link" pos="0 0 0" axis="0 0 1" type="slide" range="0 0.25"/>
+              <geom size="0.00425 0.005 0.025" pos="0.005 0 -0.05" type="box"/>
+            </body>
+          </body>
+        </body>
+        <body name="left_rocker_link" pos="0 0.29906 0" quat="0.707107 -0.707107 0 0">
+          <inertial pos="0 0 0" mass="3" diaginertia="0.125 0.125 0.125"/>
+          <joint name="chassis_link_to_left_rocker_link" pos="0 0 0" axis="0 0 1"/>
+          <geom size="0.16782 0.0125 0.0125" pos="0.173894 0.140817 0.06" quat="0.942641 0 0 0.333808" type="box"/>
+          <geom size="0.105591 0.0125 0.0125" pos="-0.138649 0.0244475 0.06" quat="0.0871556 0 0 0.996195" type="box"/>
+          <geom size="0.0533962 0.0125 0.0125" pos="-0.277297 0.120089 0.06" quat="0.707107 0 0 0.707107" type="box"/>
+          <body name="front_left_wheel_link" pos="0.34781 0.28163 0.15235">
+            <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="3" diaginertia="0.0216 0.012825 0.012825"/>
+            <joint name="left_rocker_link_to_front_left_wheel_link" pos="0 0 0" axis="0 0 1" actuatorfrcrange="-2.68 2.68"/>
+            <geom size="0.12 0.045" pos="0 0 -0.03" type="cylinder"/>
+          </body>
+          <body name="left_lambda_lower_link" pos="-0.2773 0.15319 0.05611">
+            <inertial pos="0 0 0" mass="2" diaginertia="0.0833333 0.0833333 0.0833333"/>
+            <joint name="left_rocker_link_to_left_lambda_lower_link" pos="0 0 0" axis="0 0 1"/>
+            <geom size="0.0628763 0.0125 0.0125" pos="0.0787791 -0.0286733 0.05" quat="0.984808 0 0 -0.173648" type="box"/>
+            <geom size="0.0628763 0.0125 0.0125" pos="-0.0787791 -0.0286733 0.05" quat="-0.173648 0 0 0.984808" type="box"/>
+            <body name="left_lambda_front_link" pos="0.15755 -0.05735 0.04708">
+              <inertial pos="0 0 0" mass="2" diaginertia="0.0833333 0.0833333 0.0833333"/>
+              <joint name="left_lambda_lower_link_to_left_lambda_front_link" pos="0 0 0" axis="0 0 1" range="-0.8 0.8"/>
+              <geom size="0.143674 0.0125 0.0125" pos="0.0123527 0.0204547 0" quat="0.870909 0 0 0.491444" type="box"/>
+              <body name="center_left_wheel_link" pos="0.11343 0.18319 0.09594">
+                <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="3" diaginertia="0.0216 0.012825 0.012825"/>
+                <joint name="left_lambda_front_link_to_center_left_wheel_link" pos="0 0 0" axis="0 0 1" actuatorfrcrange="-2.68 2.68"/>
+                <geom size="0.12 0.045" pos="0 0 -0.03" type="cylinder"/>
+              </body>
+            </body>
+            <body name="left_lambda_rear_link" pos="-0.15755 -0.05735 0.04708">
+              <inertial pos="0 0 0" mass="2" diaginertia="0.0833333 0.0833333 0.0833333"/>
+              <joint name="left_lambda_lower_link_to_left_lambda_rear_link" pos="0 0 0" axis="0 0 1" range="-0.8 0.8"/>
+              <geom size="0.143674 0.0125 0.0125" pos="-0.0123527 0.0204547 0" quat="0.491443 0 0 0.87091" type="box"/>
+              <body name="back_left_wheel_link" pos="-0.11343 0.18319 0.09594">
+                <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="3" diaginertia="0.0216 0.012825 0.012825"/>
+                <joint name="left_lambda_rear_link_to_back_left_wheel_link" pos="0 0 0" axis="0 0 1" actuatorfrcrange="-2.68 2.68"/>
+                <geom size="0.12 0.045" pos="0 0 -0.03" type="cylinder"/>
+              </body>
+            </body>
+          </body>
+          <body name="left_lambda_crank_front_link" pos="-0.2773 0.0108 0.09844">
+            <inertial pos="0 0 0" mass="3" diaginertia="0.005 0.005 0.005"/>
+            <joint name="left_rocker_link_to_left_lambda_crank_front_link" pos="0 0 0" axis="0 0 1" range="-1.2 1.2"/>
+            <geom size="0.0344512 0.0125 0.004" pos="0.035392 -0.0292819 0" quat="0.940872 0 0 -0.338763" type="box"/>
+          </body>
+          <body name="left_lambda_crank_rear_link" pos="-0.2773 0.0108 0.10795">
+            <inertial pos="0 0 0" mass="3" diaginertia="0.005 0.005 0.005"/>
+            <joint name="left_rocker_link_to_left_lambda_crank_rear_link" pos="0 0 0" axis="0 0 1" range="-1.2 1.2"/>
+            <geom size="0.0344512 0.0125 0.004" pos="-0.035392 -0.0292819 0" quat="-0.338762 0 0 0.940872" type="box"/>
+          </body>
+        </body>
+        <body name="right_rocker_link" pos="0 -0.29906 0" quat="0.707107 -0.707107 0 0">
+          <inertial pos="0 0 0" mass="3" diaginertia="0.125 0.125 0.125"/>
+          <joint name="chassis_link_to_right_rocker_link" pos="0 0 0" axis="0 0 1"/>
+          <geom size="0.16782 0.0125 0.0125" pos="0.173894 0.140817 -0.06" quat="0.942641 0 0 0.333808" type="box"/>
+          <geom size="0.105591 0.0125 0.0125" pos="-0.138649 0.0244475 -0.06" quat="0.0871556 0 0 0.996195" type="box"/>
+          <geom size="0.0533962 0.0125 0.0125" pos="-0.277297 0.120089 -0.06" quat="0.707107 0 0 0.707107" type="box"/>
+          <body name="front_right_wheel_link" pos="0.34781 0.28163 -0.15235">
+            <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="3" diaginertia="0.0216 0.012825 0.012825"/>
+            <joint name="right_rocker_link_to_front_right_wheel_link" pos="0 0 0" axis="0 0 1" actuatorfrcrange="-2.68 2.68"/>
+            <geom size="0.12 0.045" pos="0 0 0.03" type="cylinder"/>
+          </body>
+          <body name="right_lambda_lower_link" pos="-0.2773 0.15319 -0.05611">
+            <inertial pos="0 0 0" mass="2" diaginertia="0.0833333 0.0833333 0.0833333"/>
+            <joint name="right_rocker_link_to_right_lambda_lower_link" pos="0 0 0" axis="0 0 1"/>
+            <geom size="0.0628763 0.0125 0.0125" pos="0.0787791 -0.0286733 -0.05" quat="0.984808 0 0 -0.173648" type="box"/>
+            <geom size="0.0628763 0.0125 0.0125" pos="-0.0787791 -0.0286733 -0.05" quat="-0.173648 0 0 0.984808" type="box"/>
+            <body name="right_lambda_front_link" pos="0.15755 -0.05735 -0.04708">
+              <inertial pos="0 0 0" mass="2" diaginertia="0.0833333 0.0833333 0.0833333"/>
+              <joint name="right_lambda_lower_link_to_right_lambda_front_link" pos="0 0 0" axis="0 0 1" range="-0.8 0.8"/>
+              <geom size="0.143674 0.0125 0.0125" pos="0.0123527 0.0204547 0" quat="0.870909 0 0 0.491444" type="box"/>
+              <body name="center_right_wheel_link" pos="0.11343 0.18319 -0.09594">
+                <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="3" diaginertia="0.0216 0.012825 0.012825"/>
+                <joint name="right_lambda_front_link_to_center_right_wheel_link" pos="0 0 0" axis="0 0 1" actuatorfrcrange="-2.68 2.68"/>
+                <geom size="0.12 0.045" pos="0 0 0.03" type="cylinder"/>
+              </body>
+            </body>
+            <body name="right_lambda_rear_link" pos="-0.15755 -0.05735 -0.04708">
+              <inertial pos="0 0 0" mass="2" diaginertia="0.0833333 0.0833333 0.0833333"/>
+              <joint name="right_lambda_lower_link_to_right_lambda_rear_link" pos="0 0 0" axis="0 0 1" range="-0.8 0.8"/>
+              <geom size="0.143674 0.0125 0.0125" pos="-0.0123527 0.0204547 0" quat="0.491443 0 0 0.87091" type="box"/>
+              <body name="back_right_wheel_link" pos="-0.11343 0.18319 -0.09594">
+                <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="3" diaginertia="0.0216 0.012825 0.012825"/>
+                <joint name="right_lambda_rear_link_to_back_right_wheel_link" pos="0 0 0" axis="0 0 1" actuatorfrcrange="-2.68 2.68"/>
+                <geom size="0.12 0.045" pos="0 0 0.03" type="cylinder"/>
+              </body>
+            </body>
+          </body>
+          <body name="right_lambda_crank_front_link" pos="-0.2773 0.0108 -0.09844">
+            <inertial pos="0 0 0" mass="3" diaginertia="0.005 0.005 0.005"/>
+            <joint name="right_rocker_link_to_right_lambda_crank_front_link" pos="0 0 0" axis="0 0 1" range="-1.2 1.2"/>
+            <geom size="0.0344512 0.0125 0.004" pos="0.035392 -0.0292819 0" quat="0.940872 0 0 -0.338763" type="box"/>
+          </body>
+          <body name="right_lambda_crank_rear_link" pos="-0.2773 0.0108 -0.10795">
+            <inertial pos="0 0 0" mass="3" diaginertia="0.005 0.005 0.005"/>
+            <joint name="right_rocker_link_to_right_lambda_crank_rear_link" pos="0 0 0" axis="0 0 1" range="-1.2 1.2"/>
+            <geom size="0.0344512 0.0125 0.004" pos="-0.035392 -0.0292819 0" quat="-0.338762 0 0 0.940872" type="box"/>
+          </body>
+        </body>
+        <body name="left_gps" pos="0 0.1 0">
+          <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05"/>
+        </body>
+        <body name="right_gps" pos="0 -0.1 0">
+          <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05"/>
+        </body>
+        <body name="center_gps" pos="0 0 1">
+          <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05"/>
+        </body>
+        <body name="imu">
+          <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05"/>
+        </body>
+        <body name="zed_left_camera_frame" pos="0.13 0.025 0.025">
+          <geom size="0.005 0.05 0.005" type="box"/>
+        </body>
+        <body name="long_range_camera_link" pos="0.13 0.025 0.075">
+          <geom size="0.005 0.005 0.005" type="box"/>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+</mujoco>

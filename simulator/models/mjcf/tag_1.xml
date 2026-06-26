@@ -1,0 +1,14 @@
+<mujoco model="tag_1">
+  <compiler angle="radian" meshdir="../meshes" boundmass="0.001" boundinertia="1e-05"/>
+
+  <asset>
+    <mesh name="tag_1" content_type="model/obj" file="tag_1.obj" scale="0.01 0.01 0.01"/>
+  </asset>
+
+  <worldbody>
+    <body name="base_link">
+      <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05"/>
+      <geom type="mesh" mesh="tag_1"/>
+    </body>
+  </worldbody>
+</mujoco>

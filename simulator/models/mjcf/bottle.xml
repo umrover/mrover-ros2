@@ -1,0 +1,11 @@
+<mujoco model="rover">
+  <compiler angle="radian" meshdir="../meshes" boundmass="0.001" boundinertia="1e-05"/>
+
+  <worldbody>
+    <body name="base_link">
+      <inertial pos="0 0 0.25" mass="1.36078" diaginertia="0.0285622 0.0285622 0.000425244"/>
+      <geom size="0.09 0.155" type="cylinder"/>
+      <geom size="0.07 0.025" pos="0 0 0.16" type="cylinder"/>
+    </body>
+  </worldbody>
+</mujoco>

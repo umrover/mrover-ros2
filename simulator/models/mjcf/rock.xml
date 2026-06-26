@@ -1,0 +1,14 @@
+<mujoco model="rover">
+  <compiler angle="radian" meshdir="../meshes" boundmass="0.001" boundinertia="1e-05"/>
+
+  <asset>
+    <mesh name="rock" content_type="model/obj" file="rock.obj" scale="0.01 0.01 0.01"/>
+  </asset>
+
+  <worldbody>
+    <body name="base_link">
+      <inertial pos="0 0 0" mass="1.36078" diaginertia="0.01 0.01 0.01"/>
+      <geom type="mesh" mesh="rock"/>
+    </body>
+  </worldbody>
+</mujoco>
