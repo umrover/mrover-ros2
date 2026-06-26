@@ -1,14 +1,16 @@
 <mujoco model="tag_0">
-  <compiler angle="radian" meshdir="../meshes" boundmass="0.001" boundinertia="1e-05"/>
-
+  <compiler angle="radian" meshdir="../meshes" boundmass="0.001" boundinertia="1e-05" texturedir="../textures" />
   <asset>
-    <mesh name="tag_0" content_type="model/obj" file="tag_0.obj" scale="0.01 0.01 0.01"/>
+    <mesh name="tag_0" content_type="model/obj" file="tag_0.obj" scale="0.01 0.01 0.01" />
+    <texture name="tex_aruco_4x4_0" type="2d" file="aruco_4x4_0.png" />
+    <material name="tag_0__AR" texture="tex_aruco_4x4_0" specular="0.3" shininess="0.3" />
+    <mesh name="tag_0__AR" file="visual/tag_0/AR.msh" scale="0.01 0.01 0.01" inertia="shell" />
   </asset>
-
   <worldbody>
     <body name="base_link">
-      <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05"/>
-      <geom type="mesh" mesh="tag_0"/>
+      <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05" />
+      <geom type="mesh" mesh="tag_0" group="3" />
+      <geom type="mesh" mesh="tag_0__AR" material="tag_0__AR" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
     </body>
   </worldbody>
 </mujoco>

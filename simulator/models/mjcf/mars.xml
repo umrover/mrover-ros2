@@ -1,14 +1,24 @@
 <mujoco model="rover">
-  <compiler angle="radian" meshdir="../meshes" boundmass="0.001" boundinertia="1e-05"/>
-
+  <compiler angle="radian" meshdir="../meshes" boundmass="0.001" boundinertia="1e-05" texturedir="../textures" />
   <asset>
-    <mesh name="mars-sol-239-decimated" content_type="model/obj" file="mars-sol-239-decimated.obj" scale="0.01 0.01 0.01"/>
+    <mesh name="mars-sol-239-decimated" content_type="model/obj" file="mars-sol-239-decimated.obj" scale="0.01 0.01 0.01" />
+    <texture name="tex_m4_site" type="2d" file="m4_site.png" />
+    <material name="mars-sol-239__m4_site" texture="tex_m4_site" specular="0.3" shininess="0.3" />
+    <mesh name="mars-sol-239__m4_site" file="visual/mars-sol-239/m4_site.msh" scale="0.01 0.01 0.01" inertia="shell" />
+    <texture name="tex_m4_site1" type="2d" file="m4_site1.png" />
+    <material name="mars-sol-239__m4_site1" texture="tex_m4_site1" specular="0.3" shininess="0.3" />
+    <mesh name="mars-sol-239__m4_site1" file="visual/mars-sol-239/m4_site1.msh" scale="0.01 0.01 0.01" inertia="shell" />
+    <texture name="tex_m4_site2" type="2d" file="m4_site2.png" />
+    <material name="mars-sol-239__m4_site2" texture="tex_m4_site2" specular="0.3" shininess="0.3" />
+    <mesh name="mars-sol-239__m4_site2" file="visual/mars-sol-239/m4_site2.msh" scale="0.01 0.01 0.01" inertia="shell" />
   </asset>
-
   <worldbody>
     <body name="base_link">
-      <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05"/>
-      <geom type="mesh" mesh="mars-sol-239-decimated"/>
+      <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05" />
+      <geom type="mesh" mesh="mars-sol-239-decimated" group="3" />
+      <geom type="mesh" mesh="mars-sol-239__m4_site" material="mars-sol-239__m4_site" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+      <geom type="mesh" mesh="mars-sol-239__m4_site1" material="mars-sol-239__m4_site1" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+      <geom type="mesh" mesh="mars-sol-239__m4_site2" material="mars-sol-239__m4_site2" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
     </body>
   </worldbody>
 </mujoco>

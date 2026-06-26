@@ -1,11 +1,18 @@
 <mujoco model="rover">
-  <compiler angle="radian" meshdir="../meshes" boundmass="0.001" boundinertia="1e-05"/>
-
+  <compiler angle="radian" meshdir="../meshes" boundmass="0.001" boundinertia="1e-05" texturedir="../textures" />
+  <asset>
+    <material name="bottle__blue_plastic" rgba="0.0458 0.0480 0.8007 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="bottle__blue_plastic" file="visual/bottle/blue_plastic.msh" scale="0.01 0.01 0.01" inertia="shell" />
+    <material name="bottle__white_plastic" rgba="0.5136 0.4304 0.4662 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="bottle__white_plastic" file="visual/bottle/white_plastic.msh" scale="0.01 0.01 0.01" inertia="shell" />
+  </asset>
   <worldbody>
     <body name="base_link">
-      <inertial pos="0 0 0.25" mass="1.36078" diaginertia="0.0285622 0.0285622 0.000425244"/>
-      <geom size="0.09 0.155" type="cylinder"/>
-      <geom size="0.07 0.025" pos="0 0 0.16" type="cylinder"/>
+      <inertial pos="0 0 0.25" mass="1.36078" diaginertia="0.0285622 0.0285622 0.000425244" />
+      <geom size="0.09 0.155" type="cylinder" group="3" />
+      <geom size="0.07 0.025" pos="0 0 0.16" type="cylinder" group="3" />
+      <geom type="mesh" mesh="bottle__blue_plastic" material="bottle__blue_plastic" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+      <geom type="mesh" mesh="bottle__white_plastic" material="bottle__white_plastic" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
     </body>
   </worldbody>
 </mujoco>

@@ -1,14 +1,16 @@
 <mujoco model="rover">
-  <compiler angle="radian" meshdir="../meshes" boundmass="0.001" boundinertia="1e-05"/>
-
+  <compiler angle="radian" meshdir="../meshes" boundmass="0.001" boundinertia="1e-05" texturedir="../textures" />
   <asset>
-    <mesh name="rock" content_type="model/obj" file="rock.obj" scale="0.01 0.01 0.01"/>
+    <mesh name="rock" content_type="model/obj" file="rock.obj" scale="0.01 0.01 0.01" />
+    <texture name="tex_soil_base" type="2d" file="soil_base.png" />
+    <material name="rock__dust" texture="tex_soil_base" specular="0.3" shininess="0.3" />
+    <mesh name="rock__dust" file="visual/rock/dust.msh" scale="0.01 0.01 0.01" inertia="shell" />
   </asset>
-
   <worldbody>
     <body name="base_link">
-      <inertial pos="0 0 0" mass="1.36078" diaginertia="0.01 0.01 0.01"/>
-      <geom type="mesh" mesh="rock"/>
+      <inertial pos="0 0 0" mass="1.36078" diaginertia="0.01 0.01 0.01" />
+      <geom type="mesh" mesh="rock" group="3" />
+      <geom type="mesh" mesh="rock__dust" material="rock__dust" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
     </body>
   </worldbody>
 </mujoco>

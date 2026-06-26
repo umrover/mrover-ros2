@@ -1,14 +1,34 @@
 <mujoco model="rover">
-  <compiler angle="radian" meshdir="../meshes" boundmass="0.001" boundinertia="1e-05"/>
-
+  <compiler angle="radian" meshdir="../meshes" boundmass="0.001" boundinertia="1e-05" texturedir="../textures" />
   <asset>
-    <mesh name="lander_decimated" content_type="model/obj" file="lander_decimated.obj" scale="0.01 0.01 0.01"/>
+    <mesh name="lander_decimated" content_type="model/obj" file="lander_decimated.obj" scale="0.01 0.01 0.01" />
+    <material name="lander__key_gray" rgba="0.0123 0.0123 0.0123 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="lander__key_gray" file="visual/lander/key_gray.msh" scale="0.01 0.01 0.01" inertia="shell" />
+    <texture name="tex_marker2" type="2d" file="marker2.png" />
+    <material name="lander__Material_001" texture="tex_marker2" specular="0.3" shininess="0.3" />
+    <mesh name="lander__Material_001" file="visual/lander/Material_001.msh" scale="0.01 0.01 0.01" inertia="shell" />
+    <texture name="tex_marker3" type="2d" file="marker3.png" />
+    <material name="lander__Material" texture="tex_marker3" specular="0.3" shininess="0.3" />
+    <mesh name="lander__Material" file="visual/lander/Material.msh" scale="0.01 0.01 0.01" inertia="shell" />
+    <material name="lander__DefaultMaterial" rgba="0.8000 0.8000 0.8000 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="lander__DefaultMaterial" file="visual/lander/DefaultMaterial.msh" scale="0.01 0.01 0.01" inertia="shell" />
+    <texture name="tex_marker0" type="2d" file="marker0.png" />
+    <material name="lander__Material_002" texture="tex_marker0" specular="0.3" shininess="0.3" />
+    <mesh name="lander__Material_002" file="visual/lander/Material_002.msh" scale="0.01 0.01 0.01" inertia="shell" />
+    <texture name="tex_marker1" type="2d" file="marker1.png" />
+    <material name="lander__Material_003" texture="tex_marker1" specular="0.3" shininess="0.3" />
+    <mesh name="lander__Material_003" file="visual/lander/Material_003.msh" scale="0.01 0.01 0.01" inertia="shell" />
   </asset>
-
   <worldbody>
     <body name="base_link">
-      <inertial pos="0 0 0" mass="100" diaginertia="10 10 10"/>
-      <geom type="mesh" mesh="lander_decimated"/>
+      <inertial pos="0 0 0" mass="100" diaginertia="10 10 10" />
+      <geom type="mesh" mesh="lander_decimated" group="3" />
+      <geom type="mesh" mesh="lander__key_gray" material="lander__key_gray" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+      <geom type="mesh" mesh="lander__Material_001" material="lander__Material_001" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+      <geom type="mesh" mesh="lander__Material" material="lander__Material" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+      <geom type="mesh" mesh="lander__DefaultMaterial" material="lander__DefaultMaterial" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+      <geom type="mesh" mesh="lander__Material_002" material="lander__Material_002" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+      <geom type="mesh" mesh="lander__Material_003" material="lander__Material_003" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
     </body>
   </worldbody>
 </mujoco>

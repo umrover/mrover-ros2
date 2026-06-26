@@ -1,196 +1,596 @@
 <mujoco model="rover">
-  <compiler angle="radian" meshdir="../meshes" boundmass="0.001" boundinertia="1e-05"/>
-
+  <compiler angle="radian" meshdir="../meshes" boundmass="0.001" boundinertia="1e-05" texturedir="../textures" />
+  <asset>
+    <material name="rover_diff_bar__Aluminum_Base" rgba="0.2982 0.2982 0.2982 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_diff_bar__Aluminum_Base" file="visual/rover_diff_bar/Aluminum_Base.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_diff_bar__Steel" rgba="0.4397 0.4397 0.4397 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_diff_bar__Steel" file="visual/rover_diff_bar/Steel.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_diff_bar__Black_Metal" rgba="0.0234 0.0234 0.0234 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_diff_bar__Black_Metal" file="visual/rover_diff_bar/Black_Metal.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <texture name="tex_cf_base" type="2d" file="cf_base.png" />
+    <material name="rover_diff_bar__Carbon_Fiber_Real" texture="tex_cf_base" specular="0.3" shininess="0.3" />
+    <mesh name="rover_diff_bar__Carbon_Fiber_Real" file="visual/rover_diff_bar/Carbon_Fiber_Real.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_chassis__Powdercoat" rgba="1.0000 0.8632 0.1683 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_chassis__Powdercoat" file="visual/rover_chassis/Powdercoat.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_chassis__Aluminum_Base" rgba="0.2982 0.2982 0.2982 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_chassis__Aluminum_Base" file="visual/rover_chassis/Aluminum_Base.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_chassis__Steel" rgba="0.4397 0.4397 0.4397 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_chassis__Steel" file="visual/rover_chassis/Steel.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_chassis__Motor_Black" rgba="0.0198 0.0198 0.0198 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_chassis__Motor_Black" file="visual/rover_chassis/Motor_Black.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_chassis__PCB" rgba="0.0331 0.1329 0.0331 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_chassis__PCB" file="visual/rover_chassis/PCB.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_chassis__Black_Metal" rgba="0.0234 0.0234 0.0234 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_chassis__Black_Metal" file="visual/rover_chassis/Black_Metal.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_chassis__Generic_Black" rgba="0.0093 0.0093 0.0093 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_chassis__Generic_Black" file="visual/rover_chassis/Generic_Black.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_chassis__3DP" rgba="0.0519 0.1103 0.2140 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_chassis__3DP" file="visual/rover_chassis/3DP.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_chassis__Carbon_Fiber_Real" texture="tex_cf_base" specular="0.3" shininess="0.3" />
+    <mesh name="rover_chassis__Carbon_Fiber_Real" file="visual/rover_chassis/Carbon_Fiber_Real.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_chassis__Estop" rgba="0.6038 0.0331 0.0331 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_chassis__Estop" file="visual/rover_chassis/Estop.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_chassis__Generic_White" rgba="0.8000 0.8000 0.8000 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_chassis__Generic_White" file="visual/rover_chassis/Generic_White.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_chassis__Bronze" rgba="0.3712 0.1329 0.0000 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_chassis__Bronze" file="visual/rover_chassis/Bronze.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_a__Bronze" rgba="0.3712 0.1329 0.0000 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_a__Bronze" file="visual/arm_a/Bronze.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_a__Black_Metal" rgba="0.0234 0.0234 0.0234 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_a__Black_Metal" file="visual/arm_a/Black_Metal.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_a__Aluminum_Base" rgba="0.2982 0.2982 0.2982 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_a__Aluminum_Base" file="visual/arm_a/Aluminum_Base.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_a__Steel" rgba="0.4397 0.4397 0.4397 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_a__Steel" file="visual/arm_a/Steel.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_a__Roller" rgba="0.1140 0.1140 0.1140 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_a__Roller" file="visual/arm_a/Roller.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_a__3DP" rgba="0.0519 0.1103 0.2140 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_a__3DP" file="visual/arm_a/3DP.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_b__Carbon_Fiber_Real" texture="tex_cf_base" specular="0.3" shininess="0.3" />
+    <mesh name="arm_b__Carbon_Fiber_Real" file="visual/arm_b/Carbon_Fiber_Real.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_b__Aluminum_Base" rgba="0.2982 0.2982 0.2982 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_b__Aluminum_Base" file="visual/arm_b/Aluminum_Base.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_b__Steel" rgba="0.4397 0.4397 0.4397 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_b__Steel" file="visual/arm_b/Steel.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_b__Motor_Black" rgba="0.0198 0.0198 0.0198 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_b__Motor_Black" file="visual/arm_b/Motor_Black.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_b__PCB" rgba="0.0331 0.1329 0.0331 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_b__PCB" file="visual/arm_b/PCB.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_b__Black_Metal" rgba="0.0234 0.0234 0.0234 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_b__Black_Metal" file="visual/arm_b/Black_Metal.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_b__3DP" rgba="0.0519 0.1103 0.2140 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_b__3DP" file="visual/arm_b/3DP.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_b__Generic_Black" rgba="0.0093 0.0093 0.0093 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_b__Generic_Black" file="visual/arm_b/Generic_Black.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_b__Bronze" rgba="0.3712 0.1329 0.0000 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_b__Bronze" file="visual/arm_b/Bronze.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_b__Anodized_Aluminum" rgba="0.0817 0.1517 0.3586 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_b__Anodized_Aluminum" file="visual/arm_b/Anodized_Aluminum.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_b__Brass" rgba="0.8000 0.5233 0.0804 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_b__Brass" file="visual/arm_b/Brass.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_c__Carbon_Fiber_Real" texture="tex_cf_base" specular="0.3" shininess="0.3" />
+    <mesh name="arm_c__Carbon_Fiber_Real" file="visual/arm_c/Carbon_Fiber_Real.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_c__Aluminum_Base" rgba="0.2982 0.2982 0.2982 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_c__Aluminum_Base" file="visual/arm_c/Aluminum_Base.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_c__Black_Metal" rgba="0.0234 0.0234 0.0234 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_c__Black_Metal" file="visual/arm_c/Black_Metal.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_c__Generic_Black" rgba="0.0093 0.0093 0.0093 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_c__Generic_Black" file="visual/arm_c/Generic_Black.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_c__Steel" rgba="0.4397 0.4397 0.4397 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_c__Steel" file="visual/arm_c/Steel.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_c__3DP" rgba="0.0519 0.1103 0.2140 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_c__3DP" file="visual/arm_c/3DP.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_c__PCB" rgba="0.0331 0.1329 0.0331 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_c__PCB" file="visual/arm_c/PCB.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_c__Brass" rgba="0.8000 0.5233 0.0804 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_c__Brass" file="visual/arm_c/Brass.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_c__Anodized_Aluminum" rgba="0.0817 0.1517 0.3586 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_c__Anodized_Aluminum" file="visual/arm_c/Anodized_Aluminum.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_c__Motor_Black" rgba="0.0198 0.0198 0.0198 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_c__Motor_Black" file="visual/arm_c/Motor_Black.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_c__Bronze" rgba="0.3712 0.1329 0.0000 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_c__Bronze" file="visual/arm_c/Bronze.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_c__Beryllium_Copper" rgba="0.5443 0.1838 0.0717 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_c__Beryllium_Copper" file="visual/arm_c/Beryllium_Copper.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_d__3DP" rgba="0.0519 0.1103 0.2140 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_d__3DP" file="visual/arm_d/3DP.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_d__Anodized_Aluminum" rgba="0.0817 0.1517 0.3586 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_d__Anodized_Aluminum" file="visual/arm_d/Anodized_Aluminum.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_d__Black_Metal" rgba="0.0234 0.0234 0.0234 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_d__Black_Metal" file="visual/arm_d/Black_Metal.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_d__Steel" rgba="0.4397 0.4397 0.4397 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_d__Steel" file="visual/arm_d/Steel.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_d__Brass" rgba="0.8000 0.5233 0.0804 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_d__Brass" file="visual/arm_d/Brass.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_d__Aluminum_Base" rgba="0.2982 0.2982 0.2982 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_d__Aluminum_Base" file="visual/arm_d/Aluminum_Base.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_d__PCB" rgba="0.0331 0.1329 0.0331 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_d__PCB" file="visual/arm_d/PCB.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_e__Aluminum_Base" rgba="0.2982 0.2982 0.2982 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_e__Aluminum_Base" file="visual/arm_e/Aluminum_Base.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_e__Bronze" rgba="0.3712 0.1329 0.0000 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_e__Bronze" file="visual/arm_e/Bronze.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_e__Steel" rgba="0.4397 0.4397 0.4397 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_e__Steel" file="visual/arm_e/Steel.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_e__Black_Metal" rgba="0.0234 0.0234 0.0234 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_e__Black_Metal" file="visual/arm_e/Black_Metal.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_e__3DP" rgba="0.0519 0.1103 0.2140 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_e__3DP" file="visual/arm_e/3DP.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_e__Generic_Black" rgba="0.0093 0.0093 0.0093 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_e__Generic_Black" file="visual/arm_e/Generic_Black.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_e__Brass" rgba="0.8000 0.5233 0.0804 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_e__Brass" file="visual/arm_e/Brass.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_e__PCB" rgba="0.0331 0.1329 0.0331 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_e__PCB" file="visual/arm_e/PCB.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_la_base__LA_Black" rgba="0.0093 0.0093 0.0093 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_la_base__LA_Black" file="visual/arm_la_base/LA_Black.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_la_base__Generic_Black" rgba="0.0093 0.0093 0.0093 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_la_base__Generic_Black" file="visual/arm_la_base/Generic_Black.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_la_base__Aluminum_Base" rgba="0.2982 0.2982 0.2982 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_la_base__Aluminum_Base" file="visual/arm_la_base/Aluminum_Base.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_la_base__Steel" rgba="0.4397 0.4397 0.4397 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_la_base__Steel" file="visual/arm_la_base/Steel.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_la_piston__Aluminum_Base" rgba="0.2982 0.2982 0.2982 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_la_piston__Aluminum_Base" file="visual/arm_la_piston/Aluminum_Base.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_la_piston__Steel" rgba="0.4397 0.4397 0.4397 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_la_piston__Steel" file="visual/arm_la_piston/Steel.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_la_piston__Black_Metal" rgba="0.0234 0.0234 0.0234 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_la_piston__Black_Metal" file="visual/arm_la_piston/Black_Metal.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_gripper__Aluminum_Base" rgba="0.2982 0.2982 0.2982 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_gripper__Aluminum_Base" file="visual/arm_gripper/Aluminum_Base.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_gripper__Bronze" rgba="0.3712 0.1329 0.0000 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_gripper__Bronze" file="visual/arm_gripper/Bronze.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_gripper__Steel" rgba="0.4397 0.4397 0.4397 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_gripper__Steel" file="visual/arm_gripper/Steel.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_gripper__Black_Metal" rgba="0.0234 0.0234 0.0234 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_gripper__Black_Metal" file="visual/arm_gripper/Black_Metal.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_gripper__Generic_Black" rgba="0.0093 0.0093 0.0093 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_gripper__Generic_Black" file="visual/arm_gripper/Generic_Black.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="arm_gripper__3DP" rgba="0.0519 0.1103 0.2140 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="arm_gripper__3DP" file="visual/arm_gripper/3DP.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_left_wheel__Black_Metal" rgba="0.0234 0.0234 0.0234 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_left_wheel__Black_Metal" file="visual/rover_left_wheel/Black_Metal.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_left_wheel__Aluminum_Base" rgba="0.2982 0.2982 0.2982 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_left_wheel__Aluminum_Base" file="visual/rover_left_wheel/Aluminum_Base.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_left_wheel__Polyurethane" rgba="0.0909 0.2629 0.5176 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_left_wheel__Polyurethane" file="visual/rover_left_wheel/Polyurethane.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_left_wheel__Steel" rgba="0.4397 0.4397 0.4397 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_left_wheel__Steel" file="visual/rover_left_wheel/Steel.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_left_rocker__Aluminum_Base" rgba="0.2982 0.2982 0.2982 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_left_rocker__Aluminum_Base" file="visual/rover_left_rocker/Aluminum_Base.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_left_rocker__3DP" rgba="0.0519 0.1103 0.2140 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_left_rocker__3DP" file="visual/rover_left_rocker/3DP.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_left_rocker__Black_Metal" rgba="0.0234 0.0234 0.0234 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_left_rocker__Black_Metal" file="visual/rover_left_rocker/Black_Metal.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_left_rocker__Steel" rgba="0.4397 0.4397 0.4397 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_left_rocker__Steel" file="visual/rover_left_rocker/Steel.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_left_rocker__Generic_Black" rgba="0.0093 0.0093 0.0093 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_left_rocker__Generic_Black" file="visual/rover_left_rocker/Generic_Black.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_left_rocker__Generic_White" rgba="0.8000 0.8000 0.8000 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_left_rocker__Generic_White" file="visual/rover_left_rocker/Generic_White.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_left_rocker__Carbon_Fiber_Real" texture="tex_cf_base" specular="0.3" shininess="0.3" />
+    <mesh name="rover_left_rocker__Carbon_Fiber_Real" file="visual/rover_left_rocker/Carbon_Fiber_Real.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_left_rocker__Bronze" rgba="0.3712 0.1329 0.0000 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_left_rocker__Bronze" file="visual/rover_left_rocker/Bronze.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_rear_lambda_crank__Aluminum_Base" rgba="0.2982 0.2982 0.2982 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_rear_lambda_crank__Aluminum_Base" file="visual/rover_rear_lambda_crank/Aluminum_Base.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_front_lambda_crank__Aluminum_Base" rgba="0.2982 0.2982 0.2982 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_front_lambda_crank__Aluminum_Base" file="visual/rover_front_lambda_crank/Aluminum_Base.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_left_lambda_lower__Black_Metal" rgba="0.0234 0.0234 0.0234 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_left_lambda_lower__Black_Metal" file="visual/rover_left_lambda_lower/Black_Metal.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_left_lambda_lower__Steel" rgba="0.4397 0.4397 0.4397 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_left_lambda_lower__Steel" file="visual/rover_left_lambda_lower/Steel.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_left_lambda_lower__Bronze" rgba="0.3712 0.1329 0.0000 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_left_lambda_lower__Bronze" file="visual/rover_left_lambda_lower/Bronze.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_left_lambda_lower__Aluminum_Base" rgba="0.2982 0.2982 0.2982 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_left_lambda_lower__Aluminum_Base" file="visual/rover_left_lambda_lower/Aluminum_Base.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_left_lambda_lower__Generic_Black" rgba="0.0093 0.0093 0.0093 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_left_lambda_lower__Generic_Black" file="visual/rover_left_lambda_lower/Generic_Black.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_left_lambda_front__Aluminum_Base" rgba="0.2982 0.2982 0.2982 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_left_lambda_front__Aluminum_Base" file="visual/rover_left_lambda_front/Aluminum_Base.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_left_lambda_front__Generic_Black" rgba="0.0093 0.0093 0.0093 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_left_lambda_front__Generic_Black" file="visual/rover_left_lambda_front/Generic_Black.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_left_lambda_front__Steel" rgba="0.4397 0.4397 0.4397 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_left_lambda_front__Steel" file="visual/rover_left_lambda_front/Steel.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_left_lambda_front__Black_Metal" rgba="0.0234 0.0234 0.0234 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_left_lambda_front__Black_Metal" file="visual/rover_left_lambda_front/Black_Metal.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_left_lambda_rear__Aluminum_Base" rgba="0.2982 0.2982 0.2982 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_left_lambda_rear__Aluminum_Base" file="visual/rover_left_lambda_rear/Aluminum_Base.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_left_lambda_rear__Generic_Black" rgba="0.0093 0.0093 0.0093 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_left_lambda_rear__Generic_Black" file="visual/rover_left_lambda_rear/Generic_Black.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_left_lambda_rear__Steel" rgba="0.4397 0.4397 0.4397 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_left_lambda_rear__Steel" file="visual/rover_left_lambda_rear/Steel.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_left_lambda_rear__Black_Metal" rgba="0.0234 0.0234 0.0234 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_left_lambda_rear__Black_Metal" file="visual/rover_left_lambda_rear/Black_Metal.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_diff_bar_connector__Aluminum_Base" rgba="0.2982 0.2982 0.2982 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_diff_bar_connector__Aluminum_Base" file="visual/rover_diff_bar_connector/Aluminum_Base.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_diff_bar_connector__Steel" rgba="0.4397 0.4397 0.4397 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_diff_bar_connector__Steel" file="visual/rover_diff_bar_connector/Steel.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_right_wheel__Black_Metal" rgba="0.0234 0.0234 0.0234 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_right_wheel__Black_Metal" file="visual/rover_right_wheel/Black_Metal.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_right_wheel__Aluminum_Base" rgba="0.2982 0.2982 0.2982 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_right_wheel__Aluminum_Base" file="visual/rover_right_wheel/Aluminum_Base.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_right_wheel__Polyurethane" rgba="0.0909 0.2629 0.5176 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_right_wheel__Polyurethane" file="visual/rover_right_wheel/Polyurethane.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_right_wheel__Steel" rgba="0.4397 0.4397 0.4397 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_right_wheel__Steel" file="visual/rover_right_wheel/Steel.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_right_rocker__Aluminum_Base" rgba="0.2982 0.2982 0.2982 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_right_rocker__Aluminum_Base" file="visual/rover_right_rocker/Aluminum_Base.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_right_rocker__Generic_White" rgba="0.8000 0.8000 0.8000 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_right_rocker__Generic_White" file="visual/rover_right_rocker/Generic_White.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_right_rocker__Generic_Black" rgba="0.0093 0.0093 0.0093 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_right_rocker__Generic_Black" file="visual/rover_right_rocker/Generic_Black.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_right_rocker__Steel" rgba="0.4397 0.4397 0.4397 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_right_rocker__Steel" file="visual/rover_right_rocker/Steel.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_right_rocker__Black_Metal" rgba="0.0234 0.0234 0.0234 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_right_rocker__Black_Metal" file="visual/rover_right_rocker/Black_Metal.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_right_rocker__Carbon_Fiber_Real" texture="tex_cf_base" specular="0.3" shininess="0.3" />
+    <mesh name="rover_right_rocker__Carbon_Fiber_Real" file="visual/rover_right_rocker/Carbon_Fiber_Real.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_right_rocker__Bronze" rgba="0.3712 0.1329 0.0000 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_right_rocker__Bronze" file="visual/rover_right_rocker/Bronze.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_right_lambda_lower__Black_Metal" rgba="0.0234 0.0234 0.0234 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_right_lambda_lower__Black_Metal" file="visual/rover_right_lambda_lower/Black_Metal.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_right_lambda_lower__Steel" rgba="0.4397 0.4397 0.4397 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_right_lambda_lower__Steel" file="visual/rover_right_lambda_lower/Steel.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_right_lambda_lower__Aluminum_Base" rgba="0.2982 0.2982 0.2982 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_right_lambda_lower__Aluminum_Base" file="visual/rover_right_lambda_lower/Aluminum_Base.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_right_lambda_lower__Bronze" rgba="0.3712 0.1329 0.0000 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_right_lambda_lower__Bronze" file="visual/rover_right_lambda_lower/Bronze.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_right_lambda_lower__Generic_Black" rgba="0.0093 0.0093 0.0093 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_right_lambda_lower__Generic_Black" file="visual/rover_right_lambda_lower/Generic_Black.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_right_lambda_front__Aluminum_Base" rgba="0.2982 0.2982 0.2982 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_right_lambda_front__Aluminum_Base" file="visual/rover_right_lambda_front/Aluminum_Base.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_right_lambda_front__Generic_Black" rgba="0.0093 0.0093 0.0093 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_right_lambda_front__Generic_Black" file="visual/rover_right_lambda_front/Generic_Black.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_right_lambda_front__Steel" rgba="0.4397 0.4397 0.4397 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_right_lambda_front__Steel" file="visual/rover_right_lambda_front/Steel.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_right_lambda_front__Black_Metal" rgba="0.0234 0.0234 0.0234 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_right_lambda_front__Black_Metal" file="visual/rover_right_lambda_front/Black_Metal.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_right_lambda_rear__Aluminum_Base" rgba="0.2982 0.2982 0.2982 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_right_lambda_rear__Aluminum_Base" file="visual/rover_right_lambda_rear/Aluminum_Base.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_right_lambda_rear__Generic_Black" rgba="0.0093 0.0093 0.0093 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_right_lambda_rear__Generic_Black" file="visual/rover_right_lambda_rear/Generic_Black.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_right_lambda_rear__Steel" rgba="0.4397 0.4397 0.4397 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_right_lambda_rear__Steel" file="visual/rover_right_lambda_rear/Steel.msh" scale="1.0 1.0 1.0" inertia="shell" />
+    <material name="rover_right_lambda_rear__Black_Metal" rgba="0.0234 0.0234 0.0234 1.0000" specular="0.3" shininess="0.3" />
+    <mesh name="rover_right_lambda_rear__Black_Metal" file="visual/rover_right_lambda_rear/Black_Metal.msh" scale="1.0 1.0 1.0" inertia="shell" />
+  </asset>
   <worldbody>
     <body name="base_link">
-      <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05"/>
+      <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05" />
       <body name="arm_base_link" pos="0.199228 -0.200235 0.540196">
-        <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05"/>
+        <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05" />
       </body>
       <body name="chassis_link" pos="0 0 0.439675">
-        <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="15" diaginertia="0.732789 0.489046 0.327466"/>
-        <geom size="0.1385 0.29906 0.0915" pos="-0.185906 0 0" type="box"/>
-        <geom size="0.0835 0.29906 0.04455" pos="0 0 -0.049449" type="box"/>
+        <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="15" diaginertia="0.732789 0.489046 0.327466" />
+        <geom size="0.1385 0.29906 0.0915" pos="-0.185906 0 0" type="box" group="3" />
+        <geom size="0.0835 0.29906 0.04455" pos="0 0 -0.049449" type="box" group="3" />
         <body name="diff_bar_link" pos="-0.37633 0 -0.00587">
-          <inertial pos="0 0 0" mass="1" diaginertia="0.00166667 0.00166667 0.00166667"/>
-          <joint name="chassis_link_to_diff_bar_link" pos="0 0 0" axis="1 0 0"/>
-          <geom size="0.015 0.325 0.015" pos="-0.013 0 0" type="box"/>
+          <inertial pos="0 0 0" mass="1" diaginertia="0.00166667 0.00166667 0.00166667" />
+          <joint name="chassis_link_to_diff_bar_link" pos="0 0 0" axis="1 0 0" />
+          <geom size="0.015 0.325 0.015" pos="-0.013 0 0" type="box" group="3" />
           <body name="left_diff_bar_connector_x_link" pos="-0.01143 0.35547 0">
-            <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05"/>
-            <joint name="diff_bar_link_to_left_diff_bar_connector_x_link" pos="0 0 0" axis="1 0 0"/>
+            <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05" />
+            <joint name="diff_bar_link_to_left_diff_bar_connector_x_link" pos="0 0 0" axis="1 0 0" />
             <body name="left_diff_bar_connector_link">
-              <inertial pos="0 0 0" mass="0.5" diaginertia="0.000833333 0.000833333 0.000833333"/>
-              <joint name="left_diff_bar_connector_x_link_to_left_diff_bar_connector_link" pos="0 0 0" axis="0 1 0"/>
-              <geom size="0.005 0.005 0.025" pos="0 0 -0.04605" type="box"/>
+              <inertial pos="0 0 0" mass="0.5" diaginertia="0.000833333 0.000833333 0.000833333" />
+              <joint name="left_diff_bar_connector_x_link_to_left_diff_bar_connector_link" pos="0 0 0" axis="0 1 0" />
+              <geom size="0.005 0.005 0.025" pos="0 0 -0.04605" type="box" group="3" />
+              <geom type="mesh" mesh="rover_diff_bar_connector__Aluminum_Base" material="rover_diff_bar_connector__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="rover_diff_bar_connector__Steel" material="rover_diff_bar_connector__Steel" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
             </body>
           </body>
           <body name="right_diff_bar_connector_x_link" pos="-0.01143 -0.35547 0">
-            <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05"/>
-            <joint name="diff_bar_link_to_right_diff_bar_connector_x_link" pos="0 0 0" axis="1 0 0"/>
+            <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05" />
+            <joint name="diff_bar_link_to_right_diff_bar_connector_x_link" pos="0 0 0" axis="1 0 0" />
             <body name="right_diff_bar_connector_link">
-              <inertial pos="0 0 0" mass="0.5" diaginertia="0.000833333 0.000833333 0.000833333"/>
-              <joint name="right_diff_bar_connector_x_link_to_right_diff_bar_connector_link" pos="0 0 0" axis="0 1 0"/>
-              <geom size="0.005 0.005 0.025" pos="0 0 -0.04605" type="box"/>
+              <inertial pos="0 0 0" mass="0.5" diaginertia="0.000833333 0.000833333 0.000833333" />
+              <joint name="right_diff_bar_connector_x_link_to_right_diff_bar_connector_link" pos="0 0 0" axis="0 1 0" />
+              <geom size="0.005 0.005 0.025" pos="0 0 -0.04605" type="box" group="3" />
+              <geom type="mesh" mesh="rover_diff_bar_connector__Aluminum_Base" material="rover_diff_bar_connector__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="rover_diff_bar_connector__Steel" material="rover_diff_bar_connector__Steel" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
             </body>
           </body>
+          <geom type="mesh" mesh="rover_diff_bar__Aluminum_Base" material="rover_diff_bar__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+          <geom type="mesh" mesh="rover_diff_bar__Steel" material="rover_diff_bar__Steel" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+          <geom type="mesh" mesh="rover_diff_bar__Black_Metal" material="rover_diff_bar__Black_Metal" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+          <geom type="mesh" mesh="rover_diff_bar__Carbon_Fiber_Real" material="rover_diff_bar__Carbon_Fiber_Real" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
         </body>
         <body name="arm_a_link" pos="0 -0.200235 0.10011">
-          <inertial pos="0 0 0" quat="0.707107 0 0 0.707107" mass="1" diaginertia="0.00166667 0.00136667 0.00136667"/>
-          <joint name="chassis_link_to_arm_a_link" pos="0 0 0" axis="0 1 0" type="slide" range="0 0.4"/>
-          <geom size="0.034 0.05 0.05" pos="0.04 0 0" type="box"/>
+          <inertial pos="0 0 0" quat="0.707107 0 0 0.707107" mass="1" diaginertia="0.00166667 0.00136667 0.00136667" />
+          <joint name="chassis_link_to_arm_a_link" pos="0 0 0" axis="0 1 0" type="slide" range="0 0.4" />
+          <geom size="0.034 0.05 0.05" pos="0.04 0 0" type="box" group="3" />
           <body name="arm_b_link" pos="0.04452 0 0.05163">
-            <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="1" diaginertia="0.0281667 0.0281667 0.000266667"/>
-            <joint name="arm_a_link_to_arm_b_link" pos="0 0 0" axis="0 1 0" range="-1.1344 0.2617"/>
-            <geom size="0.2465 0.02 0.02" pos="0.29 0 0" type="box"/>
+            <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="1" diaginertia="0.0281667 0.0281667 0.000266667" />
+            <joint name="arm_a_link_to_arm_b_link" pos="0 0 0" axis="0 1 0" range="-1.1344 0.2617" />
+            <geom size="0.2465 0.02 0.02" pos="0.29 0 0" type="box" group="3" />
             <body name="arm_c_link" pos="0.53271 0 0">
-              <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="1" diaginertia="0.0103417 0.0103417 0.000266667"/>
-              <joint name="arm_b_link_to_arm_c_link" pos="0 0 0" axis="0 1 0" range="-1.0471 3.0543"/>
-              <geom size="0.14875 0.02 0.02" pos="0.175 0 0.1" type="box"/>
+              <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="1" diaginertia="0.0103417 0.0103417 0.000266667" />
+              <joint name="arm_b_link_to_arm_c_link" pos="0 0 0" axis="0 1 0" range="-1.0471 3.0543" />
+              <geom size="0.14875 0.02 0.02" pos="0.175 0 0.1" type="box" group="3" />
               <body name="arm_d_link" pos="0.39525 0 0.08329">
-                <inertial pos="0 0 0" quat="0.5 0.5 0.5 0.5" mass="1" diaginertia="0.00118542 0.00118542 0.000704167"/>
-                <joint name="arm_c_link_to_arm_d_link" pos="0 0 0" axis="0 1 0" range="-1.1344 1.1344"/>
-                <geom size="0.027625 0.05 0.0325" type="box"/>
+                <inertial pos="0 0 0" quat="0.5 0.5 0.5 0.5" mass="1" diaginertia="0.00118542 0.00118542 0.000704167" />
+                <joint name="arm_c_link_to_arm_d_link" pos="0 0 0" axis="0 1 0" range="-1.1344 1.1344" />
+                <geom size="0.027625 0.05 0.0325" type="box" group="3" />
                 <body name="arm_e_link">
-                  <inertial pos="0 0 0" quat="0.5 0.5 0.5 0.5" mass="1" diaginertia="0.00196033 0.00196033 0.000170667"/>
-                  <joint name="arm_d_link_to_arm_e_link" pos="0 0 0" axis="1 0 0" range="-2.35619 2.35619"/>
-                  <geom size="0.0136 0.075 0.016" pos="0.066 0 0" type="box"/>
+                  <inertial pos="0 0 0" quat="0.5 0.5 0.5 0.5" mass="1" diaginertia="0.00196033 0.00196033 0.000170667" />
+                  <joint name="arm_d_link_to_arm_e_link" pos="0 0 0" axis="1 0 0" range="-2.35619 2.35619" />
+                  <geom size="0.0136 0.075 0.016" pos="0.066 0 0" type="box" group="3" />
                   <body name="arm_gripper_link" pos="0.08375 0 0">
-                    <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="1" diaginertia="0.00148333 0.00144167 0.000108333"/>
-                    <joint name="arm_e_link_to_arm_gripper_link" pos="0 0 0" axis="0 1 0" type="slide" range="0 0.088"/>
-                    <geom size="0.0425 0.01 0.015" pos="0.075 0 0" type="box"/>
+                    <inertial pos="0 0 0" quat="0.707107 0.707107 0 0" mass="1" diaginertia="0.00148333 0.00144167 0.000108333" />
+                    <joint name="arm_e_link_to_arm_gripper_link" pos="0 0 0" axis="0 1 0" type="slide" range="0 0.088" />
+                    <geom size="0.0425 0.01 0.015" pos="0.075 0 0" type="box" group="3" />
+                    <geom type="mesh" mesh="arm_gripper__Aluminum_Base" material="arm_gripper__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                    <geom type="mesh" mesh="arm_gripper__Bronze" material="arm_gripper__Bronze" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                    <geom type="mesh" mesh="arm_gripper__Steel" material="arm_gripper__Steel" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                    <geom type="mesh" mesh="arm_gripper__Black_Metal" material="arm_gripper__Black_Metal" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                    <geom type="mesh" mesh="arm_gripper__Generic_Black" material="arm_gripper__Generic_Black" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                    <geom type="mesh" mesh="arm_gripper__3DP" material="arm_gripper__3DP" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
                   </body>
                   <body name="finger_camera_frame">
-                    <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05"/>
+                    <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05" />
                   </body>
+                  <geom type="mesh" mesh="arm_e__Aluminum_Base" material="arm_e__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                  <geom type="mesh" mesh="arm_e__Bronze" material="arm_e__Bronze" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                  <geom type="mesh" mesh="arm_e__Steel" material="arm_e__Steel" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                  <geom type="mesh" mesh="arm_e__Black_Metal" material="arm_e__Black_Metal" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                  <geom type="mesh" mesh="arm_e__3DP" material="arm_e__3DP" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                  <geom type="mesh" mesh="arm_e__Generic_Black" material="arm_e__Generic_Black" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                  <geom type="mesh" mesh="arm_e__Brass" material="arm_e__Brass" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                  <geom type="mesh" mesh="arm_e__PCB" material="arm_e__PCB" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
                 </body>
+                <geom type="mesh" mesh="arm_d__3DP" material="arm_d__3DP" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                <geom type="mesh" mesh="arm_d__Anodized_Aluminum" material="arm_d__Anodized_Aluminum" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                <geom type="mesh" mesh="arm_d__Black_Metal" material="arm_d__Black_Metal" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                <geom type="mesh" mesh="arm_d__Steel" material="arm_d__Steel" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                <geom type="mesh" mesh="arm_d__Brass" material="arm_d__Brass" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                <geom type="mesh" mesh="arm_d__Aluminum_Base" material="arm_d__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                <geom type="mesh" mesh="arm_d__PCB" material="arm_d__PCB" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
               </body>
+              <geom type="mesh" mesh="arm_c__Carbon_Fiber_Real" material="arm_c__Carbon_Fiber_Real" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="arm_c__Aluminum_Base" material="arm_c__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="arm_c__Black_Metal" material="arm_c__Black_Metal" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="arm_c__Generic_Black" material="arm_c__Generic_Black" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="arm_c__Steel" material="arm_c__Steel" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="arm_c__3DP" material="arm_c__3DP" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="arm_c__PCB" material="arm_c__PCB" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="arm_c__Brass" material="arm_c__Brass" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="arm_c__Anodized_Aluminum" material="arm_c__Anodized_Aluminum" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="arm_c__Motor_Black" material="arm_c__Motor_Black" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="arm_c__Bronze" material="arm_c__Bronze" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="arm_c__Beryllium_Copper" material="arm_c__Beryllium_Copper" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
             </body>
+            <geom type="mesh" mesh="arm_b__Carbon_Fiber_Real" material="arm_b__Carbon_Fiber_Real" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="arm_b__Aluminum_Base" material="arm_b__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="arm_b__Steel" material="arm_b__Steel" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="arm_b__Motor_Black" material="arm_b__Motor_Black" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="arm_b__PCB" material="arm_b__PCB" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="arm_b__Black_Metal" material="arm_b__Black_Metal" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="arm_b__3DP" material="arm_b__3DP" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="arm_b__Generic_Black" material="arm_b__Generic_Black" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="arm_b__Bronze" material="arm_b__Bronze" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="arm_b__Anodized_Aluminum" material="arm_b__Anodized_Aluminum" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="arm_b__Brass" material="arm_b__Brass" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
           </body>
           <body name="arm_la_base_link" pos="-0.00441 0 0.20149">
-            <inertial pos="0 0 0" mass="0.1" diaginertia="5.41667e-05 5.41667e-05 1e-05"/>
-            <joint name="arm_a_link_to_arm_la_base_link" pos="0 0 0" axis="0 1 0" range="0 2"/>
-            <geom size="0.00425 0.005 0.04" pos="0.005 0 0.1" type="box"/>
+            <inertial pos="0 0 0" mass="0.1" diaginertia="5.41667e-05 5.41667e-05 1e-05" />
+            <joint name="arm_a_link_to_arm_la_base_link" pos="0 0 0" axis="0 1 0" range="0 2" />
+            <geom size="0.00425 0.005 0.04" pos="0.005 0 0.1" type="box" group="3" />
             <body name="arm_la_piston_link" pos="0 0 0.32">
-              <inertial pos="0 0 0" mass="0.1" diaginertia="2.16667e-05 2.16667e-05 1e-05"/>
-              <joint name="arm_la_base_link_to_arm_la_piston_link" pos="0 0 0" axis="0 0 1" type="slide" range="0 0.25"/>
-              <geom size="0.00425 0.005 0.025" pos="0.005 0 -0.05" type="box"/>
+              <inertial pos="0 0 0" mass="0.1" diaginertia="2.16667e-05 2.16667e-05 1e-05" />
+              <joint name="arm_la_base_link_to_arm_la_piston_link" pos="0 0 0" axis="0 0 1" type="slide" range="0 0.25" />
+              <geom size="0.00425 0.005 0.025" pos="0.005 0 -0.05" type="box" group="3" />
+              <geom type="mesh" mesh="arm_la_piston__Aluminum_Base" material="arm_la_piston__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="arm_la_piston__Steel" material="arm_la_piston__Steel" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="arm_la_piston__Black_Metal" material="arm_la_piston__Black_Metal" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
             </body>
+            <geom type="mesh" mesh="arm_la_base__LA_Black" material="arm_la_base__LA_Black" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="arm_la_base__Generic_Black" material="arm_la_base__Generic_Black" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="arm_la_base__Aluminum_Base" material="arm_la_base__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="arm_la_base__Steel" material="arm_la_base__Steel" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
           </body>
+          <geom type="mesh" mesh="arm_a__Bronze" material="arm_a__Bronze" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+          <geom type="mesh" mesh="arm_a__Black_Metal" material="arm_a__Black_Metal" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+          <geom type="mesh" mesh="arm_a__Aluminum_Base" material="arm_a__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+          <geom type="mesh" mesh="arm_a__Steel" material="arm_a__Steel" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+          <geom type="mesh" mesh="arm_a__Roller" material="arm_a__Roller" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+          <geom type="mesh" mesh="arm_a__3DP" material="arm_a__3DP" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
         </body>
         <body name="left_rocker_link" pos="0 0.29906 0" quat="0.707107 -0.707107 0 0">
-          <inertial pos="0 0 0" mass="3" diaginertia="0.125 0.125 0.125"/>
-          <joint name="chassis_link_to_left_rocker_link" pos="0 0 0" axis="0 0 1"/>
-          <geom size="0.16782 0.0125 0.0125" pos="0.173894 0.140817 0.06" quat="0.942641 0 0 0.333808" type="box"/>
-          <geom size="0.105591 0.0125 0.0125" pos="-0.138649 0.0244475 0.06" quat="0.0871556 0 0 0.996195" type="box"/>
-          <geom size="0.0533962 0.0125 0.0125" pos="-0.277297 0.120089 0.06" quat="0.707107 0 0 0.707107" type="box"/>
+          <inertial pos="0 0 0" mass="3" diaginertia="0.125 0.125 0.125" />
+          <joint name="chassis_link_to_left_rocker_link" pos="0 0 0" axis="0 0 1" />
+          <geom size="0.16782 0.0125 0.0125" pos="0.173894 0.140817 0.06" quat="0.942641 0 0 0.333808" type="box" group="3" />
+          <geom size="0.105591 0.0125 0.0125" pos="-0.138649 0.0244475 0.06" quat="0.0871556 0 0 0.996195" type="box" group="3" />
+          <geom size="0.0533962 0.0125 0.0125" pos="-0.277297 0.120089 0.06" quat="0.707107 0 0 0.707107" type="box" group="3" />
           <body name="front_left_wheel_link" pos="0.34781 0.28163 0.15235">
-            <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="3" diaginertia="0.0216 0.012825 0.012825"/>
-            <joint name="left_rocker_link_to_front_left_wheel_link" pos="0 0 0" axis="0 0 1" actuatorfrcrange="-2.68 2.68"/>
-            <geom size="0.12 0.045" pos="0 0 -0.03" type="cylinder"/>
+            <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="3" diaginertia="0.0216 0.012825 0.012825" />
+            <joint name="left_rocker_link_to_front_left_wheel_link" pos="0 0 0" axis="0 0 1" actuatorfrcrange="-2.68 2.68" />
+            <geom size="0.12 0.045" pos="0 0 -0.03" type="cylinder" group="3" />
+            <geom type="mesh" mesh="rover_left_wheel__Black_Metal" material="rover_left_wheel__Black_Metal" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="rover_left_wheel__Aluminum_Base" material="rover_left_wheel__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="rover_left_wheel__Polyurethane" material="rover_left_wheel__Polyurethane" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="rover_left_wheel__Steel" material="rover_left_wheel__Steel" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
           </body>
           <body name="left_lambda_lower_link" pos="-0.2773 0.15319 0.05611">
-            <inertial pos="0 0 0" mass="2" diaginertia="0.0833333 0.0833333 0.0833333"/>
-            <joint name="left_rocker_link_to_left_lambda_lower_link" pos="0 0 0" axis="0 0 1"/>
-            <geom size="0.0628763 0.0125 0.0125" pos="0.0787791 -0.0286733 0.05" quat="0.984808 0 0 -0.173648" type="box"/>
-            <geom size="0.0628763 0.0125 0.0125" pos="-0.0787791 -0.0286733 0.05" quat="-0.173648 0 0 0.984808" type="box"/>
+            <inertial pos="0 0 0" mass="2" diaginertia="0.0833333 0.0833333 0.0833333" />
+            <joint name="left_rocker_link_to_left_lambda_lower_link" pos="0 0 0" axis="0 0 1" />
+            <geom size="0.0628763 0.0125 0.0125" pos="0.0787791 -0.0286733 0.05" quat="0.984808 0 0 -0.173648" type="box" group="3" />
+            <geom size="0.0628763 0.0125 0.0125" pos="-0.0787791 -0.0286733 0.05" quat="-0.173648 0 0 0.984808" type="box" group="3" />
             <body name="left_lambda_front_link" pos="0.15755 -0.05735 0.04708">
-              <inertial pos="0 0 0" mass="2" diaginertia="0.0833333 0.0833333 0.0833333"/>
-              <joint name="left_lambda_lower_link_to_left_lambda_front_link" pos="0 0 0" axis="0 0 1" range="-0.8 0.8"/>
-              <geom size="0.143674 0.0125 0.0125" pos="0.0123527 0.0204547 0" quat="0.870909 0 0 0.491444" type="box"/>
+              <inertial pos="0 0 0" mass="2" diaginertia="0.0833333 0.0833333 0.0833333" />
+              <joint name="left_lambda_lower_link_to_left_lambda_front_link" pos="0 0 0" axis="0 0 1" range="-0.8 0.8" />
+              <geom size="0.143674 0.0125 0.0125" pos="0.0123527 0.0204547 0" quat="0.870909 0 0 0.491444" type="box" group="3" />
               <body name="center_left_wheel_link" pos="0.11343 0.18319 0.09594">
-                <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="3" diaginertia="0.0216 0.012825 0.012825"/>
-                <joint name="left_lambda_front_link_to_center_left_wheel_link" pos="0 0 0" axis="0 0 1" actuatorfrcrange="-2.68 2.68"/>
-                <geom size="0.12 0.045" pos="0 0 -0.03" type="cylinder"/>
+                <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="3" diaginertia="0.0216 0.012825 0.012825" />
+                <joint name="left_lambda_front_link_to_center_left_wheel_link" pos="0 0 0" axis="0 0 1" actuatorfrcrange="-2.68 2.68" />
+                <geom size="0.12 0.045" pos="0 0 -0.03" type="cylinder" group="3" />
+                <geom type="mesh" mesh="rover_left_wheel__Black_Metal" material="rover_left_wheel__Black_Metal" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                <geom type="mesh" mesh="rover_left_wheel__Aluminum_Base" material="rover_left_wheel__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                <geom type="mesh" mesh="rover_left_wheel__Polyurethane" material="rover_left_wheel__Polyurethane" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                <geom type="mesh" mesh="rover_left_wheel__Steel" material="rover_left_wheel__Steel" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
               </body>
+              <geom type="mesh" mesh="rover_left_lambda_front__Aluminum_Base" material="rover_left_lambda_front__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="rover_left_lambda_front__Generic_Black" material="rover_left_lambda_front__Generic_Black" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="rover_left_lambda_front__Steel" material="rover_left_lambda_front__Steel" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="rover_left_lambda_front__Black_Metal" material="rover_left_lambda_front__Black_Metal" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
             </body>
             <body name="left_lambda_rear_link" pos="-0.15755 -0.05735 0.04708">
-              <inertial pos="0 0 0" mass="2" diaginertia="0.0833333 0.0833333 0.0833333"/>
-              <joint name="left_lambda_lower_link_to_left_lambda_rear_link" pos="0 0 0" axis="0 0 1" range="-0.8 0.8"/>
-              <geom size="0.143674 0.0125 0.0125" pos="-0.0123527 0.0204547 0" quat="0.491443 0 0 0.87091" type="box"/>
+              <inertial pos="0 0 0" mass="2" diaginertia="0.0833333 0.0833333 0.0833333" />
+              <joint name="left_lambda_lower_link_to_left_lambda_rear_link" pos="0 0 0" axis="0 0 1" range="-0.8 0.8" />
+              <geom size="0.143674 0.0125 0.0125" pos="-0.0123527 0.0204547 0" quat="0.491443 0 0 0.87091" type="box" group="3" />
               <body name="back_left_wheel_link" pos="-0.11343 0.18319 0.09594">
-                <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="3" diaginertia="0.0216 0.012825 0.012825"/>
-                <joint name="left_lambda_rear_link_to_back_left_wheel_link" pos="0 0 0" axis="0 0 1" actuatorfrcrange="-2.68 2.68"/>
-                <geom size="0.12 0.045" pos="0 0 -0.03" type="cylinder"/>
+                <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="3" diaginertia="0.0216 0.012825 0.012825" />
+                <joint name="left_lambda_rear_link_to_back_left_wheel_link" pos="0 0 0" axis="0 0 1" actuatorfrcrange="-2.68 2.68" />
+                <geom size="0.12 0.045" pos="0 0 -0.03" type="cylinder" group="3" />
+                <geom type="mesh" mesh="rover_left_wheel__Black_Metal" material="rover_left_wheel__Black_Metal" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                <geom type="mesh" mesh="rover_left_wheel__Aluminum_Base" material="rover_left_wheel__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                <geom type="mesh" mesh="rover_left_wheel__Polyurethane" material="rover_left_wheel__Polyurethane" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                <geom type="mesh" mesh="rover_left_wheel__Steel" material="rover_left_wheel__Steel" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
               </body>
+              <geom type="mesh" mesh="rover_left_lambda_rear__Aluminum_Base" material="rover_left_lambda_rear__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="rover_left_lambda_rear__Generic_Black" material="rover_left_lambda_rear__Generic_Black" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="rover_left_lambda_rear__Steel" material="rover_left_lambda_rear__Steel" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="rover_left_lambda_rear__Black_Metal" material="rover_left_lambda_rear__Black_Metal" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
             </body>
+            <geom type="mesh" mesh="rover_left_lambda_lower__Black_Metal" material="rover_left_lambda_lower__Black_Metal" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="rover_left_lambda_lower__Steel" material="rover_left_lambda_lower__Steel" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="rover_left_lambda_lower__Bronze" material="rover_left_lambda_lower__Bronze" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="rover_left_lambda_lower__Aluminum_Base" material="rover_left_lambda_lower__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="rover_left_lambda_lower__Generic_Black" material="rover_left_lambda_lower__Generic_Black" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
           </body>
           <body name="left_lambda_crank_front_link" pos="-0.2773 0.0108 0.09844">
-            <inertial pos="0 0 0" mass="3" diaginertia="0.005 0.005 0.005"/>
-            <joint name="left_rocker_link_to_left_lambda_crank_front_link" pos="0 0 0" axis="0 0 1" range="-1.2 1.2"/>
-            <geom size="0.0344512 0.0125 0.004" pos="0.035392 -0.0292819 0" quat="0.940872 0 0 -0.338763" type="box"/>
+            <inertial pos="0 0 0" mass="3" diaginertia="0.005 0.005 0.005" />
+            <joint name="left_rocker_link_to_left_lambda_crank_front_link" pos="0 0 0" axis="0 0 1" range="-1.2 1.2" />
+            <geom size="0.0344512 0.0125 0.004" pos="0.035392 -0.0292819 0" quat="0.940872 0 0 -0.338763" type="box" group="3" />
+            <geom type="mesh" mesh="rover_front_lambda_crank__Aluminum_Base" material="rover_front_lambda_crank__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
           </body>
           <body name="left_lambda_crank_rear_link" pos="-0.2773 0.0108 0.10795">
-            <inertial pos="0 0 0" mass="3" diaginertia="0.005 0.005 0.005"/>
-            <joint name="left_rocker_link_to_left_lambda_crank_rear_link" pos="0 0 0" axis="0 0 1" range="-1.2 1.2"/>
-            <geom size="0.0344512 0.0125 0.004" pos="-0.035392 -0.0292819 0" quat="-0.338762 0 0 0.940872" type="box"/>
+            <inertial pos="0 0 0" mass="3" diaginertia="0.005 0.005 0.005" />
+            <joint name="left_rocker_link_to_left_lambda_crank_rear_link" pos="0 0 0" axis="0 0 1" range="-1.2 1.2" />
+            <geom size="0.0344512 0.0125 0.004" pos="-0.035392 -0.0292819 0" quat="-0.338762 0 0 0.940872" type="box" group="3" />
+            <geom type="mesh" mesh="rover_rear_lambda_crank__Aluminum_Base" material="rover_rear_lambda_crank__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
           </body>
+          <geom type="mesh" mesh="rover_left_rocker__Aluminum_Base" material="rover_left_rocker__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+          <geom type="mesh" mesh="rover_left_rocker__3DP" material="rover_left_rocker__3DP" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+          <geom type="mesh" mesh="rover_left_rocker__Black_Metal" material="rover_left_rocker__Black_Metal" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+          <geom type="mesh" mesh="rover_left_rocker__Steel" material="rover_left_rocker__Steel" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+          <geom type="mesh" mesh="rover_left_rocker__Generic_Black" material="rover_left_rocker__Generic_Black" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+          <geom type="mesh" mesh="rover_left_rocker__Generic_White" material="rover_left_rocker__Generic_White" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+          <geom type="mesh" mesh="rover_left_rocker__Carbon_Fiber_Real" material="rover_left_rocker__Carbon_Fiber_Real" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+          <geom type="mesh" mesh="rover_left_rocker__Bronze" material="rover_left_rocker__Bronze" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
         </body>
         <body name="right_rocker_link" pos="0 -0.29906 0" quat="0.707107 -0.707107 0 0">
-          <inertial pos="0 0 0" mass="3" diaginertia="0.125 0.125 0.125"/>
-          <joint name="chassis_link_to_right_rocker_link" pos="0 0 0" axis="0 0 1"/>
-          <geom size="0.16782 0.0125 0.0125" pos="0.173894 0.140817 -0.06" quat="0.942641 0 0 0.333808" type="box"/>
-          <geom size="0.105591 0.0125 0.0125" pos="-0.138649 0.0244475 -0.06" quat="0.0871556 0 0 0.996195" type="box"/>
-          <geom size="0.0533962 0.0125 0.0125" pos="-0.277297 0.120089 -0.06" quat="0.707107 0 0 0.707107" type="box"/>
+          <inertial pos="0 0 0" mass="3" diaginertia="0.125 0.125 0.125" />
+          <joint name="chassis_link_to_right_rocker_link" pos="0 0 0" axis="0 0 1" />
+          <geom size="0.16782 0.0125 0.0125" pos="0.173894 0.140817 -0.06" quat="0.942641 0 0 0.333808" type="box" group="3" />
+          <geom size="0.105591 0.0125 0.0125" pos="-0.138649 0.0244475 -0.06" quat="0.0871556 0 0 0.996195" type="box" group="3" />
+          <geom size="0.0533962 0.0125 0.0125" pos="-0.277297 0.120089 -0.06" quat="0.707107 0 0 0.707107" type="box" group="3" />
           <body name="front_right_wheel_link" pos="0.34781 0.28163 -0.15235">
-            <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="3" diaginertia="0.0216 0.012825 0.012825"/>
-            <joint name="right_rocker_link_to_front_right_wheel_link" pos="0 0 0" axis="0 0 1" actuatorfrcrange="-2.68 2.68"/>
-            <geom size="0.12 0.045" pos="0 0 0.03" type="cylinder"/>
+            <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="3" diaginertia="0.0216 0.012825 0.012825" />
+            <joint name="right_rocker_link_to_front_right_wheel_link" pos="0 0 0" axis="0 0 1" actuatorfrcrange="-2.68 2.68" />
+            <geom size="0.12 0.045" pos="0 0 0.03" type="cylinder" group="3" />
+            <geom type="mesh" mesh="rover_right_wheel__Black_Metal" material="rover_right_wheel__Black_Metal" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="rover_right_wheel__Aluminum_Base" material="rover_right_wheel__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="rover_right_wheel__Polyurethane" material="rover_right_wheel__Polyurethane" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="rover_right_wheel__Steel" material="rover_right_wheel__Steel" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
           </body>
           <body name="right_lambda_lower_link" pos="-0.2773 0.15319 -0.05611">
-            <inertial pos="0 0 0" mass="2" diaginertia="0.0833333 0.0833333 0.0833333"/>
-            <joint name="right_rocker_link_to_right_lambda_lower_link" pos="0 0 0" axis="0 0 1"/>
-            <geom size="0.0628763 0.0125 0.0125" pos="0.0787791 -0.0286733 -0.05" quat="0.984808 0 0 -0.173648" type="box"/>
-            <geom size="0.0628763 0.0125 0.0125" pos="-0.0787791 -0.0286733 -0.05" quat="-0.173648 0 0 0.984808" type="box"/>
+            <inertial pos="0 0 0" mass="2" diaginertia="0.0833333 0.0833333 0.0833333" />
+            <joint name="right_rocker_link_to_right_lambda_lower_link" pos="0 0 0" axis="0 0 1" />
+            <geom size="0.0628763 0.0125 0.0125" pos="0.0787791 -0.0286733 -0.05" quat="0.984808 0 0 -0.173648" type="box" group="3" />
+            <geom size="0.0628763 0.0125 0.0125" pos="-0.0787791 -0.0286733 -0.05" quat="-0.173648 0 0 0.984808" type="box" group="3" />
             <body name="right_lambda_front_link" pos="0.15755 -0.05735 -0.04708">
-              <inertial pos="0 0 0" mass="2" diaginertia="0.0833333 0.0833333 0.0833333"/>
-              <joint name="right_lambda_lower_link_to_right_lambda_front_link" pos="0 0 0" axis="0 0 1" range="-0.8 0.8"/>
-              <geom size="0.143674 0.0125 0.0125" pos="0.0123527 0.0204547 0" quat="0.870909 0 0 0.491444" type="box"/>
+              <inertial pos="0 0 0" mass="2" diaginertia="0.0833333 0.0833333 0.0833333" />
+              <joint name="right_lambda_lower_link_to_right_lambda_front_link" pos="0 0 0" axis="0 0 1" range="-0.8 0.8" />
+              <geom size="0.143674 0.0125 0.0125" pos="0.0123527 0.0204547 0" quat="0.870909 0 0 0.491444" type="box" group="3" />
               <body name="center_right_wheel_link" pos="0.11343 0.18319 -0.09594">
-                <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="3" diaginertia="0.0216 0.012825 0.012825"/>
-                <joint name="right_lambda_front_link_to_center_right_wheel_link" pos="0 0 0" axis="0 0 1" actuatorfrcrange="-2.68 2.68"/>
-                <geom size="0.12 0.045" pos="0 0 0.03" type="cylinder"/>
+                <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="3" diaginertia="0.0216 0.012825 0.012825" />
+                <joint name="right_lambda_front_link_to_center_right_wheel_link" pos="0 0 0" axis="0 0 1" actuatorfrcrange="-2.68 2.68" />
+                <geom size="0.12 0.045" pos="0 0 0.03" type="cylinder" group="3" />
+                <geom type="mesh" mesh="rover_right_wheel__Black_Metal" material="rover_right_wheel__Black_Metal" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                <geom type="mesh" mesh="rover_right_wheel__Aluminum_Base" material="rover_right_wheel__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                <geom type="mesh" mesh="rover_right_wheel__Polyurethane" material="rover_right_wheel__Polyurethane" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                <geom type="mesh" mesh="rover_right_wheel__Steel" material="rover_right_wheel__Steel" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
               </body>
+              <geom type="mesh" mesh="rover_right_lambda_front__Aluminum_Base" material="rover_right_lambda_front__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="rover_right_lambda_front__Generic_Black" material="rover_right_lambda_front__Generic_Black" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="rover_right_lambda_front__Steel" material="rover_right_lambda_front__Steel" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="rover_right_lambda_front__Black_Metal" material="rover_right_lambda_front__Black_Metal" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
             </body>
             <body name="right_lambda_rear_link" pos="-0.15755 -0.05735 -0.04708">
-              <inertial pos="0 0 0" mass="2" diaginertia="0.0833333 0.0833333 0.0833333"/>
-              <joint name="right_lambda_lower_link_to_right_lambda_rear_link" pos="0 0 0" axis="0 0 1" range="-0.8 0.8"/>
-              <geom size="0.143674 0.0125 0.0125" pos="-0.0123527 0.0204547 0" quat="0.491443 0 0 0.87091" type="box"/>
+              <inertial pos="0 0 0" mass="2" diaginertia="0.0833333 0.0833333 0.0833333" />
+              <joint name="right_lambda_lower_link_to_right_lambda_rear_link" pos="0 0 0" axis="0 0 1" range="-0.8 0.8" />
+              <geom size="0.143674 0.0125 0.0125" pos="-0.0123527 0.0204547 0" quat="0.491443 0 0 0.87091" type="box" group="3" />
               <body name="back_right_wheel_link" pos="-0.11343 0.18319 -0.09594">
-                <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="3" diaginertia="0.0216 0.012825 0.012825"/>
-                <joint name="right_lambda_rear_link_to_back_right_wheel_link" pos="0 0 0" axis="0 0 1" actuatorfrcrange="-2.68 2.68"/>
-                <geom size="0.12 0.045" pos="0 0 0.03" type="cylinder"/>
+                <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="3" diaginertia="0.0216 0.012825 0.012825" />
+                <joint name="right_lambda_rear_link_to_back_right_wheel_link" pos="0 0 0" axis="0 0 1" actuatorfrcrange="-2.68 2.68" />
+                <geom size="0.12 0.045" pos="0 0 0.03" type="cylinder" group="3" />
+                <geom type="mesh" mesh="rover_right_wheel__Black_Metal" material="rover_right_wheel__Black_Metal" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                <geom type="mesh" mesh="rover_right_wheel__Aluminum_Base" material="rover_right_wheel__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                <geom type="mesh" mesh="rover_right_wheel__Polyurethane" material="rover_right_wheel__Polyurethane" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+                <geom type="mesh" mesh="rover_right_wheel__Steel" material="rover_right_wheel__Steel" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
               </body>
+              <geom type="mesh" mesh="rover_right_lambda_rear__Aluminum_Base" material="rover_right_lambda_rear__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="rover_right_lambda_rear__Generic_Black" material="rover_right_lambda_rear__Generic_Black" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="rover_right_lambda_rear__Steel" material="rover_right_lambda_rear__Steel" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+              <geom type="mesh" mesh="rover_right_lambda_rear__Black_Metal" material="rover_right_lambda_rear__Black_Metal" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
             </body>
+            <geom type="mesh" mesh="rover_right_lambda_lower__Black_Metal" material="rover_right_lambda_lower__Black_Metal" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="rover_right_lambda_lower__Steel" material="rover_right_lambda_lower__Steel" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="rover_right_lambda_lower__Aluminum_Base" material="rover_right_lambda_lower__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="rover_right_lambda_lower__Bronze" material="rover_right_lambda_lower__Bronze" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+            <geom type="mesh" mesh="rover_right_lambda_lower__Generic_Black" material="rover_right_lambda_lower__Generic_Black" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
           </body>
           <body name="right_lambda_crank_front_link" pos="-0.2773 0.0108 -0.09844">
-            <inertial pos="0 0 0" mass="3" diaginertia="0.005 0.005 0.005"/>
-            <joint name="right_rocker_link_to_right_lambda_crank_front_link" pos="0 0 0" axis="0 0 1" range="-1.2 1.2"/>
-            <geom size="0.0344512 0.0125 0.004" pos="0.035392 -0.0292819 0" quat="0.940872 0 0 -0.338763" type="box"/>
+            <inertial pos="0 0 0" mass="3" diaginertia="0.005 0.005 0.005" />
+            <joint name="right_rocker_link_to_right_lambda_crank_front_link" pos="0 0 0" axis="0 0 1" range="-1.2 1.2" />
+            <geom size="0.0344512 0.0125 0.004" pos="0.035392 -0.0292819 0" quat="0.940872 0 0 -0.338763" type="box" group="3" />
+            <geom type="mesh" mesh="rover_front_lambda_crank__Aluminum_Base" material="rover_front_lambda_crank__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
           </body>
           <body name="right_lambda_crank_rear_link" pos="-0.2773 0.0108 -0.10795">
-            <inertial pos="0 0 0" mass="3" diaginertia="0.005 0.005 0.005"/>
-            <joint name="right_rocker_link_to_right_lambda_crank_rear_link" pos="0 0 0" axis="0 0 1" range="-1.2 1.2"/>
-            <geom size="0.0344512 0.0125 0.004" pos="-0.035392 -0.0292819 0" quat="-0.338762 0 0 0.940872" type="box"/>
+            <inertial pos="0 0 0" mass="3" diaginertia="0.005 0.005 0.005" />
+            <joint name="right_rocker_link_to_right_lambda_crank_rear_link" pos="0 0 0" axis="0 0 1" range="-1.2 1.2" />
+            <geom size="0.0344512 0.0125 0.004" pos="-0.035392 -0.0292819 0" quat="-0.338762 0 0 0.940872" type="box" group="3" />
+            <geom type="mesh" mesh="rover_rear_lambda_crank__Aluminum_Base" material="rover_rear_lambda_crank__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
           </body>
+          <geom type="mesh" mesh="rover_right_rocker__Aluminum_Base" material="rover_right_rocker__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+          <geom type="mesh" mesh="rover_right_rocker__Generic_White" material="rover_right_rocker__Generic_White" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+          <geom type="mesh" mesh="rover_right_rocker__Generic_Black" material="rover_right_rocker__Generic_Black" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+          <geom type="mesh" mesh="rover_right_rocker__Steel" material="rover_right_rocker__Steel" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+          <geom type="mesh" mesh="rover_right_rocker__Black_Metal" material="rover_right_rocker__Black_Metal" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+          <geom type="mesh" mesh="rover_right_rocker__Carbon_Fiber_Real" material="rover_right_rocker__Carbon_Fiber_Real" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+          <geom type="mesh" mesh="rover_right_rocker__Bronze" material="rover_right_rocker__Bronze" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
         </body>
         <body name="left_gps" pos="0 0.1 0">
-          <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05"/>
+          <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05" />
         </body>
         <body name="right_gps" pos="0 -0.1 0">
-          <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05"/>
+          <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05" />
         </body>
         <body name="center_gps" pos="0 0 1">
-          <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05"/>
+          <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05" />
         </body>
         <body name="imu">
-          <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05"/>
+          <inertial pos="0 0 0" mass="0.001" diaginertia="1e-05 1e-05 1e-05" />
         </body>
         <body name="zed_left_camera_frame" pos="0.13 0.025 0.025">
-          <geom size="0.005 0.05 0.005" type="box"/>
+          <geom size="0.005 0.05 0.005" type="box" group="3" />
         </body>
         <body name="long_range_camera_link" pos="0.13 0.025 0.075">
-          <geom size="0.005 0.005 0.005" type="box"/>
+          <geom size="0.005 0.005 0.005" type="box" group="3" />
         </body>
+        <geom type="mesh" mesh="rover_chassis__Powdercoat" material="rover_chassis__Powdercoat" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+        <geom type="mesh" mesh="rover_chassis__Aluminum_Base" material="rover_chassis__Aluminum_Base" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+        <geom type="mesh" mesh="rover_chassis__Steel" material="rover_chassis__Steel" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+        <geom type="mesh" mesh="rover_chassis__Motor_Black" material="rover_chassis__Motor_Black" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+        <geom type="mesh" mesh="rover_chassis__PCB" material="rover_chassis__PCB" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+        <geom type="mesh" mesh="rover_chassis__Black_Metal" material="rover_chassis__Black_Metal" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+        <geom type="mesh" mesh="rover_chassis__Generic_Black" material="rover_chassis__Generic_Black" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+        <geom type="mesh" mesh="rover_chassis__3DP" material="rover_chassis__3DP" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+        <geom type="mesh" mesh="rover_chassis__Carbon_Fiber_Real" material="rover_chassis__Carbon_Fiber_Real" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+        <geom type="mesh" mesh="rover_chassis__Estop" material="rover_chassis__Estop" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+        <geom type="mesh" mesh="rover_chassis__Generic_White" material="rover_chassis__Generic_White" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
+        <geom type="mesh" mesh="rover_chassis__Bronze" material="rover_chassis__Bronze" contype="0" conaffinity="0" group="2" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0" />
       </body>
     </body>
   </worldbody>
