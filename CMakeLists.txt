@@ -448,7 +448,6 @@ install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY urdf DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY rviz DESTINATION share/${PROJECT_NAME})
-# Native MuJoCo models: committed mjcf/ + meshes/ (meshes via LFS; regenerate both with scripts/convert_models.sh).
 install(DIRECTORY simulator/models DESTINATION share/${PROJECT_NAME})
 
 ament_package()
