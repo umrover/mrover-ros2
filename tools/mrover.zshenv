@@ -19,9 +19,7 @@ activate_mrover() {
     export HOST="${CONDA_BACKUP_HOST:-$HOST}"
   fi
   [[ -f install/setup.zsh ]] && source install/setup.zsh
-  # ROS's local_setup.zsh sets AMENT_SHELL=zsh without unsetting it. If it lingers,
-  # pixi's activation later sources setup.sh directly and tries to call the zsh-only
-  # ament_zsh_to_array helper, which isn't defined there ("command not found").
+  # ROS's local_setup.zsh sets AMENT_SHELL=zsh without unsetting it
   unset AMENT_SHELL
 }
 
