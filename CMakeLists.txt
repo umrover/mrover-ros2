@@ -86,6 +86,8 @@ file(GLOB DAWN_STATIC_LIBS "${DAWN_PREBUILT_DIR}/lib/*.a")
 if (NOT DAWN_STATIC_LIBS)
     message(FATAL_ERROR "Dawn not found. Run 'scripts/setup_dawn.sh' before building.")
 endif ()
+# Exclude dawn_proc (null stubs): webgpu_dawn provides the real wgpuXxx impls and glob order would let the stubs win.
+list(FILTER DAWN_STATIC_LIBS EXCLUDE REGEX "src_dawn_libdawn_proc\\.a$")
 find_package(Threads REQUIRED)
 add_library(webgpu INTERFACE)
 target_include_directories(webgpu SYSTEM INTERFACE "${DAWN_PREBUILT_DIR}/include")
