@@ -9,7 +9,6 @@
 !/.pixi/config.toml
 
 # Prebuilts
-/deps/dawn-prebuilt/
 /deps/mujoco-prebuilt/
 
 # Mujoco
@@ -24,9 +23,6 @@ compile_commands.json
 
 # clangd cache
 .cache/
-
-# IMGUI window layout
-imgui.ini
 
 # Python Byte-compiled / optimized / DLL files
 __pycache__/
