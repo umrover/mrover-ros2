@@ -7,7 +7,7 @@
         :class="connectionStatus === 'connected' ? 'bg-success-subtle' : 'bg-danger-subtle'"
       >
         <span
-          class="rounded-full inline-block w-[8px] h-[9px]"
+          class="rounded-full inline-block w-2 h-2"
           :class="connectionStatus === 'connected' ? 'bg-success' : 'bg-danger'"
         ></span>
         <span
@@ -34,7 +34,7 @@
         <input
           v-model.number="frequency"
           type="number"
-          class="form-control form-control-sm text-center w-[65px]"
+          class="form-control form-control-sm text-center w-16.25"
           data-testid="pw-latency-freq"
           min="1"
           max="1000"

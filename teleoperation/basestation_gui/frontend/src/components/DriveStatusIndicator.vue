@@ -14,7 +14,7 @@
 
   <Teleport to="body">
     <div v-if="modal.isOpen.value" class="modal-backdrop" @click.self="modal.hide()">
-      <div class="modal-dialog max-w-[600px]">
+      <div class="modal-dialog max-w-150">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">Drive Data</h5>
