@@ -6,13 +6,9 @@
 
 objects:
   rover:
-    type: urdf
-    uri: package://mrover/urdf/rover/rover.urdf.xacro
+    uri: mjcf/rover.xml
     position: [ 0.0, 0.0, 0.5 ]
-  world:
-    type: urdf
-    uri: package://mrover/urdf/world/world.urdf.xacro
   lander:
-    type: urdf
-    uri: package://mrover/urdf/world/lander.urdf.xacro
+    uri: mjcf/lander.xml
+    fixed: true
     position: [ 1.0, 1.0, 0.1 ]

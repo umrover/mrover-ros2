@@ -3,12 +3,14 @@
 # Time:     second, hz
 # Angle:    radian
 # Distance: meter
+#
+# NOTE: mars terrain collision is the convex hull of the decimated mesh (a MuJoCo
+# limitation for non-convex meshes); revisit with a heightfield if terrain contact matters.
 
 objects:
   rover:
-    type: urdf
-    uri: package://mrover/urdf/rover/rover.urdf.xacro
+    uri: mjcf/rover.xml
     position: [ 0.0, 0.0, 0.5 ]
   mars_world:
-    type: urdf
-    uri: package://mrover/urdf/world/mars.urdf.xacro
+    uri: mjcf/mars.xml
+    fixed: true

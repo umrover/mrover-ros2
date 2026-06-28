@@ -6,41 +6,35 @@
 
 objects:
   rover:
-    type: urdf
-    uri: package://mrover/urdf/rover/rover.urdf.xacro
+    uri: mjcf/rover.xml
     position: [ 0.0, 0.0, 0.5 ]
-  world:
-    type: urdf
-    uri: package://mrover/urdf/world/world.urdf.xacro
   tag_0:
-    type: urdf
-    uri: package://mrover/urdf/world/tag_0.urdf.xacro
+    uri: mjcf/tag_0.xml
+    fixed: true
     position: [ 11.0, 3.0, 0.7 ]
   tag_1:
-    type: urdf
-    uri: package://mrover/urdf/world/tag_1.urdf.xacro
+    uri: mjcf/tag_1.xml
+    fixed: true
     position: [ 15.0, -14.0, 2.4 ]
   mallet:
-    type: urdf
-    uri: package://mrover/urdf/world/hammer.urdf.xacro
+    uri: mjcf/hammer.xml
     position: [ -2.0, -2.0, 0.7 ]
   bottle:
-    type: urdf
-    uri: package://mrover/urdf/world/bottle.urdf.xacro
+    uri: mjcf/bottle.xml
     position: [ -6.25, 10.5, 0.3 ]
   rock1:
-    type: urdf
-    uri: package://mrover/urdf/world/rock.urdf.xacro
+    uri: mjcf/rock.xml
+    fixed: true
     position: [ 2.0, -2.0, 0.1 ]
   rock2:
-    type: urdf
-    uri: package://mrover/urdf/world/rock.urdf.xacro
+    uri: mjcf/rock.xml
+    fixed: true
     position: [ 7.0, -6.0, 0.2 ]
   rock3:
-    type: urdf
-    uri: package://mrover/urdf/world/rock.urdf.xacro
+    uri: mjcf/rock.xml
+    fixed: true
     position: [ 8.0, -10.0, 1.0 ]
   rock4:
-    type: urdf
-    uri: package://mrover/urdf/world/rock.urdf.xacro
+    uri: mjcf/rock.xml
+    fixed: true
     position: [ 9.0, -2.0, 0.2 ]

@@ -6,12 +6,8 @@
 
 simulator:
   ros__parameters:
-    save_rate: 1.0
-    save_history: 4096
-    headless: false
-    motor_timeout: 100
-
-    ref_heading: 90.0  # For the GPS sensor to work
-
-    world_frame: "map"
-    rover_frame: "sim_base_link"
+    sim_map: "default_map.yaml"        # map under config/simulator/
+    target_update_rate: 100.0          # hz
+    motor_timeout: 100                 # ms; stale velocity/throttle commands stop drifting
+    mallet_distance_threshold: 3.0     # m; publish mallet ImageTarget within this range
+    bottle_distance_threshold: 3.0     # m; publish bottle ImageTarget within this range

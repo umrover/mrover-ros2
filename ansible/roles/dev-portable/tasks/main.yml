@@ -22,7 +22,7 @@
   ansible.builtin.blockinfile:
     path: ~/.zshrc
     marker: "# {mark} MROVER"
-    block: '[[ -f "${MROVER_REPO:-$HOME/mrover-ros2}/scripts/mrover.zshenv" ]] && source "${MROVER_REPO:-$HOME/mrover-ros2}/scripts/mrover.zshenv"'
+    block: '[[ -f "${MROVER_REPO:-$HOME/mrover-ros2}/scripts/mrover.zshrc" ]] && source "${MROVER_REPO:-$HOME/mrover-ros2}/scripts/mrover.zshrc"'
     create: true
 
 - name: Install pixi packages

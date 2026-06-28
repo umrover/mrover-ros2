@@ -1,42 +1,40 @@
 {
-    //// Microsoft C++
-    // Disable since clangd is used instead
-    "C_Cpp.intelliSenseEngine": "disabled",
-    //// Python
-    "python.analysis.inlayHints.variableTypes": true,
-    "python.analysis.inlayHints.callArgumentNames": "all",
-    "python.analysis.inlayHints.functionReturnTypes": true,
-    // ~/ros2_ws/install/{profile}/mrover/lib/python3.10/site-packages is already in PYTHONPATH,
-    // but Pylance currently has a bug where it cannot handle the symlinks in it.
-    // Below we are just putting directly where those symlinks go for all build profiles
-    "python.analysis.extraPaths": [
-        "/opt/ros/humble/lib/python3/dist-packages",
-        "../../install/Debug/mrover/lib/python3.10/site-packages",
-        "../../install/Release/mrover/lib/python3.10/site-packages",
-        "../../install/RelWithDebInfo/mrover/lib/python3.10/site-packages",
-        "../../build/Debug/mrover/rosidl_generator_py",
-        "../../build/Release/mrover/rosidl_generator_py",
-        "../../build/RelWithDebInfo/mrover/rosidl_generator_py",
-    ],
-    "[python]": {
-        "editor.defaultFormatter": "ms-python.black-formatter",
-    },
-    // We use mypy for this, see style.sh
-    "python.analysis.typeCheckingMode": "off",
-    //// Miscellaneous
-    "redhat.telemetry.enabled": false,
-    "git.ignoreSubmodules": true,
-    "git.detectSubmodules": false,
-    "cSpell.words": [
-        "Eigen",
-        "GLFW",
-        "wgpu"
-    ],
-    "search.exclude": {
-        "**/node_modules": true,
-        "**/bower_components": true,
-        "**/*.code-search": true,
-        "deps": true,
-        "venv": true,
-    },
+	//// Microsoft C++
+	// Disable since clangd is used instead
+	"C_Cpp.intelliSenseEngine": "disabled",
+	//// Python
+	"python.analysis.inlayHints.variableTypes": true,
+	"python.analysis.inlayHints.callArgumentNames": "all",
+	"python.analysis.inlayHints.functionReturnTypes": true,
+	// ~/ros2_ws/install/{profile}/mrover/lib/python3.10/site-packages is already in PYTHONPATH,
+	// but Pylance currently has a bug where it cannot handle the symlinks in it.
+	// Below we are just putting directly where those symlinks go for all build profiles
+	"python.analysis.extraPaths": [
+		"/opt/ros/humble/lib/python3/dist-packages",
+		"../../install/Debug/mrover/lib/python3.10/site-packages",
+		"../../install/Release/mrover/lib/python3.10/site-packages",
+		"../../install/RelWithDebInfo/mrover/lib/python3.10/site-packages",
+		"../../build/Debug/mrover/rosidl_generator_py",
+		"../../build/Release/mrover/rosidl_generator_py",
+		"../../build/RelWithDebInfo/mrover/rosidl_generator_py"
+	],
+	"[python]": {
+		"editor.defaultFormatter": "ms-python.black-formatter"
+	},
+	// We use mypy for this, see style.sh
+	"python.analysis.typeCheckingMode": "off",
+	//// Miscellaneous
+	"redhat.telemetry.enabled": false,
+	"git.ignoreSubmodules": true,
+	"git.detectSubmodules": false,
+	"cSpell.words": ["Eigen", "GLFW", "wgpu"],
+	"search.exclude": {
+		"**/node_modules": true,
+		"**/bower_components": true,
+		"**/*.code-search": true,
+		"deps": true,
+		"venv": true
+	},
+	"python-envs.defaultEnvManager": "renan-r-santos.pixi-code:pixi",
+	"python-envs.defaultPackageManager": "renan-r-santos.pixi-code:pixi"
 }
