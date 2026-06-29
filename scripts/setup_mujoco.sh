@@ -33,7 +33,8 @@ tmpdir=$(mktemp -d)
 trap 'rm -rf "${tmpdir}"' EXIT
 
 echo "Downloading MuJoCo ${MUJOCO_VERSION} for ${PLATFORM} (${MUJOCO_PLATFORM})..."
-curl -fL --silent --show-error "${BASE_URL}/${BINARY_TARBALL}" -o "${tmpdir}/mujoco.tar.gz"
+# use system libcurl over pixi's
+env -u LD_LIBRARY_PATH curl -fL --silent --show-error "${BASE_URL}/${BINARY_TARBALL}" -o "${tmpdir}/mujoco.tar.gz"
 
 mkdir -p "${tmpdir}/mujoco"
 tar -xzf "${tmpdir}/mujoco.tar.gz" -C "${tmpdir}/mujoco" --strip-components 1

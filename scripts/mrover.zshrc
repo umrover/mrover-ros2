@@ -23,4 +23,5 @@ activate_mrover() {
   unset AMENT_SHELL
 }
 
-alias mrover='activate_mrover'
+# changed to a named function because it takes priority over autocd
+mrover() { activate_mrover "$@"; }
