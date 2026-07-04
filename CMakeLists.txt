@@ -15,6 +15,28 @@ option(MROVER_CI "Enable CI options" OFF)
 option(MROVER_CLANG_TIDY "Enable static analysis with Clang tidy" ${MROVER_CI})
 option(MROVER_WARNINGS_AS_ERRORS "Treat warnings as errors" ${MROVER_CI})
 
+# The deployed rover (Jetson) never runs the simulator, so it doesn't need Dawn/webgpu,
+# an otherwise heavy, arch-specific prebuilt dependency. Auto-detect via either standard
+# L4T marker; override with -DMROVER_JETSON=ON/OFF if both ever misfire.
+set(MROVER_JETSON_DEFAULT OFF)
+if (EXISTS "/etc/nv_tegra_release")
+    set(MROVER_JETSON_DEFAULT ON)
+else ()
+    find_program(MROVER_DPKG_EXECUTABLE dpkg)
+    if (MROVER_DPKG_EXECUTABLE)
+        execute_process(
+            COMMAND ${MROVER_DPKG_EXECUTABLE} -s nvidia-l4t-core
+            RESULT_VARIABLE MROVER_L4T_CORE_RESULT
+            OUTPUT_QUIET
+            ERROR_QUIET
+        )
+        if (MROVER_L4T_CORE_RESULT EQUAL 0)
+            set(MROVER_JETSON_DEFAULT ON)
+        endif ()
+    endif ()
+endif ()
+option(MROVER_JETSON "Exclude the simulator and its Dawn/Bullet/Assimp/imgui dependencies (not needed on the deployed rover)" ${MROVER_JETSON_DEFAULT})
+
 set(node_plugins "")
 
 if (APPLE)
@@ -68,9 +90,11 @@ find_package(magic_enum REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
 find_package(dynamixel_sdk REQUIRED)
 
-find_package(Assimp NAMES Assimp assimp REQUIRED)
-find_package(Bullet REQUIRED)
-find_package(glfw3 REQUIRED)
+if (NOT MROVER_JETSON)
+    find_package(Assimp NAMES Assimp assimp REQUIRED)
+    find_package(Bullet REQUIRED)
+    find_package(glfw3 REQUIRED)
+endif ()
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
 if (NOT APPLE)
@@ -78,12 +102,14 @@ if (NOT APPLE)
     link_libraries(TBB::tbb)
 endif()
 
-list(PREPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_LIST_DIR}/deps/dawn-prebuilt")
-find_package(Dawn QUIET)
-if (NOT Dawn_FOUND)
-    message(FATAL_ERROR "Dawn not found. Run 'scripts/setup_dawn.sh' before building.")
+if (NOT MROVER_JETSON)
+    list(PREPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_LIST_DIR}/deps/dawn-prebuilt")
+    find_package(Dawn QUIET)
+    if (NOT Dawn_FOUND)
+        message(FATAL_ERROR "Dawn not found. Run 'scripts/setup_dawn.sh' before building.")
+    endif ()
+    add_library(webgpu ALIAS dawn::webgpu_dawn)
 endif ()
-add_library(webgpu ALIAS dawn::webgpu_dawn)
 
 include(FetchContent)
 
@@ -108,34 +134,36 @@ pkg_search_module(Gst gstreamer-1.0 IMPORTED_TARGET QUIET) # if this is failing 
 pkg_search_module(GstApp gstreamer-app-1.0 IMPORTED_TARGET QUIET)
 pkg_search_module(LibUdev libudev IMPORTED_TARGET QUIET)
 
-FetchContent_Declare(
-    imgui
-    GIT_REPOSITORY https://github.com/ocornut/imgui.git
-    GIT_TAG        v1.92.8
-    GIT_SHALLOW    TRUE
-)
-FetchContent_MakeAvailable(imgui)
-file(GLOB IMGUI_SOURCES
-    ${imgui_SOURCE_DIR}/*.cpp
-    ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
-    ${imgui_SOURCE_DIR}/backends/imgui_impl_wgpu.cpp
-)
-add_library(imgui STATIC ${IMGUI_SOURCES})
-target_include_directories(imgui SYSTEM PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
-target_compile_definitions(imgui PUBLIC IMGUI_IMPL_WEBGPU_BACKEND_DAWN)
-target_link_libraries(imgui PUBLIC glfw webgpu)
-if (APPLE)
-    # imgui_impl_wgpu.cpp includes Cocoa.h on macOS via Dawn's WebGPU backend,
-    # which contains Objective-C @class syntax invalid in plain C++.
-    set_source_files_properties(
-        ${imgui_SOURCE_DIR}/backends/imgui_impl_wgpu.cpp
-        PROPERTIES LANGUAGE OBJCXX
+if (NOT MROVER_JETSON)
+    FetchContent_Declare(
+        imgui
+        GIT_REPOSITORY https://github.com/ocornut/imgui.git
+        GIT_TAG        v1.92.8
+        GIT_SHALLOW    TRUE
     )
-endif ()
+    FetchContent_MakeAvailable(imgui)
+    file(GLOB IMGUI_SOURCES
+        ${imgui_SOURCE_DIR}/*.cpp
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_wgpu.cpp
+    )
+    add_library(imgui STATIC ${IMGUI_SOURCES})
+    target_include_directories(imgui SYSTEM PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
+    target_compile_definitions(imgui PUBLIC IMGUI_IMPL_WEBGPU_BACKEND_DAWN)
+    target_link_libraries(imgui PUBLIC glfw webgpu)
+    if (APPLE)
+        # imgui_impl_wgpu.cpp includes Cocoa.h on macOS via Dawn's WebGPU backend,
+        # which contains Objective-C @class syntax invalid in plain C++.
+        set_source_files_properties(
+            ${imgui_SOURCE_DIR}/backends/imgui_impl_wgpu.cpp
+            PROPERTIES LANGUAGE OBJCXX
+        )
+    endif ()
 
-add_library(webgpu_hpp INTERFACE)
-target_include_directories(webgpu_hpp SYSTEM INTERFACE deps/webgpuhpp)
-add_subdirectory(deps/glfw3webgpu EXCLUDE_FROM_ALL SYSTEM)
+    add_library(webgpu_hpp INTERFACE)
+    target_include_directories(webgpu_hpp SYSTEM INTERFACE deps/webgpuhpp)
+    add_subdirectory(deps/glfw3webgpu EXCLUDE_FROM_ALL SYSTEM)
+endif ()
 add_subdirectory(deps/mjbots EXCLUDE_FROM_ALL SYSTEM)
 
 if (BUILD_TESTING)
@@ -227,17 +255,19 @@ target_link_libraries(gst_utils INTERFACE magic_enum::magic_enum PkgConfig::Gst 
 
 # Simulator
 
-mrover_add_node(simulator simulator/*.cpp simulator simulator/pch.hpp)
-ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf yaml_cpp_vendor)
-target_link_libraries(simulator
-    assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
-    ${BULLET_LIBRARIES}
-    lie Eigen3::Eigen
-    opencv_core opencv_imgcodecs opencv_imgproc
-    loop_profiler
-    parameter_utils
-)
-target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
+if (NOT MROVER_JETSON)
+    mrover_add_node(simulator simulator/*.cpp simulator simulator/pch.hpp)
+    ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf yaml_cpp_vendor)
+    target_link_libraries(simulator
+        assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
+        ${BULLET_LIBRARIES}
+        lie Eigen3::Eigen
+        opencv_core opencv_imgcodecs opencv_imgproc
+        loop_profiler
+        parameter_utils
+    )
+    target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
+endif ()
 
 
 # Localization
