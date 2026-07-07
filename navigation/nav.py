@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import sys
-
 import rclpy
 from geometry_msgs.msg import Pose, PoseStamped, Point
 from navigation.approach_target import ApproachTargetState
@@ -45,7 +44,6 @@ class Navigation(Node):
                 ("ref_lon", Parameter.Type.DOUBLE),
                 ("ref_alt", Parameter.Type.DOUBLE),
                 ("target_expiration_duration", Parameter.Type.DOUBLE),
-                ("zed_fov", Parameter.Type.DOUBLE),
                 # Pure Pursuit
                 ("pure_pursuit.min_lookahead_distance", Parameter.Type.DOUBLE),
                 ("pure_pursuit.max_lookahead_distance", Parameter.Type.DOUBLE),
@@ -80,7 +78,6 @@ class Navigation(Node):
                 ("long_range.bearing_expiration_duration", Parameter.Type.DOUBLE),
                 # Search
                 ("search.stop_threshold", Parameter.Type.DOUBLE),
-                ("search.object_stop_threshold", Parameter.Type.DOUBLE),
                 ("search.drive_forward_threshold", Parameter.Type.DOUBLE),
                 ("search.coverage_radius", Parameter.Type.DOUBLE),
                 ("search.segments_per_rotation", Parameter.Type.INTEGER),
@@ -90,6 +87,7 @@ class Navigation(Node):
                 ("search.update_delay", Parameter.Type.DOUBLE),
                 ("search.safe_approach_distance", Parameter.Type.DOUBLE),
                 ("search.angle_thresh", Parameter.Type.DOUBLE),
+                ("search.distance_threshold", Parameter.Type.DOUBLE),
                 # Image Targets
                 ("image_targets.increment_weight", Parameter.Type.INTEGER),
                 ("image_targets.decrement_weight", Parameter.Type.INTEGER),
@@ -119,7 +117,13 @@ class Navigation(Node):
                 DoneState(),
             ],
         )
-        self.state_machine.add_transitions(BackupState(), [WaypointState(), DoneState()])
+        self.state_machine.add_transitions(
+            BackupState(), 
+            [
+                WaypointState(), 
+                DoneState()
+            ],
+        )
         self.state_machine.add_transitions(
             StuckRecoveryState(),
             [
@@ -130,7 +134,12 @@ class Navigation(Node):
                 LongRangeState(),
             ],
         )
-        self.state_machine.add_transitions(DoneState(), [WaypointState()])
+        self.state_machine.add_transitions(
+            DoneState(), 
+            [
+                WaypointState()
+            ],
+        )
         self.state_machine.add_transitions(
             WaypointState(),
             [
@@ -152,10 +161,22 @@ class Navigation(Node):
             ],
         )
         self.state_machine.add_transitions(
-            CostmapSearchState(), [WaypointState(), StuckRecoveryState(), ApproachTargetState(), LongRangeState()]
+            CostmapSearchState(), 
+            [
+                WaypointState(), 
+                StuckRecoveryState(), 
+                ApproachTargetState(), 
+                LongRangeState()
+            ],
+        )
+        self.state_machine.add_transitions(
+            OffState(), 
+            [
+                WaypointState(), 
+                DoneState()
+            ],
         )
 
-        self.state_machine.add_transitions(OffState(), [WaypointState(), DoneState()])
         self.state_machine.configure_off_switch(OffState(), off_check)
         # TODO(quintin): Make the rates configurable as parameters
         self.state_machine_server = StatePublisher(self, self.state_machine, "nav_structure", 1, "nav_state", 10)
