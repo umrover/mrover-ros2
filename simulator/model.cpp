@@ -72,17 +72,10 @@ namespace mrover {
                     }
                 }
 
-                assert(mesh->HasTangentsAndBitangents());
-                tangents.data.resize(mesh->mNumVertices);
-                bitangents.data.resize(mesh->mNumVertices);
-                for (std::size_t vertexIndex = 0; vertexIndex < mesh->mNumVertices; ++vertexIndex) {
-                    aiVector3D const& tangent = mesh->mTangents[vertexIndex];
-                    aiVector3D const& bitangent = mesh->mBitangents[vertexIndex];
-                    tangents.data[vertexIndex] = Eigen::Vector3f{tangent.x, tangent.y, tangent.z};
-                    // from testing it seems like the bitangents blender exports are backwards, but this seems sus
-                    bitangents.data[vertexIndex] = Eigen::Vector3f{-bitangent.x, -bitangent.y, -bitangent.z};
-                }
-
+                // only need tangent/bitangent vectors if we have a normal map
+                // otherwise, local normal is (0, 0, 1) and will produce the interpolated normal from
+                // the vertices without need for tangent/bitangent vectors
+                bool needsTangentsAndBitangents = false;
                 if (aiMaterial const* material = scene->mMaterials[mesh->mMaterialIndex]) {
                     if (aiString path; material->GetTextureCount(aiTextureType_DIFFUSE) > 0 && material->GetTexture(aiTextureType_DIFFUSE, 0, &path) == AI_SUCCESS) {
                         texture.data = readTexture(path.C_Str());
@@ -100,12 +93,14 @@ namespace mrover {
                     material->Get(AI_MATKEY_NAME, name);
 
                     if (aiString path; material->GetTextureCount(aiTextureType_NORMALS) > 0 && material->GetTexture(aiTextureType_NORMALS, 0, &path) == AI_SUCCESS) {
+                        needsTangentsAndBitangents = true;
                         normal_map.data = readTexture(path.C_Str());
                     } else {
                         // create a 1x1 texture with normal pointing straight out
                         // this is simply the vector (0, 0, 1) (points up in the Z direction)
+                        // note that opencv uses BGR colors
                         cv::Scalar color(255, 128, 128);
-                        normal_map.data = cv::Mat{1, 1, CV_8UC4, color};
+                        normal_map.data = cv::Mat{1, 1, CV_8UC3, color};
                     }
 
                     material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness);
@@ -116,6 +111,25 @@ namespace mrover {
                     RCLCPP_INFO_STREAM(logger, std::format("\t\tmetallic: {}", metallic));
 
                     RCLCPP_INFO_STREAM(logger, std::format("\tLoaded material: {}", name.C_Str()));
+                }
+
+                tangents.data.resize(mesh->mNumVertices);
+                bitangents.data.resize(mesh->mNumVertices);
+                if (needsTangentsAndBitangents && !mesh->HasTangentsAndBitangents())
+                    throw std::invalid_argument{std::format("Mesh #{} in scene {} has no tangents/bitangents", meshIndex, uri)};
+                for (std::size_t vertexIndex = 0; vertexIndex < mesh->mNumVertices; ++vertexIndex) {
+                    if (needsTangentsAndBitangents) {
+                        aiVector3D const& tangent = mesh->mTangents[vertexIndex];
+                        aiVector3D const& bitangent = mesh->mBitangents[vertexIndex];
+                        tangents.data[vertexIndex] = Eigen::Vector3f{tangent.x, tangent.y, tangent.z};
+                        // from testing it seems like the bitangents blender exports are backwards, but this seems sus
+                        bitangents.data[vertexIndex] = Eigen::Vector3f{-bitangent.x, -bitangent.y, -bitangent.z};
+                    } else {
+                        // any non-zero vectors should do here (they will be unused)
+                        // can't use zero vector because it later gets normalized
+                        tangents.data[vertexIndex] = Eigen::Vector3f{1, 0, 0};
+                        bitangents.data[vertexIndex] = Eigen::Vector3f{0, 1, 0};
+                    }
                 }
 
                 RCLCPP_INFO_STREAM(logger, std::format("\tLoaded mesh: #{} with {} vertices and {} faces", meshIndex, mesh->mNumVertices, mesh->mNumFaces));

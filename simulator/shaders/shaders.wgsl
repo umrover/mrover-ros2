@@ -65,6 +65,7 @@ struct OutFragment {
     // this normal is in a frame local to the surface of this face
     let normalInLocal = normalize(encodedNormal - 0.5);
 
+    // we perform normalization here because interpolation can give us unnormalized vectors
     let localToWorld = mat3x3f(
         normalize(in.tangentInWorld).xyz,
         normalize(in.bitangentInWorld).xyz,
@@ -151,6 +152,7 @@ fn GeometrySmith(normal: vec3f, viewDir: vec3f, lightDir: vec3f, roughness: f32)
     // this normal is in a frame local to the surface of this face
     let normalInLocal = normalize(encodedNormal - 0.5);
 
+    // we perform normalization here because interpolation can give us unnormalized vectors
     let localToWorld = mat3x3f(
         normalize(in.tangentInWorld).xyz,
         normalize(in.bitangentInWorld).xyz,
