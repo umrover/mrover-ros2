@@ -142,7 +142,7 @@ namespace mrover {
         fragment.targets = targets.data();
         descriptor.fragment = &fragment;
 
-        std::array<wgpu::BindGroupLayoutEntry, 4> meshBindGroupLayoutEntries{};
+        std::array<wgpu::BindGroupLayoutEntry, 5> meshBindGroupLayoutEntries{};
         meshBindGroupLayoutEntries[0].binding = 0;
         meshBindGroupLayoutEntries[0].visibility = wgpu::ShaderStage::Fragment | wgpu::ShaderStage::Vertex;
         meshBindGroupLayoutEntries[0].buffer.type = wgpu::BufferBindingType::Uniform;
@@ -158,6 +158,10 @@ namespace mrover {
         meshBindGroupLayoutEntries[3].visibility = wgpu::ShaderStage::Fragment;
         meshBindGroupLayoutEntries[3].texture.sampleType = wgpu::TextureSampleType::Float;
         meshBindGroupLayoutEntries[3].texture.viewDimension = wgpu::TextureViewDimension::_2D;
+        meshBindGroupLayoutEntries[4].binding = 4;
+        meshBindGroupLayoutEntries[4].visibility = wgpu::ShaderStage::Fragment;
+        meshBindGroupLayoutEntries[4].buffer.type = wgpu::BufferBindingType::Uniform;
+        meshBindGroupLayoutEntries[4].buffer.minBindingSize = sizeof(MeshUniforms);
 
         wgpu::BindGroupLayoutDescriptor meshBindGroupLayourDescriptor;
         meshBindGroupLayourDescriptor.entryCount = meshBindGroupLayoutEntries.size();
@@ -512,24 +516,29 @@ namespace mrover {
             mesh.tangents.enqueueWriteIfUnitialized(mDevice, mQueue, wgpu::BufferUsage::Vertex);
             mesh.bitangents.enqueueWriteIfUnitialized(mDevice, mQueue, wgpu::BufferUsage::Vertex);
             mesh.uvs.enqueueWriteIfUnitialized(mDevice, mQueue, wgpu::BufferUsage::Vertex);
-            mesh.texture.enqueWriteIfUnitialized(mDevice);
+            mesh.material.texture.enqueWriteIfUnitialized(mDevice);
             if (mNormalMapEnabled)
-                mesh.normal_map.enqueWriteIfUnitialized(mDevice);
+                mesh.material.normal_map.enqueWriteIfUnitialized(mDevice);
             else
                 mDefaultNormalMap.enqueWriteIfUnitialized(mDevice);
-            uniforms.value.roughness = mesh.roughness;
-            uniforms.value.metallic = mesh.metallic;
+            if (!mesh.material.uni.buffer) mesh.material.uni.init(mDevice);
+            mesh.material.uni.value.roughness = mesh.material.roughness;
+            mesh.material.uni.value.metallic = mesh.material.metallic;
+            mesh.material.uni.enqueueWrite();
 
-            std::array<wgpu::BindGroupEntry, 4> bindGroupEntires{};
+            std::array<wgpu::BindGroupEntry, 5> bindGroupEntires{};
             bindGroupEntires[0].binding = 0;
             bindGroupEntires[0].buffer = uniforms.buffer;
             bindGroupEntires[0].size = sizeof(ModelUniforms);
             bindGroupEntires[1].binding = 1;
-            bindGroupEntires[1].textureView = mesh.texture.view;
+            bindGroupEntires[1].textureView = mesh.material.texture.view;
             bindGroupEntires[2].binding = 2;
-            bindGroupEntires[2].sampler = mesh.texture.sampler;
+            bindGroupEntires[2].sampler = mesh.material.texture.sampler;
             bindGroupEntires[3].binding = 3;
-            bindGroupEntires[3].textureView = mNormalMapEnabled ? mesh.normal_map.view : mDefaultNormalMap.view;
+            bindGroupEntires[3].textureView = mNormalMapEnabled ? mesh.material.normal_map.view : mDefaultNormalMap.view;
+            bindGroupEntires[4].binding = 4;
+            bindGroupEntires[4].buffer = mesh.material.uni.buffer;
+            bindGroupEntires[4].size = sizeof(MeshUniforms);
             wgpu::BindGroupDescriptor descriptor;
             // we can just use mPbrPipeline here because both PBR and Blinn-Phone use the same bind groups
             descriptor.layout = mPbrPipeline.getBindGroupLayout(0);

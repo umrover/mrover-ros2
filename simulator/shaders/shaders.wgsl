@@ -11,16 +11,21 @@ struct SceneUniforms {
 }
 @group(1) @binding(0) var<uniform> su: SceneUniforms;
 
-struct MeshUniforms {
+struct ModelUniforms {
     modelToWorld: mat4x4f,
     modelToWorldForNormals: mat4x4f,
+}
+
+struct MeshUniforms {
     roughness: f32,
     metallic: f32,
 }
-@group(0) @binding(0) var<uniform> mu: MeshUniforms;
+@group(0) @binding(0) var<uniform> modelUniforms: ModelUniforms;
+// TODO: think about making these part of the mesh uniform
 @group(0) @binding(1) var texture: texture_2d<f32>;
 @group(0) @binding(2) var textureSampler: sampler;
 @group(0) @binding(3) var normalTexture: texture_2d<f32>;
+@group(0) @binding(4) var<uniform> meshUniforms: MeshUniforms;
 
 struct InVertex {
     @location(0) positionInModel: vec3f,
@@ -38,14 +43,14 @@ struct OutVertex {
    @location(4) uv: vec2f,
 }
 @vertex fn vs_main(in: InVertex) -> OutVertex {
-    let positionInWorld = mu.modelToWorld * vec4(in.positionInModel, 1);
+    let positionInWorld = modelUniforms.modelToWorld * vec4(in.positionInModel, 1);
     var out : OutVertex;
     out.positionInClip = su.cameraToClip * su.worldToCamera * positionInWorld;
     out.positionInWorld = positionInWorld;
-    out.normalInWorld = mu.modelToWorldForNormals * vec4(in.normalInModel, 0);
+    out.normalInWorld = modelUniforms.modelToWorldForNormals * vec4(in.normalInModel, 0);
     // TODO: should I just use the regular modelToWorld matrix here?
-    out.tangentInWorld = mu.modelToWorldForNormals * vec4(in.tangentInModel, 0);
-    out.bitangentInWorld = mu.modelToWorldForNormals * vec4(in.bitangentInModel, 0);
+    out.tangentInWorld = modelUniforms.modelToWorldForNormals * vec4(in.tangentInModel, 0);
+    out.bitangentInWorld = modelUniforms.modelToWorldForNormals * vec4(in.bitangentInModel, 0);
     out.uv = in.uv;
     return out;
 }
@@ -138,9 +143,9 @@ fn GeometrySmith(normal: vec3f, viewDir: vec3f, lightDir: vec3f, roughness: f32)
 
 @fragment fn fs_main_pbr(in: OutVertex) -> OutFragment {
     // let metallic = 0.0;
-    let metallic = mu.metallic;
+    let metallic = meshUniforms.metallic;
     // let roughness = 0.93;
-    let roughness = mu.roughness;
+    let roughness = meshUniforms.roughness;
     // crank up the ambient lighting effect otherwise everything is really dark
     let ao = 0.8;
 

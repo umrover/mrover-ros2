@@ -34,7 +34,7 @@ namespace mrover {
 
                 if (!mesh->HasNormals()) throw std::invalid_argument{std::format("Mesh #{} has no normals", meshIndex)};
 
-                auto& [vertices, normals, tangents, bitangents, uvs, indices, texture, normal_map, roughness, metallic] = meshes.emplace_back();
+                auto& [vertices, normals, tangents, bitangents, uvs, indices, mat] = meshes.emplace_back();
 
                 assert(mesh->HasPositions());
                 vertices.data.resize(mesh->mNumVertices);
@@ -78,7 +78,7 @@ namespace mrover {
                 bool needsTangentsAndBitangents = false;
                 if (aiMaterial const* material = scene->mMaterials[mesh->mMaterialIndex]) {
                     if (aiString path; material->GetTextureCount(aiTextureType_DIFFUSE) > 0 && material->GetTexture(aiTextureType_DIFFUSE, 0, &path) == AI_SUCCESS) {
-                        texture.data = readTexture(path.C_Str());
+                        mat.texture.data = readTexture(path.C_Str());
                     } else {
                         // Create a 1x1 texture with the diffuse color
                         cv::Scalar color = cv::Scalar::all(255);
@@ -87,28 +87,28 @@ namespace mrover {
                             cv::pow(color, 1 / 2.2, color);                                                             // Undo Gamma correction
                             color *= 255;
                         }
-                        texture.data = cv::Mat{1, 1, CV_8UC4, color};
+                        mat.texture.data = cv::Mat{1, 1, CV_8UC4, color};
                     }
                     aiString name;
                     material->Get(AI_MATKEY_NAME, name);
 
                     if (aiString path; material->GetTextureCount(aiTextureType_NORMALS) > 0 && material->GetTexture(aiTextureType_NORMALS, 0, &path) == AI_SUCCESS) {
                         needsTangentsAndBitangents = true;
-                        normal_map.data = readTexture(path.C_Str());
+                        mat.normal_map.data = readTexture(path.C_Str());
                     } else {
                         // create a 1x1 texture with normal pointing straight out
                         // this is simply the vector (0, 0, 1) (points up in the Z direction)
                         // note that opencv uses BGR colors
                         cv::Scalar color(255, 128, 128);
-                        normal_map.data = cv::Mat{1, 1, CV_8UC3, color};
+                        mat.normal_map.data = cv::Mat{1, 1, CV_8UC3, color};
                     }
 
-                    material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness);
-                    RCLCPP_INFO_STREAM(logger, std::format("\t\troughness: {}", roughness));
+                    material->Get(AI_MATKEY_ROUGHNESS_FACTOR, mat.roughness);
+                    RCLCPP_INFO_STREAM(logger, std::format("\t\troughness: {}", mat.roughness));
 
                     // don't ask me why metallic is this and not AI_MATKEY_METALLIC_FACTOR
-                    material->Get(AI_MATKEY_REFLECTIVITY, metallic);
-                    RCLCPP_INFO_STREAM(logger, std::format("\t\tmetallic: {}", metallic));
+                    material->Get(AI_MATKEY_REFLECTIVITY, mat.metallic);
+                    RCLCPP_INFO_STREAM(logger, std::format("\t\tmetallic: {}", mat.metallic));
 
                     RCLCPP_INFO_STREAM(logger, std::format("\tLoaded material: {}", name.C_Str()));
                 }

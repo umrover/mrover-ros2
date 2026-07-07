@@ -34,11 +34,17 @@ namespace mrover {
     // Eigen stores matrices in column-major which is the same as WGPU
     // As such there is no need to modify data before uploading to the device
 
+    // TODO: maybe rename to MaterialUniforms
+    struct MeshUniforms {
+        float roughness;
+        float metallic;
+        // needed due to webgpu padding
+        float padding[2];
+    };
+
     struct ModelUniforms {
         Eigen::Matrix4f modelToWorld{};
         Eigen::Matrix4f modelToWorldForNormals{};
-        float roughness;
-        float metallic;
 
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
@@ -69,17 +75,21 @@ namespace mrover {
 
     struct Model {
         struct Mesh {
+            struct Material {
+                Uniform<MeshUniforms> uni;
+                MeshTexture texture;
+                MeshTexture normal_map;
+                // could make these also textures, but that might be doing too much
+                float roughness;
+                float metallic;
+            };
             SharedBuffer<Eigen::Vector3f> vertices;
             SharedBuffer<Eigen::Vector3f> normals;
             SharedBuffer<Eigen::Vector3f> tangents;
             SharedBuffer<Eigen::Vector3f> bitangents;
             SharedBuffer<Eigen::Vector2f> uvs;
             SharedBuffer<std::uint32_t> indices;
-            MeshTexture texture;
-            MeshTexture normal_map;
-            // could make these also textures, but that might be doing too much
-            float roughness;
-            float metallic;
+            Material material;
         };
 
         // DO NOT access the mesh unless you are certain it has been set from the async loader
