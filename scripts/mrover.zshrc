@@ -12,16 +12,23 @@ activate_mrover() {
     export TERMINFO_DIRS="${CONDA_PREFIX}/share/terminfo:/usr/share/terminfo"
     # conda's ncurses terminfo does not include xterm-kitty; fall back to xterm-256color.
     [[ "$TERM" == "xterm-kitty" ]] && export TERM=xterm-256color
-    # conda's compiler activation swaps $HOST (used by zsh %m / tab title) to the toolchain triplet; undo it.
+    # undo conda's compiler activation swapping $HOST
     autoload -Uz add-zsh-hook
     add-zsh-hook -d precmd _conda_clang_precmd 2>/dev/null
     add-zsh-hook -d preexec _conda_clang_preexec 2>/dev/null
     export HOST="${CONDA_BACKUP_HOST:-$HOST}"
   fi
   [[ -f install/setup.zsh ]] && source install/setup.zsh
+  
   # ROS's local_setup.zsh sets AMENT_SHELL=zsh without unsetting it
   unset AMENT_SHELL
+
+  # Move DYLD_LIBRARY_PATH to fallback so it does not override system libs
+  if [[ -n "$DYLD_LIBRARY_PATH" ]]; then
+    export DYLD_FALLBACK_LIBRARY_PATH="${DYLD_LIBRARY_PATH}${DYLD_FALLBACK_LIBRARY_PATH:+:$DYLD_FALLBACK_LIBRARY_PATH}"
+    unset DYLD_LIBRARY_PATH
+  fi
 }
 
-# changed to a named function because it takes priority over autocd
+# named function because it takes priority over autocd
 mrover() { activate_mrover "$@"; }
