@@ -84,7 +84,7 @@
     extra_args: "--break-system-packages"
 
 - name: Download prebuilt Dawn
-  ansible.builtin.command: ./tools/setup_dawn.sh
+  ansible.builtin.command: ./scripts/setup_dawn.sh
   args:
     chdir: "{{ mrover_repo }}"
 
