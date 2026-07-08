@@ -1,7 +1,3 @@
-// Phase 2 entry point: run the headless MuJoCo physics node. Physics advances to
-// track wall time while ground truth, TF, controller states, and image targets are
-// published, preserving the old Bullet simulator's ROS contract.
-
 #include <chrono>
 #include <memory>
 #include <thread>

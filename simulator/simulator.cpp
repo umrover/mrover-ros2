@@ -380,7 +380,7 @@ namespace mrover::sim {
         for (auto const& [object, bodyId]: mObjectRoots)
             SE3Conversions::pushToTfTree(mTfBroadcaster, object + "_truth", "map", bodyInWorld(bodyId), stamp);
 
-        // Full link tree only for the rover, matching the old simulator's TF frames.
+        // Full link tree only for the rover.
         for (int b = 1; b < mModel->nbody; ++b) {
             char const* name = mj_id2name(mModel, mjOBJ_BODY, b);
             if (!name) continue;

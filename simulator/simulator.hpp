@@ -33,7 +33,7 @@ namespace mrover::sim {
     //
     // Arm joints are position-controlled: position commands set the target directly,
     // while velocity/throttle commands drift the target and the joint holds its last
-    // position once commands go stale (matching the old btMultiBodyJointMotor hold).
+    // position once commands go stale.
     // Drive joints are velocity-controlled and persist their last command.
     struct Joint {
         enum class Kind { Position,
