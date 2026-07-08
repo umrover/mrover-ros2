@@ -77,7 +77,7 @@ endif()
 # Prebuilt MuJoCo (scripts/setup_mujoco.sh) ships a single shared lib + headers
 # with no CMake config, so define the 'mujoco' imported target by hand.
 set(MUJOCO_PREBUILT_DIR "${CMAKE_CURRENT_LIST_DIR}/deps/mujoco-prebuilt")
-file(GLOB MUJOCO_LIB "${MUJOCO_PREBUILT_DIR}/lib/libmujoco.so")
+file(GLOB MUJOCO_LIB "${MUJOCO_PREBUILT_DIR}/lib/libmujoco.so" "${MUJOCO_PREBUILT_DIR}/lib/libmujoco.dylib")
 if (NOT MUJOCO_LIB)
     message(FATAL_ERROR "MuJoCo not found. Run 'scripts/setup_mujoco.sh' before building.")
 endif ()

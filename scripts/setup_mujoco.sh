@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Downloads the official prebuilt MuJoCo C library to deps/mujoco-prebuilt/.
-# Release: github.com/google-deepmind/mujoco, asset mujoco-<ver>-<platform>.tar.gz.
+# Linux: downloads mujoco-<ver>-<platform>.tar.gz from the GitHub release
+# macOS: homebrew cask install, assumes already done through ansible
 
 set -Eeuo pipefail
 
@@ -17,30 +17,78 @@ fi
 
 readonly PLATFORM="$(uname -s)/$(uname -m)"
 
-case "${PLATFORM}" in
-    Linux/x86_64)   readonly MUJOCO_PLATFORM="linux-x86_64" ;;
-    Linux/aarch64)  readonly MUJOCO_PLATFORM="linux-aarch64" ;;
-    *)
-        # macOS ships a .dmg (mujoco.framework) with a different layout; not handled yet.
-        echo >&2 "No prebuilt MuJoCo wired for ${PLATFORM} (Linux x86_64/aarch64 supported)."
-        exit 1
-        ;;
-esac
-
-readonly BINARY_TARBALL="mujoco-${MUJOCO_VERSION}-${MUJOCO_PLATFORM}.tar.gz"
-
 tmpdir=$(mktemp -d)
 trap 'rm -rf "${tmpdir}"' EXIT
 
-echo "Downloading MuJoCo ${MUJOCO_VERSION} for ${PLATFORM} (${MUJOCO_PLATFORM})..."
-# use system libcurl over pixi's
-env -u LD_LIBRARY_PATH curl -fL --silent --show-error "${BASE_URL}/${BINARY_TARBALL}" -o "${tmpdir}/mujoco.tar.gz"
+setup_linux() {
+    case "${PLATFORM}" in
+        Linux/x86_64)   local mujoco_platform="linux-x86_64" ;;
+        Linux/aarch64)  local mujoco_platform="linux-aarch64" ;;
+        *)
+            echo >&2 "No prebuilt MuJoCo wired for ${PLATFORM} (Linux x86_64/aarch64, macOS supported)."
+            exit 1
+            ;;
+    esac
+    local binary_tarball="mujoco-${MUJOCO_VERSION}-${mujoco_platform}.tar.gz"
 
-mkdir -p "${tmpdir}/mujoco"
-tar -xzf "${tmpdir}/mujoco.tar.gz" -C "${tmpdir}/mujoco" --strip-components 1
+    echo "Downloading MuJoCo ${MUJOCO_VERSION} for ${PLATFORM} (${mujoco_platform})..."
+    # use system libcurl over pixi's
+    env -u LD_LIBRARY_PATH curl -fL --silent --show-error "${BASE_URL}/${binary_tarball}" -o "${tmpdir}/mujoco.tar.gz"
 
-rm -rf "${DEST}"
-mv "${tmpdir}/mujoco" "${DEST}"
+    mkdir -p "${tmpdir}/mujoco"
+    tar -xzf "${tmpdir}/mujoco.tar.gz" -C "${tmpdir}/mujoco" --strip-components 1
+
+    rm -rf "${DEST}"
+    mv "${tmpdir}/mujoco" "${DEST}"
+}
+
+setup_macos() {
+    if ! command -v brew >/dev/null 2>&1; then
+        echo >&2 "Homebrew not found on PATH. Run the dev-portable ansible playbook first (installs the mujoco cask)."
+        exit 1
+    fi
+
+    # check where brew installed
+    local app_path
+    app_path="$(brew list --cask mujoco 2>/dev/null | grep -m1 '\.app/$\|\.app$' || true)"
+    if [ -z "${app_path}" ]; then
+        echo >&2 "MuJoCo cask not installed. Run the dev-portable ansible playbook first (installs the mujoco cask)."
+        exit 1
+    fi
+
+    local framework="${app_path%/}/Contents/Frameworks/mujoco.framework"
+    if [ ! -d "${framework}" ]; then
+        echo >&2 "Expected ${framework} inside the installed cask but it's missing."
+        exit 1
+    fi
+
+    local dylib
+    dylib="$(find -L "${framework}/Versions/Current" -maxdepth 1 -name 'libmujoco.*.dylib' | head -1)"
+    if [ -z "${dylib}" ]; then
+        echo >&2 "No libmujoco.*.dylib found under ${framework}/Versions/Current."
+        exit 1
+    fi
+
+    mkdir -p "${tmpdir}/mujoco/include/mujoco" "${tmpdir}/mujoco/lib"
+    cp "${framework}/Versions/Current/Headers/"*.h "${tmpdir}/mujoco/include/mujoco/"
+    cp "${dylib}" "${tmpdir}/mujoco/lib/libmujoco.dylib"
+
+    # Rewrite the install name to match our flat lib/ dir and re-sign
+    install_name_tool -id "@rpath/libmujoco.dylib" "${tmpdir}/mujoco/lib/libmujoco.dylib"
+    codesign --force --sign - "${tmpdir}/mujoco/lib/libmujoco.dylib"
+
+    rm -rf "${DEST}"
+    mv "${tmpdir}/mujoco" "${DEST}"
+}
+
+case "$(uname -s)" in
+    Linux)  setup_linux ;;
+    Darwin) setup_macos ;;
+    *)
+        echo >&2 "No prebuilt MuJoCo wired for ${PLATFORM}, only Linux x86_64/aarch64, macOS supported"
+        exit 1
+        ;;
+esac
 
 echo "${MUJOCO_VERSION}" > "${VERSION_FILE}"
 echo "MuJoCo ${MUJOCO_VERSION} installed."

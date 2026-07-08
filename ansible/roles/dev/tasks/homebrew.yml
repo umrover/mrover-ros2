@@ -11,9 +11,10 @@
       - llvm
     state: present
 
-- name: Install VSCode and Chromium casks
+- name: Install VSCode, Chromium, and MuJoCo casks
   community.general.homebrew_cask:
     name:
       - visual-studio-code
       - chromium
+      - mujoco
     state: present
