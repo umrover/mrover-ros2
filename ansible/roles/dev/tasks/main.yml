@@ -34,11 +34,16 @@
     block: source-file ~/.mrover.tmux.conf
     create: true
 
+- name: Resolve zsh binary path
+  ansible.builtin.command: which zsh
+  register: zsh_path
+  changed_when: false
+
 - name: Set zsh as default shell
   become: true
   ansible.builtin.user:
     name: "{{ ansible_facts['user_id'] }}"
-    shell: /usr/bin/zsh
+    shell: "{{ zsh_path.stdout }}"
 
 - name: Initialize Git LFS
   ansible.builtin.command: git lfs install
