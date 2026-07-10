@@ -35,7 +35,9 @@ else ()
         endif ()
     endif ()
 endif ()
-option(MROVER_JETSON "Exclude the simulator and its Dawn/Bullet/Assimp/imgui dependencies (not needed on the deployed rover)" ${MROVER_JETSON_DEFAULT})
+if (NOT DEFINED MROVER_JETSON)
+    set(MROVER_JETSON ${MROVER_JETSON_DEFAULT})
+endif ()
 
 set(node_plugins "")
 
