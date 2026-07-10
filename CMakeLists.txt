@@ -1,14 +1,11 @@
 cmake_minimum_required(VERSION 3.25)
 project(mrover VERSION 2025.0.0 LANGUAGES C CXX)
 
-# Supress ROS CMake warning about Python.
-cmake_policy(SET CMP0148 OLD)
+cmake_policy(SET CMP0148 NEW)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CXX_STANDARD_REQUIRED ON)
 
-# Generate compile_commands.json for clangd language server.
-# Can be used by VSCode, CLion, VIM, etc.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(MROVER_CI "Enable CI options" OFF)
@@ -88,8 +85,10 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(urdf REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(magic_enum REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
+find_package(yaml-cpp REQUIRED)
 find_package(dynamixel_sdk REQUIRED)
 
 if (NOT MROVER_JETSON)
@@ -118,16 +117,20 @@ include(FetchContent)
 set(FETCHCONTENT_BASE_DIR "${CMAKE_CURRENT_LIST_DIR}/deps/.fetchcontent")
 set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
 
-FetchContent_Declare(manif
-    GIT_REPOSITORY https://github.com/artivis/manif.git
-    GIT_TAG        0.0.5
-    GIT_SHALLOW    TRUE
-    SYSTEM
-)
-set(BUILD_TESTING_PREV ${BUILD_TESTING})
-set(BUILD_TESTING OFF)
-FetchContent_MakeAvailable(manif)
-set(BUILD_TESTING ${BUILD_TESTING_PREV})
+find_package(manif QUIET)
+if (NOT manif_FOUND)
+    FetchContent_Declare(manif
+        GIT_REPOSITORY https://github.com/artivis/manif.git
+        GIT_TAG        0.0.5
+        GIT_SHALLOW    TRUE
+        SYSTEM
+    )
+    set(BUILD_TESTING_PREV ${BUILD_TESTING})
+    set(BUILD_TESTING OFF)
+    FetchContent_MakeAvailable(manif)
+    set(BUILD_TESTING ${BUILD_TESTING_PREV})
+    add_library(MANIF::manif ALIAS manif)
+endif ()
 
 find_package(PkgConfig REQUIRED)
 pkg_search_module(NetLink libnl-3.0 IMPORTED_TARGET QUIET)
@@ -216,7 +219,23 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     DEPENDENCIES nav_msgs sensor_msgs geometry_msgs action_msgs
 )
 
-# Starter project 
+# rosidl sets raw source-prefixed paths on INTERFACE_INCLUDE_DIRECTORIES, which
+# CMP0052 rejects. The policy explicitly permits such paths when wrapped in
+# $<BUILD_INTERFACE:...>, marking them as build-only (not exported).
+if(TARGET ${PROJECT_NAME}__rosidl_generator_py)
+    get_target_property(_py_iid ${PROJECT_NAME}__rosidl_generator_py INTERFACE_INCLUDE_DIRECTORIES)
+    if(_py_iid)
+        set(_py_iid_wrapped "")
+        foreach(_dir IN LISTS _py_iid)
+            list(APPEND _py_iid_wrapped "$<BUILD_INTERFACE:${_dir}>")
+        endforeach()
+        set_target_properties(${PROJECT_NAME}__rosidl_generator_py PROPERTIES
+            INTERFACE_INCLUDE_DIRECTORIES "${_py_iid_wrapped}"
+        )
+    endif()
+endif()
+
+# Starter project
 # TODO (ali): delete once AutonomyStarterProject.cmake is fixed
 mrover_add_node(starter_project_perception ${CMAKE_CURRENT_LIST_DIR}/starter_project/autonomy/src/*.cpp)
 target_link_libraries(starter_project_perception ${OpenCV_LIBS})
@@ -247,24 +266,30 @@ ament_python_install_package(state_machine)
 include_directories(perception)
 
 mrover_add_library(lie lie/*.cpp lie)
-target_link_libraries(lie manif)
+target_link_libraries(lie MANIF::manif)
 ament_target_dependencies(lie rclcpp geometry_msgs tf2 tf2_ros)
 
+mrover_add_header_only_library(units units)
 mrover_add_header_only_library(loop_profiler loop_profiler)
 mrover_add_header_only_library(parameter_utils parameter_utils)
 mrover_add_header_only_library(gst_utils gst_utils)
-target_link_libraries(gst_utils INTERFACE magic_enum::magic_enum PkgConfig::Gst PkgConfig::GstApp)
+if (Gst_FOUND AND GstApp_FOUND)
+    target_link_libraries(gst_utils INTERFACE magic_enum::magic_enum PkgConfig::Gst PkgConfig::GstApp)
+else ()
+    target_link_libraries(gst_utils INTERFACE magic_enum::magic_enum)
+endif ()
 
 # Simulator
 
 if (NOT MROVER_JETSON)
     mrover_add_node(simulator simulator/*.cpp simulator simulator/pch.hpp)
-    ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf yaml_cpp_vendor)
+    ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf yaml_cpp_vendor ament_index_cpp)
     target_link_libraries(simulator
         assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
         ${BULLET_LIBRARIES}
         lie Eigen3::Eigen
         opencv_core opencv_imgcodecs opencv_imgproc
+        yaml-cpp::yaml-cpp
         loop_profiler
         parameter_utils
     )
@@ -316,7 +341,7 @@ if(ZED_FOUND AND CUDA_FOUND)
 
     mrover_add_component(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp ZedWrapper)
     target_compile_options(zed_component PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=c++20>)
-    mrover_link_component(zed parameter_utils lie manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)
+    mrover_link_component(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)
     mrover_ament_component(zed rclcpp rclcpp_components sensor_msgs ZED CUDA tf2 tf2_ros)
 
     mrover_executable_from_component(zed perception/executables/zed.cpp zed_component)
@@ -424,12 +449,12 @@ if (NetLink_FOUND AND NetLinkRoute_FOUND)
     ament_target_dependencies(can_bridge rclcpp)
 endif ()
 
-# Teleop Qt5 Camera Client
-find_package(Qt5 5.15 REQUIRED COMPONENTS Widgets Multimedia MultimediaWidgets)
+# Teleop Qt6 Camera Client
+find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia MultimediaWidgets)
 
 mrover_add_node(camera_client teleoperation/camera_client/*.*pp teleoperation/camera_client/include/pch.hpp)
 target_include_directories(camera_client PRIVATE teleoperation/camera_client/include)
-target_link_libraries(camera_client gst_utils Qt::Widgets Qt::Multimedia Qt::MultimediaWidgets opencv_core opencv_imgcodecs)
+target_link_libraries(camera_client gst_utils Qt6::Widgets Qt6::Multimedia Qt6::MultimediaWidgets opencv_core opencv_imgcodecs)
 ament_target_dependencies(camera_client rclcpp std_srvs sensor_msgs)
 set_target_properties(camera_client PROPERTIES
     AUTOMOC ON

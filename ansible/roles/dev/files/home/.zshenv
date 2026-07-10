@@ -1,24 +1,24 @@
 # MRover ROS
-readonly MROVER_ROS2_WS_PATH="$HOME/ros2_ws"
+readonly MROVER_REPO="${MROVER_REPO:-$HOME/mrover-ros2}"
 
-source /opt/ros/humble/setup.zsh
+source /opt/ros/jazzy/setup.zsh
 
 export ROS_DOMAIN_ID=5
 export COLCON_TRACE=0
 
 remove_ros2_ws_from_path(){
-    export ${1}="$(echo ${(P)1} | tr ':' '\n' | grep -v "ros2_ws" | paste -s -d ':')"
+    export ${1}="$(echo ${(P)1} | tr ':' '\n' | grep -v "mrover-ros2" | paste -s -d ':')"
 }
 
 source_mrover_overlay(){
-    source ~/ros2_ws/src/mrover/venv/bin/activate
+    source "${MROVER_REPO}/venv/bin/activate"
 
     build_profiles=("RelWithDebInfo" "Release" "Debug")
 
     target_file=""
 
     for profile in "${build_profiles[@]}"; do
-        file="${MROVER_ROS2_WS_PATH}/install/${profile}/setup.zsh"
+        file="${MROVER_REPO}/install/${profile}/setup.zsh"
 
         if [ -f "${file}" ]; then
             if [[ -z "${target_file}" ]]; then

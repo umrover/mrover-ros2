@@ -100,9 +100,9 @@ source $ZSH/oh-my-zsh.sh
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
-source /opt/ros/humble/setup.zsh
+source /opt/ros/jazzy/setup.zsh
 
-alias mrover="cd ~/ros2_ws/src/mrover && source_mrover_overlay"
+alias mrover="cd $MROVER_REPO && source_mrover_overlay"
 
 # bun completions
 [ -s "/home/mrover/.bun/_bun" ] && source "/home/mrover/.bun/_bun"
