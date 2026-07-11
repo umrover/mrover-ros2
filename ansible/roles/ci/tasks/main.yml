@@ -110,7 +110,7 @@
 - name: Download prebuilt Dawn
   command: ./scripts/setup_dawn.sh
   args:
-    chdir: "{{ mrover_repo }}"
+    chdir: "{{ ros2_workspace }}/src/mrover"
 
 - name: Initialize rosdep
   become: True
@@ -182,6 +182,6 @@
   pip:
     name:
       # Installs from pyproject.toml
-      - "{{ mrover_repo }}[dev]"
-    virtualenv: "{{ mrover_repo }}/venv"
+      - "{{ ros2_workspace }}/src/mrover[dev]"
+    virtualenv: "{{ ros2_workspace }}/src/mrover/venv"
     virtualenv_command: /usr/bin/python3 -m venv
