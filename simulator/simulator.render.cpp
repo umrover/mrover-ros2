@@ -897,25 +897,20 @@ namespace mrover {
             bindGroup.release();
 
             // Separate pass: imgui pipeline has 1 color target, main pass has 2 (color + normals).
-            // TODO(kevin?): imgui v1.91.x skips wgpuTextureViewAddRef; Dawn no longer addRefs views
-            // bound in bind groups, so the font texture view is freed after frame 1.
-            // leaving for now
-            {
-                wgpu::RenderPassColorAttachment guiColorAttachment{};
-                guiColorAttachment.view = nextTextureView;
-                guiColorAttachment.loadOp = wgpu::LoadOp::Load;
-                guiColorAttachment.storeOp = wgpu::StoreOp::Store;
-                guiColorAttachment.depthSlice = -1;
+            wgpu::RenderPassColorAttachment guiColorAttachment{};
+            guiColorAttachment.view = nextTextureView;
+            guiColorAttachment.loadOp = wgpu::LoadOp::Load;
+            guiColorAttachment.storeOp = wgpu::StoreOp::Store;
+            guiColorAttachment.depthSlice = -1;
 
-                wgpu::RenderPassDescriptor guiPassDescriptor{};
-                guiPassDescriptor.colorAttachmentCount = 1;
-                guiPassDescriptor.colorAttachments = &guiColorAttachment;
+            wgpu::RenderPassDescriptor guiPassDescriptor{};
+            guiPassDescriptor.colorAttachmentCount = 1;
+            guiPassDescriptor.colorAttachments = &guiColorAttachment;
 
-                wgpu::RenderPassEncoder guiPass = encoder.beginRenderPass(guiPassDescriptor);
-                guiUpdate(guiPass);
-                guiPass.end();
-                guiPass.release();
-            }
+            wgpu::RenderPassEncoder guiPass = encoder.beginRenderPass(guiPassDescriptor);
+            guiUpdate(guiPass);
+            guiPass.end();
+            guiPass.release();
 
             nextTextureView.release();
         }
