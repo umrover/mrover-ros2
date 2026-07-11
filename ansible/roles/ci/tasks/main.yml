@@ -86,7 +86,7 @@
 - name: Download prebuilt Dawn
   ansible.builtin.command: ./scripts/setup_dawn.sh
   args:
-    chdir: "{{ ros2_workspace }}/src/mrover"
+    chdir: "{{ mrover_repo }}"
 
 - name: Initialize rosdep
   become: true
@@ -158,6 +158,6 @@
   ansible.builtin.pip:
     name:
       # Installs from pyproject.toml
-      - "{{ ros2_workspace }}/src/mrover[dev]"
-    virtualenv: "{{ ros2_workspace }}/src/mrover/venv"
+      - "{{ mrover_repo }}[dev]"
+    virtualenv: "{{ mrover_repo }}/venv"
     virtualenv_command: /usr/bin/python3 -m venv

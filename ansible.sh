@@ -9,6 +9,6 @@ fi
 
 sudo -v # Ensure Ansible has sudo permission
 
-readonly MROVER_PATH=$(dirname "$0")
+readonly MROVER_PATH=$(realpath "$(dirname "$0")")
 readonly ROS2_WS_PATH=$(realpath "${MROVER_PATH}"/../..)
-ansible-playbook -i "localhost," -c local "${MROVER_PATH}"/ansible/"$1" --extra-vars "ros2_workspace=${ROS2_WS_PATH} $2"
+ansible-playbook -i "localhost," -c local "${MROVER_PATH}"/ansible/"$1" --extra-vars "ros2_workspace=${ROS2_WS_PATH} mrover_repo=${MROVER_PATH} $2"
