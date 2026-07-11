@@ -1,13 +1,11 @@
 #!/usr/bin/env bash
-# Downloads prebuilt Dawn to deps/dawn-prebuilt/ from the umrover/dawn fork.
-# Release: tag v<upstream_sha>, asset Dawn-<platform>.tar.gz where <platform> is
-# linux-x86_64, linux-arm64, macos-arm64 or macos-x86_64.
+# Downloads prebuilt Dawn to deps/dawn-prebuilt/ from Google's official release
 
 set -Eeuo pipefail
 
-# Upstream Dawn commit; the release tag is v<sha>.
-readonly DAWN_SHA="31e25af254ab572c77054edec4946d2244e184dd"
-readonly BASE_URL="https://github.com/umrover/dawn/releases/download/v${DAWN_SHA}"
+readonly DAWN_VERSION="v20260624.223603"
+readonly DAWN_SHA="11ab3f92ed451db8c1e1366abcddd9c202e0738d"
+readonly BASE_URL="https://github.com/google/dawn/releases/download/${DAWN_VERSION}"
 
 readonly REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly DEST="${REPO_ROOT}/deps/dawn-prebuilt"
@@ -19,23 +17,17 @@ fi
 
 readonly PLATFORM="$(uname -s)/$(uname -m)"
 
-case "${PLATFORM}" in
-    Linux/x86_64)   readonly DAWN_PLATFORM="linux-x86_64" ;;
-    Linux/aarch64)  readonly DAWN_PLATFORM="linux-arm64" ;;
-    Darwin/arm64)   readonly DAWN_PLATFORM="macos-arm64" ;;
-    Darwin/x86_64)  readonly DAWN_PLATFORM="macos-x86_64" ;;
-    *)
-        echo >&2 "No prebuilt Dawn published for ${PLATFORM} (Linux x86_64/aarch64, macOS arm64/x86_64 available)."
-        exit 1
-        ;;
-esac
+if [ "${PLATFORM}" != "Linux/x86_64" ]; then
+    echo >&2 "No prebuilt Dawn published for ${PLATFORM} (only Linux x86_64 is supported)."
+    exit 1
+fi
 
-readonly BINARY_TARBALL="Dawn-${DAWN_PLATFORM}.tar.gz"
+readonly BINARY_TARBALL="Dawn-${DAWN_SHA}-ubuntu-latest-Release.tar.gz"
 
 tmpdir=$(mktemp -d)
 trap 'rm -rf "${tmpdir}"' EXIT
 
-echo "Downloading Dawn ${DAWN_SHA} for ${PLATFORM} (${DAWN_PLATFORM})..."
+echo "Downloading Dawn ${DAWN_VERSION} for ${PLATFORM}..."
 curl -fL --silent --show-error "${BASE_URL}/${BINARY_TARBALL}" -o "${tmpdir}/dawn.tar.gz"
 
 mkdir -p "${tmpdir}/dawn"
