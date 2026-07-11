@@ -3,8 +3,8 @@
 
 set -Eeuo pipefail
 
-readonly DAWN_VERSION="v20260624.223603"
-readonly DAWN_SHA="11ab3f92ed451db8c1e1366abcddd9c202e0738d"
+readonly DAWN_VERSION="v20260423.175430"
+readonly DAWN_SHA="31e25af254ab572c77054edec4946d2244e184dd"
 readonly BASE_URL="https://github.com/google/dawn/releases/download/${DAWN_VERSION}"
 
 readonly REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
