@@ -21,7 +21,6 @@ struct MeshUniforms {
     metallic: f32,
 }
 @group(0) @binding(0) var<uniform> modelUniforms: ModelUniforms;
-// TODO: think about making these part of the mesh uniform
 @group(0) @binding(1) var texture: texture_2d<f32>;
 @group(0) @binding(2) var textureSampler: sampler;
 @group(0) @binding(3) var normalTexture: texture_2d<f32>;
@@ -48,7 +47,6 @@ struct OutVertex {
     out.positionInClip = su.cameraToClip * su.worldToCamera * positionInWorld;
     out.positionInWorld = positionInWorld;
     out.normalInWorld = modelUniforms.modelToWorldForNormals * vec4(in.normalInModel, 0);
-    // TODO: should I just use the regular modelToWorld matrix here?
     out.tangentInWorld = modelUniforms.modelToWorldForNormals * vec4(in.tangentInModel, 0);
     out.bitangentInWorld = modelUniforms.modelToWorldForNormals * vec4(in.bitangentInModel, 0);
     out.uv = in.uv;
@@ -146,8 +144,7 @@ fn GeometrySmith(normal: vec3f, viewDir: vec3f, lightDir: vec3f, roughness: f32)
     let metallic = meshUniforms.metallic;
     // let roughness = 0.93;
     let roughness = meshUniforms.roughness;
-    // crank up the ambient lighting effect otherwise everything is really dark
-    let ao = 0.8;
+    let ambientColor = vec3(0.15, 0.15, 0.15);
 
     // get the normal vector
     let normalMapStrength = 1.0;
@@ -188,23 +185,25 @@ fn GeometrySmith(normal: vec3f, viewDir: vec3f, lightDir: vec3f, roughness: f32)
     let specular = numerator / denominator;
 
     let kS = F;
-    let kD = (vec3(1.0) - kS) * (1.0 - metallic);
+    // fake a little diffuse on metals to make them less dark
+    let kD = (vec3(1.0) - kS) * (1.0 - (metallic * 0.75));
 
     let PI = 3.14159265;
     let NdotL = max(dot(mixedNormal, lightDirInWorld), 0.0);
     let Lo = (kD * albedo / PI + specular) * radiance * NdotL;
-    let ambient = 0.4 * albedo * ao;
+
+    // this is kinda an unrealistic hack to make shiny metals look a bit better
+    let NdotV = max(dot(mixedNormal, viewDirInWorld), 0.0);
+    let F2 = F0 + (1.0 - F0) * pow(1.0 - NdotV, 5.0);
+    let specularAmbient = ambientColor * F2 * (1.0 - roughness);
+
+    let ambient = 0.4 * albedo + specularAmbient;
 
     var color = ambient + Lo;
-    // gamma correct
-    // TODO: why does this make it look bad...
-    // color = color / (color + vec3(1.0));
-    // color = pow(color, vec3(1.0/2.2));
 
     var out : OutFragment;
     out.normalInCamera = (su.worldToCamera * vec4(mixedNormal, 0) + vec4(1, 1, 1, 0)) / 2;
     out.normalInCamera.a = 1;
-    // TODO: think about alpha??
     out.color = vec4(color, 1.0);
     return out;
 }
