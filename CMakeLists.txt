@@ -146,6 +146,12 @@ if (BUILD_TESTING)
     target_compile_options(test_arm_controller PRIVATE -DTESTING -fprofile-instr-generate -fcoverage-mapping)
     target_link_options(test_arm_controller PRIVATE -fprofile-instr-generate -fcoverage-mapping)
 
+    ament_add_gtest(test_cost_map perception/cost_map/test/basic_tests.cpp perception/cost_map/cost_map.cpp perception/cost_map/cost_map.processing.cpp)
+    ament_target_dependencies(test_cost_map rclcpp rclcpp_components tf2 tf2_ros)
+    target_link_libraries(test_cost_map lie parameter_utils)
+    target_compile_options(test_cost_map PRIVATE -DTESTING -fprofile-instr-generate -fcoverage-mapping)
+    target_link_options(test_cost_map PRIVATE -fprofile-instr-generate -fcoverage-mapping)
+
 endif ()
 
 include_directories(BEFORE SYSTEM preload)

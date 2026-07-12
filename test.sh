@@ -27,14 +27,16 @@ export CXX=clang++
 export CUDAHOSTCXX=g++-9
 export CUDACXX=/usr/local/cuda-12/bin/nvcc
 
+export LLVM_PROFILE_FILE="coverage-%m.profraw"
+
 # invoke colcon
 COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification colcon test \
 	--event-handlers console_direct+ \
 	--build-base "build/$build_profile" \
-	--ctest-args -R test_arm_controller 
+	--ctest-args -R test_
 
 # generate coverage
-llvm-profdata merge -sparse build/$build_profile/mrover/default.profraw -o build/$build_profile/mrover/merged.profdata
+llvm-profdata merge -sparse build/$build_profile/mrover/*.profraw -o build/$build_profile/mrover/merged.profdata
 
 test_binaries=($(find build/$build_profile/mrover -type f -executable -name "test*"))
 PRIMARY="${test_binaries[0]}"
