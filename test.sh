@@ -29,16 +29,8 @@ done
 
 echo "Using build profile: $build_profile"
 
-# Build in the colcon workspace, not the package
+# Test in the colcon workspace, not the package
 pushd ../..
-
-# Set C/C++ compilers
-export CC=clang
-export CXX=clang++
-
-# Set CUDA compilers
-export CUDAHOSTCXX=g++-9
-export CUDACXX=/usr/local/cuda-12/bin/nvcc
 
 export LLVM_PROFILE_FILE="coverage-%m.profraw"
 
