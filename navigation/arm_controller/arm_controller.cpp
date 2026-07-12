@@ -429,12 +429,14 @@ namespace mrover {
     }
 } // namespace mrover
 
+#ifndef TESTING
 auto main(int argc, char** argv) -> int {
     rclcpp::init(argc, argv);
     rclcpp::spin(std::make_shared<mrover::ArmController>());
     rclcpp::shutdown();
     return EXIT_SUCCESS;
 }
+#endif
 
 
     /*SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_ee", "arm_joint_de",

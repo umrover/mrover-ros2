@@ -138,6 +138,14 @@ if (BUILD_TESTING)
     # a copyright and license is added to all source files
     set(ament_cmake_cpplint_FOUND TRUE)
     ament_lint_auto_find_test_dependencies()
+
+    find_package(ament_cmake_gtest REQUIRED)
+    # TODO: make a macro for this
+    ament_add_gtest(test_arm_controller navigation/arm_controller/test/basic_tests.cpp navigation/arm_controller/arm_controller.cpp)
+    target_link_libraries(test_arm_controller lie)
+    target_compile_options(test_arm_controller PRIVATE -DTESTING -fprofile-instr-generate -fcoverage-mapping)
+    target_link_options(test_arm_controller PRIVATE -fprofile-instr-generate -fcoverage-mapping)
+
 endif ()
 
 include_directories(BEFORE SYSTEM preload)
