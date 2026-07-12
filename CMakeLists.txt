@@ -152,6 +152,8 @@ if (BUILD_TESTING)
     target_compile_options(test_cost_map PRIVATE -DTESTING -fprofile-instr-generate -fcoverage-mapping)
     target_link_options(test_cost_map PRIVATE -fprofile-instr-generate -fcoverage-mapping)
 
+    find_package(ament_cmake_pytest REQUIRED)
+    ament_add_pytest_test(navigation_test_suite navigation/test/)
 endif ()
 
 include_directories(BEFORE SYSTEM preload)

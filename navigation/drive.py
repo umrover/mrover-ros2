@@ -9,7 +9,7 @@ from geometry_msgs.msg import Twist, Vector3
 from navigation.marker_utils import gen_marker, ring_marker
 from rclpy.node import Node
 from rclpy.publisher import Publisher
-from trajectory import Trajectory
+from navigation.trajectory import Trajectory
 from visualization_msgs.msg import Marker
 
 

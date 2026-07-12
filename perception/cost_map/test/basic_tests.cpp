@@ -29,7 +29,7 @@ namespace mrover {
         }
     };
 
-    TEST_F(TestCostMap, ikPosCalc) {
+    TEST_F(TestCostMap, Coordinate) {
         testCoordinate();
     }
 }

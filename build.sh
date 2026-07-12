@@ -30,6 +30,7 @@ export CUDACXX=/usr/local/cuda-12/bin/nvcc
 # invoke colcon
 COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification colcon build \
 	--cmake-args -G Ninja -W no-dev -DCMAKE_BUILD_TYPE="$build_profile" \
+	-DAMENT_CMAKE_PYTEST_WITH_COVERAGE=ON \
 	--symlink-install \
 	--event-handlers console_direct+ \
 	--build-base "build/$build_profile" \
