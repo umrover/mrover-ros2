@@ -174,7 +174,7 @@ fn fs_main_pbr(in: OutVertex) -> OutFragment {
     let distanceToLight = length(su.lightInWorld - in.positionInWorld);
     // let attenuation = 1 / (distanceToLight * distanceToLight);
     let attenuation = 1.0;
-    let radiance = su.lightColor.rgb * attenuation * 4;
+    let radiance = su.lightColor.rgb * attenuation * 3;
 
     let albedo = textureSample(texture, textureSampler, in.uv).rgb;
     let F0 = mix(vec3(0.04), albedo, metallic);
