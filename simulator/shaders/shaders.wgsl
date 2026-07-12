@@ -4,7 +4,6 @@
 struct SceneUniforms {
     worldToCamera: mat4x4f,
     cameraToClip: mat4x4f,
-
     lightInWorld: vec4f,
     cameraInWorld: vec4f,
     lightColor: vec4f,
@@ -34,16 +33,17 @@ struct InVertex {
     @location(4) uv: vec2f,
 }
 struct OutVertex {
-   @builtin(position) positionInClip: vec4f,
-   @location(0) positionInWorld: vec4f,
-   @location(1) normalInWorld: vec4f,
-   @location(2) tangentInWorld: vec4f,
-   @location(3) bitangentInWorld: vec4f,
-   @location(4) uv: vec2f,
+    @builtin(position) positionInClip: vec4f,
+    @location(0) positionInWorld: vec4f,
+    @location(1) normalInWorld: vec4f,
+    @location(2) tangentInWorld: vec4f,
+    @location(3) bitangentInWorld: vec4f,
+    @location(4) uv: vec2f,
 }
-@vertex fn vs_main(in: InVertex) -> OutVertex {
+@vertex
+fn vs_main(in: InVertex) -> OutVertex {
     let positionInWorld = modelUniforms.modelToWorld * vec4(in.positionInModel, 1);
-    var out : OutVertex;
+    var out: OutVertex;
     out.positionInClip = su.cameraToClip * su.worldToCamera * positionInWorld;
     out.positionInWorld = positionInWorld;
     out.normalInWorld = modelUniforms.modelToWorldForNormals * vec4(in.normalInModel, 0);
@@ -58,7 +58,8 @@ struct OutFragment {
     @location(1) normalInCamera: vec4f,
 }
 // Blinn-Phong shader
-@fragment fn fs_main(in: OutVertex) -> OutFragment {
+@fragment
+fn fs_main(in: OutVertex) -> OutFragment {
     let baseColor = textureSample(texture, textureSampler, in.uv);
 
     let normalMapStrength = 1.0;
@@ -78,7 +79,7 @@ struct OutFragment {
     let normalInWorld = normalize(localToWorld * normalInLocal);
     let mixedNormal = normalize(mix(in.normalInWorld, vec4(normalInWorld, 0), normalMapStrength));
 
-    var out : OutFragment;
+    var out: OutFragment;
     out.normalInCamera = (su.worldToCamera * mixedNormal + vec4(1, 1, 1, 0)) / 2;
     out.normalInCamera.a = 1;
     // Ambient
@@ -139,7 +140,8 @@ fn GeometrySmith(normal: vec3f, viewDir: vec3f, lightDir: vec3f, roughness: f32)
     return ggx1 * ggx2;
 }
 
-@fragment fn fs_main_pbr(in: OutVertex) -> OutFragment {
+@fragment
+fn fs_main_pbr(in: OutVertex) -> OutFragment {
     // let metallic = 0.0;
     let metallic = meshUniforms.metallic;
     // let roughness = 0.93;
@@ -201,7 +203,7 @@ fn GeometrySmith(normal: vec3f, viewDir: vec3f, lightDir: vec3f, roughness: f32)
 
     var color = ambient + Lo;
 
-    var out : OutFragment;
+    var out: OutFragment;
     out.normalInCamera = (su.worldToCamera * vec4(mixedNormal, 0) + vec4(1, 1, 1, 0)) / 2;
     out.normalInCamera.a = 1;
     out.color = vec4(color, 1.0);
@@ -252,7 +254,8 @@ fn reproject(pixelInImage: vec2u, depth: f32) -> vec3f {
 }
 
 // Workgroup size ensures one invocation per pixel
-@compute @workgroup_size(1, 1, 1) fn cs_main(@builtin(global_invocation_id) id: vec3u) {
+@compute @workgroup_size(1, 1, 1)
+fn cs_main(@builtin(global_invocation_id) id: vec3u) {
     let pixelInImage = id.xy; // 2D pixel coordinate in the camera image
 
     let depth = textureLoad(depthImage, pixelInImage, 0);
@@ -284,14 +287,15 @@ struct SkyboxUniforms {
 @group(0) @binding(1) var skyboxSampler: sampler;
 @group(0) @binding(2) var skyboxTexture: texture_cube<f32>;
 
-@vertex fn vs_skybox(@builtin(vertex_index) vNdx: u32) -> SkyboxVSOutput {
+@vertex
+fn vs_skybox(@builtin(vertex_index) vNdx: u32) -> SkyboxVSOutput {
     // one big triangle to cover the whole screen
     // clip space is a square with vertices (-1,-1), (-1,1), (1,1), and (1,-1)
     // so this triangle extends above and to the right of clip space to cover all of it
     let pos = array(
         vec2f(-1, 3),
-        vec2f(-1,-1),
-        vec2f( 3,-1),
+        vec2f(-1, -1),
+        vec2f(3, -1),
     );
     var vsOut: SkyboxVSOutput;
     vsOut.positionInClip = vec4f(pos[vNdx], 1, 1);
@@ -299,7 +303,8 @@ struct SkyboxUniforms {
     return vsOut;
 }
 
-@fragment fn fs_skybox(vsOut: SkyboxVSOutput) -> OutFragment {
+@fragment
+fn fs_skybox(vsOut: SkyboxVSOutput) -> OutFragment {
     let positionInWorld = uni.clipToWorld * vsOut.posInClip;
     var out: OutFragment;
     out.color = textureSample(skyboxTexture, skyboxSampler, normalize(positionInWorld.xyz / positionInWorld.w));
