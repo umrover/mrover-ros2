@@ -17,7 +17,7 @@ namespace mrover {
                 {"max_hit_count", mMaxTagHitCount, 5},
                 {"increment_weight", mTagIncrementWeight, 2},
                 {"decrement_weight", mTagDecrementWeight, 1},
-                {"dictionary", dictionaryNumber, 0},
+                {"dictionary", dictionaryNumber, 1},
                 {"adaptive_thresh_constant", mDetectorParams->adaptiveThreshConstant, 7.0},
                 {"adaptive_thresh_win_size_max", mDetectorParams->adaptiveThreshWinSizeMax, 23},
                 {"adaptive_thresh_win_size_min", mDetectorParams->adaptiveThreshWinSizeMin, 3},
@@ -42,6 +42,7 @@ namespace mrover {
 
         ParameterWrapper::declareParameters(this, params);
 
+        // get dictionaryNumber from YAML. 0 = DICT_4x4_50, 1 = DICT_4x4_100, 2 = DICT_4x4_250, 5 = DICT_5x5_100,  
         mDictionary = cv::makePtr<cv::aruco::Dictionary>(cv::aruco::getPredefinedDictionary(dictionaryNumber));
 
         if (doCornerRefinement) {

@@ -12,7 +12,7 @@ stereo_tag_detector:
     max_hit_count: 5
     increment_weight: 2
     decrement_weight: 1
-    dictionary: 0
+    dictionary: 1
     adaptive_thresh_constant: 7.0
     adaptive_thresh_win_size_max: 23
     adaptive_thresh_win_size_min: 3
