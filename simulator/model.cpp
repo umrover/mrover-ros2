@@ -18,8 +18,9 @@ namespace mrover {
             Assimp::Importer importer;
             importer.SetPropertyInteger(AI_CONFIG_PP_SBP_REMOVE, aiPrimitiveType_POINT | aiPrimitiveType_LINE); // Drop points and lines
 
-            // aiScene const* scene = importer.ReadFile(uri.data(),aiProcessPreset_TargetRealtime_MaxQuality);
-            aiScene const* scene = importer.ReadFile(uriToPath(uri), aiProcessPreset_TargetRealtime_Fast | aiProcess_FlipUVs);
+            // we switch to GenSmoothNormals because this seems to fix normals on some meshes
+            // if you shade flat in blender it shouldn't smooth it
+            aiScene const* scene = importer.ReadFile(uriToPath(uri), (aiProcessPreset_TargetRealtime_Fast ^ aiProcess_GenNormals) | aiProcess_GenSmoothNormals | aiProcess_FlipUVs);
             if (!scene) throw std::runtime_error{std::format("Scene import error: {} on path: {}", importer.GetErrorString(), uri)};
 
             RCLCPP_INFO_STREAM(logger, std::format("Loaded scene: {} with mesh count: {}", uri, scene->mNumMeshes));
@@ -33,7 +34,7 @@ namespace mrover {
 
                 if (!mesh->HasNormals()) throw std::invalid_argument{std::format("Mesh #{} has no normals", meshIndex)};
 
-                auto& [vertices, normals, uvs, indices, texture] = meshes.emplace_back();
+                auto& [vertices, normals, tangents, bitangents, uvs, indices, mat] = meshes.emplace_back();
 
                 assert(mesh->HasPositions());
                 vertices.data.resize(mesh->mNumVertices);
@@ -71,9 +72,13 @@ namespace mrover {
                     }
                 }
 
+                // only need tangent/bitangent vectors if we have a normal map
+                // otherwise, local normal is (0, 0, 1) and will produce the interpolated normal from
+                // the vertices without need for tangent/bitangent vectors
+                bool needsTangentsAndBitangents = false;
                 if (aiMaterial const* material = scene->mMaterials[mesh->mMaterialIndex]) {
                     if (aiString path; material->GetTextureCount(aiTextureType_DIFFUSE) > 0 && material->GetTexture(aiTextureType_DIFFUSE, 0, &path) == AI_SUCCESS) {
-                        texture.data = readTexture(path.C_Str());
+                        mat.texture.data = readTexture(path.C_Str());
                     } else {
                         // Create a 1x1 texture with the diffuse color
                         cv::Scalar color = cv::Scalar::all(255);
@@ -82,11 +87,49 @@ namespace mrover {
                             cv::pow(color, 1 / 2.2, color);                                                             // Undo Gamma correction
                             color *= 255;
                         }
-                        texture.data = cv::Mat{1, 1, CV_8UC4, color};
+                        mat.texture.data = cv::Mat{1, 1, CV_8UC4, color};
                     }
                     aiString name;
                     material->Get(AI_MATKEY_NAME, name);
+
+                    if (aiString path; material->GetTextureCount(aiTextureType_NORMALS) > 0 && material->GetTexture(aiTextureType_NORMALS, 0, &path) == AI_SUCCESS) {
+                        needsTangentsAndBitangents = true;
+                        mat.normal_map.data = readTexture(path.C_Str());
+                    } else {
+                        // create a 1x1 texture with normal pointing straight out
+                        // this is simply the vector (0, 0, 1) (points up in the Z direction)
+                        // note that opencv uses BGR colors
+                        cv::Scalar color(255, 128, 128);
+                        mat.normal_map.data = cv::Mat{1, 1, CV_8UC3, color};
+                    }
+
+                    material->Get(AI_MATKEY_ROUGHNESS_FACTOR, mat.roughness);
+                    RCLCPP_INFO_STREAM(logger, std::format("\t\troughness: {}", mat.roughness));
+
+                    // don't ask me why metallic is this and not AI_MATKEY_METALLIC_FACTOR
+                    material->Get(AI_MATKEY_REFLECTIVITY, mat.metallic);
+                    RCLCPP_INFO_STREAM(logger, std::format("\t\tmetallic: {}", mat.metallic));
+
                     RCLCPP_INFO_STREAM(logger, std::format("\tLoaded material: {}", name.C_Str()));
+                }
+
+                tangents.data.resize(mesh->mNumVertices);
+                bitangents.data.resize(mesh->mNumVertices);
+                if (needsTangentsAndBitangents && !mesh->HasTangentsAndBitangents())
+                    throw std::invalid_argument{std::format("Mesh #{} in scene {} has no tangents/bitangents", meshIndex, uri)};
+                for (std::size_t vertexIndex = 0; vertexIndex < mesh->mNumVertices; ++vertexIndex) {
+                    if (needsTangentsAndBitangents) {
+                        aiVector3D const& tangent = mesh->mTangents[vertexIndex];
+                        aiVector3D const& bitangent = mesh->mBitangents[vertexIndex];
+                        tangents.data[vertexIndex] = Eigen::Vector3f{tangent.x, tangent.y, tangent.z};
+                        // from testing it seems like the bitangents blender exports are backwards, but this seems sus
+                        bitangents.data[vertexIndex] = Eigen::Vector3f{-bitangent.x, -bitangent.y, -bitangent.z};
+                    } else {
+                        // any non-zero vectors should do here (they will be unused)
+                        // can't use zero vector because it later gets normalized
+                        tangents.data[vertexIndex] = Eigen::Vector3f{1, 0, 0};
+                        bitangents.data[vertexIndex] = Eigen::Vector3f{0, 1, 0};
+                    }
                 }
 
                 RCLCPP_INFO_STREAM(logger, std::format("\tLoaded mesh: #{} with {} vertices and {} faces", meshIndex, mesh->mNumVertices, mesh->mNumFaces));

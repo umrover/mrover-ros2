@@ -4,38 +4,51 @@
 struct SceneUniforms {
     worldToCamera: mat4x4f,
     cameraToClip: mat4x4f,
-
     lightInWorld: vec4f,
     cameraInWorld: vec4f,
     lightColor: vec4f,
 }
 @group(1) @binding(0) var<uniform> su: SceneUniforms;
 
-struct MeshUniforms {
+struct ModelUniforms {
     modelToWorld: mat4x4f,
     modelToWorldForNormals: mat4x4f,
 }
-@group(0) @binding(0) var<uniform> mu: MeshUniforms;
+
+struct MeshUniforms {
+    roughness: f32,
+    metallic: f32,
+}
+@group(0) @binding(0) var<uniform> modelUniforms: ModelUniforms;
 @group(0) @binding(1) var texture: texture_2d<f32>;
 @group(0) @binding(2) var textureSampler: sampler;
+@group(0) @binding(3) var normalTexture: texture_2d<f32>;
+@group(0) @binding(4) var<uniform> meshUniforms: MeshUniforms;
 
 struct InVertex {
     @location(0) positionInModel: vec3f,
     @location(1) normalInModel: vec3f,
-    @location(2) uv: vec2f,
+    @location(2) tangentInModel: vec3f,
+    @location(3) bitangentInModel: vec3f,
+    @location(4) uv: vec2f,
 }
 struct OutVertex {
-   @builtin(position) positionInClip: vec4f,
-   @location(0) positionInWorld: vec4f,
-   @location(1) normalInWorld: vec4f,
-   @location(2) uv: vec2f,
+    @builtin(position) positionInClip: vec4f,
+    @location(0) positionInWorld: vec4f,
+    @location(1) normalInWorld: vec4f,
+    @location(2) tangentInWorld: vec4f,
+    @location(3) bitangentInWorld: vec4f,
+    @location(4) uv: vec2f,
 }
-@vertex fn vs_main(in: InVertex) -> OutVertex {
-    let positionInWorld = mu.modelToWorld * vec4(in.positionInModel, 1);
-    var out : OutVertex;
+@vertex
+fn vs_main(in: InVertex) -> OutVertex {
+    let positionInWorld = modelUniforms.modelToWorld * vec4(in.positionInModel, 1);
+    var out: OutVertex;
     out.positionInClip = su.cameraToClip * su.worldToCamera * positionInWorld;
     out.positionInWorld = positionInWorld;
-    out.normalInWorld = mu.modelToWorldForNormals * vec4(in.normalInModel, 0);
+    out.normalInWorld = modelUniforms.modelToWorldForNormals * vec4(in.normalInModel, 0);
+    out.tangentInWorld = modelUniforms.modelToWorldForNormals * vec4(in.tangentInModel, 0);
+    out.bitangentInWorld = modelUniforms.modelToWorldForNormals * vec4(in.bitangentInModel, 0);
     out.uv = in.uv;
     return out;
 }
@@ -44,27 +57,156 @@ struct OutFragment {
     @location(0) color: vec4f,
     @location(1) normalInCamera: vec4f,
 }
-@fragment fn fs_main(in: OutVertex) -> OutFragment {
+// Blinn-Phong shader
+@fragment
+fn fs_main(in: OutVertex) -> OutFragment {
     let baseColor = textureSample(texture, textureSampler, in.uv);
 
-    var out : OutFragment;
-    out.normalInCamera = (su.worldToCamera * in.normalInWorld + vec4(1, 1, 1, 0)) / 2;
+    let normalMapStrength = 1.0;
+    // each component is in the range [0,1]
+    let encodedNormal = textureSample(normalTexture, textureSampler, in.uv).rgb;
+    // shift to get negative values, then normalize because we only care about direction
+    // this normal is in a frame local to the surface of this face
+    let normalInLocal = normalize(encodedNormal - 0.5);
+
+    // we perform normalization here because interpolation can give us unnormalized vectors
+    let localToWorld = mat3x3f(
+        normalize(in.tangentInWorld).xyz,
+        normalize(in.bitangentInWorld).xyz,
+        normalize(in.normalInWorld).xyz,
+    );
+
+    let normalInWorld = normalize(localToWorld * normalInLocal);
+    let mixedNormal = normalize(mix(in.normalInWorld, vec4(normalInWorld, 0), normalMapStrength));
+
+    var out: OutFragment;
+    out.normalInCamera = (su.worldToCamera * mixedNormal + vec4(1, 1, 1, 0)) / 2;
     out.normalInCamera.a = 1;
     // Ambient
-    let ambientStrength = 0.6;
+    let ambientStrength = 0.4;
     let ambient = ambientStrength * su.lightColor;
     // Diffuse
     let lightDirInWorld = normalize(su.lightInWorld - in.positionInWorld);
-    let diff = max(dot(in.normalInWorld, lightDirInWorld), 0.0);
+    let diff = max(dot(mixedNormal, lightDirInWorld), 0.0);
     let diffuse = diff * su.lightColor;
     // Specular
-    let specularStrength = 0.5;
-    let viewDirInWolrd = normalize(su.cameraInWorld - in.positionInWorld);
-    let reflectDir = reflect(-lightDirInWorld, in.normalInWorld);
-    let spec = pow(max(dot(viewDirInWolrd, reflectDir), 0.0), 32);
+    let specularStrength = 0.08;
+    let viewDirInWorld = normalize(su.cameraInWorld - in.positionInWorld);
+    // blinn-phong
+    let halfwayDir = normalize(lightDirInWorld + viewDirInWorld);
+    let spec = pow(max(dot(mixedNormal, halfwayDir), 0.0), 32);
+
     let specular = specularStrength * spec * su.lightColor;
     // Combination
-    out.color = vec4(((ambient + diffuse + specular) * baseColor).rgb, 1);
+    out.color = vec4(((ambient + diffuse) * baseColor + specular).rgb, 1);
+    return out;
+}
+
+// PBR FS
+// see https://learnopengl.com/PBR/Lighting
+fn fresnelSchlick(cosTheta: f32, F0: vec3f) -> vec3f {
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+fn DistributionGGX(normal: vec3f, halfway: vec3f, roughness: f32) -> f32 {
+    let a = roughness * roughness;
+    let a2 = a * a;
+    let NdotH = max(dot(normal, halfway), 0.0);
+    let NdotH2 = NdotH * NdotH;
+
+    let num = a2;
+    let x = (NdotH2 * (a2 - 1.0) + 1.0);
+    let denom = 3.14159 * x * x;
+
+    return num / denom;
+}
+
+fn GeometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
+    let r = roughness + 1.0;
+    let k = r * r / 8.0;
+
+    let num = NdotV;
+    let denom = NdotV * (1.0 - k) + k;
+
+    return num / denom;
+}
+
+fn GeometrySmith(normal: vec3f, viewDir: vec3f, lightDir: vec3f, roughness: f32) -> f32 {
+    let NdotV = max(dot(normal, viewDir), 0.0);
+    let NdotL = max(dot(normal, lightDir), 0.0);
+    let ggx1 = GeometrySchlickGGX(NdotL, roughness);
+    let ggx2 = GeometrySchlickGGX(NdotV, roughness);
+
+    return ggx1 * ggx2;
+}
+
+@fragment
+fn fs_main_pbr(in: OutVertex) -> OutFragment {
+    // let metallic = 0.0;
+    let metallic = meshUniforms.metallic;
+    // let roughness = 0.93;
+    let roughness = meshUniforms.roughness;
+    let ambientColor = vec3(0.15, 0.15, 0.15);
+
+    // get the normal vector
+    let normalMapStrength = 1.0;
+    // each component is in the range [0,1]
+    let encodedNormal = textureSample(normalTexture, textureSampler, in.uv).rgb;
+    // shift to get negative values, then normalize because we only care about direction
+    // this normal is in a frame local to the surface of this face
+    let normalInLocal = normalize(encodedNormal - 0.5);
+
+    // we perform normalization here because interpolation can give us unnormalized vectors
+    let localToWorld = mat3x3f(
+        normalize(in.tangentInWorld).xyz,
+        normalize(in.bitangentInWorld).xyz,
+        normalize(in.normalInWorld).xyz,
+    );
+
+    let normalInWorld = normalize(localToWorld * normalInLocal);
+    let mixedNormal = normalize(mix(in.normalInWorld.xyz, normalInWorld, normalMapStrength));
+
+    let viewDirInWorld = normalize((su.cameraInWorld - in.positionInWorld).xyz);
+    let lightDirInWorld = normalize((su.lightInWorld - in.positionInWorld).xyz);
+    let halfwayDir = normalize((lightDirInWorld + viewDirInWorld).xyz);
+
+    // now PBR stuff
+    let distanceToLight = length(su.lightInWorld - in.positionInWorld);
+    // let attenuation = 1 / (distanceToLight * distanceToLight);
+    let attenuation = 1.0;
+    let radiance = su.lightColor.rgb * attenuation * 3;
+
+    let albedo = textureSample(texture, textureSampler, in.uv).rgb;
+    let F0 = mix(vec3(0.04), albedo, metallic);
+    let F = fresnelSchlick(max(dot(halfwayDir, viewDirInWorld), 0), F0);
+
+    let NDF = DistributionGGX(mixedNormal, halfwayDir, roughness);
+    let G = GeometrySmith(mixedNormal, viewDirInWorld, lightDirInWorld, roughness);
+    let numerator = NDF * G * F;
+    let denominator = 4.0 * max(dot(mixedNormal, viewDirInWorld), 0.0) * max(dot(mixedNormal, lightDirInWorld), 0.0) + 0.0001;
+    let specular = numerator / denominator;
+
+    let kS = F;
+    // fake a little diffuse on metals to make them less dark
+    let kD = (vec3(1.0) - kS) * (1.0 - (metallic * 0.75));
+
+    let PI = 3.14159265;
+    let NdotL = max(dot(mixedNormal, lightDirInWorld), 0.0);
+    let Lo = (kD * albedo / PI + specular) * radiance * NdotL;
+
+    // this is kinda an unrealistic hack to make shiny metals look a bit better
+    let NdotV = max(dot(mixedNormal, viewDirInWorld), 0.0);
+    let F2 = F0 + (1.0 - F0) * pow(1.0 - NdotV, 5.0);
+    let specularAmbient = ambientColor * F2 * (1.0 - roughness);
+
+    let ambient = 0.4 * albedo + specularAmbient;
+
+    var color = ambient + Lo;
+
+    var out: OutFragment;
+    out.normalInCamera = (su.worldToCamera * vec4(mixedNormal, 0) + vec4(1, 1, 1, 0)) / 2;
+    out.normalInCamera.a = 1;
+    out.color = vec4(color, 1.0);
     return out;
 }
 
@@ -112,7 +254,8 @@ fn reproject(pixelInImage: vec2u, depth: f32) -> vec3f {
 }
 
 // Workgroup size ensures one invocation per pixel
-@compute @workgroup_size(1, 1, 1) fn cs_main(@builtin(global_invocation_id) id: vec3u) {
+@compute @workgroup_size(1, 1, 1)
+fn cs_main(@builtin(global_invocation_id) id: vec3u) {
     let pixelInImage = id.xy; // 2D pixel coordinate in the camera image
 
     let depth = textureLoad(depthImage, pixelInImage, 0);
@@ -144,14 +287,15 @@ struct SkyboxUniforms {
 @group(0) @binding(1) var skyboxSampler: sampler;
 @group(0) @binding(2) var skyboxTexture: texture_cube<f32>;
 
-@vertex fn vs_skybox(@builtin(vertex_index) vNdx: u32) -> SkyboxVSOutput {
+@vertex
+fn vs_skybox(@builtin(vertex_index) vNdx: u32) -> SkyboxVSOutput {
     // one big triangle to cover the whole screen
     // clip space is a square with vertices (-1,-1), (-1,1), (1,1), and (1,-1)
     // so this triangle extends above and to the right of clip space to cover all of it
     let pos = array(
         vec2f(-1, 3),
-        vec2f(-1,-1),
-        vec2f( 3,-1),
+        vec2f(-1, -1),
+        vec2f(3, -1),
     );
     var vsOut: SkyboxVSOutput;
     vsOut.positionInClip = vec4f(pos[vNdx], 1, 1);
@@ -159,7 +303,8 @@ struct SkyboxUniforms {
     return vsOut;
 }
 
-@fragment fn fs_skybox(vsOut: SkyboxVSOutput) -> OutFragment {
+@fragment
+fn fs_skybox(vsOut: SkyboxVSOutput) -> OutFragment {
     let positionInWorld = uni.clipToWorld * vsOut.posInClip;
     var out: OutFragment;
     out.color = textureSample(skyboxTexture, skyboxSampler, normalize(positionInWorld.xyz / positionInWorld.w));

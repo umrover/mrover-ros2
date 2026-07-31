@@ -34,6 +34,14 @@ namespace mrover {
     // Eigen stores matrices in column-major which is the same as WGPU
     // As such there is no need to modify data before uploading to the device
 
+    // TODO: maybe rename to MaterialUniforms
+    struct MeshUniforms {
+        float roughness;
+        float metallic;
+        // needed due to webgpu padding
+        float padding[2];
+    };
+
     struct ModelUniforms {
         Eigen::Matrix4f modelToWorld{};
         Eigen::Matrix4f modelToWorldForNormals{};
@@ -67,11 +75,21 @@ namespace mrover {
 
     struct Model {
         struct Mesh {
+            struct Material {
+                Uniform<MeshUniforms> uni;
+                MeshTexture texture;
+                MeshTexture normal_map;
+                // could make these also textures, but that might be doing too much
+                float roughness;
+                float metallic;
+            };
             SharedBuffer<Eigen::Vector3f> vertices;
             SharedBuffer<Eigen::Vector3f> normals;
+            SharedBuffer<Eigen::Vector3f> tangents;
+            SharedBuffer<Eigen::Vector3f> bitangents;
             SharedBuffer<Eigen::Vector2f> uvs;
             SharedBuffer<std::uint32_t> indices;
-            MeshTexture texture;
+            Material material;
         };
 
         // DO NOT access the mesh unless you are certain it has been set from the async loader
@@ -249,6 +267,8 @@ namespace mrover {
         bool mEnablePhysics{};
         bool mRenderModels = true;
         bool mRenderWireframeColliders = false;
+        bool mPbrEnabled = false;
+        bool mNormalMapEnabled = false;
         bool mRenderSkybox = false;
         double mPublishMalletDistanceThreshold = 3;
         double mPublishBottleDistanceThreshold = 3;
@@ -325,6 +345,7 @@ namespace mrover {
         wgpu::TextureView mNormalTextureView;
 
         wgpu::ShaderModule mShaderModule;
+        wgpu::RenderPipeline mBlinnPhongPipeline;
         wgpu::RenderPipeline mPbrPipeline;
         wgpu::RenderPipeline mWireframePipeline;
         wgpu::RenderPipeline mSkyboxPipeline;
@@ -344,6 +365,9 @@ namespace mrover {
         Uniform<SkyboxUniforms> mSkyboxUniforms;
 
         Eigen::Vector4f mSkyColor{0.05f, 0.8f, 0.92f, 1.0f};
+
+        // 1x1 normal map texture that's just flat
+        MeshTexture mDefaultNormalMap = {.data = cv::Mat{1, 1, CV_8UC3, {255, 128, 128}}};
 
         // Physics
 
