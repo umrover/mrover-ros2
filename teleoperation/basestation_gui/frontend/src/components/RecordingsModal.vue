@@ -570,8 +570,8 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .recordings-dialog {
-  max-width: 1200px;
   width: 90%;
+  max-width: 1200px;
   height: 80vh;
 }
 
@@ -615,7 +615,7 @@ onBeforeUnmount(() => {
 }
 
 .bg-primary-subtle {
-  background-color: rgba(var(--accent-rgb), 0.1);
+  background-color: rgb(var(--accent-rgb), 0.1);
 }
 
 .btn-icon {
@@ -635,8 +635,8 @@ onBeforeUnmount(() => {
 
 <style>
 .map-marker-dot {
-  border-radius: 50%;
   border: 2px solid var(--card-bg);
+  border-radius: 50%;
 }
 
 .map-marker-start {
@@ -670,8 +670,8 @@ onBeforeUnmount(() => {
 .map-marker-current {
   width: 16px;
   height: 16px;
-  border-width: 3px;
   background-color: var(--status-warn);
+  border-width: 3px;
   box-shadow: var(--shadow-md);
 }
 </style>
