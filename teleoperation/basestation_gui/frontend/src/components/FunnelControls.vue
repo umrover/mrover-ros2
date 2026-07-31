@@ -232,15 +232,31 @@ websocketStore.onMessage<ControllerStateMessage>('science', 'sp_controller_state
   transition: fill 0.15s ease;
 }
 
-.segment:hover:not(.disabled) path {
-  fill: var(--control-primary);
+.segment.disabled {
+  cursor: not-allowed;
 }
 
-.segment:hover:not(.disabled) .seg-label {
-  fill: #fff;
+.blade path {
+  fill: color-mix(in srgb, var(--control-primary) 10%, var(--card-bg));
+  stroke: var(--input-border);
+  stroke-width: 1;
+  transition: fill 0.15s ease;
+}
+
+.blade.disabled path {
+  fill: var(--disabled-bg, #f3f4f6);
+  stroke: var(--disabled-border, #e5e7eb);
 }
 
 .segment.active path {
+  fill: var(--control-primary);
+}
+
+.seg-label {
+  font-size: 16px;
+  font-weight: 600;
+  pointer-events: none;
+  user-select: none;
   fill: var(--control-primary);
 }
 
@@ -248,8 +264,8 @@ websocketStore.onMessage<ControllerStateMessage>('science', 'sp_controller_state
   fill: #fff;
 }
 
-.segment.disabled {
-  cursor: not-allowed;
+.segment.pending path {
+  fill: color-mix(in srgb, var(--text-muted) 20%, var(--card-bg));
 }
 
 .segment.disabled path {
@@ -261,26 +277,26 @@ websocketStore.onMessage<ControllerStateMessage>('science', 'sp_controller_state
   fill: var(--disabled-text, #9ca3af);
 }
 
-.segment.pending path {
-  fill: color-mix(in srgb, var(--text-muted) 20%, var(--card-bg));
-}
-
-.seg-label {
-  font-size: 16px;
-  font-weight: 600;
+.segment:hover:not(.disabled) path {
   fill: var(--control-primary);
-  pointer-events: none;
-  user-select: none;
 }
 
 .seg-target {
   font-size: 13px;
   font-weight: 500;
-  fill: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  tab-size: 0;
   pointer-events: none;
   user-select: none;
-  tab-size: 0;
-  font-variant-numeric: tabular-nums;
+  fill: var(--text-muted);
+}
+
+.segment.disabled .seg-target {
+  fill: var(--disabled-text, #9ca3af);
+}
+
+.segment:hover:not(.disabled) .seg-label {
+  fill: #fff;
 }
 
 .segment.active .seg-target,
@@ -288,86 +304,70 @@ websocketStore.onMessage<ControllerStateMessage>('science', 'sp_controller_state
   fill: #fff;
 }
 
-.segment.disabled .seg-target {
-  fill: var(--disabled-text, #9ca3af);
-}
-
 .blade {
   cursor: pointer;
-}
-
-.blade path {
-  fill: color-mix(in srgb, var(--control-primary) 10%, var(--card-bg));
-  stroke: var(--input-border);
-  stroke-width: 1;
-  transition: fill 0.15s ease;
-}
-
-.blade:hover:not(.disabled) path {
-  fill: var(--control-primary);
-}
-
-.blade:hover:not(.disabled) .blade-label {
-  fill: #fff;
 }
 
 .blade.disabled {
   cursor: not-allowed;
 }
 
-.blade.disabled path {
-  fill: var(--disabled-bg, #f3f4f6);
-  stroke: var(--disabled-border, #e5e7eb);
+.blade:hover:not(.disabled) path {
+  fill: var(--control-primary);
+}
+
+.blade-label {
+  font-size: 10px;
+  font-weight: 700;
+  pointer-events: none;
+  user-select: none;
+  text-anchor: middle;
+  fill: var(--control-primary);
 }
 
 .blade.disabled .blade-label {
   fill: var(--disabled-text, #9ca3af);
 }
 
-.blade-label {
-  font-size: 10px;
-  font-weight: 700;
-  fill: var(--control-primary);
-  text-anchor: middle;
-  pointer-events: none;
-  user-select: none;
+.blade:hover:not(.disabled) .blade-label {
+  fill: #fff;
 }
 
 .tare-btn {
+  padding: 1px 7px;
   font-size: 11px;
   font-weight: 600;
-  padding: 1px 7px;
-  border-radius: 4px;
-  border: 1px solid var(--input-border);
-  background: transparent;
   color: var(--text-primary, currentColor);
   cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--input-border);
+  border-radius: 4px;
   transition: background 0.15s ease, color 0.15s ease;
 }
 
-.tare-btn:hover:not(:disabled) {
-  background: var(--control-primary);
-  color: #fff;
-  border-color: var(--control-primary);
+.tare-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
 }
 
-.tare-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.tare-btn:hover:not(:disabled) {
+  color: #fff;
+  background: var(--control-primary);
+  border-color: var(--control-primary);
 }
 
 .offset-readout {
   font-size: 11px;
   font-weight: 500;
-  fill: var(--text-muted);
-  text-anchor: middle;
   font-variant-numeric: tabular-nums;
+  text-anchor: middle;
+  fill: var(--text-muted);
 }
 
 .center-val {
   font-size: 20px;
   font-weight: 700;
-  fill: var(--text-primary, currentColor);
   text-anchor: middle;
+  fill: var(--text-primary, currentColor);
 }
 </style>
