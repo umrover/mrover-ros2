@@ -17,9 +17,10 @@ fi
 
 readonly PLATFORM="$(uname -s)/$(uname -m)"
 
+# avoid exiting 0 so other scripts running setup_dawn doesn't fail
 if [ "${PLATFORM}" != "Linux/x86_64" ]; then
-    echo >&2 "No prebuilt Dawn published for ${PLATFORM} (only Linux x86_64 is supported)."
-    exit 1
+    echo "No prebuilt Dawn published for ${PLATFORM} (only Linux x86_64), skipping. The simulator will not be built."
+    exit 0
 fi
 
 readonly BINARY_TARBALL="Dawn-${DAWN_SHA}-ubuntu-latest-Release.tar.gz"

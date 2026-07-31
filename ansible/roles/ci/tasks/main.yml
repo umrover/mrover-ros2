@@ -107,11 +107,6 @@
   pip:
     name: "git+https://github.com/artivis/manif.git@0.0.5"
 
-- name: Download prebuilt Dawn
-  command: ./scripts/setup_dawn.sh
-  args:
-    chdir: "{{ ros2_workspace }}/src/mrover"
-
 - name: Initialize rosdep
   become: True
   command: rosdep init
