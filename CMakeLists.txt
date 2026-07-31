@@ -90,7 +90,7 @@ if (NOT APPLE)
 endif()
 
 if (MROVER_SIMULATOR)
-    list(PREPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_LIST_DIR}/deps/dawn-prebuilt")
+    set(Dawn_ROOT "${CMAKE_CURRENT_LIST_DIR}/deps/dawn-prebuilt")
     find_package(Dawn QUIET)
     if (NOT Dawn_FOUND)
         message(FATAL_ERROR "Dawn not found. Run 'scripts/setup_dawn.sh' before building.")
@@ -129,12 +129,15 @@ if (MROVER_SIMULATOR)
         GIT_SHALLOW    TRUE
     )
     FetchContent_MakeAvailable(imgui)
-    file(GLOB IMGUI_SOURCES
-        ${imgui_SOURCE_DIR}/*.cpp
+    # avoid fetching in imgui_demo.cpp and unnecessarily compiling it
+    add_library(imgui STATIC
+        ${imgui_SOURCE_DIR}/imgui.cpp
+        ${imgui_SOURCE_DIR}/imgui_draw.cpp
+        ${imgui_SOURCE_DIR}/imgui_tables.cpp
+        ${imgui_SOURCE_DIR}/imgui_widgets.cpp
         ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
         ${imgui_SOURCE_DIR}/backends/imgui_impl_wgpu.cpp
     )
-    add_library(imgui STATIC ${IMGUI_SOURCES})
     target_include_directories(imgui SYSTEM PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
     target_compile_definitions(imgui PUBLIC IMGUI_IMPL_WEBGPU_BACKEND_DAWN)
     target_link_libraries(imgui PUBLIC glfw webgpu)
