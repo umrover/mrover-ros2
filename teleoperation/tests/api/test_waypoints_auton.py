@@ -147,7 +147,7 @@ class TestAutonWaypointDelete:
 
     def test_clear_removes_only_user_waypoints(self, api, clean_auton_waypoints):
         _create_waypoint(api)
-        api.delete(url(api, '/api/waypoints/auton/clear/'))
+        api.delete(url(api, '/api/waypoints/auton/store/'))
         waypoints = _get_waypoints(api)
         user_wps = [w for w in waypoints if w['deletable']]
         defaults = [w for w in waypoints if not w['deletable']]

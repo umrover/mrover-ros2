@@ -2,6 +2,7 @@ Copied over Kevin's tests from skj/test-suite here because merging was beyond my
 
 ## Interesting things
 - In `test_create_preserves_fields`, 'coverage_radius' doesn't exist in waypoints
+- `test_clear_all_removes_everything` seems to call an api utility that doesn't exist. Do we need to be able to clear *everything*?
 
 ## Tests that are fine but fail because code doesn't work:
 - `test_default_tag_ids_are_0_through_7`
