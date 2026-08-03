@@ -7,6 +7,11 @@ Copied over Kevin's tests from skj/test-suite here because merging was beyond my
 - `test_clear_all_removes_everything` seems to call an api utility that doesn't exist. Do we need to be able to clear *everything*?
 - In ```test_arm_ros_integration.py```, all websocket connection attempts result in a 403 error
 
+### Playwright
+- Does an element with id 'pw-controller-status-toggle' exist in DMView?
+- Funnel controls are hard to test
+- I think many element ids that are being tested for don't exist/are outdated
+
 ## Tests that are fine but, fail because code doesn't work:
 - To my understanding, arm IK is currently WIP
 - `test_default_tag_ids_are_0_through_7`
