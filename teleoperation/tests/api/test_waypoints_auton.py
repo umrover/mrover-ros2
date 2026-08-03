@@ -11,7 +11,7 @@ DEFAULT_NAMES = [
 
 
 def _get_waypoints(api):
-    resp = api.get(url(api, '/api/waypoints/auton/'))
+    resp = api.get(url(api, '/api/waypoints/auton/store/'))
     assert resp.status_code == 200
     data = resp.json()
     assert data['status'] == 'success'
