@@ -1,5 +1,6 @@
 name: CI
 on:
+  workflow_dispatch:
   pull_request:
     branches:
       - main
@@ -21,7 +22,7 @@ jobs:
       - name: Install clang-format
         run: |
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo add-apt-repository 'deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main'
+          sudo add-apt-repository 'deb https://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main'
           sudo apt-get update
           sudo apt-get install -y clang-format-18
       - name: Install shellcheck
@@ -56,18 +57,20 @@ jobs:
       - name: Compiler Cache
         if: github.event.pull_request.draft == false
         uses: hendrikmuhs/ccache-action@v1.2.23
-      - name: manif Submodule Update
+      - name: Dawn Cache
         if: github.event.pull_request.draft == false
-        run: cd $GITHUB_WORKSPACE/src/mrover/ && git submodule update --init deps/manif
+        uses: actions/cache@v5
+        with:
+          path: src/mrover/deps/dawn-prebuilt
+          key: dawn-${{ hashFiles('src/mrover/scripts/setup_dawn.sh') }}
+      - name: Setup Dawn
+        if: github.event.pull_request.draft == false
+        run: ./scripts/setup_dawn.sh
+        working-directory: "${{ github.workspace }}/src/mrover"
       - name: Build
         if: github.event.pull_request.draft == false
+        shell: bash
         run: . /opt/ros/humble/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./build.sh
-      # - name: Build Without Static Analysis
-      #   if: github.event.pull_request.draft == false && github.event.pull_request.base.ref != 'refs/heads/main'
-      #   run: . /opt/ros/humble/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./build.sh
-      # - name: Build With Static Analysis
-      #   if: github.event_name == 'push' && github.event.pull_request.base.ref == 'refs/heads/main'
-      #   run: . /opt/ros/humble/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./build_ci.sh
       # - name: Test
       #   if: github.event.pull_request.draft == false
       #   run: . /opt/ros/noetic/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && . $GITHUB_WORKSPACE/devel/setup.sh && catkin test && rostest mrover integration.test --text

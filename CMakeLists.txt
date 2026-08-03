@@ -15,6 +15,15 @@ option(MROVER_CI "Enable CI options" OFF)
 option(MROVER_CLANG_TIDY "Enable static analysis with Clang tidy" ${MROVER_CI})
 option(MROVER_WARNINGS_AS_ERRORS "Treat warnings as errors" ${MROVER_CI})
 
+# Set sim variable based on Linux x86_64
+if (NOT DEFINED MROVER_SIMULATOR)
+    if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+        set(MROVER_SIMULATOR ON)
+    else ()
+        set(MROVER_SIMULATOR OFF)
+    endif ()
+endif ()
+
 set(node_plugins "")
 
 if (APPLE)
@@ -68,9 +77,11 @@ find_package(magic_enum REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
 find_package(dynamixel_sdk REQUIRED)
 
-find_package(Assimp NAMES Assimp assimp REQUIRED)
-find_package(Bullet REQUIRED)
-find_package(glfw3 REQUIRED)
+if (MROVER_SIMULATOR)
+    find_package(Assimp NAMES Assimp assimp REQUIRED)
+    find_package(Bullet REQUIRED)
+    find_package(glfw3 REQUIRED)
+endif ()
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
 if (NOT APPLE)
@@ -78,43 +89,30 @@ if (NOT APPLE)
     link_libraries(TBB::tbb)
 endif()
 
-find_package(dawn QUIET)
-if (dawn_FOUND)
-    message(STATUS "Using Dawn system install")
-else ()
-    message(STATUS "Using Dawn from source")
-    add_library(webgpu SHARED IMPORTED)
-
-    set(WEBGPU_BUILD_DIR ${CMAKE_CURRENT_LIST_DIR}/deps/dawn/out/Release)
-    if (APPLE)
-        set(WEBGPU_SHARED_LIB ${WEBGPU_BUILD_DIR}/src/dawn/native/libwebgpu_dawn.dylib)
-    else ()
-        set(WEBGPU_SHARED_LIB ${WEBGPU_BUILD_DIR}/src/dawn/native/libwebgpu_dawn.so)
+if (MROVER_SIMULATOR)
+    set(Dawn_ROOT "${CMAKE_CURRENT_LIST_DIR}/deps/dawn-prebuilt")
+    find_package(Dawn QUIET)
+    if (NOT Dawn_FOUND)
+        message(FATAL_ERROR "Dawn not found. Run 'scripts/setup_dawn.sh' before building.")
     endif ()
-    if (EXISTS ${WEBGPU_SHARED_LIB})
-        target_include_directories(webgpu INTERFACE ${CMAKE_CURRENT_LIST_DIR}/deps/dawn/include ${WEBGPU_BUILD_DIR}/gen/include)
-        set_property(TARGET webgpu PROPERTY IMPORTED_LOCATION ${WEBGPU_SHARED_LIB})
-
-        set(dawn_FOUND TRUE)
-    else ()
-        message(WARNING "Dawn not found. If on Ubuntu install with 'sudo apt install -f ./pkg/libdawn-dev.deb'. Or build from source with ./scripts/build_dawn.sh")
-    endif ()
+    add_library(webgpu ALIAS dawn::webgpu_dawn)
 endif ()
 
-find_package(MANIF::manif QUIET)
-if (NOT manif_FOUND)
-    if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/deps/manif/include/manif)
-        set(BUILD_TESTING_OLD ${BUILD_TESTING})
-        set(BUILD_TESTING OFF)
-        add_subdirectory(deps/manif EXCLUDE_FROM_ALL SYSTEM)
-        set(BUILD_TESTING ${BUILD_TESTING_OLD})
-        add_library(MANIF::manif ALIAS manif)
+include(FetchContent)
 
-        set(manif_FOUND TRUE)
-    else()
-        message(FATAL_ERROR "Manif not found. If on Ubuntu install with 'sudo apt install -f ./pkg/libmanif-dev.deb'. Or build from source with 'git submodule update --init deps/manif' and make sure it is non-empty")
-    endif()
-endif()
+set(FETCHCONTENT_BASE_DIR "${CMAKE_CURRENT_LIST_DIR}/deps/.fetchcontent")
+set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
+
+FetchContent_Declare(manif
+    GIT_REPOSITORY https://github.com/artivis/manif.git
+    GIT_TAG        0.0.5
+    GIT_SHALLOW    TRUE
+    SYSTEM
+)
+set(BUILD_TESTING_PREV ${BUILD_TESTING})
+set(BUILD_TESTING OFF)
+FetchContent_MakeAvailable(manif)
+set(BUILD_TESTING ${BUILD_TESTING_PREV})
 
 find_package(PkgConfig REQUIRED)
 pkg_search_module(NetLink libnl-3.0 IMPORTED_TARGET QUIET)
@@ -123,9 +121,39 @@ pkg_search_module(Gst gstreamer-1.0 IMPORTED_TARGET QUIET) # if this is failing 
 pkg_search_module(GstApp gstreamer-app-1.0 IMPORTED_TARGET QUIET)
 pkg_search_module(LibUdev libudev IMPORTED_TARGET QUIET)
 
-add_subdirectory(deps/imgui EXCLUDE_FROM_ALL SYSTEM)
-add_subdirectory(deps/webgpuhpp EXCLUDE_FROM_ALL SYSTEM)
-add_subdirectory(deps/glfw3webgpu EXCLUDE_FROM_ALL SYSTEM)
+if (MROVER_SIMULATOR)
+    FetchContent_Declare(
+        imgui
+        GIT_REPOSITORY https://github.com/ocornut/imgui.git
+        GIT_TAG        v1.92.8
+        GIT_SHALLOW    TRUE
+    )
+    FetchContent_MakeAvailable(imgui)
+    # avoid fetching in imgui_demo.cpp and unnecessarily compiling it
+    add_library(imgui STATIC
+        ${imgui_SOURCE_DIR}/imgui.cpp
+        ${imgui_SOURCE_DIR}/imgui_draw.cpp
+        ${imgui_SOURCE_DIR}/imgui_tables.cpp
+        ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_wgpu.cpp
+    )
+    target_include_directories(imgui SYSTEM PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
+    target_compile_definitions(imgui PUBLIC IMGUI_IMPL_WEBGPU_BACKEND_DAWN)
+    target_link_libraries(imgui PUBLIC glfw webgpu)
+    if (APPLE)
+        # imgui_impl_wgpu.cpp includes Cocoa.h on macOS via Dawn's WebGPU backend,
+        # which contains Objective-C @class syntax invalid in plain C++.
+        set_source_files_properties(
+            ${imgui_SOURCE_DIR}/backends/imgui_impl_wgpu.cpp
+            PROPERTIES LANGUAGE OBJCXX
+        )
+    endif ()
+
+    add_library(webgpu_hpp INTERFACE)
+    target_include_directories(webgpu_hpp SYSTEM INTERFACE deps/webgpuhpp)
+    add_subdirectory(deps/glfw3webgpu EXCLUDE_FROM_ALL SYSTEM)
+endif ()
 add_subdirectory(deps/mjbots EXCLUDE_FROM_ALL SYSTEM)
 
 if (BUILD_TESTING)
@@ -207,7 +235,7 @@ ament_python_install_package(state_machine)
 include_directories(perception)
 
 mrover_add_library(lie lie/*.cpp lie)
-target_link_libraries(lie MANIF::manif)
+target_link_libraries(lie manif)
 ament_target_dependencies(lie rclcpp geometry_msgs tf2 tf2_ros)
 
 mrover_add_header_only_library(loop_profiler loop_profiler)
@@ -217,17 +245,19 @@ target_link_libraries(gst_utils INTERFACE magic_enum::magic_enum PkgConfig::Gst 
 
 # Simulator
 
-mrover_add_node(simulator simulator/*.cpp simulator simulator/pch.hpp)
-ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf yaml_cpp_vendor)
-target_link_libraries(simulator
-    assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
-    ${BULLET_LIBRARIES}
-    lie Eigen3::Eigen
-    opencv_core opencv_imgcodecs opencv_imgproc
-    loop_profiler
-    parameter_utils
-)
-target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
+if (MROVER_SIMULATOR)
+    mrover_add_node(simulator simulator/*.cpp simulator simulator/pch.hpp)
+    ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf yaml_cpp_vendor)
+    target_link_libraries(simulator
+        assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
+        ${BULLET_LIBRARIES}
+        lie Eigen3::Eigen
+        opencv_core opencv_imgcodecs opencv_imgproc
+        loop_profiler
+        parameter_utils
+    )
+    target_include_directories(simulator SYSTEM PRIVATE ${BULLET_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
+endif ()
 
 
 # Localization
@@ -274,7 +304,7 @@ if(ZED_FOUND AND CUDA_FOUND)
 
     mrover_add_component(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp ZedWrapper)
     target_compile_options(zed_component PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=c++20>)
-    mrover_link_component(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)
+    mrover_link_component(zed parameter_utils lie manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)
     mrover_ament_component(zed rclcpp rclcpp_components sensor_msgs ZED CUDA tf2 tf2_ros)
 
     mrover_executable_from_component(zed perception/executables/zed.cpp zed_component)
