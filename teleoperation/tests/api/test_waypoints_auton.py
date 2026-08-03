@@ -29,7 +29,7 @@ def _create_waypoint(api, **overrides):
         'coverage_radius': 0.0,
     }
     payload.update(overrides)
-    resp = api.post(url(api, '/api/waypoints/auton/'), json=payload)
+    resp = api.post(url(api, '/api/waypoints/auton/store'), json=payload)
     assert resp.status_code == 200
     data = resp.json()
     assert data['status'] == 'success'
