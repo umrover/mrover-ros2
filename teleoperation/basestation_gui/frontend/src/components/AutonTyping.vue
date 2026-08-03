@@ -155,8 +155,8 @@ function getLetterClass(state: string) {
 .typing-panel {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   gap: 0.5rem;
+  justify-content: center;
   height: 100%;
   padding: 0.5rem 0.75rem;
   text-transform: uppercase;
@@ -164,43 +164,43 @@ function getLetterClass(state: string) {
 
 .typing-row {
   display: flex;
-  align-items: center;
   gap: 0.375rem;
+  align-items: center;
 }
 
 .typing-input {
   width: 5.5em;
   padding: 0.2rem 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
   text-align: center;
   letter-spacing: 0.15em;
-  font-weight: 600;
-  font-size: 0.9rem;
+  background: var(--view-bg);
   border: 1px solid var(--panel-border);
   border-radius: var(--radius-sm);
-  background: var(--view-bg);
-  color: var(--text-primary);
 }
 
 .spacer { flex: 1; }
 
 .yaw-label {
-  font-weight: 700;
-  opacity: 0.6;
-  letter-spacing: 0.06em;
   margin-right: 0.25rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  opacity: 0.6;
 }
 
 .feedback-table {
-  border-collapse: collapse;
   width: 100%;
+  border-collapse: collapse;
 }
 
 .feedback-table td {
   height: clamp(32px, 2.5vw, 48px);
   font-size: 1.25rem;
   font-weight: 700;
-  text-align: center;
   line-height: 1;
+  text-align: center;
 }
 
 .grey-cell {

@@ -147,12 +147,15 @@ if (NOT MROVER_JETSON)
         GIT_SHALLOW    TRUE
     )
     FetchContent_MakeAvailable(imgui)
-    file(GLOB IMGUI_SOURCES
-        ${imgui_SOURCE_DIR}/*.cpp
+    # avoid fetching in imgui_demo.cpp and unnecessarily compiling it
+    add_library(imgui STATIC
+        ${imgui_SOURCE_DIR}/imgui.cpp
+        ${imgui_SOURCE_DIR}/imgui_draw.cpp
+        ${imgui_SOURCE_DIR}/imgui_tables.cpp
+        ${imgui_SOURCE_DIR}/imgui_widgets.cpp
         ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
         ${imgui_SOURCE_DIR}/backends/imgui_impl_wgpu.cpp
     )
-    add_library(imgui STATIC ${IMGUI_SOURCES})
     target_include_directories(imgui SYSTEM PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
     target_compile_definitions(imgui PUBLIC IMGUI_IMPL_WEBGPU_BACKEND_DAWN)
     target_link_libraries(imgui PUBLIC glfw webgpu)
@@ -266,7 +269,7 @@ ament_python_install_package(state_machine)
 include_directories(perception)
 
 mrover_add_library(lie lie/*.cpp lie)
-target_link_libraries(lie MANIF::manif)
+target_link_libraries(lie manif)
 ament_target_dependencies(lie rclcpp geometry_msgs tf2 tf2_ros)
 
 mrover_add_header_only_library(units units)
@@ -341,7 +344,7 @@ if(ZED_FOUND AND CUDA_FOUND)
 
     mrover_add_component(zed perception/zed_wrapper/*.c* perception/zed_wrapper/pch.hpp ZedWrapper)
     target_compile_options(zed_component PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=c++20>)
-    mrover_link_component(zed parameter_utils lie MANIF::manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)
+    mrover_link_component(zed parameter_utils lie manif ${CUDA_LIBRARIES} loop_profiler cuda_compiler_flags)
     mrover_ament_component(zed rclcpp rclcpp_components sensor_msgs ZED CUDA tf2 tf2_ros)
 
     mrover_executable_from_component(zed perception/executables/zed.cpp zed_component)

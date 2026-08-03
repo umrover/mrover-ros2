@@ -103,6 +103,10 @@ source $ZSH/oh-my-zsh.sh
 source /opt/ros/jazzy/setup.zsh
 
 alias mrover="cd $MROVER_REPO && source_mrover_overlay"
+function build_mrover() {
+    cd $MROVER_REPO && ./build.sh ${1} && mrover
+}
+alias clean_mrover="cd $MROVER_REPO && ./clean.sh && mrover"
 
 # bun completions
 [ -s "/home/mrover/.bun/_bun" ] && source "/home/mrover/.bun/_bun"

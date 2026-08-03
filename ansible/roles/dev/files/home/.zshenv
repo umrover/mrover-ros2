@@ -14,6 +14,7 @@ source_mrover_overlay(){
     source "${MROVER_REPO}/venv/bin/activate"
 
     build_profiles=("RelWithDebInfo" "Release" "Debug")
+    unset MROVER_BUILD_PROFILE
 
     target_file=""
 
@@ -22,8 +23,10 @@ source_mrover_overlay(){
 
         if [ -f "${file}" ]; then
             if [[ -z "${target_file}" ]]; then
+                export MROVER_BUILD_PROFILE="${profile}"
                 target_file="${file}"
             elif [[ "${file}" -nt "${target_file}" ]]; then
+                export MROVER_BUILD_PROFILE="${profile}"
                 target_file="${file}"
             fi
         fi
