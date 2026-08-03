@@ -20,7 +20,7 @@ def _make_course_waypoint(name='CourseWP', tag_id=10, **overrides):
 
 
 def _get_course(api):
-    resp = api.get(url(api, '/api/waypoints/auton/current/'))
+    resp = api.get(url(api, '/api/waypoints/auton/execution/'))
     assert resp.status_code == 200
     data = resp.json()
     assert data['status'] == 'success'
@@ -28,7 +28,7 @@ def _get_course(api):
 
 
 def _save_course(api, waypoints):
-    resp = api.post(url(api, '/api/waypoints/auton/current/save/'), json={'waypoints': waypoints})
+    resp = api.post(url(api, '/api/waypoints/auton/execution/save/'), json={'waypoints': waypoints})
     assert resp.status_code == 200
     return resp.json()
 
@@ -81,6 +81,6 @@ class TestAutonCourse:
     def test_clear_auton_clears_course_too(self, api, clean_auton_waypoints):
         wps = [_make_course_waypoint()]
         _save_course(api, wps)
-        api.delete(url(api, '/api/waypoints/auton/clear/'))
+        api.delete(url(api, '/api/waypoints/auton/store/'))
         course = _get_course(api)
         assert course == []

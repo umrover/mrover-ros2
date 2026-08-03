@@ -2,9 +2,12 @@ Copied over Kevin's tests from skj/test-suite here because merging was beyond my
 
 ## Interesting things
 - In `test_create_preserves_fields`, 'coverage_radius' doesn't exist in waypoints
+    - Also in `test_course_preserves_coverage_radius`
+    - 1 or more other functions in test_waypoints_auton_course.py
 - `test_clear_all_removes_everything` seems to call an api utility that doesn't exist. Do we need to be able to clear *everything*?
 
-## Tests that are fine but fail because code doesn't work:
+## Tests that are fine but, fail because code doesn't work:
+- To my understanding, arm IK is currently WIP
 - `test_default_tag_ids_are_0_through_7`
     - `tag_id` is NoneType
 - `test_get_recording_waypoints`
