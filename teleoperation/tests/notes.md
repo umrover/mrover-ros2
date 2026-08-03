@@ -5,6 +5,7 @@ Copied over Kevin's tests from skj/test-suite here because merging was beyond my
     - Also in `test_course_preserves_coverage_radius`
     - 1 or more other functions in test_waypoints_auton_course.py
 - `test_clear_all_removes_everything` seems to call an api utility that doesn't exist. Do we need to be able to clear *everything*?
+- In ```test_arm_ros_integration.py```, all websocket connection attempts result in a 403 error
 
 ## Tests that are fine but, fail because code doesn't work:
 - To my understanding, arm IK is currently WIP
