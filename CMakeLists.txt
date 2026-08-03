@@ -12,28 +12,13 @@ option(MROVER_CI "Enable CI options" OFF)
 option(MROVER_CLANG_TIDY "Enable static analysis with Clang tidy" ${MROVER_CI})
 option(MROVER_WARNINGS_AS_ERRORS "Treat warnings as errors" ${MROVER_CI})
 
-# The deployed rover (Jetson) never runs the simulator, so it doesn't need Dawn/webgpu,
-# an otherwise heavy, arch-specific prebuilt dependency. Auto-detect via either standard
-# L4T marker; override with -DMROVER_JETSON=ON/OFF if both ever misfire.
-set(MROVER_JETSON_DEFAULT OFF)
-if (EXISTS "/etc/nv_tegra_release")
-    set(MROVER_JETSON_DEFAULT ON)
-else ()
-    find_program(MROVER_DPKG_EXECUTABLE dpkg)
-    if (MROVER_DPKG_EXECUTABLE)
-        execute_process(
-            COMMAND ${MROVER_DPKG_EXECUTABLE} -s nvidia-l4t-core
-            RESULT_VARIABLE MROVER_L4T_CORE_RESULT
-            OUTPUT_QUIET
-            ERROR_QUIET
-        )
-        if (MROVER_L4T_CORE_RESULT EQUAL 0)
-            set(MROVER_JETSON_DEFAULT ON)
-        endif ()
+# Set sim variable based on Linux x86_64
+if (NOT DEFINED MROVER_SIMULATOR)
+    if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+        set(MROVER_SIMULATOR ON)
+    else ()
+        set(MROVER_SIMULATOR OFF)
     endif ()
-endif ()
-if (NOT DEFINED MROVER_JETSON)
-    set(MROVER_JETSON ${MROVER_JETSON_DEFAULT})
 endif ()
 
 set(node_plugins "")
@@ -91,7 +76,7 @@ find_package(yaml_cpp_vendor REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(dynamixel_sdk REQUIRED)
 
-if (NOT MROVER_JETSON)
+if (MROVER_SIMULATOR)
     find_package(Assimp NAMES Assimp assimp REQUIRED)
     find_package(Bullet REQUIRED)
     find_package(glfw3 REQUIRED)
@@ -103,7 +88,7 @@ if (NOT APPLE)
     link_libraries(TBB::tbb)
 endif()
 
-if (NOT MROVER_JETSON)
+if (MROVER_SIMULATOR)
     list(PREPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_LIST_DIR}/deps/dawn-prebuilt")
     find_package(Dawn QUIET)
     if (NOT Dawn_FOUND)
@@ -139,7 +124,7 @@ pkg_search_module(Gst gstreamer-1.0 IMPORTED_TARGET QUIET) # if this is failing 
 pkg_search_module(GstApp gstreamer-app-1.0 IMPORTED_TARGET QUIET)
 pkg_search_module(LibUdev libudev IMPORTED_TARGET QUIET)
 
-if (NOT MROVER_JETSON)
+if (MROVER_SIMULATOR)
     FetchContent_Declare(
         imgui
         GIT_REPOSITORY https://github.com/ocornut/imgui.git
@@ -272,7 +257,14 @@ mrover_add_library(lie lie/*.cpp lie)
 target_link_libraries(lie manif)
 ament_target_dependencies(lie rclcpp geometry_msgs tf2 tf2_ros)
 
-mrover_add_header_only_library(units units)
+set(MROVER_EMBEDDED_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/esw/fw/lib")
+
+# esw/fw/lib/units already defines an equivalent "units" INTERFACE target once the
+# submodule is checked out; only register our own copy when it's absent (e.g. macOS,
+# shallow checkout without submodules) so differential_drive_controller still links.
+if (NOT EXISTS ${MROVER_EMBEDDED_ROOT_DIR} OR APPLE)
+    mrover_add_header_only_library(units units)
+endif ()
 mrover_add_header_only_library(loop_profiler loop_profiler)
 mrover_add_header_only_library(parameter_utils parameter_utils)
 mrover_add_header_only_library(gst_utils gst_utils)
@@ -284,7 +276,7 @@ endif ()
 
 # Simulator
 
-if (NOT MROVER_JETSON)
+if (MROVER_SIMULATOR)
     mrover_add_node(simulator simulator/*.cpp simulator simulator/pch.hpp)
     ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf yaml_cpp_vendor ament_index_cpp)
     target_link_libraries(simulator
@@ -391,7 +383,6 @@ mrover_executable_from_component(cost_map perception/executables/cost_map.cpp co
 
 # Embedded
 
-set(MROVER_EMBEDDED_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/esw/fw/lib")
 if (EXISTS ${MROVER_EMBEDDED_ROOT_DIR} AND NOT APPLE)
     add_subdirectory(esw/fw/lib)
 
