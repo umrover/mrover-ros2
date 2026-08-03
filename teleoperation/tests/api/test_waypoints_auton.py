@@ -97,30 +97,30 @@ class TestAutonWaypointCreate:
 class TestAutonWaypointUpdate:
     def test_partial_update(self, api, clean_auton_waypoints):
         wp = _create_waypoint(api, name='original')
-        resp = api.patch(url(api, f'/api/waypoints/auton/{wp["db_id"]}/'), json={'name': 'updated'})
+        resp = api.patch(url(api, f'/api/waypoints/auton/store/{wp["db_id"]}/'), json={'name': 'updated'})
         assert resp.status_code == 200
         data = resp.json()
         assert data['waypoint']['name'] == 'updated'
         assert data['waypoint']['tag_id'] == wp['tag_id']
 
     def test_update_default_waypoint(self, api):
-        resp = api.patch(url(api, '/api/waypoints/auton/1/'), json={'lat': 42.999, 'lon': -83.999})
+        resp = api.patch(url(api, '/api/waypoints/auton/store/1/'), json={'lat': 42.999, 'lon': -83.999})
         assert resp.status_code == 200
         data = resp.json()
         assert abs(data['waypoint']['lat'] - 42.999) < 0.001
         assert abs(data['waypoint']['lon'] - (-83.999)) < 0.001
 
     def test_update_nonexistent_returns_404(self, api):
-        resp = api.patch(url(api, '/api/waypoints/auton/9999/'), json={'name': 'nope'})
+        resp = api.patch(url(api, '/api/waypoints/auton/store/9999/'), json={'name': 'nope'})
         assert resp.status_code == 404
 
     def test_update_empty_body_returns_400(self, api):
-        resp = api.patch(url(api, '/api/waypoints/auton/1/'), json={})
+        resp = api.patch(url(api, '/api/waypoints/auton/store/1/'), json={})
         assert resp.status_code == 400
 
     def test_update_preserves_unchanged_fields(self, api, clean_auton_waypoints):
         wp = _create_waypoint(api, name='keep-fields', tag_id=77, coverage_radius=2.0)
-        api.patch(url(api, f'/api/waypoints/auton/{wp["db_id"]}/'), json={'name': 'renamed'})
+        api.patch(url(api, f'/api/waypoints/auton/store/{wp["db_id"]}/'), json={'name': 'renamed'})
         waypoints = _get_waypoints(api)
         updated = next(w for w in waypoints if w['db_id'] == wp['db_id'])
         assert updated['name'] == 'renamed'
@@ -132,17 +132,17 @@ class TestAutonWaypointDelete:
     def test_delete_user_waypoint(self, api, clean_auton_waypoints):
         wp = _create_waypoint(api)
         db_id = wp['db_id']
-        resp = api.delete(url(api, f'/api/waypoints/auton/{db_id}/'))
+        resp = api.delete(url(api, f'/api/waypoints/auton/store/{db_id}/'))
         assert resp.status_code == 200
         waypoints = _get_waypoints(api)
         assert not any(w['db_id'] == db_id for w in waypoints)
 
     def test_delete_default_returns_403(self, api):
-        resp = api.delete(url(api, '/api/waypoints/auton/1/'))
+        resp = api.delete(url(api, '/api/waypoints/auton/store/1/'))
         assert resp.status_code == 403
 
     def test_delete_nonexistent_returns_404(self, api):
-        resp = api.delete(url(api, '/api/waypoints/auton/9999/'))
+        resp = api.delete(url(api, '/api/waypoints/auton/store/9999/'))
         assert resp.status_code == 404
 
     def test_clear_removes_only_user_waypoints(self, api, clean_auton_waypoints):
@@ -157,7 +157,7 @@ class TestAutonWaypointDelete:
     def test_clear_all_removes_everything(self, api):
         try:
             api.delete(url(api, '/api/waypoints/auton/clear/all/'))
-            resp = api.get(url(api, '/api/waypoints/auton/'))
+            resp = api.get(url(api, '/api/waypoints/auton/store'))
             data = resp.json()
             assert len(data['waypoints']) == 0
         finally:
