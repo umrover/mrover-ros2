@@ -4,9 +4,14 @@
 
 namespace mrover {
 
+    template<typename T, auto Deleter>
+    struct GlfwDeleter {
+        auto operator()(T* p) const -> void { Deleter(p); }
+    };
+
     template<typename T, auto Creater, auto Deleter>
     class GlfwPointer {
-        std::unique_ptr<T, decltype([](auto* p) { Deleter(p); })> mPointer;
+        std::unique_ptr<T, GlfwDeleter<T, Deleter>> mPointer;
 
         static auto check(T* result) -> T* {
             if (!result) throw std::runtime_error("GLFW Error");
