@@ -300,26 +300,26 @@ function handleExecutionDragEnd() {
   width: 2rem;
   height: 2rem;
   padding: 3px;
-  border-radius: var(--radius-sm);
   cursor: pointer;
+  border-radius: var(--radius-sm);
   transition: all 0.15s;
 }
 
 .vim-toggle--on {
+  background-color: rgb(var(--status-ok-rgb), 0.15);
   border: 2px solid var(--status-ok);
-  background-color: rgba(var(--status-ok-rgb), 0.15);
-  box-shadow: 0 0 6px rgba(var(--status-ok-rgb), 0.3);
+  box-shadow: 0 0 6px rgb(var(--status-ok-rgb), 0.3);
 }
 
 .vim-toggle--off {
-  border: 2px solid var(--panel-border);
   background-color: transparent;
+  border: 2px solid var(--panel-border);
   opacity: 0.35;
 }
 
 .vim-toggle--off:hover {
-  opacity: 0.7;
   border-color: var(--text-muted);
+  opacity: 0.7;
 }
 
 .vim-logo {
@@ -333,9 +333,10 @@ function handleExecutionDragEnd() {
 <style>
 .visual-mode-bar {
   position: fixed;
+  right: 0;
   bottom: 0;
   left: 0;
-  right: 0;
+  z-index: 1000;
   padding: 0.25rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 600;
@@ -344,6 +345,5 @@ function handleExecutionDragEnd() {
   letter-spacing: 0.05em;
   background-color: var(--status-ok);
   border-top: 2px solid var(--status-ok);
-  z-index: 1000;
 }
 </style>

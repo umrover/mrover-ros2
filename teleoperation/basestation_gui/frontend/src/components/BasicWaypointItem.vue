@@ -43,7 +43,7 @@ defineProps({
 }
 
 .list-item--drone {
-  background-color: rgba(var(--accent-rgb), 0.05);
+  background-color: rgb(var(--accent-rgb), 0.05);
   border-color: var(--accent);
 }
 </style>
