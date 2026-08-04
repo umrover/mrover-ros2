@@ -33,7 +33,7 @@ if (APPLE)
 endif ()
 
 if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    add_compile_options(-Wall -Wextra -Wpedantic -Wno-missing-field-initializers -Wno-deprecated-declarations)
+    add_compile_options(-Wall -Wextra -Wpedantic -Wno-missing-field-initializers -Wno-deprecated-declarations -Wno-subobject-linkage -Wno-maybe-uninitialized)
 
     if (MROVER_WARNINGS_AS_ERRORS)
         message(STATUS "Treating warnings as errors")
