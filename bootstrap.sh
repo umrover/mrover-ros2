@@ -38,14 +38,7 @@ if [ "${NEED_APT_UPDATE}" = true ]; then
 fi
 sudo apt install -y ansible git git-lfs
 
-readonly DEFAULT_MROVER_PATH=~/mrover-ros2
-
-echo -e "${BLUE_BOLD}[ADVANCED] Enter path to clone the repo... [leave blank for ${DEFAULT_MROVER_PATH}]:${NC}"
-read -r MROVER_PATH
-if [ -z "${MROVER_PATH}" ]; then
-  MROVER_PATH=${DEFAULT_MROVER_PATH}
-fi
-echo -e "${GREY_BOLD}Using ${MROVER_PATH} as the repo path${NC}"
+readonly MROVER_PATH=~/mrover-ros2
 
 FIRST_TIME_SETUP=false
 

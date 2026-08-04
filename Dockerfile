@@ -1,4 +1,4 @@
-FROM ubuntu:jammy
+FROM ubuntu:noble
 
 # DEBIAN_FRONTEND=noninteractive prevents apt from asking for user input
 # software-properties-common is needed for apt-add-repository
@@ -12,8 +12,8 @@ RUN useradd --create-home --groups sudo --shell /bin/zsh mrover
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
 USER mrover
-RUN mkdir -p /home/mrover/ros2_ws/src/mrover
-WORKDIR /home/mrover/ros2_ws/src/mrover
+RUN mkdir -p /home/mrover/mrover-ros2
+WORKDIR /home/mrover/mrover-ros2
 # Defines the APT packages that need to be installed
 # rosdep is called from Ansible to install them
 ADD --chown=mrover:mrover ./package.xml .

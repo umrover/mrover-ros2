@@ -1,12 +1,13 @@
 # MRover ROS
-readonly MROVER_REPO="${MROVER_REPO:-$HOME/mrover-ros2}"
+export MROVER_REPO="${MROVER_REPO:-$HOME/mrover-ros2}"
+readonly MROVER_REPO
 
 source /opt/ros/jazzy/setup.zsh
 
 export ROS_DOMAIN_ID=5
 export COLCON_TRACE=0
 
-remove_ros2_ws_from_path(){
+remove_mrover_from_path(){
     export ${1}="$(echo ${(P)1} | tr ':' '\n' | grep -v "mrover-ros2" | paste -s -d ':')"
 }
 
@@ -33,11 +34,11 @@ source_mrover_overlay(){
     done
 
     # clean up current ROS environment
-    remove_ros2_ws_from_path LD_LIBRARY_PATH
-    remove_ros2_ws_from_path AMENT_PREFIX_PATH
-    remove_ros2_ws_from_path PYTHONPATH
-    remove_ros2_ws_from_path COLCON_PREFIX_PATH
-    remove_ros2_ws_from_path CMAKE_PREFIX_PATH
+    remove_mrover_from_path LD_LIBRARY_PATH
+    remove_mrover_from_path AMENT_PREFIX_PATH
+    remove_mrover_from_path PYTHONPATH
+    remove_mrover_from_path COLCON_PREFIX_PATH
+    remove_mrover_from_path CMAKE_PREFIX_PATH
 
     if [ -f "${target_file}" ]; then
         source "${target_file}" >> /dev/null
