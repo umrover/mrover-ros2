@@ -15,46 +15,15 @@ fi
 
 echo "Using build profile: $build_profile"
 
-# Cap parallel jobs to avoid OOM. The simulator's TUs (Bullet + Eigen + Boost +
-# ImGui + webgpu PCH) can each peak well above 2 GB, so we derive a safe default
-# from total RAM (assuming ~3 GB peak per job) rather than hardcoding 1.
-if [[ -z "${MROVER_BUILD_JOBS:-}" ]]; then
-    if page_size=$(sysctl -n hw.pagesize 2>/dev/null); then
-        # macOS: sum free + inactive pages (inactive can be reclaimed immediately)
-        free_pages=$(vm_stat | awk '/^Pages free:/{gsub(/\./,"",$3); print $3}')
-        inactive_pages=$(vm_stat | awk '/^Pages inactive:/{gsub(/\./,"",$3); print $3}')
-        avail_bytes=$(( (free_pages + inactive_pages) * page_size ))
-        auto_jobs=$(( avail_bytes / (3 * 1024 * 1024 * 1024) ))
-    elif [[ -r /proc/meminfo ]]; then
-        # Linux: MemAvailable already accounts for reclaimable caches
-        avail_kb=$(awk '/^MemAvailable:/{print $2}' /proc/meminfo)
-        auto_jobs=$(( avail_kb / (3 * 1024 * 1024) ))
-    else
-        auto_jobs=1
-    fi
-    parallel_jobs=$(( auto_jobs < 1 ? 1 : auto_jobs ))
-else
-    parallel_jobs="${MROVER_BUILD_JOBS}"
-fi
-if ! [[ "${parallel_jobs}" =~ ^[1-9][0-9]*$ ]]; then
-    echo "MROVER_BUILD_JOBS must be a positive integer, got '${parallel_jobs}'" >&2
-    exit 1
-fi
-echo "Parallel jobs: ${parallel_jobs} (override with MROVER_BUILD_JOBS=N)"
-
 if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
-    bash scripts/setup_dawn.sh
-
+	# portable environment
     os_cmake_args=()
     if [[ "$(uname)" == "Darwin" ]]; then
         macos_sysroot=$(xcrun --sdk macosx --show-sdk-path)
         os_cmake_args=("-DCMAKE_OSX_SYSROOT=${macos_sysroot}")
     fi
 
-    CMAKE_BUILD_PARALLEL_LEVEL="${parallel_jobs}" \
-    COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification \
-        colcon build \
-        --parallel-workers "${parallel_jobs}" \
+    COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification colcon build \
         --cmake-args -G Ninja -W no-dev \
             -DCMAKE_BUILD_TYPE="${build_profile}" \
             -DMROVER_PORTABLE=ON \
@@ -63,25 +32,23 @@ if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
         --symlink-install \
         --event-handlers console_direct+
 
+	# TODO(kevin), omitted $build_profile?
     ln -sf "$(pwd)/build/mrover/compile_commands.json" "$(pwd)/compile_commands.json"
 else
-    if [ -x /usr/local/cuda-12/bin/nvcc ]; then
-        export CUDAHOSTCXX=g++-9
-        export CUDACXX=/usr/local/cuda-12/bin/nvcc
-    fi
+	# native environment (ubuntu 24)
 
-    CMAKE_BUILD_PARALLEL_LEVEL="${parallel_jobs}" \
-    COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification \
-        colcon build \
-        --parallel-workers "${parallel_jobs}" \
+	# Set CUDA compilers
+	export CUDAHOSTCXX=g++-9
+	export CUDACXX=/usr/local/cuda-12/bin/nvcc
+
+    COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification colcon build \
         --cmake-args -G Ninja -W no-dev \
-            -DCMAKE_BUILD_TYPE="${build_profile}" \
+			-DCMAKE_BUILD_TYPE="$build_profile" \
         --symlink-install \
         --event-handlers console_direct+ \
-        --build-base "build/${build_profile}" \
-        --install-base "install/${build_profile}"
+        --build-base "build/$build_profile" \
+        --install-base "install/$build_profile"
 
-    rm -rf "$(pwd)/build/${build_profile}/mrover/.cmake/api"
-    ln -sf "$(pwd)/build/${build_profile}/mrover/compile_commands.json" \
-           "$(pwd)/compile_commands.json"
+    rm -rf "$(pwd)/build/$build_profile/mrover/.cmake/api"
+    ln -sf "$(pwd)/build/$build_profile/mrover/compile_commands.json" "$(pwd)/compile_commands.json"
 fi
