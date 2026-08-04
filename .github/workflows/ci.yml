@@ -45,9 +45,6 @@ jobs:
       HOME: /home/mrover
     steps:
       - uses: actions/checkout@v7
-        with:
-          # TODO(kevin): previous ci.yml warned not to do this, double-check its necessary
-          submodules: recursive
       - name: Dawn Cache
         uses: actions/cache@v6
         with:
