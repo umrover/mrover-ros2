@@ -39,6 +39,9 @@ jobs:
     container:
       image: kevinjin0420/mrover-ci:latest
     needs: style
+    env:
+      # directory owned by mrover so CI can write to it and use caching
+      HOME: /home/mrover
     steps:
       - uses: actions/checkout@v6
         with:
@@ -50,6 +53,13 @@ jobs:
           key: dawn-${{ hashFiles('scripts/setup_dawn.sh') }}
       - name: Setup Dawn
         run: ./scripts/setup_dawn.sh
+      - name: Pip Cache
+        uses: actions/cache@v6
+        with:
+          path: /home/mrover/.cache/pip
+          key: pip-${{ hashFiles('pyproject.toml', 'esw/fw/tools/pyproject.toml') }}
+          restore-keys: |
+            pip-
       - name: Compiler Cache
         uses: hendrikmuhs/ccache-action@v1.2.23
       - name: Build
