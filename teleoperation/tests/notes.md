@@ -11,6 +11,7 @@ Copied over Kevin's tests from skj/test-suite here because merging was beyond my
 - Does an element with id 'pw-controller-status-toggle' exist in DMView?
 - Funnel controls are hard to test
 - I think many element ids that are being tested for don't exist/are outdated
+- Now it seems to crash around test 17 on my machine (Kell). Could it be storage space?
 
 ## Tests that are fine but, fail because code doesn't work:
 - To my understanding, arm IK is currently WIP
