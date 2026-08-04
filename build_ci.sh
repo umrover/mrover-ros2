@@ -1,12 +1,7 @@
 #!/usr/bin/env bash
 
+# Reproduces exactly what CI runs. See .github/workflows/ci.yml.
 set -euxo pipefail
 
-export CC=clang
-export CXX=clang++
-
-colcon build \
-	--cmake-args -G Ninja -W no-dev -D CMAKE_BUILD_TYPE=Release -D MROVER_CI=ON \
-	--symlink-install \
-	--event-handlers console_direct+ \
-	"$@"
+export MROVER_CI=ON
+exec ./build.sh Release
