@@ -14,8 +14,8 @@ jobs:
     name: Style Checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.x'
           pip-install: 'black==26.5.1 mypy==1.11.2'
@@ -43,11 +43,11 @@ jobs:
       # directory owned by mrover so CI can write to it and use caching
       HOME: /home/mrover
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
       - name: Dawn Cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: deps/dawn-prebuilt
           key: dawn-${{ hashFiles('scripts/setup_dawn.sh') }}
@@ -61,7 +61,7 @@ jobs:
           restore-keys: |
             pip-
       - name: Compiler Cache
-        uses: hendrikmuhs/ccache-action@v1.2.23
+        uses: hendrikmuhs/ccache-action@v1
       - name: Build
         shell: bash
         env:
