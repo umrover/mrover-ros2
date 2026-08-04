@@ -2,7 +2,6 @@
 /build/
 /install/
 /log/
-/build_out.txt
 
 # pixi environment directory (pixi.lock IS committed, envs are not)
 /.pixi/*
@@ -10,6 +9,7 @@
 
 # Dawn prebuilt binaries (downloaded by scripts/setup_dawn.sh, not committed)
 /deps/dawn-prebuilt/
+/deps/.fetchcontent/
 
 # Common IDE's, ideally this should be in global gitignore per user
 .vscode/
