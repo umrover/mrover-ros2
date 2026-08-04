@@ -21,7 +21,7 @@ export CC=clang
 export CXX=clang++
 
 # Set CUDA compilers
-export CUDAHOSTCXX=g++-9    
+export CUDAHOSTCXX=g++-9
 export CUDACXX=/usr/local/cuda-12/bin/nvcc
 
 # invoke colcon
