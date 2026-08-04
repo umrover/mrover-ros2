@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Run on a fresh Ubuntu 22 install.
+# Run on a fresh Ubuntu 24 install.
 # Installs Ansible and Git, then clones the mrover repo
 # Ansible will be used to finish configuring the system
 
@@ -38,23 +38,20 @@ if [ "${NEED_APT_UPDATE}" = true ]; then
 fi
 sudo apt install -y ansible git git-lfs
 
-readonly DEFAULT_CATKIN_PATH=~/ros2_ws
+readonly DEFAULT_MROVER_PATH=~/mrover-ros2
 
-echo -e "${BLUE_BOLD}[ADVANCED] Enter path to ROS workspace... [leave blank for ${DEFAULT_CATKIN_PATH}]:${NC}"
-read -r CATKIN_PATH
-if [ -z "${CATKIN_PATH}" ]; then
-  CATKIN_PATH=${DEFAULT_CATKIN_PATH}
+echo -e "${BLUE_BOLD}[ADVANCED] Enter path to clone the repo... [leave blank for ${DEFAULT_MROVER_PATH}]:${NC}"
+read -r MROVER_PATH
+if [ -z "${MROVER_PATH}" ]; then
+  MROVER_PATH=${DEFAULT_MROVER_PATH}
 fi
-echo -e "${GREY_BOLD}Using ${CATKIN_PATH} as ROS workspace${NC}"
+echo -e "${GREY_BOLD}Using ${MROVER_PATH} as the repo path${NC}"
 
-readonly MROVER_PATH=${CATKIN_PATH}/src/mrover
 FIRST_TIME_SETUP=false
 
 if [ ! -d "${MROVER_PATH}" ]; then
-  echo -e "${GREY_BOLD}Creating ROS workspace ...${NC}"
-  mkdir -p "${CATKIN_PATH}"/src
-  git clone git@github.com:umrover/mrover-ros2 "${CATKIN_PATH}"/src/mrover
-  cd "${CATKIN_PATH}"/src/mrover
+  echo -e "${GREY_BOLD}Cloning mrover-ros2 ...${NC}"
+  git clone --recurse-submodules git@github.com:umrover/mrover-ros2 "${MROVER_PATH}"
   FIRST_TIME_SETUP=true
 fi
 
