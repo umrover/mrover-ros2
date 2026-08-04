@@ -21,10 +21,8 @@ export CC=clang
 export CXX=clang++
 
 # Set CUDA compilers
-if [ -x /usr/local/cuda-12/bin/nvcc ]; then
-	export CUDAHOSTCXX=g++-9
-	export CUDACXX=/usr/local/cuda-12/bin/nvcc
-fi
+export CUDAHOSTCXX=g++-9    
+export CUDACXX=/usr/local/cuda-12/bin/nvcc
 
 # invoke colcon
 COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification colcon build \
