@@ -65,8 +65,6 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1
       - name: Build
         shell: bash
-        env:
-          MROVER_BUILD_JOBS: 2
         run: |
           source /opt/ros/jazzy/setup.bash
           ./build_ci.sh
