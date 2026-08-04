@@ -47,12 +47,16 @@ if [ -x /usr/local/cuda-12/bin/nvcc ]; then
     export CUDACXX=/usr/local/cuda-12/bin/nvcc
 fi
 
+# MROVER_CI=ON additionally enables clang-tidy static analysis and -Werror
+mrover_ci="${MROVER_CI:-OFF}"
+
 CMAKE_BUILD_PARALLEL_LEVEL="${parallel_jobs}" \
 COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification \
     colcon build \
     --parallel-workers "${parallel_jobs}" \
     --cmake-args -G Ninja -W no-dev \
         -DCMAKE_BUILD_TYPE="${build_profile}" \
+        -DMROVER_CI="${mrover_ci}" \
     --symlink-install \
     --event-handlers console_direct+ \
     --build-base "build/${build_profile}" \
