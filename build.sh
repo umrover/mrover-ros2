@@ -42,6 +42,10 @@ if ! [[ "${parallel_jobs}" =~ ^[1-9][0-9]*$ ]]; then
 fi
 echo "Parallel jobs: ${parallel_jobs} (override with MROVER_BUILD_JOBS=N)"
 
+# force clang everywhere for consistency
+export CC=clang
+export CXX=clang++
+
 if [ -x /usr/local/cuda-12/bin/nvcc ]; then
     export CUDAHOSTCXX=g++-9
     export CUDACXX=/usr/local/cuda-12/bin/nvcc
