@@ -45,6 +45,9 @@ jobs:
       HOME: /home/mrover
     steps:
       - uses: actions/checkout@v7
+      - name: Checkout ESW Submodule
+        # Use this instead of `submodules: true`/`recursive` to avoid checking out all top-level submodules
+        run: git submodule update --init esw/fw
       - name: Dawn Cache
         uses: actions/cache@v6
         with:
