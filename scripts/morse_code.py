@@ -117,6 +117,7 @@ def run_config(config_path: Path) -> None:
     config_path.write_text(json.dumps(payload, indent=4) + "\n")
     print(f"Wrote output to {config_path}")
 
+
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print(f"usage: {sys.argv[0]} <json_path>", file=sys.stderr)
