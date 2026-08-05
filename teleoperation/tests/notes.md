@@ -12,6 +12,7 @@ Copied over Kevin's tests from skj/test-suite here because merging was beyond my
 - Funnel controls are hard to test
 - I think many element ids that are being tested for don't exist/are outdated
 - Now it seems to crash around test 17 on my machine. Could it be storage space?
+- I'm gonna make a seperate md file for these tests
 
 ## Tests that are fine but, fail because code doesn't work:
 - To my understanding, arm IK is currently WIP
