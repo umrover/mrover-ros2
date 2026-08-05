@@ -63,6 +63,4 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1
       - name: Build
         shell: bash
-        run: |
-          source /opt/ros/jazzy/setup.bash
-          ./build_ci.sh
+        run: source /opt/ros/jazzy/setup.bash && ./build_ci.sh

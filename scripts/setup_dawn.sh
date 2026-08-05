@@ -17,7 +17,7 @@ fi
 
 readonly PLATFORM="$(uname -s)/$(uname -m)"
 
-# ansible's build role invokes this unconditionally, including on Jetson, so skip rather than fail provisioning
+# avoid exiting 0 so other scripts running setup_dawn doesn't fail
 if [ "${PLATFORM}" != "Linux/x86_64" ]; then
     echo "No prebuilt Dawn published for ${PLATFORM} (only Linux x86_64), skipping. The simulator will not be built."
     exit 0
