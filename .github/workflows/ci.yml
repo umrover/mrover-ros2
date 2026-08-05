@@ -39,6 +39,8 @@ jobs:
     runs-on: ubuntu-24.04
     container:
       image: kevinjin0420/mrover-ci:latest
+      # by pass github's dubious ownership check
+      options: --user root
     needs: style
     env:
       # directory owned by mrover so CI can write to it and use caching
