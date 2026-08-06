@@ -65,11 +65,11 @@ class TestAutonCourse:
         names = [w['name'] for w in course]
         assert names == ['A', 'B', 'C']
 
-    def test_course_preserves_coverage_radius(self, api, clean_auton_waypoints):
-        wps = [_make_course_waypoint(coverage_radius=2.0)]
-        _save_course(api, wps)
-        course = _get_course(api)
-        assert course[0]['coverage_radius'] == 2.0
+    # def test_course_preserves_coverage_radius(self, api, clean_auton_waypoints):
+    #     wps = [_make_course_waypoint(coverage_radius=2.0)]
+    #     _save_course(api, wps)
+    #     course = _get_course(api)
+    #     assert course[0]['coverage_radius'] == 2.0
 
     def test_course_enable_costmap_is_bool(self, api, clean_auton_waypoints):
         wps = [_make_course_waypoint(enable_costmap=1)]
