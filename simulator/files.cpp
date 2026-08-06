@@ -10,7 +10,7 @@ namespace mrover {
         // "xacro" is a Python library so unfortunately we have to run it as a subprocess
 
         std::string command = std::format("xacro {}", path.string());
-        std::unique_ptr<FILE, int (*)(FILE*)> pipe(popen(command.c_str(), "r"), pclose);
+        std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command.c_str(), "r"), pclose);
         if (!pipe) throw std::runtime_error{std::format("Failed to xacro: {}", path.string())};
 
         std::array<char, 128> chunk{};
