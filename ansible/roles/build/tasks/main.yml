@@ -1,29 +1,24 @@
-- name: Add LLVM APT Key
-  become: true
-  ansible.builtin.get_url:
-    url: https://apt.llvm.org/llvm-snapshot.gpg.key
-    dest: /usr/share/keyrings/llvm-archive-keyring.asc
-    mode: '0644'
-
 # Allows us to install LLVM tools
-- name: Add LLVM APT List
+- name: Add LLVM APT Repo
   become: true
-  ansible.builtin.apt_repository:
-    repo: "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.asc] https://apt.llvm.org/{{ ubuntu_release }}/ llvm-toolchain-{{ ubuntu_release }}-18 main"
-    filename: llvm
+  ansible.builtin.deb822_repository:
+    name: llvm
+    types: deb
+    uris: "https://apt.llvm.org/{{ ubuntu_release }}/"
+    suites: "llvm-toolchain-{{ ubuntu_release }}-18"
+    components: main
+    signed_by: https://apt.llvm.org/llvm-snapshot.gpg.key
+    install_python_debian: true
 
-- name: Add ROS APT Key
+- name: Add ROS APT Repo
   become: true
-  ansible.builtin.get_url:
-    url: https://raw.githubusercontent.com/ros/rosdistro/master/ros.key
-    dest: /usr/share/keyrings/ros-archive-keyring.gpg
-    mode: '0644'
-
-- name: Add ROS APT List
-  become: true
-  ansible.builtin.apt_repository:
-    repo: "deb [signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu {{ ubuntu_release }} main"
-    filename: ros
+  ansible.builtin.deb822_repository:
+    name: ros
+    types: deb
+    uris: http://packages.ros.org/ros2/ubuntu
+    suites: "{{ ubuntu_release }}"
+    components: main
+    signed_by: https://raw.githubusercontent.com/ros/rosdistro/master/ros.key
 
 - name: Sync APT Preferences
   become: true

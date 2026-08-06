@@ -1,26 +1,22 @@
 - name: Add GitHub CLI dnf repo
   become: true
-  ansible.builtin.command: dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
-  args:
-    creates: /etc/yum.repos.d/gh-cli.repo
-
-- name: Import VSCode RPM key
-  become: true
-  ansible.builtin.rpm_key:
-    key: https://packages.microsoft.com/keys/microsoft.asc
-    state: present
+  ansible.builtin.yum_repository:
+    name: gh-cli
+    description: GitHub CLI
+    baseurl: https://cli.github.com/packages/rpm
+    gpgkey: https://cli.github.com/packages/githubcli-archive-keyring.asc
+    gpgcheck: true
+    enabled: true
 
 - name: Add VSCode dnf repo
   become: true
-  ansible.builtin.copy:
-    dest: /etc/yum.repos.d/vscode.repo
-    content: |
-      [code]
-      name=Visual Studio Code
-      baseurl=https://packages.microsoft.com/yumrepos/vscode
-      enabled=1
-      gpgcheck=1
-      gpgkey=https://packages.microsoft.com/keys/microsoft.asc
+  ansible.builtin.yum_repository:
+    name: vscode
+    description: Visual Studio Code
+    baseurl: https://packages.microsoft.com/yumrepos/vscode
+    gpgkey: https://packages.microsoft.com/keys/microsoft.asc
+    gpgcheck: true
+    enabled: true
 
 - name: Install dnf packages
   become: true
