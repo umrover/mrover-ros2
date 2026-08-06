@@ -11,3 +11,5 @@
     No element with id 'pw-controller-status-toggle'
 6. **gimbal controls visible on DMTask**
     Seems visible.
+7. **default waypoints load**
+
