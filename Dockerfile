@@ -27,12 +27,11 @@ ADD --chown=mrover:mrover ./ansible ./ansible
 ADD --chown=mrover:mrover ./ansible.sh .
 ADD --chown=mrover:mrover ./pkg ./pkg
 ADD --chown=mrover:mrover ./scripts ./scripts
-RUN ./ansible.sh ci.yml
+# clean in the same layer so apt cache/lists don't just get removed later and still count towards size
+RUN ./ansible.sh ci.yml && sudo apt-get clean && sudo rm -rf /var/lib/apt/lists/*
 
 USER root
 RUN apt-get purge ansible -y && apt-get autoremove -y
-# Remove apt cache to free up space in the image
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 USER mrover
 ENTRYPOINT [ "/bin/bash" ]
