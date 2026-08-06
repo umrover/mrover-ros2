@@ -287,22 +287,22 @@ namespace mrover {
 
                     if (mOptions.use_abs_position && mAbsPosExtraIndex != -1) {
                         double const rawPos = (result.extra[mAbsPosExtraIndex].value * mOptions.abs_units_multiplier) - mOptions.abs_position_offset;
-                        this->mPosition = static_cast<float>(std::remainder(rawPos, mOptions.abs_units_multiplier));
+                        mPosition = static_cast<float>(std::remainder(rawPos, mOptions.abs_units_multiplier));
                     } else if (!mIsHomed) {
-                        this->mPosition = std::numeric_limits<float>::quiet_NaN();
+                        mPosition = std::numeric_limits<float>::quiet_NaN();
                     } else {
-                        this->mPosition = static_cast<float>(result.position);
+                        mPosition = static_cast<float>(result.position);
                     }
 
                     if (mOptions.use_abs_velocity && mAbsVelExtraIndex != -1) {
-                        this->mVelocity = result.extra[mAbsVelExtraIndex].value * mOptions.abs_units_multiplier;
+                        mVelocity = result.extra[mAbsVelExtraIndex].value * mOptions.abs_units_multiplier;
                     } else {
-                        this->mVelocity = static_cast<float>(result.velocity);
+                        mVelocity = static_cast<float>(result.velocity);
                     }
 
-                    this->mCurrent = static_cast<float>(result.torque);
-                    this->mErrorState = moteusErrorCodeToErrorState(result.mode, static_cast<ErrorCode>(result.fault));
-                    this->mState = moteusModeToState(result.mode);
+                    mCurrent = static_cast<float>(result.torque);
+                    mErrorState = moteusErrorCodeToErrorState(result.mode, static_cast<ErrorCode>(result.fault));
+                    mState = moteusModeToState(result.mode);
 
                     mMoteusAux1Info = result.aux1_gpio;
                     mMoteusAux2Info = result.aux2_gpio;
@@ -311,13 +311,13 @@ namespace mrover {
 
                     if (result.mode == moteus::Mode::kPositionTimeout) {
                         setStop();
-                        RCLCPP_WARN_STREAM(this->mNode->get_logger(), "Position timeout hit on " << this->mControllerName);
+                        RCLCPP_WARN_STREAM(mNode->get_logger(), "Position timeout hit on " << this->mControllerName);
                     } else if (result.mode == moteus::Mode::kFault) {
                         setStop();
-                        RCLCPP_WARN_STREAM(this->mNode->get_logger(), "Moteus fault occurred on " << this->mControllerName);
+                        RCLCPP_WARN_STREAM(mNode->get_logger(), "Moteus fault occurred on " << this->mControllerName);
                     }
                 } else {
-                    RCLCPP_WARN(this->mNode->get_logger(), "moteus received unexpected message type %s", typeid(T).name());
+                    RCLCPP_WARN(mNode->get_logger(), "moteus received unexpected message type %s", typeid(T).name());
                 }
             },
                        msg);

@@ -84,7 +84,7 @@ namespace mrover {
 
     auto CANBridge::readFrameAsync() -> void {
         async_read(mStream.value(), boost::asio::buffer(&mReadFrame, sizeof(mReadFrame)),
-                   [this](boost::system::error_code const& ec, [[maybe_unused]] std::size_t const bytes) {
+                   [this](boost::system::error_code const& ec, std::size_t const bytes) {
                        checkErrorCode(ec);
                        assert(bytes == sizeof(mReadFrame));
                        frameReadCallback();
