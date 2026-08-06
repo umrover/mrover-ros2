@@ -26,6 +26,7 @@ ADD --chown=mrover:mrover ./mrover ./mrover
 ADD --chown=mrover:mrover ./ansible ./ansible
 ADD --chown=mrover:mrover ./ansible.sh .
 ADD --chown=mrover:mrover ./pkg ./pkg
+ADD --chown=mrover:mrover ./scripts ./scripts
 RUN ./ansible.sh ci.yml
 
 USER root
