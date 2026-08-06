@@ -2,4 +2,4 @@
 
 set -euxo pipefail
 
-rm -rf build install log
+rm -rf build install log compile_commands.json

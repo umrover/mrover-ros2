@@ -15,12 +15,12 @@ jobs:
     name: Style Checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: prefix-dev/setup-pixi@v0.9.6
         with:
           activate-environment: true
           cache: true
-      - uses: actions/cache@v5
+      - uses: actions/cache@v6
         with:
           path: ~/.bun/install/cache
           key: bun-${{ hashFiles('teleoperation/basestation_gui/frontend/bun.lockb') }}
@@ -33,9 +33,9 @@ jobs:
     runs-on: ubuntu-26.04
     needs: style
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Dawn Cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: deps/dawn-prebuilt
           key: dawn-${{ hashFiles('scripts/setup_dawn.sh') }}
@@ -57,18 +57,31 @@ jobs:
     runs-on: ubuntu-24.04
     container:
       image: kevinjin0420/mrover-ci:latest
+      # by pass github's dubious ownership check
+      options: --user root
     needs: style
+    env:
+      # directory owned by mrover so CI can write to it and use caching
+      HOME: /home/mrover
     steps:
-      - uses: actions/checkout@v6
-        with:
-          submodules: recursive
+      - uses: actions/checkout@v7
+      - name: Checkout ESW Submodule
+        # Use this instead of `submodules: true`/`recursive` to avoid checking out all top-level submodules
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}" && git submodule update --init esw/fw
       - name: Dawn Cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: deps/dawn-prebuilt
           key: dawn-${{ hashFiles('scripts/setup_dawn.sh') }}
       - name: Setup Dawn
         run: ./scripts/setup_dawn.sh
+      - name: Pip Cache
+        uses: actions/cache@v6
+        with:
+          path: /home/mrover/.cache/pip
+          key: pip-${{ hashFiles('pyproject.toml', 'esw/fw/tools/pyproject.toml') }}
+          restore-keys: |
+            pip-
       - name: Compiler Cache
         uses: hendrikmuhs/ccache-action@v1.2.23
       - name: Build
@@ -77,4 +90,5 @@ jobs:
           MROVER_BUILD_JOBS: 2
         run: |
           source /opt/ros/jazzy/setup.bash
+          source /home/mrover/mrover-ros2/venv/bin/activate
           ./build_ci.sh

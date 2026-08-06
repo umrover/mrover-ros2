@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Native Ubuntu/Jetpack workstation setup. For other platforms, use bootstrap-portable.sh.
 
+# See: https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
 set -Eeuo pipefail
 
 readonly GREY='\033[1;30m'
@@ -34,15 +35,11 @@ if [ "${NEED_APT_UPDATE}" = true ]; then
 fi
 sudo apt install -y ansible git git-lfs
 
-readonly DEFAULT_WS_PATH=~/ros2_ws
-read -r -p "$(echo -e "${GREY}ROS workspace path [${DEFAULT_WS_PATH}]: ${NC}")" WS_PATH
-WS_PATH="${WS_PATH:-$DEFAULT_WS_PATH}"
+readonly MROVER_PATH=~/mrover-ros2
 
-readonly MROVER_PATH="${WS_PATH}/src/mrover"
-
-if [ ! -d "${MROVER_PATH}/.git" ]; then
-  mkdir -p "${WS_PATH}/src"
-  git clone git@github.com:umrover/mrover-ros2 "${MROVER_PATH}"
+if [ ! -d "${MROVER_PATH}" ]; then
+  echo -e "${GREY}Cloning mrover-ros2 ...${NC}"
+  git clone --recurse-submodules git@github.com:umrover/mrover-ros2 "${MROVER_PATH}"
 fi
 
 if [ -f /etc/nv_tegra_release ]; then

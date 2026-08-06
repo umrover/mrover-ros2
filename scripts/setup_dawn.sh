@@ -47,6 +47,7 @@ if [ -d "${tmpdir}/dawn/lib64" ] && [ ! -e "${tmpdir}/dawn/lib" ]; then
 fi
 
 rm -rf "${DEST}"
+mkdir -p "$(dirname "${DEST}")"
 mv "${tmpdir}/dawn" "${DEST}"
 
 echo "${DAWN_SHA}" > "${VERSION_FILE}"

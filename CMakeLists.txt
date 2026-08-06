@@ -89,7 +89,7 @@ if (NOT APPLE)
 endif()
 
 if (MROVER_SIMULATOR)
-    set(Dawn_ROOT "${CMAKE_CURRENT_LIST_DIR}/deps/dawn-prebuilt")
+    list(PREPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_LIST_DIR}/deps/dawn-prebuilt")
     find_package(Dawn QUIET)
     if (NOT Dawn_FOUND)
         message(FATAL_ERROR "Dawn not found. Run 'scripts/setup_dawn.sh' before building.")
@@ -223,7 +223,7 @@ if(TARGET ${PROJECT_NAME}__rosidl_generator_py)
     endif()
 endif()
 
-# Starter project 
+# Starter project
 # TODO (ali): delete once AutonomyStarterProject.cmake is fixed
 mrover_add_node(starter_project_perception ${CMAKE_CURRENT_LIST_DIR}/starter_project/autonomy/src/*.cpp)
 target_link_libraries(starter_project_perception ${OpenCV_LIBS})
@@ -257,7 +257,14 @@ mrover_add_library(lie lie/*.cpp lie)
 target_link_libraries(lie MANIF::manif)
 ament_target_dependencies(lie rclcpp geometry_msgs tf2 tf2_ros)
 
-mrover_add_header_only_library(units units)
+set(MROVER_EMBEDDED_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/esw/fw/lib")
+
+# esw/fw/lib/units already defines an equivalent "units" INTERFACE target once the
+# submodule is checked out; only register our own copy when it's absent (e.g. macOS,
+# shallow checkout without submodules) so differential_drive_controller still links.
+if (NOT EXISTS ${MROVER_EMBEDDED_ROOT_DIR} OR APPLE)
+    mrover_add_header_only_library(units units)
+endif ()
 mrover_add_header_only_library(loop_profiler loop_profiler)
 mrover_add_header_only_library(parameter_utils parameter_utils)
 mrover_add_header_only_library(gst_utils gst_utils)
@@ -376,7 +383,6 @@ mrover_executable_from_component(cost_map perception/executables/cost_map.cpp co
 
 # Embedded
 
-set(MROVER_EMBEDDED_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/esw/fw/lib")
 if (EXISTS ${MROVER_EMBEDDED_ROOT_DIR} AND NOT APPLE AND NOT MROVER_PORTABLE)
     add_subdirectory(esw/fw/lib)
 
