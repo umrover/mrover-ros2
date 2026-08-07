@@ -92,6 +92,7 @@ if __name__ == "__main__":
 
     print(f"{len(wires)} wires: {', '.join(wires)}")
     print(f"Cut wire {cut} ({wires[cut - 1]})")
+    print(f"Note: 1-indexed, left to right")
 
     # --------------test section---------------
     tests = False
