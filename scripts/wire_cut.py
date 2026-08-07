@@ -1,36 +1,47 @@
 #!/usr/bin/env python3
 
 import sys
-
-# Every wire color, keyed by the code used on the command line. Blue and black
-# both start with "b", so those two take a second letter.
-WIRE_COLORS = {
-    "r": "red",
-    "w": "white",
-    "bl": "blue",
-    "y": "yellow",
-    "bk": "black",
-}
+from enum import Enum
 
 
-def last_wire(wires: list[str], color: str) -> int:
+class WireColor(str, Enum):
+    """A wire color, valued by the code used on the command line. Blue and black
+    both start with "b", so those two take a second letter.
+
+    This is enum.StrEnum, which needs Python 3.11, while this project supports 3.10.
+    """
+
+    RED = "r"
+    WHITE = "w"
+    BLUE = "bl"
+    YELLOW = "y"
+    BLACK = "bk"
+
+    @property
+    def color_name(self) -> str:
+        """The full color name, for printing."""
+        return self.name.lower()
+
+
+def last_wire(wires: list[WireColor], color: WireColor) -> int:
     """Return the 1-indexed position of the rightmost wire of the given color."""
     return len(wires) - wires[::-1].index(color)
 
 
-def parse_wires(argument: str) -> list[str]:
-    """Turn a comma separated string of color codes into a list of color names."""
+def parse_wires(argument: str) -> list[WireColor]:
+    """Turn a comma separated string of color codes into a list of wire colors."""
     wires = []
 
     for code in argument.split(","):
-        if code not in WIRE_COLORS:
-            raise ValueError(f'"{code}" is not a valid wire color, expected one of {", ".join(WIRE_COLORS)}')
-        wires.append(WIRE_COLORS[code])
+        try:
+            wires.append(WireColor(code))
+        except ValueError:
+            raise ValueError(f'"{code}" is not a valid wire color, expected one of {", ".join(WireColor)}')
 
     return wires
 
 
-def wire_to_cut(wires: list[str]) -> int:
+def wire_to_cut(wires: list[WireColor]) -> int:
     """Return the 1-indexed wire to cut, numbering the wires left to right.
 
     Rules are evaluated sequentially, so the first one that matches wins.
@@ -38,40 +49,40 @@ def wire_to_cut(wires: list[str]) -> int:
     count = len(wires)
 
     if count == 3:
-        if wires.count("red") == 0:
+        if wires.count(WireColor.RED) == 0:
             return 2
-        if wires[-1] == "white":
+        if wires[-1] == WireColor.WHITE:
             return 3
-        if wires.count("blue") > 1:
-            return last_wire(wires, "blue")
+        if wires.count(WireColor.BLUE) > 1:
+            return last_wire(wires, WireColor.BLUE)
         return 3
 
     if count == 4:
-        if wires.count("red") > 1:
-            return last_wire(wires, "red")
-        if wires[-1] == "yellow" and wires.count("red") == 0:
+        if wires.count(WireColor.RED) > 1:
+            return last_wire(wires, WireColor.RED)
+        if wires[-1] == WireColor.YELLOW and wires.count(WireColor.RED) == 0:
             return 1
-        if wires.count("blue") == 1:
+        if wires.count(WireColor.BLUE) == 1:
             return 1
-        if wires.count("yellow") > 1:
+        if wires.count(WireColor.YELLOW) > 1:
             return 4
         return 2
 
     if count == 5:
-        if wires[-1] == "black":
+        if wires[-1] == WireColor.BLACK:
             return 4
-        if wires.count("red") == 1 and wires.count("yellow") > 1:
+        if wires.count(WireColor.RED) == 1 and wires.count(WireColor.YELLOW) > 1:
             return 1
-        if wires.count("black") == 0:
+        if wires.count(WireColor.BLACK) == 0:
             return 2
         return 5
 
     if count == 6:
-        if wires.count("yellow") == 0:
+        if wires.count(WireColor.YELLOW) == 0:
             return 3
-        if wires.count("yellow") == 1 and wires.count("white") > 1:
+        if wires.count(WireColor.YELLOW) == 1 and wires.count(WireColor.WHITE) > 1:
             return 4
-        if wires.count("red") == 0:
+        if wires.count(WireColor.RED) == 0:
             return 6
         return 2
 
@@ -90,8 +101,8 @@ if __name__ == "__main__":
         print(f"error: {error}", file=sys.stderr)
         sys.exit(1)
 
-    print(f"{len(wires)} wires: {', '.join(wires)}")
-    print(f"Cut wire {cut} ({wires[cut - 1]})")
+    print(f"{len(wires)} wires: {', '.join(wire.color_name for wire in wires)}")
+    print(f"Cut wire {cut} ({wires[cut - 1].color_name})")
     print(f"Note: 1-indexed, left to right")
 
     # --------------test section---------------
