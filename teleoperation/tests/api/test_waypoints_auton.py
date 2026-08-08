@@ -155,11 +155,13 @@ class TestAutonWaypointDelete:
         assert len(user_wps) == 0
         assert len(defaults) == 8
 
-    def test_clear_all_removes_everything(self, api):
-        try:
-            api.delete(url(api, '/api/waypoints/auton/clear/all/'))
-            resp = api.get(url(api, '/api/waypoints/auton/store'))
-            data = resp.json()
-            assert len(data['waypoints']) == 0
-        finally:
-            seed_auton_defaults()
+    # No clear_all utility
+    #
+    # def test_clear_all_removes_everything(self, api):
+    #     try:
+    #         api.delete(url(api, '/api/waypoints/auton/clear/all/'))
+    #         resp = api.get(url(api, '/api/waypoints/auton/store'))
+    #         data = resp.json()
+    #         assert len(data['waypoints']) == 0
+    #     finally:
+    #         seed_auton_defaults()

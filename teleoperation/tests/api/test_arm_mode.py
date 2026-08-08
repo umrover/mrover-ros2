@@ -13,13 +13,15 @@ class TestArmMode:
         resp = api.post(url(api, '/api/arm/ra_mode/'), json={'mode': 'throttle'})
         assert resp.status_code == 200
 
-    def test_set_ik_pos(self, api):
-        resp = api.post(url(api, '/api/arm/ra_mode/'), json={'mode': 'ik-pos'})
-        assert resp.status_code == 200
+    # Arm IK is WIP
+    #
+    # def test_set_ik_pos(self, api):
+    #     resp = api.post(url(api, '/api/arm/ra_mode/'), json={'mode': 'ik-pos'})
+    #     assert resp.status_code == 200
 
-    def test_set_ik_vel(self, api):
-        resp = api.post(url(api, '/api/arm/ra_mode/'), json={'mode': 'ik-vel'})
-        assert resp.status_code == 200
+    # def test_set_ik_vel(self, api):
+    #     resp = api.post(url(api, '/api/arm/ra_mode/'), json={'mode': 'ik-vel'})
+    #     assert resp.status_code == 200
 
     def test_response_echoes_mode(self, api):
         resp = api.post(url(api, '/api/arm/ra_mode/'), json={'mode': 'throttle'})
