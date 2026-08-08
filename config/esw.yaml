@@ -64,6 +64,8 @@ can_bridge_1:
         id: 0x37
       abs_de_roll:
         id: 0x38
+      relay_controller:
+        id: 0x39
 
 can_bridge_2:
   ros__parameters:
