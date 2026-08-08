@@ -77,7 +77,7 @@
       </div>
     </div>
 
-    <div v-if="showPanel" class="fixed top-0 left-0 w-full h-full" style="z-index: 1050;" @click="showPanel = false"></div>
+    <div v-if="showPanel" class="fixed top-0 left-0 w-full h-full z-1050" @click="showPanel = false"></div>
   </div>
 </template>
 

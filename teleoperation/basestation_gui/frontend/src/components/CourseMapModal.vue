@@ -253,8 +253,8 @@ export default { name: 'CourseMapModal' }
 
 <style scoped>
 .course-map-dialog {
-  max-width: 900px;
   width: 85%;
+  max-width: 900px;
   height: 75vh;
 }
 
@@ -266,10 +266,10 @@ export default { name: 'CourseMapModal' }
   height: 1.75rem;
   padding: 0;
   font-size: 0.75rem;
+  color: var(--text-muted);
+  cursor: pointer;
   background: none;
   border: none;
-  cursor: pointer;
-  color: var(--text-muted);
 }
 
 .recording-select {
@@ -280,8 +280,8 @@ export default { name: 'CourseMapModal' }
 
 <style>
 .map-marker-dot {
-  border-radius: 50%;
   border: 2px solid var(--card-bg);
+  border-radius: 50%;
 }
 
 .map-marker-start {
