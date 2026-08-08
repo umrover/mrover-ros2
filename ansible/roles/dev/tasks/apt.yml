@@ -23,6 +23,7 @@
     components: main
     architectures: amd64
     signed_by: https://dl.google.com/linux/linux_signing_key.pub
+  register: chrome_repo
 
 - name: Add GitHub CLI apt repo
   become: true
@@ -33,6 +34,7 @@
     suites: stable
     components: main
     signed_by: https://cli.github.com/packages/githubcli-archive-keyring.gpg
+  register: github_cli_repo
 
 - name: Add VSCode apt repo
   become: true
@@ -44,12 +46,18 @@
     components: main
     architectures: [amd64, arm64, armhf]
     signed_by: https://packages.microsoft.com/keys/microsoft.asc
+  register: vscode_repo
+
+- name: Update APT Cache if Repos Changed
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+  when: chrome_repo.changed or github_cli_repo.changed or vscode_repo.changed
 
 - name: Install apt packages
   become: true
   ansible.builtin.apt:
     cache_valid_time: 3600
-    update_cache: true
     state: present
     name:
       - zsh

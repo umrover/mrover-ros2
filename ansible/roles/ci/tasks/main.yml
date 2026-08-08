@@ -14,6 +14,7 @@
     suites: "llvm-toolchain-{{ ubuntu_release }}-18"
     components: main
     signed_by: https://apt.llvm.org/llvm-snapshot.gpg.key
+  register: llvm_repo
 
 - name: Add ROS APT Repo
   become: true
@@ -24,6 +25,13 @@
     suites: "{{ ubuntu_release }}"
     components: main
     signed_by: https://raw.githubusercontent.com/ros/rosdistro/master/ros.key
+  register: ros_repo
+
+- name: Update APT Cache if Repos Changed
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+  when: llvm_repo.changed or ros_repo.changed
 
 - name: Install APT Packages
   become: true
