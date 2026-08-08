@@ -1,3 +1,9 @@
+- name: Install python3-debian
+  become: true
+  ansible.builtin.apt:
+    name: python3-debian
+    state: present
+
 # Allows us to install LLVM tools
 - name: Add LLVM APT Repo
   become: true
@@ -8,7 +14,6 @@
     suites: "llvm-toolchain-{{ ubuntu_release }}-18"
     components: main
     signed_by: https://apt.llvm.org/llvm-snapshot.gpg.key
-    install_python_debian: true
 
 - name: Add ROS APT Repo
   become: true
