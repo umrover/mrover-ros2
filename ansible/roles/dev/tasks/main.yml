@@ -29,6 +29,17 @@
     src: files/home/.mrover.zshenv
     dest: ~/.mrover.zshenv
 
+- name: Check for existing zshrc
+  ansible.builtin.stat:
+    path: ~/.zshrc
+  register: zshrc_stat
+
+- name: Deploy default oh-my-zsh zshrc for fresh installs
+  ansible.builtin.copy:
+    src: files/home/.zshrc
+    dest: ~/.zshrc
+  when: not zshrc_stat.stat.exists
+
 - name: Wire mrover shell env
   ansible.builtin.blockinfile:
     path: ~/.zshrc

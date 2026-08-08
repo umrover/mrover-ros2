@@ -52,3 +52,15 @@ export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
+[ -s "$BUN_INSTALL/_bun" ] && source "$BUN_INSTALL/_bun"
+
+alias mrover="cd ${MROVER_REPO} && source_mrover_overlay"
+
+build_mrover(){
+    cd "${MROVER_REPO}" && ./build.sh "${1}" && mrover
+}
+
+alias clean_mrover="cd ${MROVER_REPO} && ./clean.sh && mrover"
+
+eval "$(register-python-argcomplete3 ros2)"
+eval "$(register-python-argcomplete3 colcon)"
