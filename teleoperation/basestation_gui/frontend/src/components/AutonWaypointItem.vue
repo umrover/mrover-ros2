@@ -11,6 +11,8 @@
         </div>
         <div class="flex items-center gap-2">
           <span v-if="waypoint.type === 1 && waypoint.tag_id != null" class="data-label">Tag ID: {{ waypoint.tag_id }}</span>
+          <span v-if="waypoint.type === 1 && waypoint.tag_id != null" class="data-separator">|</span>
+          <span class="data-label">R: {{ waypoint.coverage_radius }}</span>
         </div>
       </div>
       <div class="flex justify-between items-center">
@@ -74,6 +76,10 @@
                   <input class="form-control" v-model.number="modalData.lon" type="number" step="0.000001" />
                 </div>
               </div>
+              <div class="mb-4">
+                <label class="form-label">Coverage Radius (0 for default):</label>
+                <input class="form-control" v-model.number="modalData.coverage_radius" type="number" step="0.5" min="0" />
+              </div>
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-danger" tabindex="-1" @click="closeEditModal">Cancel</button>
@@ -106,7 +112,7 @@ const emit = defineEmits<{
 }>()
 
 const { isOpen, show, hide } = useModal()
-const modalData = ref({ name: '', type: 0, tag_id: null as number | null, lat: 0, lon: 0 })
+const modalData = ref({ name: '', type: 0, tag_id: null as number | null, lat: 0, lon: 0, coverage_radius: 0 })
 const modalContentRef = ref<HTMLElement | null>(null)
 const modalNameRef = ref<HTMLInputElement | null>(null)
 const modalLatRef = ref<HTMLInputElement | null>(null)
@@ -149,6 +155,7 @@ function openEditModal() {
     tag_id: props.waypoint.tag_id,
     lat: props.waypoint.lat,
     lon: props.waypoint.lon,
+    coverage_radius: props.waypoint.coverage_radius,
   }
   show()
   nextTick(() => {
@@ -166,6 +173,7 @@ function saveEdit() {
     tag_id: modalData.value.type === 1 ? modalData.value.tag_id : null,
     lat: modalData.value.lat,
     lon: modalData.value.lon,
+    coverage_radius: modalData.value.coverage_radius,
   }, props.index)
 }
 
@@ -209,6 +217,12 @@ defineExpose({ openEditModal, closeEditModal, saveEdit, saveAndClose, isOpen })
 
 .drag-handle:hover {
   opacity: 1;
+}
+
+.data-separator {
+  font-size: 0.6875rem;
+  color: var(--panel-border);
+  user-select: none;
 }
 
 </style>
