@@ -42,20 +42,15 @@ class TestAutonWaypointDefaults:
         defaults = [w for w in waypoints if not w['deletable']]
         assert len(defaults) == 8
 
-    def test_default_tag_ids_are_0_through_7(self, api):
+    def test_default_post_tag_ids_are_1_to_3(self, api):
         waypoints = _get_waypoints(api)
 
-        # for w in waypoints:
-        #     if not w['deletable']:
-        #         print("--- waypoint ---")
-        #         print(w)
-
         defaults = sorted(
-            [w for w in waypoints if not w['deletable']],
+            [w for w in waypoints if w['type'] == 1 and not w['deletable']],
             key=lambda w: w['tag_id'],
         )
         tag_ids = [w['tag_id'] for w in defaults]
-        assert tag_ids == list(range(8))
+        assert tag_ids == list(range(1, 4))
 
     def test_default_names_match(self, api):
         waypoints = _get_waypoints(api)
