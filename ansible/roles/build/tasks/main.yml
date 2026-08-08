@@ -188,25 +188,6 @@
     virtualenv: "{{ mrover_repo }}/venv"
     virtualenv_command: /usr/bin/python3 -m venv
 
-- name: Add Google Chrome apt key
-  become: true
-  ansible.builtin.get_url:
-    url: https://dl.google.com/linux/linux_signing_key.pub
-    dest: /usr/share/keyrings/google-chrome.asc
-    mode: '0644'
-
-- name: Add Google Chrome apt repo
-  become: true
-  ansible.builtin.apt_repository:
-    filename: google-chrome
-    repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.asc] https://dl.google.com/linux/chrome/deb/ stable main"
-
-- name: Install Google Chrome
-  become: true
-  ansible.builtin.apt:
-    state: present
-    name: google-chrome-stable
-
 - name: Download Bun installer
   ansible.builtin.get_url:
     url: https://bun.sh/install
