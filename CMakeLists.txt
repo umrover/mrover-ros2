@@ -260,9 +260,9 @@ ament_target_dependencies(lie rclcpp geometry_msgs tf2 tf2_ros)
 set(MROVER_EMBEDDED_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/esw/fw/lib")
 
 # esw/fw/lib/units already defines an equivalent "units" INTERFACE target once the
-# submodule is checked out; only register our own copy when it's absent (e.g. macOS,
-# shallow checkout without submodules) so differential_drive_controller still links.
-if (NOT EXISTS ${MROVER_EMBEDDED_ROOT_DIR} OR APPLE)
+# submodule is checked out; only register our own copy when esw/fw/lib isn't added below
+# (missing submodule, macOS, or a portable build) so differential_drive_controller still links.
+if (NOT EXISTS ${MROVER_EMBEDDED_ROOT_DIR} OR APPLE OR MROVER_PORTABLE)
     mrover_add_header_only_library(units units)
 endif ()
 mrover_add_header_only_library(loop_profiler loop_profiler)
