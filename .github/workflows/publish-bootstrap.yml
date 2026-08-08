@@ -27,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Assemble site
-        run: mkdir -p site && cp bootstrap.sh site/index.html
+        run: mkdir -p site && cp bootstrap.sh site/bootstrap.sh
       - uses: actions/upload-pages-artifact@v5
         with:
           path: site
