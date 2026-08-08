@@ -323,14 +323,7 @@ mrover_executable_from_component(cost_map perception/executables/cost_map.cpp co
 
 # Embedded
 
-# esw can messaging library (for dbc library)
-# NOTE: this needs to be upreved for every formal release of the esw can messaging library (lib/dbc/)
-set(MROVER_CAN_VERSION "v1.0.0")
-FetchContent_Declare(
-    mrover_can
-    URL "https://github.com/umrover/mrover-esw/releases/download/${MROVER_CAN_VERSION}/mrover_can.tar.gz"
-)
-FetchContent_MakeAvailable(mrover_can)
+include(cmake/esw.cmake)
 
 if (NOT APPLE)
 
@@ -355,25 +348,25 @@ if (NOT APPLE)
         target_link_libraries(${name} can_device units motor science servo abs)
     endmacro()
 
-    # esw hardware bridge nodes
+    # esw hardware bridge and controller nodes
     mrover_add_esw_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
     mrover_add_esw_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
     mrover_add_esw_bridge_node(science_hw_bridge esw/science_hw_bridge.cpp)
     mrover_add_esw_bridge_node(pdlb_hw_bridge esw/pdlb_hw_bridge.cpp)
     mrover_add_esw_bridge_node(mast_gimbal_hw_bridge esw/mast_gimbal_hw_bridge.cpp)
-endif()
 
-mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
-ament_target_dependencies(differential_drive_controller rclcpp std_srvs)
-target_link_libraries(differential_drive_controller units)
+    mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
+    ament_target_dependencies(differential_drive_controller rclcpp std_srvs)
+    target_link_libraries(differential_drive_controller units)
+
+    mrover_add_node(u2d2_bridge esw/u2d2_bridge.cpp)
+    ament_target_dependencies(u2d2_bridge rclcpp std_msgs std_srvs dynamixel_sdk)
+    target_link_libraries(u2d2_bridge servo)
+endif()
 
 mrover_add_node(arm_controller navigation/arm_controller/arm_controller.cpp navigation/arm_controller/pch.hpp)
 target_link_libraries(arm_controller lie)
 ament_target_dependencies(arm_controller rclcpp)
-
-mrover_add_node(u2d2_bridge esw/u2d2_bridge.cpp)
-ament_target_dependencies(u2d2_bridge rclcpp std_msgs std_srvs dynamixel_sdk)
-target_link_libraries(u2d2_bridge servo)
 
 if (Gst_FOUND AND GstApp_FOUND)
     if (LibUdev_FOUND)
