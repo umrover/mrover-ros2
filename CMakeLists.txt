@@ -171,7 +171,6 @@ endif ()
 
 include_directories(BEFORE SYSTEM preload)
 
-include(FetchContent)
 include(cmake/macros.cmake)
 # include(cmake/deps.cmake)
 

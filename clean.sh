@@ -2,9 +2,9 @@
 
 set -euxo pipefail
 
-# remove the cached mrover_can library
+# remove the cached esw libraries
 if [[ "${1:-}" == "--esw" ]]; then
-    rm -rf .cache/esw
+    rm -rf deps/.fetchcontent/esw
 fi
 
 pushd ../..

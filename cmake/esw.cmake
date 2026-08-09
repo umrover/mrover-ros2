@@ -12,7 +12,7 @@ set(MROVER_CAN_VERSION "v0.1.0")
 
 # persistent local cache: survives a clean build, is gitignored,
 # and used as an offline fallback if the repo is unreachable
-set(MROVER_CAN_CACHE_DIR "${CMAKE_SOURCE_DIR}/.cache/esw")
+set(MROVER_CAN_CACHE_DIR "${CMAKE_SOURCE_DIR}/deps/.fetchcontent/esw/mrover_can")
 
 # target release asset
 string(REGEX REPLACE "\\.git$" "" MROVER_CAN_REPO_URL "${MROVER_CAN_GIT_REPOSITORY}")
