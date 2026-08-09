@@ -1,3 +1,4 @@
 bool start
+float32 hold_duration
 ---
 bool finished

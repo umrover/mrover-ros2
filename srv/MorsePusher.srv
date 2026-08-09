@@ -1,0 +1,5 @@
+string input
+---
+bool success
+string morse
+string message

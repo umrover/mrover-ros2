@@ -412,6 +412,8 @@ install(PROGRAMS
     scripts/visualizer.py
     scripts/image_capture.py
     scripts/ik_testing.py
+    scripts/morse_code.py
+    scripts/morse_pusher_service.py
     teleoperation/basestation_gui/gui_frontend.sh
     teleoperation/basestation_gui/gui_backend.sh
     teleoperation/basestation_gui/gui_prod.sh

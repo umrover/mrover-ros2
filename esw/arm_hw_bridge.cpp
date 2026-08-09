@@ -5,6 +5,7 @@
 #include <rclcpp/logging.hpp>
 #include <string>
 #include <vector>
+#include <cmath>
 
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/subscription.hpp>
@@ -201,7 +202,7 @@ namespace mrover {
         Radians mJointBMountTheta, mJointBSegmentOffsetTheta, mJointBOffset, mJointCOffsetTheta;
 
         Percent mPusherThrottle;
-        float mPusherWaitDuration{}, mPusherWaitCycles{};
+        float mPusherWaitDuration{}, mPusherWaitCycles{}, mPusherTargetWaitCycles{};
 
         std::optional<Vector2<Radians>> mJointDEPitchRoll; // position after offset is applied (raw - offset)
 
@@ -539,6 +540,14 @@ namespace mrover {
                 res->finished = false;
                 return;
             }
+
+            if(req->hold_duration > 0.0) {
+                float const requested_hold_ms = req->hold_duration * 1000.0;
+                mPusherTargetWaitCycles = static_cast<float>(std::ceil(requested_hold_ms / static_cast<float>(PROBE_INTERVAL_MS)));
+            } else {
+                mPusherTargetWaitCycles = mPusherWaitDuration;
+            }
+
             mPusherPromise = std::make_shared<std::promise<bool>>();
             auto future = mPusherPromise->get_future();
             mPusherState = PusherState::DRIVING_FORWARD;
@@ -568,7 +577,7 @@ namespace mrover {
                 case PusherState::WAITING:
                     mPusher->setDesiredThrottle(Dimensionless{0.0});
                     mPusherWaitCycles++;
-                    if (mPusherWaitCycles >= mPusherWaitDuration) {
+                    if (mPusherWaitCycles >= mPusherTargetWaitCycles) {
                         mPusherState = PusherState::RETRACTING;
                         mPusherWaitCycles = 0;
                     }
