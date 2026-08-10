@@ -37,6 +37,6 @@ jobs:
       #   run: cd teleoperation/basestation_gui/frontend && npm run dev
       #   background: true
       - name: Install Frontend Dependencies
-        run: cd teleoperation/basestation_gui/frontend && bun install
+        run: cd teleoperation/basestation_gui/frontend && npm install
       - name: Run tests
         run: cd teleoperation && npx playwright test tests/ui/

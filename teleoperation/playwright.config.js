@@ -28,7 +28,7 @@ module.exports = defineConfig({
         },
         {
             name: 'Frontend',
-            command: 'bun --bun run dev',
+            command: 'npm run dev',
             cwd: './frontend',
             url: 'http://localhost:8080',
             timeout: 60000,
