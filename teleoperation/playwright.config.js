@@ -21,7 +21,7 @@ module.exports = defineConfig({
         {
             name: 'Backend',
             command: 'python3 server.py',
-            cwd: '.',
+            cwd: './basestation_gui',
             url: 'http://localhost:8000',
             timeout: 60000,
             reuseExistingServer: !process.env.CI,
@@ -29,7 +29,7 @@ module.exports = defineConfig({
         {
             name: 'Frontend',
             command: 'npm run dev',
-            cwd: './frontend',
+            cwd: './basestation_gui/frontend',
             url: 'http://localhost:8080',
             timeout: 60000,
             reuseExistingServer: !process.env.CI,
