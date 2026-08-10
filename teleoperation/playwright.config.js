@@ -17,4 +17,22 @@ module.exports = defineConfig({
     ['list'],
     ['html', { open: 'never' }],
   ],
+  webServer: [
+        {
+            name: 'Backend',
+            command: 'python3 server.py',
+            cwd: '.',
+            url: 'http://localhost:8000',
+            timeout: 60000,
+            reuseExistingServer: !process.env.CI,
+        },
+        {
+            name: 'Frontend',
+            command: 'bun --bun run dev',
+            cwd: './frontend',
+            url: 'http://localhost:8080',
+            timeout: 60000,
+            reuseExistingServer: !process.env.CI,
+        },
+    ],
 });
