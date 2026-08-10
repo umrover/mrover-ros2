@@ -19,7 +19,7 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
     maxOdomCount = 100,
     drawFrequency = 1,
     initialCenter = [38.4071654, -110.7923927],
-    offlineUrl = '/map/{z}/{x}/{y}.png',
+    offlineUrl = '/map/{z}/{x}/{y}.jpg',
   } = options
 
   const websocketStore = useWebsocketStore()

@@ -130,7 +130,7 @@ const {
   maxOdomCount: 100000000,
   drawFrequency: 1,
   initialCenter: [38.4071654, -110.7923927],
-  offlineUrl: '/map/{z}/{x}/{y}.png',
+  offlineUrl: '/map/{z}/{x}/{y}.jpg',
 })
 
 const websocketStore = useWebsocketStore()
