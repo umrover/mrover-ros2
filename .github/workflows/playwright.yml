@@ -18,7 +18,16 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: lts/*
-      - name: Install dependencies
+      - name: Install Playwright Dependencies
         run: cd teleoperation && npm install && npx playwright install
+      - uses: oven-sh/setup-bun@v2
+      - name: Install Frontend Dependencies
+        run:  cd teleoperation/basestation_gui/frontend && bun install
+      - name: Set up Backend
+        run: cd teleoperation/basestation_gui && exec python3 server.py
+        background: true
+      - name: Set up Frontend
+        run: cd teleoperation/basestation_gui/frontend && bun run dev
+        background: true
       - name: Run tests
         run: cd teleoperation && npx playwright test tests/ui/
