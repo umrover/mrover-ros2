@@ -25,8 +25,8 @@ jobs:
       # # - name: Install Unzip (for Bun)
       # #   run: sudo apt-get update && sudo apt-get install -y unzip
       # # - uses: oven-sh/setup-bun@v2
-      # - name: Install Playwright Dependencies
-      #   run: cd teleoperation && npm install && npx playwright install
+      - name: Install Playwright Dependencies
+        run: cd teleoperation && npm install && npx playwright install
       
       # - name: Install Frontend Dependencies
       #   run:  cd teleoperation/basestation_gui/frontend && npm install
