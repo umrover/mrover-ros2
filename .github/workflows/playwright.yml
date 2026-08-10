@@ -19,6 +19,6 @@ jobs:
         with:
           node-version: lts/*
       - name: Install dependencies
-        run: npm ci
+        run: cd teleoperation && npm install && npx playwright install
       - name: Run tests
-        run: cd teleoperation && npx playwright test tests/ui/
+        run: npx playwright test tests/ui/
