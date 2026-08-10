@@ -21,4 +21,4 @@ jobs:
       - name: Install dependencies
         run: cd teleoperation && npm install && npx playwright install
       - name: Run tests
-        run: npx playwright test tests/ui/
+        run: cd teleoperation && npx playwright test tests/ui/
