@@ -14,8 +14,13 @@
     # ref_alt: 0.0
 
     # Utah
-    ref_lat: 38.4227303
-    ref_lon: -110.7847932
+    #ref_lat: 38.4227303
+    #ref_lon: -110.7847932
+    #ref_alt: 0.0
+    
+    # CIRC
+    ref_lat: 51.470181
+    ref_lon: -112.744886
     ref_alt: 0.0
 
     # Sim
