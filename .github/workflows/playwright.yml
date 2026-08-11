@@ -27,7 +27,7 @@ jobs:
       #     python-version: '3.x'
       #     pip-install: 'fastapi pydantic websockets msgpack uvicorn'
       - name: Install Python dependencies
-        run: python3 -m pip install fastapi pydantic websockets msgpack uvicorn rclpy
+        run: python3 -m pip install --upgrade pip && pip install fastapi pydantic websockets msgpack uvicorn rclpy
       # - uses: actions/setup-python@v6
       #   with:
       #     python-version: '3.x'
