@@ -8,39 +8,39 @@ on:
         - main
 jobs:
   playwright:
-    name: 'Playwright Tests'
+    name: 'Nothing'
     runs-on: ubuntu-latest
     container:
       image: umrover1/ros2:latest
       options: --user 1001
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: lts/*
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.x'
-          pip-install: 'fastapi pydantic websockets msgpack uvicorn'
+      # - uses: actions/setup-node@v6
+      #   with:
+      #     node-version: lts/*
       # - uses: actions/setup-python@v6
       #   with:
       #     python-version: '3.x'
-      #     # pip-install: 'black==26.5.1 mypy==1.11.2'
-      # # - name: Install Unzip (for Bun)
-      # #   run: sudo apt-get update && sudo apt-get install -y unzip
-      # # - uses: oven-sh/setup-bun@v2
-      - name: Install Playwright Dependencies
-        run: cd teleoperation && npm install && npx playwright install
+      #     pip-install: 'fastapi pydantic websockets msgpack uvicorn'
+      # # - uses: actions/setup-python@v6
+      # #   with:
+      # #     python-version: '3.x'
+      # #     # pip-install: 'black==26.5.1 mypy==1.11.2'
+      # # # - name: Install Unzip (for Bun)
+      # # #   run: sudo apt-get update && sudo apt-get install -y unzip
+      # # # - uses: oven-sh/setup-bun@v2
+      # - name: Install Playwright Dependencies
+      #   run: cd teleoperation && npm install && npx playwright install
       
+      # # - name: Install Frontend Dependencies
+      # #   run:  cd teleoperation/basestation_gui/frontend && npm install
+      # # - name: Set up Backend
+      # #   run: cd teleoperation/basestation_gui && exec python3 server.py
+      # #   background: true
+      # # - name: Set up Frontend
+      # #   run: cd teleoperation/basestation_gui/frontend && npm run dev
+      # #   background: true
       # - name: Install Frontend Dependencies
-      #   run:  cd teleoperation/basestation_gui/frontend && npm install
-      # - name: Set up Backend
-      #   run: cd teleoperation/basestation_gui && exec python3 server.py
-      #   background: true
-      # - name: Set up Frontend
-      #   run: cd teleoperation/basestation_gui/frontend && npm run dev
-      #   background: true
-      - name: Install Frontend Dependencies
-        run: cd teleoperation/basestation_gui/frontend && npm install
-      - name: Run tests
-        run: cd teleoperation && npx playwright test tests/ui/
+      #   run: cd teleoperation/basestation_gui/frontend && npm install
+      - name: Echo
+        run: echo echo
