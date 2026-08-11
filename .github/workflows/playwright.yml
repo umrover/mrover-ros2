@@ -10,24 +10,24 @@ jobs:
   playwright:
     name: 'Playwright Tests'
     runs-on: ubuntu-latest
-    container:
-      image: umrover1/ros2:latest
-      options: --user 1001
+    # container:
+    #   image: umrover1/ros2:latest
+    #   options: --user 1001
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: lts/*
-      - name: Check container
-        run: |
-          cat /etc/os-release
-          ldd --version
+      # - name: Check container
+      #   run: |
+      #     cat /etc/os-release
+      #     ldd --version
       - uses: actions/setup-python@v6
         with:
-          python-version: '3.10'
-      #     pip-install: 'fastapi pydantic websockets msgpack uvicorn'
-      - name: Install Python dependencies
-        run: python3 -m pip install --upgrade pip && pip install fastapi pydantic websockets msgpack uvicorn rclpy
+          python-version: '3.x'
+          pip-install: 'fastapi pydantic websockets msgpack uvicorn'
+      # - name: Install Python dependencies
+      #   run: python3 -m pip install --upgrade pip && pip install fastapi pydantic websockets msgpack uvicorn rclpy
       # - uses: actions/setup-python@v6
       #   with:
       #     python-version: '3.x'
