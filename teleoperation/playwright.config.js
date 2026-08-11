@@ -22,7 +22,7 @@ module.exports = defineConfig({
             name: 'Backend',
             command: 'python3 server.py',
             cwd: './basestation_gui',
-            url: 'http://localhost:8000',
+            url: 'http://localhost:8000/docs',
             timeout: 60000,
             reuseExistingServer: !process.env.CI,
         },
