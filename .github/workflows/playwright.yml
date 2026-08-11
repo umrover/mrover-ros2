@@ -18,9 +18,13 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: lts/*
+      - name: Check container
+        run: |
+          cat /etc/os-release
+          ldd --version
       - uses: actions/setup-python@v6
         with:
-          python-version: '3.13'
+          python-version: '3.x'
           pip-install: 'fastapi pydantic websockets msgpack uvicorn'
       # - uses: actions/setup-python@v6
       #   with:
