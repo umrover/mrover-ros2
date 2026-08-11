@@ -54,6 +54,20 @@ jobs:
           key: dawn-${{ hashFiles('scripts/setup_dawn.sh') }}
       - name: Setup Dawn
         run: ./scripts/setup_dawn.sh
+      - name: Manif Cache
+        uses: actions/cache@v6
+        with:
+          path: deps/manif-src
+          key: manif-${{ hashFiles('scripts/setup_manif.sh') }}
+      - name: Setup Manif
+        run: ./scripts/setup_manif.sh
+      - name: Imgui Cache
+        uses: actions/cache@v6
+        with:
+          path: deps/imgui-src
+          key: imgui-${{ hashFiles('scripts/setup_imgui.sh') }}
+      - name: Setup Imgui
+        run: ./scripts/setup_imgui.sh
       - name: Pip Cache
         uses: actions/cache@v6
         with:

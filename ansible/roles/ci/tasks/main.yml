@@ -96,6 +96,16 @@
   args:
     chdir: "{{ mrover_repo }}"
 
+- name: Download manif source
+  ansible.builtin.command: ./scripts/setup_manif.sh
+  args:
+    chdir: "{{ mrover_repo }}"
+
+- name: Download imgui source
+  ansible.builtin.command: ./scripts/setup_imgui.sh
+  args:
+    chdir: "{{ mrover_repo }}"
+
 - name: Initialize rosdep
   become: true
   ansible.builtin.command: rosdep init
