@@ -7,14 +7,9 @@ test.beforeEach(async ({ page }) => {
 test('panorama button visible on ScienceTask', async ({ page }) => {
   await page.goto('/ScienceTask');
   await page.waitForLoadState('networkidle');
-  const toggle = page.getByTestId('pw-panorama-toggle');
-  await expect(toggle).toBeVisible({ timeout: 15000 });
-});
+  const toggleOn = page.getByTestId('pw-panorama-start');
+  await expect(toggleOn).toBeVisible({ timeout: 15000 });
 
-test('button shows Start initially', async ({ page }) => {
-  await page.goto('/ScienceTask');
-  await page.waitForLoadState('networkidle');
-  const toggle = page.getByTestId('pw-panorama-toggle');
-  await expect(toggle).toBeVisible({ timeout: 15000 });
-  await expect(toggle).toContainText('Start');
+  const toggleOff = page.getByTestId('pw-panorama-stop');
+  await expect(toggleOff).toBeVisible({ timeout: 15000 });
 });

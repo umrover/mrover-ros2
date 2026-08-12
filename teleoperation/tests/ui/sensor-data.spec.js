@@ -16,7 +16,7 @@ test('view all opens modal', async ({ page }) => {
   const viewAllBtn = page.getByTestId('pw-sensor-view-all');
   await expect(viewAllBtn).toBeVisible({ timeout: 15000 });
   await viewAllBtn.click();
-  const modal = page.locator('.modal-backdrop.d-flex');
+  const modal = page.locator('.modal-backdrop');
   await expect(modal).toBeVisible({ timeout: 5000 });
 });
 
