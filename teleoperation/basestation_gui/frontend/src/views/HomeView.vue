@@ -8,10 +8,10 @@
         </div>
 
         <div class="flex flex-col gap-1 pl-4">
-          <MenuButton link="/DMTask" name="Delivery" />
-          <MenuButton link="/ESTask" name="Equipment Servicing" />
-          <MenuButton link="/ScienceTask" name="Science" />
-          <MenuButton link="/AutonTask" name="Autonomy" />
+          <MenuButton link="/DMTask" name="Delivery" data-testid="pw-menu-btn" />
+          <MenuButton link="/ESTask" name="Equipment Servicing" data-testid="pw-menu-btn" />
+          <MenuButton link="/ScienceTask" name="Science" data-testid="pw-menu-btn" />
+          <MenuButton link="/AutonTask" name="Autonomy" data-testid="pw-menu-btn" />
         </div>
       </div>
     </div>

@@ -11,6 +11,7 @@ test('add waypoint form visible', async ({ page }) => {
   await expect(page.getByTestId('pw-basic-wp-add-btn')).toBeVisible();
 });
 
+// FIXME fails when there is already a waypoint
 test('add waypoint creates entry', async ({ page }) => {
   await page.goto('/DMTask');
   await page.waitForLoadState('networkidle');
@@ -39,7 +40,7 @@ test('clear empties list', async ({ page }) => {
 
   await page.getByTestId('pw-basic-wp-clear-btn').click();
 
-  const confirmBtn = page.locator('#clearWaypointsModal .btn-danger:has-text("Clear")');
+  const confirmBtn = page.locator('.modal-footer .btn-danger:has-text("Clear")');
   await expect(confirmBtn).toBeVisible({ timeout: 5000 });
 
   const clearResponse = page.waitForResponse(
@@ -61,9 +62,13 @@ test('view recordings button visible', async ({ page }) => {
   await expect(page.getByTestId('pw-basic-wp-recordings-btn')).toBeVisible({ timeout: 15000 });
 });
 
-test('start recording button visible', async ({ page }) => {
+test('start recording buttons visible', async ({ page }) => {
   await page.goto('/DMTask');
   await page.waitForLoadState('networkidle');
-  const recordBtn = page.locator('button:has-text("Start Recording")').first();
-  await expect(recordBtn).toBeVisible({ timeout: 15000 });
+  // const recordBtn = page.locator('button:has-text("Start Recording")').first();
+  const recordBtns = page.getByTestId('pw-recording-btn-div');
+  await expect(recordBtns).toBeVisible({ timeout: 15000 });
+
+  const items = recordBtns.locator("button")
+  await expect(items).toHaveCount(2, { timeout: 5000})
 });

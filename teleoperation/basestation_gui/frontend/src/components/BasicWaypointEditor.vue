@@ -54,7 +54,7 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-1 gap-3">
+        <div class="grid grid-cols-1 gap-3" data-testid="pw-recording-btn-div">
           <div class="flex items-center justify-between p-2 border rounded">
             <span class="data-label">Rover Telemetry</span>
             <button
@@ -131,6 +131,7 @@
       title="Clear Waypoints"
       message="Are you sure you want to delete all waypoints? This cannot be undone."
       confirm-text="Clear"
+      data-testid="pw-basic-wp-confirm-modal"
       @confirm="handleConfirmClearWaypoints"
     />
   </div>

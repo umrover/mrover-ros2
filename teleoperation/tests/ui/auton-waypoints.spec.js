@@ -20,7 +20,7 @@ test('add from map opens modal', async ({ page }) => {
   await expect(addBtn).toBeVisible({ timeout: 15000 });
   await addBtn.click();
   const modal = page.getByTestId('pw-waypoint-modal');
-  await expect(modal).toHaveClass(/show/, { timeout: 5000 });
+  await expect(modal).toBeVisible({ timeout: 5000 }); // toHaveClass(/show/, { timeout: 5000 });
 });
 
 test('add waypoint with name', async ({ page }) => {
@@ -29,7 +29,7 @@ test('add waypoint with name', async ({ page }) => {
   await page.waitForLoadState('networkidle');
 
   await page.getByTestId('pw-add-from-map').click();
-  await expect(page.getByTestId('pw-waypoint-modal')).toHaveClass(/show/, { timeout: 5000 });
+  await expect(page.getByTestId('pw-waypoint-modal')).toBeVisible({ timeout: 5000 }); //toHaveClass(/show/, { timeout: 5000 });
 
   await page.getByTestId('pw-waypoint-name-input').clear();
   await page.getByTestId('pw-waypoint-name-input').fill(wpName);
@@ -58,7 +58,7 @@ test('waypoint name persists after refresh', async ({ page }) => {
   await page.waitForLoadState('networkidle');
 
   await page.getByTestId('pw-add-from-map').click();
-  await expect(page.getByTestId('pw-waypoint-modal')).toHaveClass(/show/, { timeout: 5000 });
+  await expect(page.getByTestId('pw-waypoint-modal')).toBeVisible({ timeout: 5000 });// toHaveClass(/show/, { timeout: 5000 });
   await page.getByTestId('pw-waypoint-name-input').clear();
   await page.getByTestId('pw-waypoint-name-input').fill(wpName);
 
@@ -108,7 +108,7 @@ test('user waypoint can be deleted', async ({ page }) => {
   await page.waitForLoadState('networkidle');
 
   await page.getByTestId('pw-add-from-map').click();
-  await expect(page.getByTestId('pw-waypoint-modal')).toHaveClass(/show/, { timeout: 5000 });
+  await expect(page.getByTestId('pw-waypoint-modal')).toBeVisible({ timeout: 5000 }); //toHaveClass(/show/, { timeout: 5000 });
   await page.getByTestId('pw-waypoint-name-input').clear();
   await page.getByTestId('pw-waypoint-name-input').fill(wpName);
   const savePromise = page.waitForResponse(
@@ -184,7 +184,7 @@ test('reset clears user waypoints', async ({ page }) => {
   await page.waitForLoadState('networkidle');
 
   await page.getByTestId('pw-add-from-map').click();
-  await expect(page.getByTestId('pw-waypoint-modal')).toHaveClass(/show/, { timeout: 5000 });
+  await expect(page.getByTestId('pw-waypoint-modal')).toBeVisible({ timeout: 5000 }); //toHaveClass(/show/, { timeout: 5000 });
   await page.getByTestId('pw-waypoint-name-input').clear();
   await page.getByTestId('pw-waypoint-name-input').fill(wpName);
   const savePromise = page.waitForResponse(
