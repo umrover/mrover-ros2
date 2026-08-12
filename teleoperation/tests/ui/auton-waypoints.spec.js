@@ -138,7 +138,7 @@ test('add waypoint to route', async ({ page }) => {
   const addBtn = firstItem.locator('button:has(.bi-plus-lg)');
   await addBtn.click();
 
-  const routeItems = page.getByTestId('pw-route-item');
+  const routeItems = page.getByTestId('pw-route-items');
   await expect(routeItems.first()).toBeVisible({ timeout: 5000 });
 });
 
@@ -149,7 +149,7 @@ test('delete from route', async ({ page }) => {
   const firstItem = page.getByTestId('pw-waypoint-store-item').first();
   await expect(firstItem).toBeVisible({ timeout: 15000 });
 
-  const routeItems = page.getByTestId('pw-route-item');
+  const routeItems = page.getByTestId('pw-route-items');
   const initialCount = await routeItems.count();
 
   const addBtn = firstItem.locator('button:has(.bi-plus-lg)');
@@ -168,14 +168,28 @@ test('all costmaps toggle', async ({ page }) => {
   await page.goto('/AutonTask');
   await page.waitForLoadState('networkidle');
 
-  const toggleBtn = page.getByTestId('pw-costmap-toggle-all');
-  await expect(toggleBtn).toBeVisible({ timeout: 15000 });
+  // Add waypoint item to execution
 
-  const initialClass = await toggleBtn.getAttribute('class');
-  await toggleBtn.click();
-  await page.waitForTimeout(300);
-  const newClass = await toggleBtn.getAttribute('class');
-  expect(initialClass).not.toBe(newClass);
+  const firstItem = page.getByTestId('pw-waypoint-store-item').first();
+  const addBtn = firstItem.locator('button:has(.bi-plus-lg)');
+  const routeItems = page.getByTestId('pw-route-items');
+  const lastItemCostmapBtn = routeItems.last().getByTestId("pw-route-costmap-btn").first()
+
+  // Test on
+
+  const toggleOnBtn = page.getByTestId('pw-costmap-all-on');
+  await expect(toggleOnBtn).toBeVisible({ timeout: 15000 });
+
+  await toggleOnBtn.click();
+
+  await expect(lastItemCostmapBtn).toContainClass("btn-success");
+
+  // Test Off 
+  const toggleOffBtn = page.getByTestId('pw-costmap-all-off');
+  await expect(toggleOffBtn).toBeVisible({ timeout: 15000 });
+  await toggleOffBtn.click();
+
+  await expect(lastItemCostmapBtn).toContainClass("btn-secondary");
 });
 
 test('reset clears user waypoints', async ({ page }) => {

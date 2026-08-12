@@ -84,6 +84,7 @@
         :disabled="autonomyStore.isNavigating"
         @add="handleExecutionDragAdd"
         @end="handleExecutionDragEnd"
+        data-testid="pw-route-items"
       >
         <div v-if="autonomyStore.execution.length === 0" class="course-empty-state">
           <i class="bi bi-cursor"></i>
@@ -111,6 +112,7 @@
                 :disabled="autonomyStore.isNavigating"
                 :title="wp.enable_costmap ? 'Costmap enabled' : 'Costmap disabled'"
                 @click="autonomyStore.toggleExecutionCostmap(index)"
+                data-testid="pw-route-costmap-btn"
               >
                 <i class="bi bi-map" />
               </button>
