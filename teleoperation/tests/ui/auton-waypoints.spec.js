@@ -150,18 +150,19 @@ test('delete from route', async ({ page }) => {
   await expect(firstItem).toBeVisible({ timeout: 15000 });
 
   const routeItems = page.getByTestId('pw-route-items');
-  const initialCount = await routeItems.count();
+  const list = routeItems.locator(".list-item")
+  let initialCount = await list.count()
 
   const addBtn = firstItem.locator('button:has(.bi-plus-lg)');
   await addBtn.click();
 
-  await expect(routeItems).toHaveCount(initialCount + 1, { timeout: 5000 });
+  await expect(list).toHaveCount(initialCount + 1, { timeout: 5000 });
 
-  const lastRouteItem = routeItems.last();
+  const lastRouteItem = list.last();
   const deleteBtn = lastRouteItem.locator('button:has(.bi-trash-fill)');
   await deleteBtn.click();
 
-  await expect(routeItems).toHaveCount(initialCount, { timeout: 5000 });
+  await expect(list).toHaveCount(initialCount, { timeout: 5000 });
 });
 
 test('all costmaps toggle', async ({ page }) => {
