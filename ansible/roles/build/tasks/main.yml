@@ -34,8 +34,7 @@
     dest: /etc/apt/preferences.d
     recursive: true
 
-# deb822_repository doesn't call apt update itself, so cache_valid_time below could otherwise
-# skip refreshing right after these repos are added
+# deb822_repository doesn't call apt update, do so manually
 - name: Update APT Cache if Repos Changed
   become: true
   ansible.builtin.apt:

@@ -1,11 +1,14 @@
 cmake_minimum_required(VERSION 3.25)
 project(mrover VERSION 2025.0.0 LANGUAGES C CXX)
 
+# Supress ROS CMake warning about Python.
 cmake_policy(SET CMP0148 NEW)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CXX_STANDARD_REQUIRED ON)
 
+# Generate compile_commands.json for clangd language server.
+# Can be used by VSCode, CLion, VIM, etc.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(MROVER_CI "Enable CI options" OFF)

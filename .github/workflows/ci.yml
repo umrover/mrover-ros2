@@ -41,6 +41,7 @@ jobs:
     needs: style
     env:
       # directory owned by mrover so CI can write to it and use caching
+      # this is new for ubuntu 24
       HOME: /home/mrover
     steps:
       - uses: actions/checkout@v7
