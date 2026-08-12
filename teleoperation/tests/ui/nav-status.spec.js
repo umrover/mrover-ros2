@@ -31,6 +31,6 @@ test('default color is error', async ({ page }) => {
 test('status panel visible', async ({ page }) => {
   await page.goto('/AutonTask');
   await page.waitForLoadState('networkidle');
-  const statusPanel = page.getByTestId('pw-status-panel');
+  const statusPanel = page.getByTestId('pw-nav-state-panel');
   await expect(statusPanel).toBeVisible({ timeout: 10000 });
 });

@@ -19,7 +19,7 @@ test('clicking bell opens panel', async ({ page }) => {
   await expect(page.getByTestId('pw-notification-panel')).toBeVisible({ timeout: 5000 });
 });
 
-test('clicking bell again closes panel', async ({ page }) => {
+test('clicking off panel closes panel', async ({ page }) => {
   await page.goto('/');
   await page.waitForLoadState('networkidle');
   const bell = page.getByTestId('pw-notification-bell');
@@ -28,7 +28,11 @@ test('clicking bell again closes panel', async ({ page }) => {
   await bell.click();
   await expect(page.getByTestId('pw-notification-panel')).toBeVisible({ timeout: 5000 });
 
-  const backdrop = page.locator('.position-fixed.top-0.start-0.w-100.h-100');
-  await backdrop.click({ position: { x: 10, y: 10 } });
+  // const backdrop = page.locator('.position-fixed.top-0.start-0.w-100.h-100');
+  // await backdrop.click({ position: { x: 10, y: 10 } });
+
+  const body = page.locator("body")
+  await body.click()
+
   await expect(page.getByTestId('pw-notification-panel')).not.toBeVisible({ timeout: 5000 });
 });

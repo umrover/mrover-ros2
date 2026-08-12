@@ -210,11 +210,11 @@ test('reset clears user waypoints', async ({ page }) => {
   const resetBtn = page.getByTestId('pw-reset-waypoints-btn');
   await resetBtn.click();
 
-  const confirmBtn = page.locator('.modal.show .btn-danger:has-text("Reset")');
+  const confirmBtn = page.locator('.modal-footer .btn-danger:has-text("Reset")');
   await expect(confirmBtn).toBeVisible({ timeout: 5000 });
 
   const clearPromise = page.waitForResponse(
-    (resp) => resp.url().includes('/api/waypoints/auton/clear') && resp.request().method() === 'DELETE'
+    (resp) => resp.url().includes('/api/waypoints/auton/store') && resp.request().method() === 'DELETE'
   );
   await confirmBtn.click();
   await clearPromise;

@@ -19,11 +19,11 @@ test('dark theme applies', async ({ page }) => {
   await page.waitForLoadState('networkidle');
   const themeBtn = page.getByTestId('pw-theme-dropdown');
   await themeBtn.click();
-  const dropdown = page.locator('.dropdown-menu.show');
+  const dropdown = page.locator('.dropdown-menu');
   await expect(dropdown).toBeVisible({ timeout: 5000 });
   await dropdown.locator('.dropdown-item').nth(1).click();
   const html = page.locator('html');
-  await expect(html).toHaveAttribute('data-bs-theme', 'dark', { timeout: 5000 });
+  await expect(html).toHaveAttribute('data-theme', 'dark', { timeout: 5000 });
 });
 
 test('light theme applies', async ({ page }) => {
@@ -35,7 +35,7 @@ test('light theme applies', async ({ page }) => {
   await expect(dropdown).toBeVisible({ timeout: 5000 });
   await dropdown.locator('.dropdown-item').nth(0).click();
   const html = page.locator('html');
-  await expect(html).toHaveAttribute('data-bs-theme', 'light', { timeout: 5000 });
+  await expect(html).toHaveAttribute('data-theme', 'light', { timeout: 5000 });
 });
 
 test('grid lock toggles on DMTask', async ({ page }) => {
