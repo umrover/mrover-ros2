@@ -72,7 +72,7 @@ jobs:
       #   if: github.event.pull_request.draft == false
       #   run: . /opt/ros/noetic/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && . $GITHUB_WORKSPACE/devel/setup.sh && catkin test && rostest mrover integration.test --text
       - name: Playwright Tests
-        run: cd $GITHUB_WORKSPACE/src/mrover/teleoperation && bun playwright test tests/ui/
+        run: cd $GITHUB_WORKSPACE/src/mrover/teleoperation && npm install && npx playwright install && npx playwright test tests/ui/
   # playwright:
   #   name: 'Playwright Tests'
   #   runs-on: ubuntu-latest
