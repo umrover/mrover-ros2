@@ -71,22 +71,24 @@ jobs:
       # - name: Test
       #   if: github.event.pull_request.draft == false
       #   run: . /opt/ros/noetic/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && . $GITHUB_WORKSPACE/devel/setup.sh && catkin test && rostest mrover integration.test --text
-  playwright:
-    name: 'Playwright Tests'
-    runs-on: ubuntu-latest
-    needs: ci
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: lts/*
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.x'
-          pip-install: 'fastapi pydantic websockets msgpack uvicorn'
-      - name: Install Playwright Dependencies
-        run: cd teleoperation && npm install && npx playwright install
-      - name: Install Frontend Dependencies
-        run: cd teleoperation/basestation_gui/frontend && npm install
-      - name: Run tests
-        run: cd teleoperation && npx playwright test tests/ui/
+      - name: Playwright Tests
+        run: cd $GITHUB_WORKSPACE/src/mrover/teleoperation && npx playwright test tests/ui/
+  # playwright:
+  #   name: 'Playwright Tests'
+  #   runs-on: ubuntu-latest
+  #   needs: ci
+  #   steps:
+  #     - uses: actions/checkout@v6
+  #     - uses: actions/setup-node@v6
+  #       with:
+  #         node-version: lts/*
+  #     - uses: actions/setup-python@v6
+  #       with:
+  #         python-version: '3.x'
+  #         pip-install: 'fastapi pydantic websockets msgpack uvicorn'
+  #     - name: Install Playwright Dependencies
+  #       run: cd teleoperation && npm install && npx playwright install
+  #     - name: Install Frontend Dependencies
+  #       run: cd teleoperation/basestation_gui/frontend && npm install
+  #     - name: Run tests
+  #       run: cd teleoperation && npx playwright test tests/ui/
