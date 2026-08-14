@@ -71,8 +71,13 @@ jobs:
       # - name: Test
       #   if: github.event.pull_request.draft == false
       #   run: . /opt/ros/noetic/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && . $GITHUB_WORKSPACE/devel/setup.sh && catkin test && rostest mrover integration.test --text
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+      - name: Install Frontend Dependencies
+        run: cd  $GITHUB_WORKSPACE/src/mrover/teleoperation/basestation_gui/frontend && npm install
       - name: Playwright Tests
-        run: cd $GITHUB_WORKSPACE/src/mrover/teleoperation && npm install && npx playwright install && npx playwright test tests/ui/
+        run: cd $GITHUB_WORKSPACE/src/mrover/teleoperation && npx playwright install && npx playwright test tests/ui/
   # playwright:
   #   name: 'Playwright Tests'
   #   runs-on: ubuntu-latest
