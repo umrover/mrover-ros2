@@ -28,7 +28,7 @@ module.exports = defineConfig({
         },
         {
             name: 'Frontend',
-            command: 'npm run dev',
+            command: 'bun run dev',
             cwd: './basestation_gui/frontend',
             url: 'http://localhost:8080',
             timeout: 60000,
