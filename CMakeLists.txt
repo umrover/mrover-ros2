@@ -1,11 +1,14 @@
 cmake_minimum_required(VERSION 3.25)
 project(mrover VERSION 2025.0.0 LANGUAGES C CXX)
 
+# Supress ROS CMake warning about Python.
 cmake_policy(SET CMP0148 NEW)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CXX_STANDARD_REQUIRED ON)
 
+# Generate compile_commands.json for clangd language server.
+# Can be used by VSCode, CLion, VIM, etc.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(MROVER_CI "Enable CI options" OFF)
@@ -97,22 +100,14 @@ if (MROVER_SIMULATOR)
     add_library(webgpu ALIAS dawn::webgpu_dawn)
 endif ()
 
-include(FetchContent)
-
-set(FETCHCONTENT_BASE_DIR "${CMAKE_CURRENT_LIST_DIR}/deps/.fetchcontent")
-set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
-
 find_package(manif QUIET)
 if (NOT manif_FOUND)
-    FetchContent_Declare(manif
-        GIT_REPOSITORY https://github.com/artivis/manif.git
-        GIT_TAG        0.0.5
-        GIT_SHALLOW    TRUE
-        SYSTEM
-    )
+    if (NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/deps/manif-src/CMakeLists.txt")
+        message(FATAL_ERROR "manif not found. Run 'scripts/setup_manif.sh' before building.")
+    endif ()
     set(BUILD_TESTING_PREV ${BUILD_TESTING})
     set(BUILD_TESTING OFF)
-    FetchContent_MakeAvailable(manif)
+    add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/deps/manif-src" "${CMAKE_CURRENT_BINARY_DIR}/manif-build" EXCLUDE_FROM_ALL SYSTEM)
     set(BUILD_TESTING ${BUILD_TESTING_PREV})
     add_library(MANIF::manif ALIAS manif)
 endif ()
@@ -125,14 +120,11 @@ pkg_search_module(GstApp gstreamer-app-1.0 IMPORTED_TARGET QUIET)
 pkg_search_module(LibUdev libudev IMPORTED_TARGET QUIET)
 
 if (MROVER_SIMULATOR)
-    FetchContent_Declare(
-        imgui
-        GIT_REPOSITORY https://github.com/ocornut/imgui.git
-        GIT_TAG        v1.92.8
-        GIT_SHALLOW    TRUE
-    )
-    # Populate only — imgui's own CMakeLists would create a conflicting `imgui` target.
-    FetchContent_Populate(imgui)
+    if (NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/deps/imgui-src/imgui.cpp")
+        message(FATAL_ERROR "imgui not found. Run 'scripts/setup_imgui.sh' before building.")
+    endif ()
+    set(imgui_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/deps/imgui-src")
+    # avoid fetching in imgui_demo.cpp and unnecessarily compiling it
     add_library(imgui STATIC
         ${imgui_SOURCE_DIR}/imgui.cpp
         ${imgui_SOURCE_DIR}/imgui_draw.cpp

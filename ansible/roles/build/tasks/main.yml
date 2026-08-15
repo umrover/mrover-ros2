@@ -1,3 +1,9 @@
+- name: Install python3-debian
+  become: true
+  ansible.builtin.apt:
+    name: python3-debian
+    state: present
+
 # Allows us to install LLVM tools
 - name: Add LLVM APT Repo
   become: true
@@ -8,7 +14,7 @@
     suites: "llvm-toolchain-{{ ubuntu_release }}-18"
     components: main
     signed_by: https://apt.llvm.org/llvm-snapshot.gpg.key
-    install_python_debian: true
+  register: llvm_repo
 
 - name: Add ROS APT Repo
   become: true
@@ -19,6 +25,7 @@
     suites: "{{ ubuntu_release }}"
     components: main
     signed_by: https://raw.githubusercontent.com/ros/rosdistro/master/ros.key
+  register: ros_repo
 
 - name: Sync APT Preferences
   become: true
@@ -26,6 +33,13 @@
     src: files/apt-preferences/
     dest: /etc/apt/preferences.d
     recursive: true
+
+# deb822_repository doesn't call apt update, do so manually
+- name: Update APT Cache if Repos Changed
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+  when: llvm_repo.changed or ros_repo.changed
 
 - name: Upgrade APT Packages
   become: true
@@ -96,6 +110,16 @@
 
 - name: Download prebuilt Dawn
   ansible.builtin.command: ./scripts/setup_dawn.sh
+  args:
+    chdir: "{{ mrover_repo }}"
+
+- name: Download manif source
+  ansible.builtin.command: ./scripts/setup_manif.sh
+  args:
+    chdir: "{{ mrover_repo }}"
+
+- name: Download imgui source
+  ansible.builtin.command: ./scripts/setup_imgui.sh
   args:
     chdir: "{{ mrover_repo }}"
 
@@ -172,25 +196,6 @@
       - "{{ mrover_repo }}[dev]"
     virtualenv: "{{ mrover_repo }}/venv"
     virtualenv_command: /usr/bin/python3 -m venv
-
-- name: Add Google Chrome apt key
-  become: true
-  ansible.builtin.get_url:
-    url: https://dl.google.com/linux/linux_signing_key.pub
-    dest: /usr/share/keyrings/google-chrome.asc
-    mode: '0644'
-
-- name: Add Google Chrome apt repo
-  become: true
-  ansible.builtin.apt_repository:
-    filename: google-chrome
-    repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.asc] https://dl.google.com/linux/chrome/deb/ stable main"
-
-- name: Install Google Chrome
-  become: true
-  ansible.builtin.apt:
-    state: present
-    name: google-chrome-stable
 
 - name: Download Bun installer
   ansible.builtin.get_url:

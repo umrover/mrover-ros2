@@ -1,6 +1,6 @@
 - name: Wired Connection
   become: true
-  nmcli:
+  community.general.nmcli:
     conn_name: MRover
     state: present
     type: ethernet

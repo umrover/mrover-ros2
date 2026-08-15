@@ -24,6 +24,29 @@
     src: files/home/.oh-my-zsh/custom/themes/mrover.zsh-theme
     dest: ~/.oh-my-zsh/custom/themes/mrover.zsh-theme
 
+- name: Deploy mrover zshenv
+  ansible.builtin.copy:
+    src: files/home/.mrover.zshenv
+    dest: ~/.mrover.zshenv
+
+- name: Check for existing zshrc
+  ansible.builtin.stat:
+    path: ~/.zshrc
+  register: zshrc_stat
+
+- name: Deploy default oh-my-zsh zshrc for fresh installs
+  ansible.builtin.copy:
+    src: files/home/.zshrc
+    dest: ~/.zshrc
+  when: not zshrc_stat.stat.exists
+
+- name: Wire mrover shell env
+  ansible.builtin.blockinfile:
+    path: ~/.zshrc
+    marker: "# {mark} MROVER"
+    block: source ~/.mrover.zshenv
+    create: true
+
 - name: Deploy mrover tmux config
   ansible.builtin.copy:
     src: files/home/.mrover.tmux.conf
@@ -54,6 +77,11 @@
 
 - name: Pull Git LFS objects
   ansible.builtin.command: git lfs pull
+  args:
+    chdir: "{{ mrover_repo }}"
+
+- name: Initialize Git submodules
+  ansible.builtin.command: git submodule update --init --recursive
   args:
     chdir: "{{ mrover_repo }}"
 

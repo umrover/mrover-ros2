@@ -1,3 +1,9 @@
+- name: Install python3-debian
+  become: true
+  ansible.builtin.apt:
+    name: python3-debian
+    state: present
+
 # Allows us to install LLVM tools
 - name: Add LLVM APT Repo
   become: true
@@ -8,7 +14,7 @@
     suites: "llvm-toolchain-{{ ubuntu_release }}-18"
     components: main
     signed_by: https://apt.llvm.org/llvm-snapshot.gpg.key
-    install_python_debian: true
+  register: llvm_repo
 
 - name: Add ROS APT Repo
   become: true
@@ -19,6 +25,13 @@
     suites: "{{ ubuntu_release }}"
     components: main
     signed_by: https://raw.githubusercontent.com/ros/rosdistro/master/ros.key
+  register: ros_repo
+
+- name: Update APT Cache if Repos Changed
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+  when: llvm_repo.changed or ros_repo.changed
 
 - name: Install APT Packages
   become: true
@@ -80,6 +93,16 @@
 
 - name: Download prebuilt Dawn
   ansible.builtin.command: ./scripts/setup_dawn.sh
+  args:
+    chdir: "{{ mrover_repo }}"
+
+- name: Download manif source
+  ansible.builtin.command: ./scripts/setup_manif.sh
+  args:
+    chdir: "{{ mrover_repo }}"
+
+- name: Download imgui source
+  ansible.builtin.command: ./scripts/setup_imgui.sh
   args:
     chdir: "{{ mrover_repo }}"
 
