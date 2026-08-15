@@ -74,10 +74,12 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: lts/*
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.x'
-          pip-install: 'fastapi pydantic websockets msgpack uvicorn rclpy'
+      # - uses: actions/setup-python@v6
+      #   with:
+      #     python-version: '3.x'
+      #     pip-install: 'fastapi pydantic websockets msgpack uvicorn rclpy'
+      - name: Install Python dependencies
+        run: python3 -m pip install fastapi pydantic websockets msgpack uvicorn
       - name: Install Playwright Dependencies
         run: cd  $GITHUB_WORKSPACE/src/mrover/teleoperation/ && npm install && npx playwright install --with-deps
       - name: Install Frontend Dependencies
