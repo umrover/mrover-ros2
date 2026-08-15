@@ -73,6 +73,7 @@ readonly PYTHON_LINT_DIRS=(
   ./state_machine
   ./lie
   ./superstructure
+  ./teleoperation/
 )
 readonly PYTHON_STYLE_DIRS=(
   "${PYTHON_LINT_DIRS[@]}"
