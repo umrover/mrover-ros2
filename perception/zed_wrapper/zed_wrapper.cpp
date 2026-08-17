@@ -112,12 +112,18 @@ namespace mrover {
                 mZed.enablePositionalTracking(positionalTrackingParameters);
             }
 
+            // cudaDeviceProp is a data structure that stores the configs and capabilities of a GPU
             cudaDeviceProp prop{};
             cudaGetDeviceProperties(&prop, 0);
+
+            // Log the specs of the current GPU running the ZED wrapper
             RCLCPP_INFO_STREAM(get_logger(), std::format("MP count: {}, Max threads/MP: {}, Max blocks/MP: {}, max threads/block: {}",
                                                          prop.multiProcessorCount, prop.maxThreadsPerMultiProcessor, prop.maxBlocksPerMultiProcessor, prop.maxThreadsPerBlock));
 
+            // Create thread that retrieve()s ZED frames and swap()s the data when mutex is not held. 
             mGrabThread = std::thread(&ZedWrapper::grabThread, this);
+
+            // Create thread that safely publishes the swapped data.
             mPointCloudThread = std::thread(&ZedWrapper::pointCloudUpdateThread, this);
         } catch (std::exception const& e) {
             RCLCPP_FATAL_STREAM(get_logger(), std::format("Exception while starting: {}", e.what()));
@@ -128,15 +134,17 @@ namespace mrover {
 
     auto ZedWrapper::grabThread() -> void {
         RCLCPP_INFO(this->get_logger(), "Starting grab thread");
+        
+        // Initialize runtime parameters outside of loop
+        sl::RuntimeParameters runtimeParameters;
+        runtimeParameters.confidence_threshold = mDepthConfidence;
+        runtimeParameters.texture_confidence_threshold = mTextureConfidence;
+        
         while (rclcpp::ok()) {
             try {
                 mLoopProfilerGrab.beginLoop();
 
-                sl::RuntimeParameters runtimeParameters;
-                runtimeParameters.confidence_threshold = mDepthConfidence;
-                runtimeParameters.texture_confidence_threshold = mTextureConfidence;
-
-
+                // grab measures from ZED
                 if (sl::ERROR_CODE error = mZed.grab(runtimeParameters); error != sl::ERROR_CODE::SUCCESS)
                     throw std::runtime_error(std::format("{} failed to grab {}", mDeviceName, sl::toString(error).c_str()));
 
@@ -148,27 +156,32 @@ namespace mrover {
 
                 mLoopProfilerGrab.measureEvent(std::format("{}_retrieve_right_image", mDeviceName));
 
-                // Only left set is used for processing
-                if (mDepthEnabled) {
-                    if (mZed.retrieveImage(mGrabMeasures.leftImage, sl::VIEW::LEFT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
-                        throw std::runtime_error(std::format("{} failed to retrieve left image", mDeviceName));
-                    if (mZed.retrieveMeasure(mGrabMeasures.leftPoints, sl::MEASURE::XYZ, sl::MEM::GPU, mPointResolution) != sl::ERROR_CODE::SUCCESS)
-                        throw std::runtime_error(std::format("{} failed to retrieve point cloud", mDeviceName));
-                }
+                // Retrieve left image
+                if (mZed.retrieveImage(mGrabMeasures.leftImage, sl::VIEW::LEFT, sl::MEM::GPU, mImageResolution) != sl::ERROR_CODE::SUCCESS)
+                    throw std::runtime_error(std::format("{} failed to retrieve left image", mDeviceName));
 
                 mLoopProfilerGrab.measureEvent(std::format("{}_retrieve_left_image", mDeviceName));
 
-                if (mZed.retrieveMeasure(mGrabMeasures.leftNormals, sl::MEASURE::NORMALS, sl::MEM::GPU, mNormalsResolution) != sl::ERROR_CODE::SUCCESS)
-                    throw std::runtime_error(std::format("{} failed to retrieve point cloud normals", mDeviceName));
-
-                assert(mGrabMeasures.leftImage.timestamp == mGrabMeasures.leftPoints.timestamp);
+                // Only left set is used for processing
+                // If depth is enabled, retrieve point cloud 
+                if (mDepthEnabled) {
+                    if (mZed.retrieveMeasure(mGrabMeasures.leftPoints, sl::MEASURE::XYZ, sl::MEM::GPU, mPointResolution) != sl::ERROR_CODE::SUCCESS)
+                        throw std::runtime_error(std::format("{} failed to retrieve point cloud", mDeviceName));
+                    if (mZed.retrieveMeasure(mGrabMeasures.leftNormals, sl::MEASURE::NORMALS, sl::MEM::GPU, mNormalsResolution) != sl::ERROR_CODE::SUCCESS)
+                        throw std::runtime_error(std::format("{} failed to retrieve point cloud normals", mDeviceName));
+                    mLoopProfilerGrab.measureEvent(std::format("{}_retrieve_left_points", mDeviceName));
+                }
 
                 mGrabMeasures.time = mSvoPath.c_str() ? now() : slTime2Ros(mZed.getTimestamp(sl::TIME_REFERENCE::IMAGE));
 
                 // If the processing thread is busy skip
                 // We want this thread to run as fast as possible for grab and positional tracking
                 if (mSwapMutex.try_lock()) {
-                    std::swap(mGrabMeasures, mPcMeasures);
+                    mGrabMeasures.swap(mPcMeasures);
+                    // if lock is obtained, the other thread isn't reading from mPcMeasures
+                    // DANTODO: is std::mutex manual lock() unlock() best practice?
+
+                    // set condition variable, unlock, and notify potentially waiting pub thread.
                     mIsSwapReady = true;
                     mSwapMutex.unlock();
                     mSwapCv.notify_one();
@@ -235,6 +248,9 @@ namespace mrover {
         try {
             RCLCPP_INFO(get_logger(), "Starting point cloud thread");
 
+            // Create local variable only mutated by this thread
+            Measures localMeasures;
+
             while (rclcpp::ok()) {
                 mLoopProfilerUpdate.beginLoop();
 
@@ -245,55 +261,71 @@ namespace mrover {
                 // Swap critical section
                 {
                     std::unique_lock lock{mSwapMutex};
+                    
                     // Waiting on the condition variable will drop the lock and reacquire it when the condition is met
-                    mSwapCv.wait(lock, [this] { return mIsSwapReady; });
+                    // Force wakeup after 500 ms in case grabThread() is killed while this thread is sleeping so that Ctrl-C works.
+                    if (!mSwapCv.wait_for(lock, std::chrono::milliseconds(500), [this] { return mIsSwapReady || !rclcpp::ok(); }))
+                        continue;
+                    // If wakeup was because node was shutting down, break.
+                    if(!rclcpp::ok()) 
+                        break;
+                    
                     mIsSwapReady = false;
-                    mLoopProfilerUpdate.measureEvent("wait_and_alloc");
 
-                    if (mDepthEnabled) {
-                        fillPointCloudMessageFromGpu(mPcMeasures.leftPoints, mPcMeasures.leftImage, mPcMeasures.leftNormals, mPointCloudGpu, pointCloudMsg);
-                        pointCloudMsg->header.stamp = mPcMeasures.time;
-                        pointCloudMsg->header.frame_id = std::format("{}_left_camera_frame", mDeviceName);
-                        mLoopProfilerUpdate.measureEvent("fill_pc");
-                    }
+                    // swap localMeasures and mPcMeasures so that grab thread cannot mutate published state. 
+                    localMeasures.swap(mPcMeasures);
 
+                    // Drop the lock to publish without stalling grab thread, since mPcMeasures is no longer shared
+                }
+                
+                mLoopProfilerUpdate.measureEvent("wait_and_alloc");
 
-                    auto leftImgMsg = std::make_unique<sensor_msgs::msg::Image>();
-                    fillImageMessage(mPcMeasures.leftImage, leftImgMsg);
-                    leftImgMsg->header.frame_id = std::format("{}_left_camera_optical_frame", mDeviceName);
-                    leftImgMsg->header.stamp = mPcMeasures.time;
-                    mLeftImgPub->publish(std::move(leftImgMsg));
-                    mLoopProfilerUpdate.measureEvent("pub_left");
-
-                    auto rightImgMsg = std::make_unique<sensor_msgs::msg::Image>();
-                    fillImageMessage(mPcMeasures.rightImage, rightImgMsg);
-                    rightImgMsg->header.frame_id = std::format("{}_right_camera_optical_frame", mDeviceName);
-                    rightImgMsg->header.stamp = mPcMeasures.time;
-                    mRightImgPub->publish(std::move(rightImgMsg));
-                    mLoopProfilerUpdate.measureEvent("pub_right");
+                // Publish from localMeasures without holding lock
+                if (mDepthEnabled) {
+                    fillPointCloudMessageFromGpu(localMeasures.leftPoints, localMeasures.leftImage, localMeasures.leftNormals, mPointCloudGpu, pointCloudMsg);
+                    pointCloudMsg->header.stamp = localMeasures.time;
+                    pointCloudMsg->header.frame_id = std::format("{}_left_camera_frame", mDeviceName);
+                    mLoopProfilerUpdate.measureEvent("fill_pc");
                 }
 
+                // Publish left image
+                auto leftImgMsg = std::make_unique<sensor_msgs::msg::Image>();
+                fillImageMessage(localMeasures.leftImage, leftImgMsg);
+                leftImgMsg->header.frame_id = std::format("{}_left_camera_optical_frame", mDeviceName);
+                leftImgMsg->header.stamp = localMeasures.time;
+                mLeftImgPub->publish(std::move(leftImgMsg));
+                mLoopProfilerUpdate.measureEvent("pub_left");
+
+                // Publish right image
+                auto rightImgMsg = std::make_unique<sensor_msgs::msg::Image>();
+                fillImageMessage(localMeasures.rightImage, rightImgMsg);
+                rightImgMsg->header.frame_id = std::format("{}_right_camera_optical_frame", mDeviceName);
+                rightImgMsg->header.stamp = localMeasures.time;
+                mRightImgPub->publish(std::move(rightImgMsg));
+                mLoopProfilerUpdate.measureEvent("pub_right");
+
+                // Publish large depth message after image frames to prevent stalling 
                 if (mDepthEnabled) {
                     mPcPub->publish(std::move(pointCloudMsg));
+                    mLoopProfilerUpdate.measureEvent("pub_pc");
                 }
-                mLoopProfilerUpdate.measureEvent("pub_pc");
 
                 sl::CalibrationParameters calibration = mZedInfo.camera_configuration.calibration_parameters;
                 auto leftCamInfoMsg = mrover::msg::CameraInfo();
                 auto rightCamInfoMsg = mrover::msg::CameraInfo();
                 fillCameraInfoMessages(calibration, mImageResolution, leftCamInfoMsg.info, rightCamInfoMsg.info);
                 leftCamInfoMsg.info.header.frame_id = std::format("{}_left_camera_optical_frame", mDeviceName);
-                leftCamInfoMsg.info.header.stamp = mPcMeasures.time;
+                leftCamInfoMsg.info.header.stamp = localMeasures.time;
                 leftCamInfoMsg.fov = calibration.left_cam.h_fov;
                 rightCamInfoMsg.info.header.frame_id = std::format("{}_right_camera_optical_frame", mDeviceName);
-                rightCamInfoMsg.info.header.stamp = mPcMeasures.time;
+                rightCamInfoMsg.info.header.stamp = localMeasures.time;
                 rightCamInfoMsg.fov = calibration.right_cam.h_fov;
                 mLeftCamInfoPub->publish(leftCamInfoMsg);
                 mRightCamInfoPub->publish(rightCamInfoMsg);
                 mLoopProfilerUpdate.measureEvent("pub_camera_info");
             }
 
-            RCLCPP_INFO(get_logger(), "Tag thread finished");
+            RCLCPP_INFO(get_logger(), "Publishing thread finished");
         } catch (std::exception const& e) {
             RCLCPP_FATAL_STREAM(get_logger(), std::format("Exception while running point cloud thread: {}", e.what()));
             rclcpp::shutdown();
@@ -307,18 +339,6 @@ namespace mrover {
         mGrabThread.join();
     }
 
-    ZedWrapper::Measures::Measures(Measures&& other) noexcept {
-        *this = std::move(other);
-    }
-
-    auto ZedWrapper::Measures::operator=(Measures&& other) noexcept -> Measures& {
-        sl::Mat::swap(other.leftImage, leftImage);
-        sl::Mat::swap(other.rightImage, rightImage);
-        sl::Mat::swap(other.leftPoints, leftPoints);
-        sl::Mat::swap(other.leftNormals, leftNormals);
-        std::swap(time, other.time);
-        return *this;
-    }
 }; // namespace mrover
 
 #include "rclcpp_components/register_node_macro.hpp"

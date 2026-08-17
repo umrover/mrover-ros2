@@ -27,6 +27,7 @@
 #include <format>
 #include <string>
 #include <vector>
+#include <chrono>
 
 // Utils
 #include "lie.hpp"

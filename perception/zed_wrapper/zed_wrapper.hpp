@@ -23,11 +23,25 @@ namespace mrover {
 
             Measures() = default;
 
-            Measures(Measures&) = delete;
-            auto operator=(Measures&) -> Measures& = delete;
+            // Should never assign Measures without using custom swap() function 
+            
+            // Delete copy constructor and copy assignment operator
+            Measures(Measures const&) = delete;
+            auto operator=(Measures const&) -> Measures& = delete;
 
-            Measures(Measures&&) noexcept;
-            auto operator=(Measures&&) noexcept -> Measures&;
+            // Delete move constructor and move assignment operator
+            Measures(Measures&&) = delete;
+            auto operator=(Measures&&) -> Measures& = delete;
+
+            // Define custom swap function as the only way to assign Measures
+            auto swap(Measures& other) noexcept -> void {
+                // sl::Mat::swap only swaps pointers, no data copy
+                sl::Mat::swap(other.leftImage, leftImage);
+                sl::Mat::swap(other.rightImage, rightImage);
+                sl::Mat::swap(other.leftPoints, leftPoints);
+                sl::Mat::swap(other.leftNormals, leftNormals);
+                std::swap(time, other.time);
+            }
         };
 
         LoopProfiler mLoopProfilerGrab;
