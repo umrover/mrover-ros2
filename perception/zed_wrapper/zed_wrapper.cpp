@@ -120,7 +120,7 @@ namespace mrover {
             RCLCPP_INFO_STREAM(get_logger(), std::format("MP count: {}, Max threads/MP: {}, Max blocks/MP: {}, max threads/block: {}",
                                                          prop.multiProcessorCount, prop.maxThreadsPerMultiProcessor, prop.maxBlocksPerMultiProcessor, prop.maxThreadsPerBlock));
 
-            // Create thread that retrieve()s ZED frames and swap()s the data when mutex is not held. 
+            // Create thread that retrieve()s ZED frames and swap()s the data when mutex is not held.
             mGrabThread = std::thread(&ZedWrapper::grabThread, this);
 
             // Create thread that safely publishes the swapped data.
@@ -134,12 +134,12 @@ namespace mrover {
 
     auto ZedWrapper::grabThread() -> void {
         RCLCPP_INFO(this->get_logger(), "Starting grab thread");
-        
+
         // Initialize runtime parameters outside of loop
         sl::RuntimeParameters runtimeParameters;
         runtimeParameters.confidence_threshold = mDepthConfidence;
         runtimeParameters.texture_confidence_threshold = mTextureConfidence;
-        
+
         while (rclcpp::ok()) {
             try {
                 mLoopProfilerGrab.beginLoop();
@@ -163,7 +163,7 @@ namespace mrover {
                 mLoopProfilerGrab.measureEvent(std::format("{}_retrieve_left_image", mDeviceName));
 
                 // Only left set is used for processing
-                // If depth is enabled, retrieve point cloud 
+                // If depth is enabled, retrieve point cloud
                 if (mDepthEnabled) {
                     if (mZed.retrieveMeasure(mGrabMeasures.leftPoints, sl::MEASURE::XYZ, sl::MEM::GPU, mPointResolution) != sl::ERROR_CODE::SUCCESS)
                         throw std::runtime_error(std::format("{} failed to retrieve point cloud", mDeviceName));
@@ -261,23 +261,23 @@ namespace mrover {
                 // Swap critical section
                 {
                     std::unique_lock lock{mSwapMutex};
-                    
+
                     // Waiting on the condition variable will drop the lock and reacquire it when the condition is met
                     // Force wakeup after 500 ms in case grabThread() is killed while this thread is sleeping so that Ctrl-C works.
                     if (!mSwapCv.wait_for(lock, std::chrono::milliseconds(500), [this] { return mIsSwapReady || !rclcpp::ok(); }))
                         continue;
                     // If wakeup was because node was shutting down, break.
-                    if(!rclcpp::ok()) 
+                    if (!rclcpp::ok())
                         break;
-                    
+
                     mIsSwapReady = false;
 
-                    // swap localMeasures and mPcMeasures so that grab thread cannot mutate published state. 
+                    // swap localMeasures and mPcMeasures so that grab thread cannot mutate published state.
                     localMeasures.swap(mPcMeasures);
 
                     // Drop the lock to publish without stalling grab thread, since mPcMeasures is no longer shared
                 }
-                
+
                 mLoopProfilerUpdate.measureEvent("wait_and_alloc");
 
                 // Publish from localMeasures without holding lock
@@ -304,7 +304,7 @@ namespace mrover {
                 mRightImgPub->publish(std::move(rightImgMsg));
                 mLoopProfilerUpdate.measureEvent("pub_right");
 
-                // Publish large depth message after image frames to prevent stalling 
+                // Publish large depth message after image frames to prevent stalling
                 if (mDepthEnabled) {
                     mPcPub->publish(std::move(pointCloudMsg));
                     mLoopProfilerUpdate.measureEvent("pub_pc");

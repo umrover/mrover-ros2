@@ -24,10 +24,10 @@
 #include <thrust/device_vector.h>
 
 // STD
+#include <chrono>
 #include <format>
 #include <string>
 #include <vector>
-#include <chrono>
 
 // Utils
 #include "lie.hpp"
