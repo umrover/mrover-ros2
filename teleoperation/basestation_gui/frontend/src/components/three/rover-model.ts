@@ -44,6 +44,7 @@ export function loadRover(parent: THREE.Group): RoverModel {
   loader.loadMeshCb = function (
     path: string,
     manager: THREE.LoadingManager,
+    _material: THREE.Material,
     onComplete: (mesh: THREE.Object3D, err?: Error) => void,
   ) {
     const gltfLoader = new GLTFLoader(manager)
