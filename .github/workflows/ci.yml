@@ -15,7 +15,8 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.x'
-          pip-install: 'black==26.5.1 mypy==1.11.2'
+      - name: Install Python style tools
+        run: pip install black==26.5.1 mypy==1.11.2
       - name: Install clang-format
         run: |
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
