@@ -15,9 +15,14 @@ namespace mrover {
         minimum_linear_speed = get_parameter("minimum_linear_speed").as_double();
 
         // subscribers
+        // FOR STARTER PROJECT: REMOVE [data to right of = sign] STARTING HERE
+        // it might be a bit tricky for them to figure this out but I think they can figure it out - there's an example right below,
+        // and they just need to copypaste and change some details like types and whatnot. Can probably also put comments with some instruction
+        // to make it more accessible - something like // Note that the imu data is published to the "/zed_imu/data_raw" topic
         imu_sub = this->create_subscription<sensor_msgs::msg::Imu>("/zed_imu/data_raw", 1, [&](const sensor_msgs::msg::Imu::ConstSharedPtr& imu_msg) {
             imu_callback(*imu_msg);
         });
+        // END STARTER PROJECT REMOVAL
 
         cmd_vel_sub = this->create_subscription<geometry_msgs::msg::Twist>("cmd_vel", 1, [&](const geometry_msgs::msg::Twist::ConstSharedPtr& twist_msg) {
             twists.push_back(*twist_msg);

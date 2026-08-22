@@ -92,15 +92,21 @@ namespace mrover {
                     RCLCPP_INFO(get_logger(), "Valid fix, %s satellites in use.", tokens[7].c_str());
                 }
                 
+                // FOR STARTER PROJECT: REMOVE [data to right of = sign] STARTING HERE
+                // will provide the documentation: https://en.unicore.com/uploads/file/Unicore%20Reference%20Commands%20Manual%20For%20N4%20High%20Precision%20Products_V2_EN_R1.4.pdf
+                // and new members can find the information on GNGGA messages to know what to do.
                 uint16_t lat_deg = stoi(tokens[2].substr(0, 2));
                 double lat_min = stod(tokens[2].substr(2, 13));
                 uint16_t lon_deg = stoi(tokens[4].substr(0, 3));
                 double lon_min = stod(tokens[4].substr(3, 14));
                 double alt = stod(tokens[9]);
+                
 
                 // 60 minutes = 1 degree
                 double lat = lat_deg + lat_min / 60;
                 double lon = lon_deg + lon_min / 60;
+
+                // END STARTER PROJECT REMOVAL
 
                 char lat_dir = tokens[3][0];
                 char lon_dir = tokens[5][0];
@@ -112,9 +118,11 @@ namespace mrover {
                     lon = -lon;
                 }
 
+                // FOR STARTER PROJECT: REMOVE [data to right of = sign] STARTING HERE
                 nav_sat_fix.latitude = lat;
                 nav_sat_fix.longitude = lon;
                 nav_sat_fix.altitude = alt;
+                // END STARTER PROJECT REMOVAL
 
                 if (stoi(tokens[6]) == 5) {
                     fix_type.fix = mrover::msg::FixType::FLOAT;
@@ -129,8 +137,10 @@ namespace mrover {
 
                 fix_status.fix_type = fix_type;
                 
+                // FOR STARTER PROJECT: REMOVE [data to right of = sign] STARTING HERE
                 gps_pub->publish(nav_sat_fix);
                 gps_status_pub->publish(fix_status);
+                // END STARTER PROJECT REMOVAL
 
             }
 
