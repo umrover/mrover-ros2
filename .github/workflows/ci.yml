@@ -45,9 +45,7 @@ jobs:
       HOME: /home/mrover
     steps:
       - uses: actions/checkout@v7
-        with:
-          # Re-enable when we put the simulator in the CI pipeline.
-          # lfs: "true"
+        # Re-enable lfs: "true" when we put the simulator in the CI pipeline.
       - name: Checkout ESW Submodule
         # Use this instead of `submodules: true`/`recursive` to avoid checking out all top-level submodules
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}" && git submodule update --init esw/fw
