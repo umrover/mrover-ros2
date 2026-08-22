@@ -48,8 +48,6 @@ jobs:
         with:
           # Re-enable when we put the simulator in the CI pipeline.
           # lfs: "true"
-          # This makes sure that $GITHUB_WORKSPACE is the catkin workspace path
-          path: "src/mrover"
       - name: Checkout ESW Submodule
         # Use this instead of `submodules: true`/`recursive` to avoid checking out all top-level submodules
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}" && git submodule update --init esw/fw
