@@ -2,7 +2,7 @@
 export MROVER_REPO="${MROVER_REPO:-$HOME/mrover-ros2}"
 readonly MROVER_REPO
 
-source /opt/ros/jazzy/setup.zsh
+[ -f /opt/ros/jazzy/setup.zsh ] && source /opt/ros/jazzy/setup.zsh
 
 export ROS_DOMAIN_ID=5
 export COLCON_TRACE=0
@@ -62,5 +62,10 @@ build_mrover(){
 
 alias clean_mrover="cd ${MROVER_REPO} && ./clean.sh && mrover"
 
-eval "$(register-python-argcomplete3 ros2)"
-eval "$(register-python-argcomplete3 colcon)"
+if command -v register-python-argcomplete3 >/dev/null 2>&1; then
+    eval "$(register-python-argcomplete3 ros2)"
+    eval "$(register-python-argcomplete3 colcon)"
+elif command -v register-python-argcomplete >/dev/null 2>&1; then
+    eval "$(register-python-argcomplete ros2)"
+    eval "$(register-python-argcomplete colcon)"
+fi
