@@ -23,7 +23,13 @@ if [ $# -eq 0 ] || [ "$1" != "--fix" ]; then
 fi
 
 function print_update_error() {
-  echo -e "${RED}[Error] Please update with ./ansible.sh build.yml${NC}" >&2
+  if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
+    echo -e "${RED}[Error] Please update with ./ansible.sh build-portable.yml${NC}" >&2
+  elif command -v pixi > /dev/null 2>&1; then
+    echo -e "${RED}[Error] The pixi environment is not active. Run 'mrover' first, or update with ./ansible.sh build-portable.yml${NC}" >&2
+  else
+    echo -e "${RED}[Error] Please update with ./ansible.sh build.yml${NC}" >&2
+  fi
   exit 1
 }
 
