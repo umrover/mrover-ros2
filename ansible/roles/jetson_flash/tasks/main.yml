@@ -92,12 +92,12 @@
     creates: /tmp/jetson-flash/Linux_for_Tegra/source/kernel/kernel-jammy-src
 
 - name: Sync Kernel Configuration
-  synchronize:
+  ansible.builtin.copy:
     src: files/config
     dest: /tmp/jetson-flash/Linux_for_Tegra/source/kernel/kernel-jammy-src/.config
 
 - name: Sync Kernel Configuration With Oldconfig
-  synchronize:
+  ansible.builtin.copy:
     src: files/config
     dest: /tmp/jetson-flash/Linux_for_Tegra/source/kernel/kernel-jammy-src/arch/arm64/configs/oldconfig
 

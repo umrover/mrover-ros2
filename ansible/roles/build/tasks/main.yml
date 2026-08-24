@@ -27,7 +27,6 @@
     signed_by: https://raw.githubusercontent.com/ros/rosdistro/master/ros.key
   register: ros_repo
 
-# copy, not synchronize to avoid rsync and avoid undeclared ansible.posix
 - name: Sync APT Preferences
   become: true
   ansible.builtin.copy:

@@ -1,9 +1,8 @@
 - name: sync all udev Rules
   become: true
-  synchronize:
+  ansible.builtin.copy:
     src: files/rules/
     dest: /etc/udev/rules.d
-    recursive: true
 
 - name: udev Reload Rules
   become: true

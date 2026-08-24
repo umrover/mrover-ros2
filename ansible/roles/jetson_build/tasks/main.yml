@@ -37,10 +37,9 @@
 
 - name: Sync all udev Rules
   become: true
-  synchronize:
+  ansible.builtin.copy:
     src: files/rules/
     dest: /etc/udev/rules.d
-    recursive: true
 
 - name: Udev Reload Rules
   become: true
@@ -52,10 +51,9 @@
 
 - name: Sync blacklists
   become: true
-  synchronize:
+  ansible.builtin.copy:
     src: files/modprobe/
     dest: /etc/modprobe.d
-    recursive: true
 
 - name: Build OpenCV
   become: true
@@ -66,17 +64,16 @@
 
 - name: Sync Bin
   become: true
-  synchronize:
+  ansible.builtin.copy:
     src: files/bin/
     dest: /usr/local/bin
-    recursive: true
+    mode: '0755'
 
 - name: Sync Systemd
   become: true
-  synchronize:
+  ansible.builtin.copy:
     src: files/systemd/
     dest: /etc/systemd/system
-    recursive: true
 
 - name: Reload Systemd Daemon
   ansible.builtin.systemd_service:

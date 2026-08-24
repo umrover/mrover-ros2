@@ -1,7 +1,5 @@
 - name: Install platform-specific packages
-  # dnf5 hosts get the same tasks as dnf, no dnf5.yml needed
-  ansible.builtin.include_tasks:
-    file: "{{ 'dnf' if ansible_pkg_mgr == 'dnf5' else ansible_pkg_mgr }}.yml"
+  ansible.builtin.include_tasks: "{{ ansible_pkg_mgr }}.yml"
 
 - name: Install oh-my-zsh
   ansible.builtin.git:
