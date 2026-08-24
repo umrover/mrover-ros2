@@ -53,7 +53,7 @@
     "stylelint-config-recess-order": "^7.6.1",
     "stylelint-config-standard-vue": "^2.0.0",
     "tailwindcss": "^4.2.1",
-    "typescript": "^5.9.3",
+    "typescript": "^7.0.2",
     "typescript-eslint": "^8.57.2",
     "vite": "^7",
     "vue-grid-layout-v3-types": "^1.0.5",
