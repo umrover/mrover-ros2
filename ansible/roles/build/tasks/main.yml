@@ -27,12 +27,13 @@
     signed_by: https://raw.githubusercontent.com/ros/rosdistro/master/ros.key
   register: ros_repo
 
+# copy, not synchronize to avoid rsync and avoid undeclared ansible.posix
 - name: Sync APT Preferences
   become: true
-  synchronize:
+  ansible.builtin.copy:
     src: files/apt-preferences/
-    dest: /etc/apt/preferences.d
-    recursive: true
+    dest: /etc/apt/preferences.d/
+    mode: '0644'
 
 # deb822_repository doesn't call apt update, do so manually
 - name: Update APT Cache if Repos Changed
