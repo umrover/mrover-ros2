@@ -3,11 +3,11 @@
 /install/
 /log/
 
-# pixi environment directory (pixi.lock IS committed, envs are not)
+# pixi environment
 /.pixi/*
 !/.pixi/config.toml
 
-# Dawn prebuilt binaries (downloaded by scripts/setup_dawn.sh, not committed)
+# Prebuild deps
 /deps/dawn-prebuilt/
 /deps/manif-src/
 /deps/imgui-src/
@@ -33,7 +33,7 @@ __pycache__/
 *.egg-info/
 venv/
 
-#Teleop Ignores
+# Teleop Ignores
 *.sqlite3
 *.db
 bun.lock
@@ -46,6 +46,7 @@ bun.lockb
 
 # macOS
 .DS_Store
+
 # nav state log
 state_machine/state_log.txt
 
