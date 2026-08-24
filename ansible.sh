@@ -7,7 +7,5 @@ if [ "$#" -le 0 ]; then
     exit 1
 fi
 
-sudo -v # Ensure Ansible has sudo permission
-
 readonly MROVER_PATH=$(realpath "$(dirname "$0")")
-ansible-playbook -i "localhost," -c local "${MROVER_PATH}"/ansible/"$1" --extra-vars "mrover_repo=${MROVER_PATH}" ${2:+"$2"}
+ansible-playbook -i "localhost," -c local --ask-become-pass "${MROVER_PATH}"/ansible/"$1" --extra-vars "mrover_repo=${MROVER_PATH}" ${2:+"$2"}
