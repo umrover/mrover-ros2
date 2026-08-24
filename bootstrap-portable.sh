@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# First-time setup: clones the repo then runs setup.sh.
-# If you already have the repo, just run ./setup.sh directly.
+# First-time portable setup: clones the repo then runs setup-portable.sh.
+# If you already have the repo, just run ./setup-portable.sh directly.
 
 set -Eeuo pipefail
 
@@ -47,4 +47,4 @@ if [ ! -d "${MROVER_PATH}/.git" ]; then
   git clone git@github.com:umrover/mrover-ros2 "${MROVER_PATH}"
 fi
 
-exec "${MROVER_PATH}/setup.sh"
+exec "${MROVER_PATH}/setup-portable.sh"

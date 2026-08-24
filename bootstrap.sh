@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Native Ubuntu/Jetpack workstation setup. For other platforms, use bootstrap-portable.sh.
+# First-time native Ubuntu/Jetpack setup: clones the repo then runs setup.sh.
+# If you already have the repo, just run ./setup.sh directly.
+# For other platforms, use bootstrap-portable.sh.
 
 # See: https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
 set -Eeuo pipefail
 
 readonly GREY='\033[1;30m'
-readonly GREEN='\033[1;32m'
 readonly RED='\033[1;31m'
 readonly NC='\033[0m'
 
@@ -20,20 +21,13 @@ if [ ! -f ~/.ssh/id_ed25519 ] && [ ! -f ~/.ssh/id_rsa ]; then
   exit 1
 fi
 
-PPAS=(ansible/ansible git-core/ppa)
-NEED_APT_UPDATE=false
-for PPA in "${PPAS[@]}"; do
-  if ! grep -rq "^deb .*${PPA}" /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null; then
-    echo -e "${GREY}Adding PPA: ${PPA}${NC}"
-    sudo apt-add-repository ppa:"${PPA}" -y
-    NEED_APT_UPDATE=true
-  fi
-done
-
-if [ "${NEED_APT_UPDATE}" = true ]; then
+# only git is needed to clone; setup.sh installs Ansible
+if ! grep -rq "^deb .*git-core/ppa" /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null; then
+  echo -e "${GREY}Adding PPA: git-core/ppa${NC}"
+  sudo apt-add-repository ppa:git-core/ppa -y
   sudo apt update
 fi
-sudo apt install -y ansible git git-lfs
+sudo apt install -y git git-lfs
 
 readonly MROVER_PATH=~/mrover-ros2
 
@@ -42,10 +36,4 @@ if [ ! -d "${MROVER_PATH}" ]; then
   git clone --recurse-submodules git@github.com:umrover/mrover-ros2 "${MROVER_PATH}"
 fi
 
-if [ -f /etc/nv_tegra_release ]; then
-  "${MROVER_PATH}"/ansible.sh jetson_build.yml
-else
-  "${MROVER_PATH}"/ansible.sh dev.yml
-fi
-
-echo -e "${GREEN}Done. Log out and back in to apply shell changes.${NC}"
+exec "${MROVER_PATH}/setup.sh"
