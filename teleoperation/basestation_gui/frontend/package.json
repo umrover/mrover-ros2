@@ -25,7 +25,7 @@
     "leaflet": "^1.9.4",
     "leaflet-rotatedmarker": "^0.2.0",
     "lil-gui": "^0.21.0",
-    "pinia": "^3.0.4",
+    "pinia": "^4.0.3",
     "three": "^0.185.1",
     "urdf-loader": "^0.13.1",
     "vue": "^3.5.30",
