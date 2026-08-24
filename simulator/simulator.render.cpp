@@ -932,7 +932,6 @@ namespace mrover {
         wgpu::CommandBuffer commands = encoder.finish();
         mQueue.submit(commands);
 
-
         if (!mIsHeadless) mSurface.present();
 
         auto noopMapCallback = [](wgpu::MapAsyncStatus, wgpu::StringView) {};
