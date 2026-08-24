@@ -87,7 +87,6 @@
   register: git_submodules
   changed_when: git_submodules.stdout | length > 0
 
-# vscode optional
 - name: Look for VSCode
   ansible.builtin.shell: command -v code
   register: vscode_path
@@ -102,7 +101,6 @@
   check_mode: false
   when: vscode_path.rc == 0
 
-# check aginst vscode_extensions to see if changed
 - name: Install VSCode extension
   ansible.builtin.command: code --install-extension {{ mrover_repo }}/pkg/file-selector-0.0.1.vsix
   when:
