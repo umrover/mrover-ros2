@@ -360,18 +360,21 @@ namespace mrover {
             RCLCPP_INFO_STREAM(get_logger(), std::format("\tWGPU Adapter Driver: {}", std::string_view{properties.description.data, properties.description.length}));
         }
 
-        wgpu::Limits limits = wgpu::Default;
-        limits.maxVertexAttributes = 4;
-        limits.maxVertexBuffers = 8;
-        limits.maxBindGroups = 2;
-        limits.maxUniformBuffersPerShaderStage = 4;
-        limits.maxUniformBufferBindingSize = 1024;
-        limits.maxComputeWorkgroupsPerDimension = 2048;
-        limits.minUniformBufferOffsetAlignment = 256;
-        limits.minStorageBufferOffsetAlignment = 256;
+        wgpu::Limits limits;
+        mAdapter.getLimits(&limits);
+
+        wgpu::Limits requiredLimits = wgpu::Default;
+        requiredLimits.maxVertexAttributes = 4;
+        requiredLimits.maxVertexBuffers = 8;
+        requiredLimits.maxBindGroups = 2;
+        requiredLimits.maxUniformBuffersPerShaderStage = 4;
+        requiredLimits.maxUniformBufferBindingSize = 1024;
+        requiredLimits.maxComputeWorkgroupsPerDimension = 2048;
+        requiredLimits.minUniformBufferOffsetAlignment = 256;
+        requiredLimits.minStorageBufferOffsetAlignment = 256;
 
         wgpu::DeviceDescriptor deviceDescriptor;
-        deviceDescriptor.requiredLimits = &limits;
+        deviceDescriptor.requiredLimits = &requiredLimits;
         deviceDescriptor.uncapturedErrorCallbackInfo.callback = [](WGPUDevice const*, WGPUErrorType type, WGPUStringView message, void* userdata1, void*) {
             auto* node = static_cast<Simulator*>(userdata1);
             RCLCPP_ERROR_STREAM(node->get_logger(), std::format("WGPU Error {}: {}", static_cast<int>(type), std::string_view{message.data, message.length}));
@@ -453,6 +456,10 @@ namespace mrover {
             ImGui::CreateContext();
             ImGui_ImplGlfw_InitForOther(mWindow.get(), true);
             ImGui_ImplWGPU_InitInfo initInfo;
+            // The GUI overlay is drawn in its own color-only pass (see renderUpdate), so the imgui
+            // pipeline must NOT expect a depth-stencil attachment. Leaving this as a real depth
+            // format makes the pipeline's attachment state incompatible with the GUI pass and Dawn
+            // rejects SetPipeline, so the GUI never renders.
             initInfo.DepthStencilFormat = wgpu::TextureFormat::Undefined;
             initInfo.RenderTargetFormat = COLOR_FORMAT;
             initInfo.Device = mDevice;
@@ -896,21 +903,28 @@ namespace mrover {
 
             bindGroup.release();
 
-            // Separate pass: imgui pipeline has 1 color target, main pass has 2 (color + normals).
-            wgpu::RenderPassColorAttachment guiColorAttachment{};
-            guiColorAttachment.view = nextTextureView;
-            guiColorAttachment.loadOp = wgpu::LoadOp::Load;
-            guiColorAttachment.storeOp = wgpu::StoreOp::Store;
-            guiColorAttachment.depthSlice = -1;
+            // ImGui's pipeline is compiled for 1 color target; our main pass has 2 (color + normals).
+            // A separate single-attachment pass avoids the mismatch.
+            // TODO: imgui v1.91.9 does not call wgpuTextureViewAddRef after wgpuTextureCreateView.
+            // Dawn (post-2025) does not addRef views when they are bound in a bind group, so the
+            // font texture view is freed when the per-frame image bind group is released at end of
+            // frame 1. This causes a crash in frame 2. Fix alongside the physics engine refactor.
+            {
+                wgpu::RenderPassColorAttachment guiColorAttachment{};
+                guiColorAttachment.view = nextTextureView;
+                guiColorAttachment.loadOp = wgpu::LoadOp::Load;
+                guiColorAttachment.storeOp = wgpu::StoreOp::Store;
+                guiColorAttachment.depthSlice = -1;
 
-            wgpu::RenderPassDescriptor guiPassDescriptor{};
-            guiPassDescriptor.colorAttachmentCount = 1;
-            guiPassDescriptor.colorAttachments = &guiColorAttachment;
+                wgpu::RenderPassDescriptor guiPassDescriptor{};
+                guiPassDescriptor.colorAttachmentCount = 1;
+                guiPassDescriptor.colorAttachments = &guiColorAttachment;
 
-            wgpu::RenderPassEncoder guiPass = encoder.beginRenderPass(guiPassDescriptor);
-            guiUpdate(guiPass);
-            guiPass.end();
-            guiPass.release();
+                wgpu::RenderPassEncoder guiPass = encoder.beginRenderPass(guiPassDescriptor);
+                guiUpdate(guiPass);
+                guiPass.end();
+                guiPass.release();
+            }
 
             nextTextureView.release();
         }

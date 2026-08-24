@@ -12,7 +12,7 @@
 #include <gst/app/gstappsrc.h>
 #include <gst/gst.h>
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 namespace mrover::gst {
 
