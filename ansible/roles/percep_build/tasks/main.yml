@@ -17,7 +17,7 @@
   become: true
   ansible.builtin.apt:
     update_cache: true
-    state: latest
+    state: present
     name:
       - cuda-12-3
       - g++-9
