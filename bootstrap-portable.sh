@@ -40,7 +40,13 @@ if ! command -v git >/dev/null 2>&1; then
 fi
 
 readonly DEFAULT_MROVER_PATH=~/mrover-ros2
-read -r -p "$(echo -e "${GREY}Clone path [${DEFAULT_MROVER_PATH}]: ${NC}")" MROVER_PATH
+MROVER_PATH=""
+# read from the terminal rather than stdin: this script is published for
+# `curl ... | bash`, where stdin is the script itself
+if { exec 3< /dev/tty; } 2>/dev/null; then
+  read -r -p "$(echo -e "${GREY}Clone path [${DEFAULT_MROVER_PATH}]: ${NC}")" MROVER_PATH <&3 || true
+  exec 3<&-
+fi
 MROVER_PATH="${MROVER_PATH:-$DEFAULT_MROVER_PATH}"
 
 if [ ! -d "${MROVER_PATH}/.git" ]; then
