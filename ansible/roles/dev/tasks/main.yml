@@ -1,7 +1,5 @@
 - name: Install platform-specific packages
-  # dnf5 hosts get the same tasks as dnf, no dnf5.yml needed
-  ansible.builtin.include_tasks:
-    file: "{{ 'dnf' if ansible_pkg_mgr == 'dnf5' else ansible_pkg_mgr }}.yml"
+  ansible.builtin.include_tasks: "{{ ansible_pkg_mgr }}.yml"
 
 - name: Install oh-my-zsh
   ansible.builtin.git:
@@ -74,16 +72,37 @@
   ansible.builtin.command: git lfs install
   args:
     chdir: "{{ mrover_repo }}"
+    creates: "{{ mrover_repo }}/.git/hooks/pre-push"
 
 - name: Pull Git LFS objects
   ansible.builtin.command: git lfs pull
   args:
     chdir: "{{ mrover_repo }}"
+  changed_when: false
 
 - name: Initialize Git submodules
   ansible.builtin.command: git submodule update --init --recursive
   args:
     chdir: "{{ mrover_repo }}"
+  register: git_submodules
+  changed_when: git_submodules.stdout | length > 0
+
+- name: Look for VSCode
+  ansible.builtin.shell: command -v code
+  register: vscode_path
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: List installed VSCode extensions
+  ansible.builtin.command: code --list-extensions
+  register: vscode_extensions
+  changed_when: false
+  check_mode: false
+  when: vscode_path.rc == 0
 
 - name: Install VSCode extension
   ansible.builtin.command: code --install-extension {{ mrover_repo }}/pkg/file-selector-0.0.1.vsix
+  when:
+    - vscode_path.rc == 0
+    - "'file-selector' not in vscode_extensions.stdout"
