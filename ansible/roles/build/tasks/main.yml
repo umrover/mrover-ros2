@@ -1,12 +1,3 @@
-# https://github.com/ansible/ansible/issues/85536
-- name: Allow sudo credential cache across ansible's detached sessions
-  become: true
-  ansible.builtin.copy:
-    dest: /etc/sudoers.d/mrover-timestamp-type
-    content: "Defaults timestamp_type=global\n"
-    mode: '0440'
-    validate: 'visudo -cf %s'
-
 - name: Install python3-debian
   become: true
   ansible.builtin.apt:
