@@ -1,5 +1,7 @@
 ---
 - hosts: all
   roles:
-    - dev
-    - dev-portable
+    - role: dev
+      vars:
+        mrover_portable: true
+    - build-portable

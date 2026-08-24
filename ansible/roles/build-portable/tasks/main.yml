@@ -13,18 +13,6 @@
     force: false
   when: ansible_system == 'Linux'
 
-- name: Update git submodules
-  ansible.builtin.command:
-    cmd: git submodule update --init
-    chdir: "{{ mrover_repo }}"
-
-- name: Wire mrover shell env
-  ansible.builtin.blockinfile:
-    path: ~/.zshrc
-    marker: "# {mark} MROVER"
-    block: '[[ -f "{{ mrover_repo }}/scripts/mrover.zshrc" ]] && source "{{ mrover_repo }}/scripts/mrover.zshrc"'
-    create: true
-
 - name: Install pixi packages
   ansible.builtin.command:
     cmd: pixi install

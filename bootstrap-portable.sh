@@ -39,7 +39,7 @@ if ! command -v git >/dev/null 2>&1; then
   esac
 fi
 
-readonly DEFAULT_MROVER_PATH=~/mrover
+readonly DEFAULT_MROVER_PATH=~/mrover-ros2
 read -r -p "$(echo -e "${GREY}Clone path [${DEFAULT_MROVER_PATH}]: ${NC}")" MROVER_PATH
 MROVER_PATH="${MROVER_PATH:-$DEFAULT_MROVER_PATH}"
 

@@ -19,32 +19,30 @@
     repo: https://github.com/zsh-users/zsh-syntax-highlighting
     dest: ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
 
+# theme is deployed regardless
 - name: Deploy mrover oh-my-zsh theme
   ansible.builtin.copy:
     src: files/home/.oh-my-zsh/custom/themes/mrover.zsh-theme
     dest: ~/.oh-my-zsh/custom/themes/mrover.zsh-theme
-
-- name: Deploy mrover zshenv
-  ansible.builtin.copy:
-    src: files/home/.mrover.zshenv
-    dest: ~/.mrover.zshenv
 
 - name: Check for existing zshrc
   ansible.builtin.stat:
     path: ~/.zshrc
   register: zshrc_stat
 
+# if user does not have zshrc, deploy ours
 - name: Deploy default oh-my-zsh zshrc for fresh installs
   ansible.builtin.copy:
     src: files/home/.zshrc
     dest: ~/.zshrc
   when: not zshrc_stat.stat.exists
 
+# mrover_zshenv handled by flag via defaults
 - name: Wire mrover shell env
   ansible.builtin.blockinfile:
     path: ~/.zshrc
     marker: "# {mark} MROVER"
-    block: source ~/.mrover.zshenv
+    block: '[[ -f "{{ mrover_repo }}/{{ mrover_zshenv }}" ]] && source "{{ mrover_repo }}/{{ mrover_zshenv }}"'
     create: true
 
 - name: Deploy mrover tmux config
@@ -59,6 +57,7 @@
     block: source-file ~/.mrover.tmux.conf
     create: true
 
+# this is needed because linux distros install zsh at /usr/bin/zsh, but macos places the zsh binary at /bin/zsh
 - name: Resolve zsh binary path
   ansible.builtin.command: which zsh
   register: zsh_path

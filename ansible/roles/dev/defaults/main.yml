@@ -1,0 +1,4 @@
+# set by dev-portable.yml to wire the pixi env instead of the system ROS one
+mrover_portable: false
+
+mrover_zshenv: "scripts/mrover{{ '-portable' if mrover_portable else '' }}.zshenv"

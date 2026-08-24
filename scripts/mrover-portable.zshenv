@@ -1,6 +1,8 @@
 # MRover portable shell env
 MROVER_REPO="${${(%):-%x}:A:h:h}"
 
+[[ -d "$HOME/.pixi/bin" ]] && export PATH="$HOME/.pixi/bin:$PATH"
+
 activate_mrover() {
   if ! command -v pixi >/dev/null 2>&1; then
     echo "pixi not found on PATH" >&2
