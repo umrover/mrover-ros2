@@ -284,7 +284,7 @@ class Panorama(Node):
 
         # Save the images
         unique_id = "{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
-        mrover_repo = os.environ.get("MROVER_REPO", os.path.expanduser("~/mrover-ros2"))
+        mrover_repo = os.path.expanduser("~/mrover-ros2")
         new_path = f"{mrover_repo}/data/raw-pano-images/{unique_id}/"
         os.mkdir(new_path)
         for i, img in enumerate(self.img_list):

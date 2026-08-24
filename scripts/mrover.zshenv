@@ -1,5 +1,5 @@
 # MRover ROS
-export MROVER_REPO="${MROVER_REPO:-$HOME/mrover-ros2}"
+export MROVER_REPO="$HOME/mrover-ros2"
 readonly MROVER_REPO
 
 [ -f /opt/ros/jazzy/setup.zsh ] && source /opt/ros/jazzy/setup.zsh
