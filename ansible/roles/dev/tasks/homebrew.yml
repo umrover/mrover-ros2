@@ -17,4 +17,4 @@
       - visual-studio-code
       - chromium
     state: present
-    accept_external_apps: true
+    install_options: adopt
