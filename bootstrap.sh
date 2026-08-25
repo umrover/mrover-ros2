@@ -31,9 +31,9 @@ sudo apt install -y git git-lfs
 
 readonly MROVER_PATH=~/mrover-ros2
 
-if [ ! -d "${MROVER_PATH}" ]; then
+if [ ! -d "${MROVER_PATH}/.git" ]; then
   echo -e "${GREY}Cloning mrover-ros2 ...${NC}"
-  git clone --recurse-submodules git@github.com:umrover/mrover-ros2 "${MROVER_PATH}"
+  git clone git@github.com:umrover/mrover-ros2 "${MROVER_PATH}"
 fi
 
 exec "${MROVER_PATH}/setup.sh"

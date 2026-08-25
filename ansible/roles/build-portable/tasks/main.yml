@@ -45,3 +45,10 @@
   ansible.builtin.command: ./scripts/setup_imgui.sh
   args:
     chdir: "{{ mrover_repo }}"
+
+- name: Install frontend Bun packages
+  ansible.builtin.command:
+    cmd: pixi run --manifest-path "{{ mrover_repo }}" bun install
+    chdir: "{{ mrover_repo }}/teleoperation/basestation_gui/frontend"
+  environment:
+    PATH: "{{ ansible_env.HOME }}/.pixi/bin:{{ ansible_env.PATH }}"
