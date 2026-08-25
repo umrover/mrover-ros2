@@ -1,0 +1,47 @@
+# we only support osx-arm64 and linux-64
+- name: Assert the platform is supported by pixi.toml
+  ansible.builtin.assert:
+    that:
+      - (ansible_system == 'Linux' and ansible_architecture == 'x86_64') or
+        (ansible_system == 'Darwin' and ansible_architecture == 'arm64')
+    fail_msg: >-
+      Unsupported device, reach out to a lead.
+      This host is {{ ansible_system }} {{ ansible_architecture }}.
+    quiet: true
+
+- name: Ensure pixi bin directory exists
+  ansible.builtin.file:
+    path: "{{ ansible_env.HOME }}/.pixi/bin"
+    state: directory
+    mode: '0755'
+  when: ansible_system == 'Linux'
+
+- name: Install pixi
+  ansible.builtin.get_url:
+    url: "https://github.com/prefix-dev/pixi/releases/latest/download/pixi-{{ ansible_architecture }}-unknown-linux-musl"
+    dest: "{{ ansible_env.HOME }}/.pixi/bin/pixi"
+    mode: '0755'
+    force: false
+  when: ansible_system == 'Linux'
+
+- name: Install pixi packages
+  ansible.builtin.command:
+    cmd: pixi install
+    chdir: "{{ mrover_repo }}"
+  environment:
+    PATH: "{{ ansible_env.HOME }}/.pixi/bin:{{ ansible_env.PATH }}"
+
+- name: Download prebuilt Dawn
+  ansible.builtin.command: ./scripts/setup_dawn.sh
+  args:
+    chdir: "{{ mrover_repo }}"
+
+- name: Download manif source
+  ansible.builtin.command: ./scripts/setup_manif.sh
+  args:
+    chdir: "{{ mrover_repo }}"
+
+- name: Download imgui source
+  ansible.builtin.command: ./scripts/setup_imgui.sh
+  args:
+    chdir: "{{ mrover_repo }}"

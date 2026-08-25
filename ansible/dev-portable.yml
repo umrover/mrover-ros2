@@ -1,0 +1,7 @@
+---
+- hosts: all
+  roles:
+    - role: dev
+      vars:
+        mrover_portable: true
+    - build-portable

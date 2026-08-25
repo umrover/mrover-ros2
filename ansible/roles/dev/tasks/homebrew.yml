@@ -6,6 +6,7 @@
       - htop
       - gh
       - git-lfs
+      - pixi
       - bun
       - llvm
     state: present
@@ -16,3 +17,4 @@
       - visual-studio-code
       - chromium
     state: present
+    accept_external_apps: true

@@ -1,0 +1,59 @@
+[workspace]
+name = "mrover"
+version = "2025.0.0"
+channels = ["robostack-jazzy", "conda-forge"]
+platforms = ["osx-arm64", "linux-64"]
+
+[dependencies]
+python = "3.12.*"
+
+# ROS 2 Humble via RoboStack.
+ros-jazzy-ros-base = "*"
+ros-jazzy-xacro = "*"
+ros-jazzy-rtcm-msgs = "*"
+ros-jazzy-dynamixel-sdk = "*"
+ros-jazzy-tf-transformations = "*"
+ros-jazzy-ament-cmake = "*"
+ros-jazzy-ament-cmake-python = "*"
+ros-jazzy-rosidl-default-generators = "*"
+ros-jazzy-rosidl-default-runtime = "*"
+ros-jazzy-magic-enum = "*"
+ros-jazzy-rviz2 = "*"
+
+cmake = "*"
+ninja = "*"
+pkg-config = "*"
+c-compiler = "*"
+cxx-compiler = "*"
+ccache = "*"
+colcon-common-extensions = "*"
+
+numpy = ">=2.0"
+libboost-devel = "*"
+
+eigen = "*"
+opencv = "*"
+manif = "*"
+manifpy = ">=0.0.5,<0.0.6"
+glfw = "3.3.*"
+assimp = "*"
+bullet = "*"
+qt6-main = "*"
+qt6-multimedia = "*"
+gstreamer = "*"
+gst-plugins-base = "*"
+bun = "*"
+ipython = "*"
+pytest = "*"
+pytest-asyncio = "*"
+black = "*"
+mypy = "*"
+clang-format = "18.*"
+shellcheck = "*"
+
+[target.linux-64.dependencies]
+tbb = "*"
+tbb-devel = "*"
+
+[pypi-dependencies]
+mrover = { path = ".", editable = true }

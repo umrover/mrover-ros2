@@ -14,10 +14,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(MROVER_CI "Enable CI options" OFF)
 option(MROVER_CLANG_TIDY "Enable static analysis with Clang tidy" ${MROVER_CI})
 option(MROVER_WARNINGS_AS_ERRORS "Treat warnings as errors" ${MROVER_CI})
+# Portable tier (Tier 2): gates out ZED/CUDA, CAN, and ESW hardware bridges.
+# The simulator, autonomy Python, and all pure-ROS C++ nodes are always built.
+option(MROVER_PORTABLE "Exclude rover-only targets: ZED/CUDA, CAN/ESW hardware bridges" OFF)
 
-# Set sim variable based on Linux x86_64
+# Simulator needs a prebuilt Dawn, which is only published for Linux x86_64 and macOS arm64.
 if (NOT DEFINED MROVER_SIMULATOR)
-    if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+    if ((CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64") OR
+        (APPLE AND CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64"))
         set(MROVER_SIMULATOR ON)
     else ()
         set(MROVER_SIMULATOR OFF)
@@ -27,9 +31,9 @@ endif ()
 set(node_plugins "")
 
 if (APPLE)
-    # Ensures that homebrew packages are never used over miniforge packages.
-    # TODO (ali): Pretty sure this doesn't do anything on macs
     set(CMAKE_IGNORE_PATH /opt/homebrew)
+    enable_language(OBJCXX)
+    find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 endif ()
 
 if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -243,15 +247,15 @@ ament_python_install_package(state_machine)
 include_directories(perception)
 
 mrover_add_library(lie lie/*.cpp lie)
-target_link_libraries(lie manif)
+target_link_libraries(lie MANIF::manif)
 ament_target_dependencies(lie rclcpp geometry_msgs tf2 tf2_ros)
 
 set(MROVER_EMBEDDED_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/esw/fw/lib")
 
 # esw/fw/lib/units already defines an equivalent "units" INTERFACE target once the
-# submodule is checked out; only register our own copy when it's absent (e.g. macOS,
-# shallow checkout without submodules) so differential_drive_controller still links.
-if (NOT EXISTS ${MROVER_EMBEDDED_ROOT_DIR} OR APPLE)
+# submodule is checked out; only register our own copy when esw/fw/lib isn't added below
+# (missing submodule, macOS, or a portable build) so differential_drive_controller still links.
+if (NOT EXISTS ${MROVER_EMBEDDED_ROOT_DIR} OR APPLE OR MROVER_PORTABLE)
     mrover_add_header_only_library(units units)
 endif ()
 mrover_add_header_only_library(loop_profiler loop_profiler)
@@ -372,7 +376,7 @@ mrover_executable_from_component(cost_map perception/executables/cost_map.cpp co
 
 # Embedded
 
-if (EXISTS ${MROVER_EMBEDDED_ROOT_DIR} AND NOT APPLE)
+if (EXISTS ${MROVER_EMBEDDED_ROOT_DIR} AND NOT APPLE AND NOT MROVER_PORTABLE)
     add_subdirectory(esw/fw/lib)
 
     mrover_add_header_only_library(can_device esw/can_device)
@@ -408,15 +412,17 @@ mrover_add_node(differential_drive_controller esw/differential_drive_controller.
 ament_target_dependencies(differential_drive_controller rclcpp std_srvs)
 target_link_libraries(differential_drive_controller units)
 
+if (NOT MROVER_PORTABLE)
+    mrover_add_node(u2d2_bridge esw/u2d2_bridge.cpp)
+    ament_target_dependencies(u2d2_bridge rclcpp std_msgs std_srvs dynamixel_sdk)
+    target_link_libraries(u2d2_bridge servo)
+endif ()
+
 mrover_add_node(arm_controller navigation/arm_controller/arm_controller.cpp navigation/arm_controller/pch.hpp)
 target_link_libraries(arm_controller lie)
 ament_target_dependencies(arm_controller rclcpp)
 
-mrover_add_node(u2d2_bridge esw/u2d2_bridge.cpp)
-ament_target_dependencies(u2d2_bridge rclcpp std_msgs std_srvs dynamixel_sdk)
-target_link_libraries(u2d2_bridge servo)
-
-if (Gst_FOUND AND GstApp_FOUND)
+if (NOT MROVER_PORTABLE AND Gst_FOUND AND GstApp_FOUND)
     if (LibUdev_FOUND)
         mrover_add_component(gst_camera_server esw/gst_camera_server/*.c* esw/gst_camera_server/pch.hpp GstCameraServer)
         mrover_link_component(gst_camera_server PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_videoio opencv_imgcodecs opencv_imgproc gst_utils parameter_utils)
@@ -426,24 +432,29 @@ if (Gst_FOUND AND GstApp_FOUND)
     endif ()
 endif ()
 
-if (NetLink_FOUND AND NetLinkRoute_FOUND)
+if (NOT MROVER_PORTABLE AND NetLink_FOUND AND NetLinkRoute_FOUND)
     mrover_add_node(can_bridge esw/can_bridge/*.cpp esw/can_bridge/pch.hpp esw/can_bridge/can_bridge.hpp)
     target_link_libraries(can_bridge dbc PkgConfig::NetLink PkgConfig::NetLinkRoute)
     ament_target_dependencies(can_bridge rclcpp)
 endif ()
 
 # Teleop Qt6 Camera Client
-find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia MultimediaWidgets)
+find_package(Qt6 QUIET COMPONENTS Widgets Multimedia MultimediaWidgets)
+if (NOT Qt6_FOUND)
+    message(WARNING "Qt6 not found — camera_client will not be built. Add qt6-main to your environment.")
+endif ()
 
-mrover_add_node(camera_client teleoperation/camera_client/*.*pp teleoperation/camera_client/include/pch.hpp)
-target_include_directories(camera_client PRIVATE teleoperation/camera_client/include)
-target_link_libraries(camera_client gst_utils Qt6::Widgets Qt6::Multimedia Qt6::MultimediaWidgets opencv_core opencv_imgcodecs)
-ament_target_dependencies(camera_client rclcpp std_srvs sensor_msgs)
-set_target_properties(camera_client PROPERTIES
-    AUTOMOC ON
-    AUTORCC ON
-    AUTOUIC ON
-)
+if (Qt6_FOUND)
+    mrover_add_node(camera_client teleoperation/camera_client/*.*pp teleoperation/camera_client/include/pch.hpp)
+    target_include_directories(camera_client PRIVATE teleoperation/camera_client/include)
+    target_link_libraries(camera_client gst_utils Qt6::Widgets Qt6::Multimedia Qt6::MultimediaWidgets opencv_core opencv_imgcodecs)
+    ament_target_dependencies(camera_client rclcpp std_srvs sensor_msgs)
+    set_target_properties(camera_client PROPERTIES
+        AUTOMOC ON
+        AUTORCC ON
+        AUTOUIC ON
+    )
+endif ()
 
 ## Install
 

@@ -6,30 +6,53 @@ on:
     branches:
       - main
       - integration
+
 jobs:
   style:
     name: Style Checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: prefix-dev/setup-pixi@v0.9.6
         with:
-          python-version: '3.x'
-      - name: Install Python style tools
-        run: pip install black==26.5.1 mypy==1.11.2
-      - name: Install clang-format
-        run: |
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo add-apt-repository 'deb https://apt.llvm.org/noble/ llvm-toolchain-noble-18 main'
-          sudo apt-get update
-          sudo apt-get install -y clang-format-18
-      - name: Install shellcheck
-        run: sudo apt-get install -y shellcheck
-      - uses: oven-sh/setup-bun@v2
-      - name: Install Frontend Dependencies
-        run: cd teleoperation/basestation_gui/frontend && bun install
-      - name: Run Style Check
+          activate-environment: true
+          cache: true
+      - uses: actions/cache@v6
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ hashFiles('teleoperation/basestation_gui/frontend/bun.lockb') }}
+          restore-keys: bun-
+      - name: Style Check
         run: ./style.sh
+
+  build:
+    name: Build (pixi Ubuntu 26)
+    runs-on: ubuntu-26.04
+    needs: style
+    steps:
+      - uses: actions/checkout@v7
+      - name: Dawn Cache
+        uses: actions/cache@v6
+        with:
+          path: deps/dawn-prebuilt
+          key: dawn-${{ hashFiles('scripts/setup_dawn.sh') }}
+      - name: Setup Dawn
+        run: ./scripts/setup_dawn.sh
+      - name: Imgui Cache
+        uses: actions/cache@v6
+        with:
+          path: deps/imgui-src
+          key: imgui-${{ hashFiles('scripts/setup_imgui.sh') }}
+      - name: Setup Imgui
+        run: ./scripts/setup_imgui.sh
+      - name: Compiler Cache
+        uses: hendrikmuhs/ccache-action@v1.2.23
+      - uses: prefix-dev/setup-pixi@v0.9.6
+        with:
+          activate-environment: true
+          cache: true
+      - name: Build
+        run: ./build.sh
 
   build-native:
     name: Build (native Ubuntu 24)

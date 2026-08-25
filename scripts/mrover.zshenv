@@ -1,8 +1,8 @@
 # MRover ROS
-export MROVER_REPO="${MROVER_REPO:-$HOME/mrover-ros2}"
+export MROVER_REPO="$HOME/mrover-ros2"
 readonly MROVER_REPO
 
-source /opt/ros/jazzy/setup.zsh
+[ -f /opt/ros/jazzy/setup.zsh ] && source /opt/ros/jazzy/setup.zsh
 
 export ROS_DOMAIN_ID=5
 export COLCON_TRACE=0
@@ -44,7 +44,11 @@ source_mrover_overlay(){
         source "${target_file}" >> /dev/null
     fi
 
-    command -v register-python-argcomplete3 &>/dev/null && command -v colcon &>/dev/null && eval "$(register-python-argcomplete3 colcon)"
+    if command -v register-python-argcomplete3 &>/dev/null; then
+        command -v colcon &>/dev/null && eval "$(register-python-argcomplete3 colcon)"
+    elif command -v register-python-argcomplete &>/dev/null; then
+        command -v colcon &>/dev/null && eval "$(register-python-argcomplete colcon)"
+    fi
 }
 
 # cuda
@@ -67,4 +71,7 @@ alias clean_mrover="cd ${MROVER_REPO} && ./clean.sh && mrover"
 if command -v register-python-argcomplete3 &>/dev/null; then
     eval "$(register-python-argcomplete3 ros2)"
     command -v colcon &>/dev/null && eval "$(register-python-argcomplete3 colcon)"
+elif command -v register-python-argcomplete &>/dev/null; then
+    eval "$(register-python-argcomplete ros2)"
+    command -v colcon &>/dev/null && eval "$(register-python-argcomplete colcon)"
 fi

@@ -3,7 +3,11 @@
 /install/
 /log/
 
-# Downloaded prebuilt dependencies
+# pixi environment
+/.pixi/*
+!/.pixi/config.toml
+
+# Prebuild deps
 /deps/dawn-prebuilt/
 /deps/manif-src/
 /deps/imgui-src/
@@ -29,7 +33,7 @@ __pycache__/
 *.egg-info/
 venv/
 
-#Teleop Ignores
+# Teleop Ignores
 *.sqlite3
 *.db
 bun.lock
@@ -42,6 +46,7 @@ bun.lockb
 
 # macOS
 .DS_Store
+
 # nav state log
 state_machine/state_log.txt
 
