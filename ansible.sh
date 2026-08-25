@@ -17,7 +17,7 @@ run_playbook() {
 
 # works around a first-run-only ansible-core "No serialization profile" flake
 # the cause of this is unconfirmed, there are multiple sources online such as 
-# https://github.com/ansible/ansible/issues/84782 that does not provide a clear explanation
+# https://github.com/ansible/ansible/issues/84782 that does not provide a clean solution
 # re-trying the playbook always works to resolve the issue, so temporary fix is below
 if ! run_playbook "$@"; then
     echo "Ansible run failed; retrying once to counter the known first-run cache flake ..." >&2
