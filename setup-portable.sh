@@ -12,6 +12,29 @@ readonly NC='\033[0m'
 OS="$(uname -s)"
 ARCH="$(uname -m)"
 
+# On Apple Silicon, `uname -m` can wrongly report x86_64:
+# 1. The shell/terminal itself is running translated under Rosetta 2
+#      (sysctl.proc_translated=1) -- brew/ansible/pixi would run translated
+#      too, so bail with a clear message instead of failing later inside
+#      `pixi install`.
+#   2. The shell itself is native, but this particular `uname` invocation
+#      still picked the x86_64 slice of its universal binary (seen even with
+#      the system /usr/bin/uname, not just a shadowed one -- an exec
+#      architecture-preference quirk). hw.optional.arm64=1 confirms the
+#      hardware/shell are actually arm64, and since the rest of this script
+#      spawns from this same untranslated shell, it's safe to correct ARCH
+#      and continue.
+if [[ "$OS" == "Darwin" && "$ARCH" == "x86_64" ]]; then
+  if [[ "$(sysctl -n sysctl.proc_translated 2>/dev/null || echo 0)" == "1" ]]; then
+    echo -e "${RED}Detected Apple Silicon running under Rosetta translation (uname reports x86_64, but this is arm64 hardware).${NC}" >&2
+    echo -e "${RED}Quit Terminal/iTerm, make sure \"Open using Rosetta\" is unchecked (Get Info on the app), and re-run this script natively.${NC}" >&2
+    exit 1
+  elif [[ "$(sysctl -n hw.optional.arm64 2>/dev/null || echo 0)" == "1" ]]; then
+    echo -e "${CYAN}Note: uname reported x86_64 but this shell is running natively on arm64 hardware. Continuing as arm64.${NC}" >&2
+    ARCH="arm64"
+  fi
+fi
+
 # pixi.toml declares platforms = ["osx-arm64", "linux-64"]; bail before doing
 # any work rather than failing deep inside `pixi install`
 case "${OS}/${ARCH}" in
@@ -58,8 +81,6 @@ cd "${MROVER_PATH}"
 
 echo -e "${CYAN}Installing Ansible collections ...${NC}"
 ansible-galaxy collection install -r ansible/requirements.yml
-
-"${MROVER_PATH}/scripts/fix_sudo_become.sh"
 
 echo -e "${CYAN}Running Ansible ...${NC}"
 "${MROVER_PATH}/ansible.sh" dev-portable.yml
