@@ -59,6 +59,8 @@ cd "${MROVER_PATH}"
 echo -e "${CYAN}Installing Ansible collections ...${NC}"
 ansible-galaxy collection install -r ansible/requirements.yml
 
+"${MROVER_PATH}/scripts/fix_sudo_rs.sh"
+
 echo -e "${CYAN}Running Ansible ...${NC}"
 "${MROVER_PATH}/ansible.sh" dev-portable.yml
 
