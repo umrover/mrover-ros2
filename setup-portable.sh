@@ -64,4 +64,9 @@ ansible-galaxy collection install -r ansible/requirements.yml
 echo -e "${CYAN}Running Ansible ...${NC}"
 "${MROVER_PATH}/ansible.sh" dev-portable.yml
 
-echo -e "${GREEN}Done. Open a new terminal and run 'mrover'.${NC}"
+echo ""
+echo -e "${GREEN}================================================================${NC}"
+echo -e "${GREEN}  Done! Log out and back in to apply shell changes.${NC}"
+echo -e "${GREEN}  Then open a new terminal and run: mrover${NC}"
+echo -e "${GREEN}================================================================${NC}"
+echo ""

@@ -40,4 +40,9 @@ else
   "${MROVER_PATH}/ansible.sh" dev.yml
 fi
 
-echo -e "${GREEN}Done. Log out and back in to apply shell changes.${NC}"
+echo ""
+echo -e "${GREEN}================================================================${NC}"
+echo -e "${GREEN}  Done! Log out and back in to apply shell changes.${NC}"
+echo -e "${GREEN}  Then open a new terminal and run: mrover${NC}"
+echo -e "${GREEN}================================================================${NC}"
+echo ""
