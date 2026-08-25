@@ -31,6 +31,8 @@ cd "${MROVER_PATH}"
 echo -e "${CYAN}Installing Ansible collections ...${NC}"
 ansible-galaxy collection install -r ansible/requirements.yml
 
+"${MROVER_PATH}/scripts/fix_sudo_become.sh"
+
 echo -e "${CYAN}Running Ansible ...${NC}"
 if [ -f /etc/nv_tegra_release ]; then
   "${MROVER_PATH}/ansible.sh" jetson_build.yml
