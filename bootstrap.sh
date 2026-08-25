@@ -47,6 +47,8 @@ if [ ! -d "${MROVER_PATH}" ]; then
   FIRST_TIME_SETUP=true
 fi
 
+"${MROVER_PATH}"/scripts/fix_sudo_become.sh
+
 echo -e "${GREY_BOLD}Using Ansible to finish up ...${NC}"
 "${MROVER_PATH}"/ansible.sh dev.yml
 

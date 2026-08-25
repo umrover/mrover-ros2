@@ -43,6 +43,8 @@ source_mrover_overlay(){
     if [ -f "${target_file}" ]; then
         source "${target_file}" >> /dev/null
     fi
+
+    command -v register-python-argcomplete3 &>/dev/null && command -v colcon &>/dev/null && eval "$(register-python-argcomplete3 colcon)"
 }
 
 # cuda
@@ -62,5 +64,7 @@ build_mrover(){
 
 alias clean_mrover="cd ${MROVER_REPO} && ./clean.sh && mrover"
 
-eval "$(register-python-argcomplete3 ros2)"
-eval "$(register-python-argcomplete3 colcon)"
+if command -v register-python-argcomplete3 &>/dev/null; then
+    eval "$(register-python-argcomplete3 ros2)"
+    command -v colcon &>/dev/null && eval "$(register-python-argcomplete3 colcon)"
+fi
