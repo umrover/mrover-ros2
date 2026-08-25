@@ -11,10 +11,24 @@
       - llvm
     state: present
 
-- name: Install VSCode and Chromium casks
+- name: Check if VSCode is already installed
+  ansible.builtin.stat:
+    path: /Applications/Visual Studio Code.app
+  register: vscode_app
+
+- name: Check if Chromium is already installed
+  ansible.builtin.stat:
+    path: /Applications/Chromium.app
+  register: chromium_app
+
+- name: Install VSCode cask
   community.general.homebrew_cask:
-    name:
-      - visual-studio-code
-      - chromium
+    name: visual-studio-code
     state: present
-    install_options: adopt
+  when: not vscode_app.stat.exists
+
+- name: Install Chromium cask
+  community.general.homebrew_cask:
+    name: chromium
+    state: present
+  when: not chromium_app.stat.exists
