@@ -1,0 +1,138 @@
+#!/usr/bin/env python3
+
+"""
+TODO(quintin): Document
+"""
+
+import sys
+
+from pyubx2 import UBXReader, UBX_PROTOCOL, RTCM3_PROTOCOL, protocol
+from pyrtcm import RTCMReader
+from serial import Serial
+from pymap3d.ecef import ecef2geodetic
+
+import rclpy
+from rclpy import Parameter
+from rclpy.executors import ExternalShutdownException
+from rclpy.node import Node
+from rtcm_msgs.msg import Message as RTCMMessage
+from mrover.msg import SatelliteSignal
+from sensor_msgs.msg import NavSatFix
+from std_msgs.msg import Header
+
+
+class BaseStationDriverNode(Node):
+    def __init__(self) -> None:
+        super().__init__("basestation_gps_driver")
+
+        self.declare_parameters(
+            "",
+            [
+                ("port", Parameter.Type.STRING),
+                ("baud", Parameter.Type.INTEGER),
+            ],
+        )
+        port = self.get_parameter("port").value
+        baud = self.get_parameter("baud").value
+
+        self.rtcm_pub = self.create_publisher(RTCMMessage, "rtcm", 10)
+        self.satellite_signal_pub = self.create_publisher(SatelliteSignal, "basestation/satellite_signal", 10)
+        self.position_pub = self.create_publisher(NavSatFix, "basestation/position", 10)
+
+        self.svin_started = False
+        self.svin_complete = False
+
+        self.serial = Serial(port, baud, timeout=1)
+        self.reader = UBXReader(self.serial, protfilter=UBX_PROTOCOL | RTCM3_PROTOCOL)
+
+        self.satellite_signals = dict[str, list]()
+        self.satellite_signals["GPS"] = list()
+        self.satellite_signals["SBAS"] = list()
+        self.satellite_signals["Galileo"] = list()
+        self.satellite_signals["BeiDou"] = list()
+        self.satellite_signals["QZSS"] = list()
+        self.satellite_signals["GLONASS"] = list()
+
+        self.gnssId_to_constellation = {
+            0: "GPS",
+            1: "SBAS",
+            2: "Galileo",
+            3: "BeiDou",
+            5: "QZSS",
+            6: "GLONASS",
+        }
+
+    def spin(self) -> None:
+
+        while rclpy.ok():
+            if self.serial.in_waiting:
+                raw_msg, msg = self.reader.read()
+
+                if not msg:
+                    continue
+
+                if protocol(raw_msg) == RTCM3_PROTOCOL:
+                    rtcm_msg = RTCMReader.parse(raw_msg)
+
+                    # publish basestation reference position
+                    if rtcm_msg.identity == "1005":
+                        lat, lon, alt = ecef2geodetic(rtcm_msg.DF025, rtcm_msg.DF026, rtcm_msg.DF027)
+                        self.position_pub.publish(
+                            NavSatFix(
+                                header=Header(stamp=self.get_clock().now().to_msg()),
+                                latitude=lat,
+                                longitude=lon,
+                                altitude=alt,
+                            )
+                        )
+
+                    self.rtcm_pub.publish(RTCMMessage(message=raw_msg))
+                elif msg.identity == "NAV-SVIN":
+                    if not self.svin_started and msg.active:
+                        self.svin_started = True
+                        self.get_logger().info("Base station survey-in started")
+                    if not self.svin_complete and msg.valid:
+                        self.svin_complete = True
+                        self.get_logger().info(f"Base station survey-in complete, accuracy = {msg.meanAcc}")
+                    if self.svin_started and not self.svin_complete:
+                        self.get_logger().info(f"Current accuracy: {msg.meanAcc}")
+                elif msg.identity == "NAV-PVT":
+                    self.get_logger().info(
+                        f"{'Valid' if msg.gnssFixOk else 'Invalid'} fix, {msg.numSV} satellites used"
+                    )
+                elif msg.identity == "NAV-SAT":
+                    for i in range(msg.numSvs):
+                        gnssId = getattr(msg, f"gnssId_{i+1:02d}")
+                        cno = getattr(msg, f"cno_{i+1:02d}")
+
+                        if gnssId in self.gnssId_to_constellation:
+                            self.satellite_signals[self.gnssId_to_constellation[gnssId]].append(cno)
+
+                    for constellation in self.satellite_signals:
+                        if self.satellite_signals[constellation]:
+                            self.satellite_signal_pub.publish(
+                                SatelliteSignal(
+                                    constellation=constellation, signal_strengths=self.satellite_signals[constellation]
+                                )
+                            )
+                            self.satellite_signals[constellation].clear()
+
+            rclpy.spin_once(self, timeout_sec=0)
+
+    def __del__(self) -> None:
+        self.serial.close()
+
+
+def main() -> None:
+    try:
+        rclpy.init(args=sys.argv)
+        BaseStationDriverNode().spin()
+        rclpy.shutdown()
+    except KeyboardInterrupt:
+        pass
+    except ExternalShutdownException:
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
