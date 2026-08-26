@@ -195,6 +195,11 @@
     virtualenv: "{{ mrover_repo }}/venv"
     virtualenv_command: /usr/bin/python3 -m venv
 
+- name: Install Chromium
+  become: true
+  ansible.builtin.snap:
+    name: chromium
+
 - name: Download Bun installer
   ansible.builtin.get_url:
     url: https://bun.sh/install
