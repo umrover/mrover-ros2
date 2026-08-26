@@ -40,7 +40,7 @@
   ansible.builtin.blockinfile:
     path: ~/.zshrc
     marker: "# {mark} MROVER"
-    block: '[[ -f "${MROVER_REPO:-$HOME/mrover-ros2}/{{ mrover_zshenv }}" ]] && source "${MROVER_REPO:-$HOME/mrover-ros2}/{{ mrover_zshenv }}"'
+    block: '[[ -f "{{ mrover_repo }}/{{ mrover_zshenv }}" ]] && source "{{ mrover_repo }}/{{ mrover_zshenv }}"'
     create: true
 
 - name: Deploy mrover tmux config

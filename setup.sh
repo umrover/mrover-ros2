@@ -11,8 +11,8 @@ readonly NC='\033[0m'
 
 # The build role installs ROS and the toolchain from apt, so this path is
 # Ubuntu-only. Everything else goes through pixi.
-if ! grep -qi "ubuntu" /etc/os-release 2>/dev/null; then
-  echo -e "${RED}This script requires Ubuntu. For other platforms, use ./setup-portable.sh${NC}" >&2
+if ! grep -q '^VERSION_CODENAME=noble' /etc/os-release 2>/dev/null; then
+  echo -e "${RED}This script requires Ubuntu 24.04 (noble). For other platforms, use ./setup-portable.sh${NC}" >&2
   exit 1
 fi
 
@@ -25,7 +25,7 @@ if ! command -v ansible-playbook >/dev/null 2>&1; then
   sudo apt install -y ansible
 fi
 
-readonly MROVER_PATH=$(cd "$(dirname "$0")" && pwd)
+readonly MROVER_PATH=$(dirname "$(realpath "$0")")
 cd "${MROVER_PATH}"
 
 echo -e "${CYAN}Installing Ansible collections ...${NC}"

@@ -1,5 +1,5 @@
 # MRover ROS
-export MROVER_REPO="$HOME/mrover-ros2"
+export MROVER_REPO="${${(%):-%x}:A:h:h}"
 readonly MROVER_REPO
 
 [ -f /opt/ros/jazzy/setup.zsh ] && source /opt/ros/jazzy/setup.zsh
@@ -8,7 +8,7 @@ export ROS_DOMAIN_ID=5
 export COLCON_TRACE=0
 
 remove_mrover_from_path(){
-    export ${1}="$(echo ${(P)1} | tr ':' '\n' | grep -v "mrover-ros2" | paste -s -d ':')"
+    export ${1}="$(echo ${(P)1} | tr ':' '\n' | grep -vF "${MROVER_REPO}" | paste -s -d ':')"
 }
 
 source_mrover_overlay(){
