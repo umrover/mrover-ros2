@@ -1,3 +1,6 @@
+- name: Install platform-specific packages
+  ansible.builtin.include_tasks: apt.yml
+
 - name: Oh-My-Zsh
   git:
     repo: https://github.com/ohmyzsh/ohmyzsh.git
