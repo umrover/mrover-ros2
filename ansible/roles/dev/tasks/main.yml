@@ -24,11 +24,6 @@
     src: files/home/.oh-my-zsh/custom/themes/mrover.zsh-theme
     dest: ~/.oh-my-zsh/custom/themes/mrover.zsh-theme
 
-- name: Deploy mrover zshenv
-  ansible.builtin.copy:
-    src: files/home/.mrover.zshenv
-    dest: ~/.mrover.zshenv
-
 - name: Check for existing zshrc
   ansible.builtin.stat:
     path: ~/.zshrc
@@ -46,7 +41,7 @@
     marker: "# {mark} MROVER"
     block: |
       export MROVER_REPO="{{ mrover_repo }}"
-      source ~/.mrover.zshenv
+      source "${MROVER_REPO}/scripts/mrover.zshenv"
     create: true
 
 - name: Deploy mrover tmux config
