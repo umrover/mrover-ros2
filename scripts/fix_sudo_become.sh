@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# https://github.com/ansible/ansible/issues/85536
+# Run this manually if ./ansible.sh prompts for the become password more
+# than once during a single run: https://github.com/ansible/ansible/issues/85536
 
 set -Eeuo pipefail
 
