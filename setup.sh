@@ -22,7 +22,7 @@ if ! command -v ansible-playbook >/dev/null 2>&1; then
   sudo apt install -y ansible
 fi
 
-readonly MROVER_PATH=$(cd "$(dirname "$0")" && pwd)
+readonly MROVER_PATH=$(dirname "$(realpath "$0")")
 cd "${MROVER_PATH}"
 
 echo -e "${CYAN}Installing Ansible collections ...${NC}"

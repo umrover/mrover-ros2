@@ -9,7 +9,7 @@ fi
 
 sudo -v # Ensure Ansible has sudo permission
 
-readonly MROVER_PATH=$(realpath "$(dirname "$0")")
+readonly MROVER_PATH=$(dirname "$(realpath "$0")")
 
 run_playbook() {
     ansible-playbook -i "localhost," -c local --ask-become-pass "${MROVER_PATH}"/ansible/"$1" --extra-vars "mrover_repo=${MROVER_PATH}" ${2:+"$2"}
