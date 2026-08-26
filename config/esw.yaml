@@ -24,7 +24,7 @@ can_bridge_0:
     devices:
       jetson:
         id: 0x10
-      pdlb:
+      pdb:
         id: 0x11
       front_left:
         id: 0x20
