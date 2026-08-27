@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# First-time native Ubuntu 24 setup. 
+# First-time native Ubuntu 22 setup.
 # Ensures git is installed, clones the repo, then runs setup.sh.
 # If you already have the repo, just run setup.sh directly.
 
@@ -10,8 +10,8 @@ readonly RED_BOLD='\033[1;31m'
 readonly GREY_BOLD='\033[1;30m'
 readonly NC='\033[0m'
 
-if ! grep -q '^VERSION_CODENAME=noble' /etc/os-release 2>/dev/null; then
-  echo -e "${RED_BOLD}This script requires Ubuntu 24.04.${NC}"
+if ! grep -q '^VERSION_CODENAME=jammy' /etc/os-release 2>/dev/null; then
+  echo -e "${RED_BOLD}This script requires Ubuntu 22.04.${NC}"
   exit 1
 fi
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Native Ubuntu 24 setup. Run after cloning. 
+# Native Ubuntu 22 setup. Run after cloning.
 
 set -Eeuo pipefail
 
@@ -8,8 +8,8 @@ readonly GREEN='\033[1;32m'
 readonly RED='\033[1;31m'
 readonly NC='\033[0m'
 
-if ! grep -q '^VERSION_CODENAME=noble' /etc/os-release 2>/dev/null; then
-  echo -e "${RED}This script requires Ubuntu 24.${NC}" >&2
+if ! grep -q '^VERSION_CODENAME=jammy' /etc/os-release 2>/dev/null; then
+  echo -e "${RED}This script requires Ubuntu 22.${NC}" >&2
   exit 1
 fi
 
