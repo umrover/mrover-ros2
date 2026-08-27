@@ -7,11 +7,6 @@ if [ "$#" -le 0 ]; then
     exit 1
 fi
 
-sudo -v || {
-    echo "Incorrect password." >&2
-    exit 1
-} # validate sudo password up front
-
 readonly MROVER_PATH=$(dirname "$(realpath "$0")")
 
 run_playbook() {
