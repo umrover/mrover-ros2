@@ -24,6 +24,13 @@
     block: source-file ~/.mrover.tmux.conf
     create: true
 
+- name: Source mrover zshenv
+  blockinfile:
+    path: ~/.zshenv
+    marker: "# {mark} MROVER"
+    block: source ~/.mrover.zshenv
+    create: true
+
 - name: Check for existing zshrc
   stat:
     path: ~/.zshrc
