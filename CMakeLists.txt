@@ -182,6 +182,10 @@ mrover_add_node(starter_project_perception ${CMAKE_CURRENT_LIST_DIR}/starter_pro
 target_link_libraries(starter_project_perception ${OpenCV_LIBS})
 ament_target_dependencies(starter_project_perception rclcpp std_msgs sensor_msgs)
 
+mrover_add_node(starter_project_localization ${CMAKE_CURRENT_LIST_DIR}/starter_project/autonomy/src/*.cpp)
+target_link_libraries(starter_project_localization ${OpenCV_LIBS})
+ament_target_dependencies(starter_project_localization rclcpp std_msgs sensor_msgs)
+
 
 # Install our executable so that ROS knows about it
 # This allows us to launch it with ros2 run
