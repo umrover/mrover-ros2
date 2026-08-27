@@ -218,8 +218,8 @@
   pip:
     name:
       # Installs from pyproject.toml
-      - "{{ ros2_workspace }}/src/mrover[dev]"
-    virtualenv: "{{ ros2_workspace }}/src/mrover/venv"
+      - "{{ mrover_repo }}[dev]"
+    virtualenv: "{{ mrover_repo }}/venv"
     virtualenv_command: /usr/bin/python3.10 -m venv
 
 - name: Install Chromium
