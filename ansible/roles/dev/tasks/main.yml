@@ -28,7 +28,9 @@
   blockinfile:
     path: ~/.zshenv
     marker: "# {mark} MROVER"
-    block: source ~/ros2_ws/src/mrover/scripts/mrover.zshenv # hardcoded for now, change in re-arch
+    block: |
+      export MROVER_REPO="{{ mrover_repo }}"
+      source "${MROVER_REPO}/scripts/mrover.zshenv"
     create: true
 
 - name: Check for existing zshrc

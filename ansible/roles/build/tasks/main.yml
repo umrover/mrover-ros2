@@ -143,7 +143,7 @@
 - name: Download prebuilt Dawn
   command: ./scripts/setup_dawn.sh
   args:
-    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
+    chdir: "{{ mrover_repo }}"
 
 - name: Initialize rosdep
   become: True
@@ -243,4 +243,4 @@
 - name: Install Bun Packages
   command: "{{ ansible_env.HOME }}/.bun/bin/bun install"
   args:
-    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/teleoperation/basestation_gui/frontend"
+    chdir: "{{ mrover_repo }}/teleoperation/basestation_gui/frontend"

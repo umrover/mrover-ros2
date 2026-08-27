@@ -7,11 +7,10 @@ if [ "$#" -le 0 ]; then
     exit 1
 fi
 
-readonly MROVER_PATH=$(dirname "$0")
-readonly ROS2_WS_PATH=$(realpath "${MROVER_PATH}"/../..)
+readonly MROVER_PATH=$(dirname "$(realpath "$0")")
 
 run_playbook() {
-    ansible-playbook -i "localhost," -c local -K "${MROVER_PATH}"/ansible/"$1" --extra-vars "ros2_workspace=${ROS2_WS_PATH} $2"
+    ansible-playbook -i "localhost," -c local -K "${MROVER_PATH}"/ansible/"$1" --extra-vars "mrover_repo=${MROVER_PATH}" ${2:+"$2"}
 }
 
 # workaround for a first-run-only ansible "No serialization profile" bug
