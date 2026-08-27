@@ -14,6 +14,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(MROVER_CI "Enable CI options" OFF)
 option(MROVER_CLANG_TIDY "Enable static analysis with Clang tidy" ${MROVER_CI})
 option(MROVER_WARNINGS_AS_ERRORS "Treat warnings as errors" ${MROVER_CI})
+option(MROVER_BUILD_ESW "Build ESW (embedded software) targets, requires fetching the esw mrover_can library" ON)
 
 # Set sim variable based on Linux x86_64
 if (NOT DEFINED MROVER_SIMULATOR)
@@ -238,6 +239,7 @@ mrover_add_library(lie lie/*.cpp lie)
 target_link_libraries(lie manif)
 ament_target_dependencies(lie rclcpp geometry_msgs tf2 tf2_ros)
 
+mrover_add_header_only_library(units units)
 mrover_add_header_only_library(loop_profiler loop_profiler)
 mrover_add_header_only_library(parameter_utils parameter_utils)
 mrover_add_header_only_library(gst_utils gst_utils)
@@ -351,9 +353,11 @@ mrover_executable_from_component(cost_map perception/executables/cost_map.cpp co
 
 # Embedded
 
-set(MROVER_EMBEDDED_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/esw/fw/lib")
-if (EXISTS ${MROVER_EMBEDDED_ROOT_DIR} AND NOT APPLE)
-    add_subdirectory(esw/fw/lib)
+if (MROVER_BUILD_ESW)
+    include(cmake/esw.cmake)
+endif()
+
+if (MROVER_BUILD_ESW AND NOT APPLE)
 
     mrover_add_header_only_library(can_device esw/can_device)
     target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES} moteus dbc)
@@ -376,27 +380,27 @@ if (EXISTS ${MROVER_EMBEDDED_ROOT_DIR} AND NOT APPLE)
         target_link_libraries(${name} can_device units motor science servo abs)
     endmacro()
 
-    # esw hardware bridge nodes
+    # esw hardware bridge and controller nodes
     mrover_add_esw_bridge_node(drive_hw_bridge esw/drive_hw_bridge.cpp)
     mrover_add_esw_bridge_node(arm_hw_bridge esw/arm_hw_bridge.cpp)
     mrover_add_esw_bridge_node(science_hw_bridge esw/science_hw_bridge.cpp)
     mrover_add_esw_bridge_node(pdlb_hw_bridge esw/pdlb_hw_bridge.cpp)
     mrover_add_esw_bridge_node(mast_gimbal_hw_bridge esw/mast_gimbal_hw_bridge.cpp)
-endif()
 
-mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
-ament_target_dependencies(differential_drive_controller rclcpp std_srvs)
-target_link_libraries(differential_drive_controller units)
+    mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
+    ament_target_dependencies(differential_drive_controller rclcpp std_srvs)
+    target_link_libraries(differential_drive_controller units)
+
+    mrover_add_node(u2d2_bridge esw/u2d2_bridge.cpp)
+    ament_target_dependencies(u2d2_bridge rclcpp std_msgs std_srvs dynamixel_sdk)
+    target_link_libraries(u2d2_bridge servo)
+endif()
 
 mrover_add_node(arm_controller navigation/arm_controller/arm_controller.cpp navigation/arm_controller/pch.hpp)
 target_link_libraries(arm_controller lie)
 ament_target_dependencies(arm_controller rclcpp)
 
-mrover_add_node(u2d2_bridge esw/u2d2_bridge.cpp)
-ament_target_dependencies(u2d2_bridge rclcpp std_msgs std_srvs dynamixel_sdk)
-target_link_libraries(u2d2_bridge servo)
-
-if (Gst_FOUND AND GstApp_FOUND)
+if (MROVER_BUILD_ESW AND Gst_FOUND AND GstApp_FOUND)
     if (LibUdev_FOUND)
         mrover_add_component(gst_camera_server esw/gst_camera_server/*.c* esw/gst_camera_server/pch.hpp GstCameraServer)
         mrover_link_component(gst_camera_server PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_videoio opencv_imgcodecs opencv_imgproc gst_utils parameter_utils)
@@ -406,7 +410,7 @@ if (Gst_FOUND AND GstApp_FOUND)
     endif ()
 endif ()
 
-if (NetLink_FOUND AND NetLinkRoute_FOUND)
+if (MROVER_BUILD_ESW AND NetLink_FOUND AND NetLinkRoute_FOUND)
     mrover_add_node(can_bridge esw/can_bridge/*.cpp esw/can_bridge/pch.hpp esw/can_bridge/can_bridge.hpp)
     target_link_libraries(can_bridge dbc PkgConfig::NetLink PkgConfig::NetLinkRoute)
     ament_target_dependencies(can_bridge rclcpp)
