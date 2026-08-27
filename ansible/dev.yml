@@ -1,8 +1,7 @@
 ---
 - hosts: all
-  vars:
-    ros_distro: jazzy
-    ubuntu_release: noble
+  vars_files:
+    - vars/jazzy.yml
   roles:
     - build
     - dev

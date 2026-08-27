@@ -1,8 +1,8 @@
 ---
 - hosts: all
+  vars_files:
+    - vars/jazzy.yml
   vars:
-    ros_distro: jazzy
-    ubuntu_release: noble
     ifname: eth0
   roles:
     - jetson_pre_build

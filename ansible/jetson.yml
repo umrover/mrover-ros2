@@ -1,7 +1,6 @@
 ---
 - hosts: all
-  vars:
-    ros_distro: noetic
-    ubuntu_release: focal
+  vars_files:
+    - vars/jazzy.yml
   roles:
     - jetson_networks
