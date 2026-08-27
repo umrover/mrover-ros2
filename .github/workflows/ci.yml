@@ -35,7 +35,7 @@ jobs:
     name: Build (native Ubuntu 24)
     runs-on: ubuntu-24.04
     container:
-      image: kevinjin0420/mrover-ci:latest
+      image: umrover1/ros2-ci:noble
       # by pass github's dubious ownership check
       options: --user root
     needs: style
