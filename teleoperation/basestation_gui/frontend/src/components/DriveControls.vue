@@ -64,6 +64,7 @@ const throttleWidth = computed(() => Math.max(0, throttleNorm.value * 80))
 .joystick-svg {
   --outline: var(--text-muted);
   --base: var(--input-border);
+
   width: 100%;
   height: auto;
 }
@@ -88,9 +89,9 @@ const throttleWidth = computed(() => Math.max(0, throttleNorm.value * 80))
 }
 
 .micro-line {
+  opacity: 0.5;
   stroke: var(--outline);
   stroke-width: 1;
-  opacity: 0.5;
   stroke-dasharray: 2 2;
 }
 

@@ -7,15 +7,15 @@
           <div class="h-[var(--btn-height-sm)]"></div> <!-- Spacer to match button height -->
         </div>
         <div class="grid grid-cols-1 gap-2">
-          <button 
-            class="btn btn-success btn-sm w-full" 
+          <button
+            class="btn btn-success btn-sm w-full"
             @click="handleAddWaypoint(formatted_odom, false)"
           >
             Drop Waypoint at Rover
           </button>
-          <button 
-            v-if="enableDrone" 
-            class="btn btn-info btn-sm w-full" 
+          <button
+            v-if="enableDrone"
+            class="btn btn-info btn-sm w-full"
             @click="handleAddWaypoint(input, true)"
           >
             Add Drone Position
@@ -267,14 +267,14 @@ export default {
 }
 
 .recording-badge {
+  padding: 0.125rem 0.375rem;
   font-size: 0.625rem;
   font-weight: 800;
   color: var(--status-error);
-  padding: 0.125rem 0.375rem;
-  background-color: rgba(var(--status-error-rgb), 0.1);
+  letter-spacing: 0.05em;
+  background-color: rgb(var(--status-error-rgb), 0.1);
   border: 1px solid var(--status-error);
   border-radius: var(--radius-sm);
-  letter-spacing: 0.05em;
 }
 
 .recording-dot {
@@ -286,8 +286,19 @@ export default {
 }
 
 @keyframes pulse {
-  0% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(1.2); }
-  100% { opacity: 1; transform: scale(1); }
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.4;
+    transform: scale(1.2);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 </style>
