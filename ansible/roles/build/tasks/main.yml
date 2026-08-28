@@ -135,6 +135,13 @@
       - libqt5multimedia5-plugins
       - python3-pyqt5
 
+# manif's build backend now requires packaging>=26.2, temp upgrade for ubuntu 22
+- name: Upgrade pip for manifpy build isolation
+  become: True
+  pip:
+    name: pip
+    state: latest
+
 - name: Install manifpy
   become: True
   pip:
