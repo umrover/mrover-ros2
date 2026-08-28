@@ -1,7 +1,7 @@
 ---
 - hosts: all
   vars_files:
-    - vars/jazzy.yml
+    - vars/native.yml
   vars:
     ifname: eth0
   roles:
