@@ -135,17 +135,22 @@
       - libqt5multimedia5-plugins
       - python3-pyqt5
 
-- name: Build and Install Manif
-  command: ./scripts/build_manif.sh
-  args:
-    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
-    creates: /usr/local/lib/python3.10/dist-packages/manifpy/__init__.py
+# manif's build backend now requires packaging>=26.2, temp upgrade for ubuntu 22
+- name: Upgrade pip for manifpy build isolation
+  become: True
+  pip:
+    name: pip
+    state: latest
 
-- name: Build and Install Dawn
-  command: ./scripts/build_dawn.sh
+- name: Install manifpy
+  become: True
+  pip:
+    name: "git+https://github.com/artivis/manif.git@0.0.5"
+
+- name: Download prebuilt Dawn
+  command: ./scripts/setup_dawn.sh
   args:
     chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
-    creates: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/deps/dawn/out/Release/src/dawn/native/libwebgpu_dawn.so"
 
 - name: Initialize rosdep
   become: True

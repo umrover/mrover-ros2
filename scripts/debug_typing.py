@@ -6,6 +6,7 @@ from mrover.action import TypingPosition
 from rclpy.node import Node
 from rclpy.action import ActionClient
 from rclpy.executors import ExternalShutdownException
+from rclpy.action.client import ClientGoalHandle
 from rclpy.client import Client
 from rclpy.task import Future
 from rclpy.time import Time
@@ -27,7 +28,7 @@ class DebugTyping(Node):
         super().__init__("debug_typing")
         self.root = root
         self.cancel = False
-        self.current_goal_handle: Future | None = None
+        self.current_goal_handle: ClientGoalHandle | None = None
         self.typing_future = None
 
         self.ik_mode_client = self.create_client(IkMode, "ik_mode")
