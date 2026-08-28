@@ -25,9 +25,6 @@ fi
 readonly MROVER_PATH=$(dirname "$(realpath "$0")")
 cd "${MROVER_PATH}"
 
-echo -e "${CYAN}Installing Ansible collections ...${NC}"
-ansible-galaxy collection install -r ansible/requirements.yml
-
 echo -e "${CYAN}Running Ansible ...${NC}"
 "${MROVER_PATH}/ansible.sh" dev.yml
 
