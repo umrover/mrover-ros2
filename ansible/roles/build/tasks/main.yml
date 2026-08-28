@@ -146,6 +146,7 @@
   become: True
   pip:
     name: "git+https://github.com/artivis/manif.git@0.0.5"
+    extra_args: --no-build-isolation
 
 - name: Download prebuilt Dawn
   command: ./scripts/setup_dawn.sh

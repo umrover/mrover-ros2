@@ -113,6 +113,7 @@
   become: True
   pip:
     name: "git+https://github.com/artivis/manif.git@0.0.5"
+    extra_args: --no-build-isolation
 
 - name: Initialize rosdep
   become: True
