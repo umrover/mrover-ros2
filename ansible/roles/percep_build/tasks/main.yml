@@ -15,13 +15,8 @@
   when: nvidia_smi_output.rc != 0
 
 - name: Download CUDA Keyring
-<<<<<<< HEAD
-  ansible.builtin.get_url:
-    url: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
-=======
   get_url:
     url: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
->>>>>>> ubuntu24/percep_ansible
     dest: /tmp/cuda-keyring_1.1-1_all.deb
 
 - name: Install CUDA Keyring
@@ -40,23 +35,13 @@
       - zstd # Required to unpack ZED installer
 
 - name: ZED SDK Download
-<<<<<<< HEAD
-  ansible.builtin.get_url:
-    url: https://download.stereolabs.com/zedsdk/4.1/cu121/ubuntu22
-    dest: /tmp/ZED_SDK_Ubuntu22_cuda12.1_v4.1.4.zstd.run
-=======
   get_url:
     url: https://download.stereolabs.com/zedsdk/5.4/cu13/ubuntu24
     dest: ~/Downloads/ZED_SDK_Ubuntu24_cuda13.0_tensorrt10.13_v5.4.1.zstd.run
->>>>>>> ubuntu24/percep_ansible
     mode: 0755
 
 - name: ZED SDK Install
   # Silent mode prevents any user input prompting
-<<<<<<< HEAD
-  ansible.builtin.command: /tmp/ZED_SDK_Ubuntu22_cuda12.1_v4.1.4.zstd.run -- silent
-=======
   command: ~/Downloads/ZED_SDK_Ubuntu24_cuda13.0_tensorrt10.13_v5.4.1.zstd.run --silent
->>>>>>> ubuntu24/percep_ansible
   args:
     creates: /usr/local/zed
