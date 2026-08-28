@@ -16,7 +16,7 @@
 
 - name: Download CUDA Keyring
   get_url:
-    url: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+    url: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
     dest: /tmp/cuda-keyring_1.1-1_all.deb
 
 - name: Install CUDA Keyring
@@ -30,7 +30,7 @@
     update_cache: true
     state: latest
     name:
-      - cuda-toolkit-13-0
+      - cuda-toolkit-13-3
       - g++-9
       - zstd # Required to unpack ZED installer
 
