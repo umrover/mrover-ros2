@@ -85,6 +85,13 @@
       - libboost-dev
       - qt6-multimedia-dev
 
+# manif's build backend now requires packaging>=26.2, upgrade it
+- name: Upgrade pip for manifpy build isolation
+  become: True
+  pip:
+    name: pip
+    state: latest
+
 - name: Install manifpy
   become: true
   ansible.builtin.pip:

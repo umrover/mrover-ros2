@@ -8,7 +8,7 @@ RUN apt-get update -y && apt-get install software-properties-common sudo -y
 RUN apt-add-repository ppa:ansible/ansible -y && apt-get install -y git git-lfs ansible
 
 RUN useradd --create-home --shell /bin/zsh mrover
-# using per user rule over sudo group because noble's default %sudo rule 
+# using per user rule over sudo group because noble's default %sudo rule
 # requires a password and beats a NOPASSWD one for the same group
 RUN echo 'mrover ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/mrover && chmod 0440 /etc/sudoers.d/mrover
 
