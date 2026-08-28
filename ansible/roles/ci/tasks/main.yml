@@ -102,6 +102,13 @@
       - libboost-dev
       - qtmultimedia5-dev
 
+# manif's build backend now requires packaging>=26.2, upgrade it
+- name: Upgrade packaging for manifpy build
+  become: True
+  pip:
+    name: packaging
+    state: latest
+
 - name: Install manifpy
   become: True
   pip:

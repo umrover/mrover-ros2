@@ -15,6 +15,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Read Ubuntu codename from Dockerfile
+        id: base_os
+        run: |
+          from_line=$(head -1 Dockerfile)
+          echo "codename=${from_line#FROM ubuntu:}" >> "$GITHUB_OUTPUT"
+
       - uses: docker/login-action@v4
         with:
           username: umrover1
@@ -25,8 +31,8 @@ jobs:
         with:
           images: umrover1/ros2-ci
           tags: |
-            type=raw,value=noble
-            type=sha,prefix=noble-sha-
+            type=raw,value=${{ steps.base_os.outputs.codename }}
+            type=sha,prefix=${{ steps.base_os.outputs.codename }}-sha-
 
       - uses: docker/build-push-action@v7
         with:
