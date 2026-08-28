@@ -136,17 +136,16 @@
       - python3-pyqt5
 
 # manif's build backend now requires packaging>=26.2, temp upgrade for ubuntu 22
-- name: Upgrade packaging for manifpy build
+- name: Upgrade pip for manifpy build isolation
   become: True
   pip:
-    name: packaging
+    name: pip
     state: latest
 
 - name: Install manifpy
   become: True
   pip:
     name: "git+https://github.com/artivis/manif.git@0.0.5"
-    extra_args: --no-build-isolation
 
 - name: Download prebuilt Dawn
   command: ./scripts/setup_dawn.sh
