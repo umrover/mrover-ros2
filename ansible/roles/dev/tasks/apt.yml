@@ -1,0 +1,32 @@
+- name: Block snapd via apt preferences
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/apt/preferences.d/nosnap.pref
+    content: |
+      Package: snapd
+      Pin: release a=*
+      Pin-Priority: -10
+
+- name: Add Google Chrome apt repo
+  become: true
+  ansible.builtin.deb822_repository:
+    name: google-chrome
+    types: deb
+    uris: https://dl.google.com/linux/chrome/deb/
+    suites: stable
+    components: main
+    architectures: amd64
+    signed_by: https://dl.google.com/linux/linux_signing_key.pub
+  register: chrome_repo
+
+- name: Update APT Cache if Repo Changed
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+  when: chrome_repo.changed
+
+- name: Install Google Chrome
+  become: true
+  ansible.builtin.apt:
+    name: google-chrome-stable
+    state: present
