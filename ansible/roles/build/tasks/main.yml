@@ -102,13 +102,6 @@
       - qt6-base-dev
       - qt6-multimedia-dev
 
-# manif's build backend now requires packaging>=26.2, temp upgrade for ubuntu 22
-- name: Upgrade pip for manifpy build isolation
-  become: True
-  pip:
-    name: pip
-    state: latest
-
 - name: Install manifpy
   become: true
   ansible.builtin.command: pip install --break-system-packages "git+https://github.com/artivis/manif.git@0.0.5"
@@ -211,7 +204,7 @@
   ansible.builtin.get_url:
     url: https://bun.sh/install
     dest: /tmp/bun_install.sh
-    mode: '0755'
+    mode: "0755"
 
 - name: Install or Upgrade Bun
   ansible.builtin.shell: /tmp/bun_install.sh
