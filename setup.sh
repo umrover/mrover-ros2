@@ -22,6 +22,11 @@ if ! command -v ansible-playbook >/dev/null 2>&1; then
   sudo apt install -y ansible
 fi
 
+if ! command -v git-lfs >/dev/null 2>&1; then
+  echo -e "${CYAN}Installing git-lfs ...${NC}"
+  sudo apt install -y git-lfs
+fi
+
 readonly MROVER_PATH=$(dirname "$(realpath "$0")")
 cd "${MROVER_PATH}"
 
