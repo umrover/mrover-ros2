@@ -69,9 +69,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         # Re-enable lfs: "true" when we put the simulator in the CI pipeline.
-      - name: Checkout ESW Submodule
-        # Use this instead of `submodules: true`/`recursive` to avoid checking out all top-level submodules
-        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}" && git submodule update --init esw/fw
+      - name: Trust checkout directory
+        # bypass GitHub's dubious ownership check when running as root in the container
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Dawn Cache
         if: github.event.pull_request.draft == false
         uses: actions/cache@v6
@@ -98,7 +98,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: /home/mrover/.cache/pip
-          key: pip-${{ hashFiles('pyproject.toml', 'esw/fw/tools/pyproject.toml') }}
+          key: pip-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             pip-
       - name: Compiler Cache
