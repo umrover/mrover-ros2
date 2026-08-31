@@ -62,7 +62,7 @@ namespace mrover {
         auto* xyzGpuPtr = xyzGpu.getPtr<sl::float4>(sl::MEM::GPU);
         auto* normalsGpuPtr = normalsGpu.getPtr<sl::float4>(sl::MEM::GPU);
         msg->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-        msg->is_dense = true;
+        msg->is_dense = false;
         msg->height = bgraGpu.getHeight();
         msg->width = bgraGpu.getWidth();
         fillPointCloudMessageHeader(msg);
