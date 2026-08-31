@@ -1,0 +1,41 @@
+name: Publish Docker Image
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - Dockerfile
+
+jobs:
+  publish:
+    name: Build and Push CI Image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Read Ubuntu codename from Dockerfile
+        id: base_os
+        run: |
+          from_line=$(head -1 Dockerfile)
+          echo "codename=${from_line#FROM ubuntu:}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/login-action@v4
+        with:
+          username: umrover1
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: docker/metadata-action@v6
+        id: meta
+        with:
+          images: umrover1/ros2-ci
+          tags: |
+            type=raw,value=${{ steps.base_os.outputs.codename }}
+            type=sha,prefix=${{ steps.base_os.outputs.codename }}-sha-
+
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}

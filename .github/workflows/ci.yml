@@ -11,11 +11,12 @@ jobs:
     name: Style Checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.x'
-          pip-install: 'black==26.5.1 mypy==1.11.2'
+      - name: Install Python style tools
+        run: pip install black==26.5.1 mypy==1.11.2
       - name: Install clang-format
         run: |
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
@@ -35,28 +36,23 @@ jobs:
     runs-on: ubuntu-latest
     needs: style
     container:
-      image: umrover1/ros2:latest
+      image: umrover1/ros2-ci:jammy
       # GitHub is silly and requires us to be running as root for their checkout action
       # Our docker container exports the user mrover, so we have to specific this explicitly
       options: --user root
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           # Re-enable when we put the simulator in the CI pipeline.
           # lfs: "true"
           # This makes sure that $GITHUB_WORKSPACE is the catkin workspace path
           path: "src/mrover"
-      - name: Checkout ESW Submodule
-        if: github.event.pull_request.draft == false
-        # Use this instead of `submodules: true` above to avoid checking out all top-level submodules
-        run: git submodule update --init esw/fw
-        working-directory: "${{ github.workspace }}/src/mrover"
       - name: Compiler Cache
         if: github.event.pull_request.draft == false
         uses: hendrikmuhs/ccache-action@v1.2.23
       - name: Dawn Cache
         if: github.event.pull_request.draft == false
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: src/mrover/deps/dawn-prebuilt
           key: dawn-${{ hashFiles('src/mrover/scripts/setup_dawn.sh') }}
