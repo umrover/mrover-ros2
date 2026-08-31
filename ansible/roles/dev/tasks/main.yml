@@ -1,93 +1,108 @@
-- name: Oh-My-Zsh
-  git:
+- name: Install platform-specific packages
+  ansible.builtin.include_tasks: "{{ ansible_pkg_mgr }}.yml"
+
+- name: Install oh-my-zsh
+  ansible.builtin.git:
     repo: https://github.com/ohmyzsh/ohmyzsh.git
     dest: ~/.oh-my-zsh
     version: master
 
-- name: Dotfiles
-  synchronize:
-    # The trailing slash is very important here
-    # It tells rsync to copy only the CONTENTS of the folder and not the folder itself
-    # This is vital to make sure this works will any usernames
-    src: files/home/
-    dest: ~/
-    recursive: true
-    # .zshrc is handled below instead of being overwritten outright, so a
-    # user's own customizations to it survive re-runs
-    rsync_opts:
-      - "--exclude=.zshrc"
+- name: Install zsh-autosuggestions
+  ansible.builtin.git:
+    repo: https://github.com/zsh-users/zsh-autosuggestions
+    dest: ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
+
+- name: Install zsh-syntax-highlighting
+  ansible.builtin.git:
+    repo: https://github.com/zsh-users/zsh-syntax-highlighting
+    dest: ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
+
+# theme is deployed regardless
+- name: Deploy mrover oh-my-zsh theme
+  ansible.builtin.copy:
+    src: files/home/.oh-my-zsh/custom/themes/mrover.zsh-theme
+    dest: ~/.oh-my-zsh/custom/themes/mrover.zsh-theme
+
+- name: Check for existing zshrc
+  ansible.builtin.stat:
+    path: ~/.zshrc
+  register: zshrc_stat
+
+# if user does not have zshrc, deploy ours
+- name: Deploy default oh-my-zsh zshrc for fresh installs
+  ansible.builtin.copy:
+    src: files/home/.zshrc
+    dest: ~/.zshrc
+  when: not zshrc_stat.stat.exists
+
+# mrover_zshenv handled by flag via defaults
+- name: Wire mrover shell env
+  ansible.builtin.blockinfile:
+    path: ~/.zshrc
+    marker: "# {mark} MROVER"
+    block: '[[ -f "{{ mrover_repo }}/{{ mrover_zshenv }}" ]] && source "{{ mrover_repo }}/{{ mrover_zshenv }}"'
+    create: true
+
+- name: Deploy mrover tmux config
+  ansible.builtin.copy:
+    src: files/home/.mrover.tmux.conf
+    dest: ~/.mrover.tmux.conf
 
 - name: Source mrover tmux config
-  blockinfile:
+  ansible.builtin.blockinfile:
     path: ~/.tmux.conf
     marker: "# {mark} MROVER"
     block: source-file ~/.mrover.tmux.conf
     create: true
 
-- name: Source mrover zshenv
-  blockinfile:
-    path: ~/.zshenv
-    marker: "# {mark} MROVER"
-    block: source ~/ros2_ws/src/mrover/scripts/mrover.zshenv # hardcoded for now, change in re-arch
-    create: true
+# this is needed because linux distros install zsh at /usr/bin/zsh, but macos places the zsh binary at /bin/zsh
+- name: Resolve zsh binary path
+  ansible.builtin.command: which zsh
+  register: zsh_path
+  changed_when: false
 
-- name: Check for existing zshrc
-  stat:
-    path: ~/.zshrc
-  register: zshrc_stat
-
-- name: Deploy default oh-my-zsh zshrc for fresh installs
-  copy:
-    src: files/home/.zshrc
-    dest: ~/.zshrc
-  when: not zshrc_stat.stat.exists
-
-- name: ZSH Automatic Suggestions Plugin
-  git:
-    repo: https://github.com/zsh-users/zsh-autosuggestions
-    dest: ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
-
-- name: ZSH Syntax Highlighting Plugin
-  git:
-    repo: https://github.com/zsh-users/zsh-syntax-highlighting
-    dest: ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
-
-- name: Use ZSH as a default shell
+- name: Set zsh as default shell
   become: true
-  command: chsh --shell /usr/bin/zsh {{ ansible_user_id }}
+  ansible.builtin.user:
+    name: "{{ ansible_facts['user_id'] }}"
+    shell: "{{ zsh_path.stdout }}"
 
-- name: GitHub CLI APT Key
-  become: True
-  apt_key:
-    url: https://cli.github.com/packages/githubcli-archive-keyring.gpg
-    keyring: /usr/share/keyrings/githubcli-archive-keyring.gpg
+- name: Initialize Git LFS
+  # use git lfs pre-push hook for ansible changed
+  ansible.builtin.command: git lfs install
+  args:
+    chdir: "{{ mrover_repo }}"
+    creates: "{{ mrover_repo }}/.git/hooks/pre-push"
 
-- name: GitHub APT List
-  become: True
-  apt_repository:
-    repo: deb [signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main
-    filename: github-cli
+- name: Pull Git LFS objects
+  ansible.builtin.command: git lfs pull
+  args:
+    chdir: "{{ mrover_repo }}"
+  changed_when: false
 
-- name: Add VSCode APT Key
-  become: true
-  apt_key:
-    url: https://packages.microsoft.com/keys/microsoft.asc
-    keyring: /usr/share/keyrings/packages.microsoft.gpg
+- name: Initialize Git submodules
+  ansible.builtin.command: git submodule update --init --recursive
+  args:
+    chdir: "{{ mrover_repo }}"
+  register: git_submodules
+  changed_when: git_submodules.stdout | length > 0
 
-- name: Add VSCode APT List
-  become: true
-  apt_repository:
-    filename: vscode
-    repo: "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main"
+- name: Look for VSCode
+  ansible.builtin.shell: command -v code
+  register: vscode_path
+  changed_when: false
+  failed_when: false
+  check_mode: false
 
-- name: Install APT Packages
-  become: true
-  apt:
-    cache_valid_time: 604800
-    state: latest
-    name:
-      - gh
-      - code
+- name: List installed VSCode extensions
+  ansible.builtin.command: code --list-extensions
+  register: vscode_extensions
+  changed_when: false
+  check_mode: false
+  when: vscode_path.rc == 0
 
-- name: Install vscode debugger extension
-  command: code --install-extension ../pkg/file-selector-0.0.1.vsix
+- name: Install VSCode extension
+  ansible.builtin.command: code --install-extension {{ mrover_repo }}/pkg/file-selector-0.0.1.vsix
+  when:
+    - vscode_path.rc == 0
+    - "'file-selector' not in vscode_extensions.stdout"

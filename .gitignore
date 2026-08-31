@@ -3,9 +3,14 @@
 /install/
 /log/
 
-# Downloaded prebuilt dependencies
+# pixi environment
+/.pixi/*
+!/.pixi/config.toml
+
+# Prebuild deps
 /deps/dawn-prebuilt/
-/deps/.fetchcontent/
+/deps/manif-src/
+/deps/imgui-src/
 
 # Common IDE's, ideally this should be in global gitignore per user
 .vscode/
@@ -28,7 +33,7 @@ __pycache__/
 *.egg-info/
 venv/
 
-#Teleop Ignores
+# Teleop Ignores
 *.sqlite3
 *.db
 bun.lock
@@ -41,6 +46,7 @@ bun.lockb
 
 # macOS
 .DS_Store
+
 # nav state log
 state_machine/state_log.txt
 
@@ -54,5 +60,5 @@ data/raw-pano-images
 .catkin_tools/
 .dynamixel_sdk/
 
-# Persistent esw mrover_can FetchContent cache (survives a clean build, not tracked)
-/.cache/esw/
+# FetchContent cache (esw mrover_can, and CMake's own FetchContent staging dirs)
+/deps/.fetchcontent/

@@ -4,33 +4,33 @@
 #     name: nvidia-driver-{{driver_edition}}
 #
 - name: Download CUDA Keyring
-  get_url:
+  ansible.builtin.get_url:
     url: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
     dest: /tmp/cuda-keyring_1.1-1_all.deb
 
 - name: Install CUDA Keyring
   become: true
-  apt:
+  ansible.builtin.apt:
     deb: /tmp/cuda-keyring_1.1-1_all.deb
 
 - name: Install APT Packages
-  become: True
-  apt:
+  become: true
+  ansible.builtin.apt:
     update_cache: true
-    state: latest
+    state: present
     name:
       - cuda-12-3
       - g++-9
       - zstd # Required to unpack ZED installer
 
 - name: ZED SDK Download
-  get_url:
+  ansible.builtin.get_url:
     url: https://download.stereolabs.com/zedsdk/4.1/cu121/ubuntu22
     dest: /tmp/ZED_SDK_Ubuntu22_cuda12.1_v4.1.4.zstd.run
     mode: 0755
 
 - name: ZED SDK Install
   # Silent mode prevents any user input prompting
-  command: /tmp/ZED_SDK_Ubuntu22_cuda12.1_v4.1.4.zstd.run -- silent
+  ansible.builtin.command: /tmp/ZED_SDK_Ubuntu22_cuda12.1_v4.1.4.zstd.run -- silent
   args:
     creates: /usr/local/zed

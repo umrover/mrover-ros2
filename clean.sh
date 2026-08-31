@@ -7,6 +7,4 @@ if [[ "${1:-}" == "--esw" ]]; then
     rm -rf deps/.fetchcontent/esw
 fi
 
-pushd ../..
-
-rm -rf build install log
+rm -rf build install log compile_commands.json

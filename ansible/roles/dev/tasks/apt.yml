@@ -1,0 +1,70 @@
+- name: Block snapd via apt preferences
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/apt/preferences.d/nosnap.pref
+    content: |
+      Package: snapd
+      Pin: release a=*
+      Pin-Priority: -10
+
+- name: Install python3-debian
+  become: true
+  ansible.builtin.apt:
+    name: python3-debian
+    state: present
+
+- name: Add Google Chrome apt repo
+  become: true
+  ansible.builtin.deb822_repository:
+    name: google-chrome
+    types: deb
+    uris: https://dl.google.com/linux/chrome/deb/
+    suites: stable
+    components: main
+    architectures: amd64
+    signed_by: https://dl.google.com/linux/linux_signing_key.pub
+  register: chrome_repo
+
+- name: Add GitHub CLI apt repo
+  become: true
+  ansible.builtin.deb822_repository:
+    name: github-cli
+    types: deb
+    uris: https://cli.github.com/packages
+    suites: stable
+    components: main
+    signed_by: https://cli.github.com/packages/githubcli-archive-keyring.gpg
+  register: github_cli_repo
+
+- name: Add VSCode apt repo
+  become: true
+  ansible.builtin.deb822_repository:
+    name: vscode
+    types: deb
+    uris: https://packages.microsoft.com/repos/code
+    suites: stable
+    components: main
+    architectures: [amd64, arm64, armhf]
+    signed_by: https://packages.microsoft.com/keys/microsoft.asc
+  register: vscode_repo
+
+- name: Update APT Cache if Repos Changed
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+  when: chrome_repo.changed or github_cli_repo.changed or vscode_repo.changed
+
+- name: Install apt packages
+  become: true
+  ansible.builtin.apt:
+    cache_valid_time: 3600
+    state: present
+    name:
+      - zsh
+      - fzf
+      - tmux
+      - htop
+      - gh
+      - code
+      - git-lfs
+      - google-chrome-stable

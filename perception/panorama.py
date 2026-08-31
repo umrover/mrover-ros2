@@ -2,7 +2,6 @@
 
 import rclpy
 from rclpy.node import Node
-from ament_index_python import get_package_share_directory
 
 from sensor_msgs.msg import PointCloud2, Image
 from std_msgs.msg import Header
@@ -285,8 +284,8 @@ class Panorama(Node):
 
         # Save the images
         unique_id = "{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
-        share_dir = get_package_share_directory("mrover")
-        new_path = f"{share_dir}/../../../../../src/mrover/data/raw-pano-images/{unique_id}/"
+        mrover_repo = os.path.expanduser("~/mrover-ros2")
+        new_path = f"{mrover_repo}/data/raw-pano-images/{unique_id}/"
         os.mkdir(new_path)
         for i, img in enumerate(self.img_list):
             name = f"{new_path}/{str(i).zfill(2)}.png" # TODO: pathlib

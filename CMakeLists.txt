@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.25)
 project(mrover VERSION 2025.0.0 LANGUAGES C CXX)
 
 # Supress ROS CMake warning about Python.
-cmake_policy(SET CMP0148 OLD)
+cmake_policy(SET CMP0148 NEW)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CXX_STANDARD_REQUIRED ON)
@@ -14,11 +14,15 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(MROVER_CI "Enable CI options" OFF)
 option(MROVER_CLANG_TIDY "Enable static analysis with Clang tidy" ${MROVER_CI})
 option(MROVER_WARNINGS_AS_ERRORS "Treat warnings as errors" ${MROVER_CI})
+# Portable tier (Tier 2): gates out ZED/CUDA, CAN, and ESW hardware bridges.
+# The simulator, autonomy Python, and all pure-ROS C++ nodes are always built.
+option(MROVER_PORTABLE "Exclude rover-only targets: ZED/CUDA, CAN/ESW hardware bridges" OFF)
 option(MROVER_BUILD_ESW "Build ESW (embedded software) targets, requires fetching the esw mrover_can library" ON)
 
-# Set sim variable based on Linux x86_64
+# Simulator needs a prebuilt Dawn, which is only published for Linux x86_64 and macOS arm64.
 if (NOT DEFINED MROVER_SIMULATOR)
-    if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+    if ((CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64") OR
+        (APPLE AND CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64"))
         set(MROVER_SIMULATOR ON)
     else ()
         set(MROVER_SIMULATOR OFF)
@@ -28,12 +32,9 @@ endif ()
 set(node_plugins "")
 
 if (APPLE)
-    # Ensures that homebrew packages are never used over miniforge packages.
-    # TODO (ali): Pretty sure this doesn't do anything on macs
     set(CMAKE_IGNORE_PATH /opt/homebrew)
-    # Find mamba python
-    find_package(PythonLibs REQUIRED)
-    # link_libraries(${PYTHON_LIBRARIES})
+    enable_language(OBJCXX)
+    find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 endif ()
 
 if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -74,8 +75,10 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(urdf REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(magic_enum REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
+find_package(yaml-cpp REQUIRED)
 find_package(dynamixel_sdk REQUIRED)
 
 if (MROVER_SIMULATOR)
@@ -91,7 +94,7 @@ if (NOT APPLE)
 endif()
 
 if (MROVER_SIMULATOR)
-    set(Dawn_ROOT "${CMAKE_CURRENT_LIST_DIR}/deps/dawn-prebuilt")
+    list(PREPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_LIST_DIR}/deps/dawn-prebuilt")
     find_package(Dawn QUIET)
     if (NOT Dawn_FOUND)
         message(FATAL_ERROR "Dawn not found. Run 'scripts/setup_dawn.sh' before building.")
@@ -99,21 +102,17 @@ if (MROVER_SIMULATOR)
     add_library(webgpu ALIAS dawn::webgpu_dawn)
 endif ()
 
-include(FetchContent)
-
-set(FETCHCONTENT_BASE_DIR "${CMAKE_CURRENT_LIST_DIR}/deps/.fetchcontent")
-set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
-
-FetchContent_Declare(manif
-    GIT_REPOSITORY https://github.com/artivis/manif.git
-    GIT_TAG        0.0.5
-    GIT_SHALLOW    TRUE
-    SYSTEM
-)
-set(BUILD_TESTING_PREV ${BUILD_TESTING})
-set(BUILD_TESTING OFF)
-FetchContent_MakeAvailable(manif)
-set(BUILD_TESTING ${BUILD_TESTING_PREV})
+find_package(manif QUIET)
+if (NOT manif_FOUND)
+    if (NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/deps/manif-src/CMakeLists.txt")
+        message(FATAL_ERROR "manif not found. Run 'scripts/setup_manif.sh' before building.")
+    endif ()
+    set(BUILD_TESTING_PREV ${BUILD_TESTING})
+    set(BUILD_TESTING OFF)
+    add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/deps/manif-src" "${CMAKE_CURRENT_BINARY_DIR}/manif-build" EXCLUDE_FROM_ALL SYSTEM)
+    set(BUILD_TESTING ${BUILD_TESTING_PREV})
+    add_library(MANIF::manif ALIAS manif)
+endif ()
 
 find_package(PkgConfig REQUIRED)
 pkg_search_module(NetLink libnl-3.0 IMPORTED_TARGET QUIET)
@@ -123,13 +122,10 @@ pkg_search_module(GstApp gstreamer-app-1.0 IMPORTED_TARGET QUIET)
 pkg_search_module(LibUdev libudev IMPORTED_TARGET QUIET)
 
 if (MROVER_SIMULATOR)
-    FetchContent_Declare(
-        imgui
-        GIT_REPOSITORY https://github.com/ocornut/imgui.git
-        GIT_TAG        v1.92.8
-        GIT_SHALLOW    TRUE
-    )
-    FetchContent_MakeAvailable(imgui)
+    if (NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/deps/imgui-src/imgui.cpp")
+        message(FATAL_ERROR "imgui not found. Run 'scripts/setup_imgui.sh' before building.")
+    endif ()
+    set(imgui_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/deps/imgui-src")
     # avoid fetching in imgui_demo.cpp and unnecessarily compiling it
     add_library(imgui STATIC
         ${imgui_SOURCE_DIR}/imgui.cpp
@@ -205,7 +201,23 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     DEPENDENCIES nav_msgs sensor_msgs geometry_msgs action_msgs
 )
 
-# Starter project 
+# rosidl sets raw source-prefixed paths on INTERFACE_INCLUDE_DIRECTORIES, which
+# CMP0052 rejects. The policy explicitly permits such paths when wrapped in
+# $<BUILD_INTERFACE:...>, marking them as build-only (not exported).
+if(TARGET ${PROJECT_NAME}__rosidl_generator_py)
+    get_target_property(_py_iid ${PROJECT_NAME}__rosidl_generator_py INTERFACE_INCLUDE_DIRECTORIES)
+    if(_py_iid)
+        set(_py_iid_wrapped "")
+        foreach(_dir IN LISTS _py_iid)
+            list(APPEND _py_iid_wrapped "$<BUILD_INTERFACE:${_dir}>")
+        endforeach()
+        set_target_properties(${PROJECT_NAME}__rosidl_generator_py PROPERTIES
+            INTERFACE_INCLUDE_DIRECTORIES "${_py_iid_wrapped}"
+        )
+    endif()
+endif()
+
+# Starter project
 # TODO (ali): delete once AutonomyStarterProject.cmake is fixed
 mrover_add_node(starter_project_perception ${CMAKE_CURRENT_LIST_DIR}/starter_project/autonomy/src/*.cpp)
 target_link_libraries(starter_project_perception ${OpenCV_LIBS})
@@ -236,25 +248,30 @@ ament_python_install_package(state_machine)
 include_directories(perception)
 
 mrover_add_library(lie lie/*.cpp lie)
-target_link_libraries(lie manif)
+target_link_libraries(lie MANIF::manif)
 ament_target_dependencies(lie rclcpp geometry_msgs tf2 tf2_ros)
 
 mrover_add_header_only_library(units units)
 mrover_add_header_only_library(loop_profiler loop_profiler)
 mrover_add_header_only_library(parameter_utils parameter_utils)
 mrover_add_header_only_library(gst_utils gst_utils)
-target_link_libraries(gst_utils INTERFACE magic_enum::magic_enum PkgConfig::Gst PkgConfig::GstApp)
+if (Gst_FOUND AND GstApp_FOUND)
+    target_link_libraries(gst_utils INTERFACE magic_enum::magic_enum PkgConfig::Gst PkgConfig::GstApp)
+else ()
+    target_link_libraries(gst_utils INTERFACE magic_enum::magic_enum)
+endif ()
 
 # Simulator
 
 if (MROVER_SIMULATOR)
     mrover_add_node(simulator simulator/*.cpp simulator simulator/pch.hpp)
-    ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf yaml_cpp_vendor)
+    ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf yaml_cpp_vendor ament_index_cpp)
     target_link_libraries(simulator
         assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
         ${BULLET_LIBRARIES}
         lie Eigen3::Eigen
         opencv_core opencv_imgcodecs opencv_imgproc
+        yaml-cpp::yaml-cpp
         loop_profiler
         parameter_utils
     )
@@ -353,11 +370,11 @@ mrover_executable_from_component(cost_map perception/executables/cost_map.cpp co
 
 # Embedded
 
-if (MROVER_BUILD_ESW)
+if (MROVER_BUILD_ESW AND NOT MROVER_PORTABLE)
     include(cmake/esw.cmake)
 endif()
 
-if (MROVER_BUILD_ESW AND NOT APPLE)
+if (MROVER_BUILD_ESW AND NOT APPLE AND NOT MROVER_PORTABLE)
 
     mrover_add_header_only_library(can_device esw/can_device)
     target_link_libraries(can_device INTERFACE ${rclcpp_LIBRARIES} moteus dbc)
@@ -400,7 +417,7 @@ mrover_add_node(arm_controller navigation/arm_controller/arm_controller.cpp navi
 target_link_libraries(arm_controller lie)
 ament_target_dependencies(arm_controller rclcpp)
 
-if (MROVER_BUILD_ESW AND Gst_FOUND AND GstApp_FOUND)
+if (MROVER_BUILD_ESW AND NOT MROVER_PORTABLE AND Gst_FOUND AND GstApp_FOUND)
     if (LibUdev_FOUND)
         mrover_add_component(gst_camera_server esw/gst_camera_server/*.c* esw/gst_camera_server/pch.hpp GstCameraServer)
         mrover_link_component(gst_camera_server PkgConfig::Gst PkgConfig::GstApp PkgConfig::LibUdev opencv_core opencv_videoio opencv_imgcodecs opencv_imgproc gst_utils parameter_utils)
@@ -410,24 +427,29 @@ if (MROVER_BUILD_ESW AND Gst_FOUND AND GstApp_FOUND)
     endif ()
 endif ()
 
-if (MROVER_BUILD_ESW AND NetLink_FOUND AND NetLinkRoute_FOUND)
+if (MROVER_BUILD_ESW AND NOT MROVER_PORTABLE AND NetLink_FOUND AND NetLinkRoute_FOUND)
     mrover_add_node(can_bridge esw/can_bridge/*.cpp esw/can_bridge/pch.hpp esw/can_bridge/can_bridge.hpp)
     target_link_libraries(can_bridge dbc PkgConfig::NetLink PkgConfig::NetLinkRoute)
     ament_target_dependencies(can_bridge rclcpp)
 endif ()
 
-# Teleop Qt5 Camera Client
-find_package(Qt5 5.15 REQUIRED COMPONENTS Widgets Multimedia MultimediaWidgets)
+# Teleop Qt6 Camera Client
+find_package(Qt6 QUIET COMPONENTS Widgets Multimedia MultimediaWidgets)
+if (NOT Qt6_FOUND)
+    message(WARNING "Qt6 not found — camera_client will not be built. Add qt6-main to your environment.")
+endif ()
 
-mrover_add_node(camera_client teleoperation/camera_client/*.*pp teleoperation/camera_client/include/pch.hpp)
-target_include_directories(camera_client PRIVATE teleoperation/camera_client/include)
-target_link_libraries(camera_client gst_utils Qt::Widgets Qt::Multimedia Qt::MultimediaWidgets opencv_core opencv_imgcodecs)
-ament_target_dependencies(camera_client rclcpp std_srvs sensor_msgs)
-set_target_properties(camera_client PROPERTIES
-    AUTOMOC ON
-    AUTORCC ON
-    AUTOUIC ON
-)
+if (Qt6_FOUND)
+    mrover_add_node(camera_client teleoperation/camera_client/*.*pp teleoperation/camera_client/include/pch.hpp)
+    target_include_directories(camera_client PRIVATE teleoperation/camera_client/include)
+    target_link_libraries(camera_client gst_utils Qt6::Widgets Qt6::Multimedia Qt6::MultimediaWidgets opencv_core opencv_imgcodecs)
+    ament_target_dependencies(camera_client rclcpp std_srvs sensor_msgs)
+    set_target_properties(camera_client PROPERTIES
+        AUTOMOC ON
+        AUTORCC ON
+        AUTOUIC ON
+    )
+endif ()
 
 ## Install
 

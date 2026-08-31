@@ -1,8 +1,9 @@
 function get_build_profile() {
-  if [[ -v MROVER_BUILD_PROFILE ]] && [[ "$PWD" == "${MROVER_ROS2_WS_PATH}/src/mrover" ]]; then
+  if [[ -v MROVER_BUILD_PROFILE ]] && [[ "$PWD" == "${MROVER_REPO}" ]]; then
     echo "%F{green}[${MROVER_BUILD_PROFILE}]%f "
-  fi 
+  fi
 }
+
 
 PROMPT="%(?:%{$fg_bold[green]%}➜ :%{$fg_bold[red]%}➜ ) %{$fg[yellow]%}%m %{$fg[gray]%}at %{$fg[yellow]%}%d%{$reset_color%}"
 PROMPT+=' $(git_prompt_info)'

@@ -6,7 +6,11 @@ namespace mrover {
 
     template<typename T, auto Creater, auto Deleter>
     class GlfwPointer {
-        std::unique_ptr<T, decltype([](auto* p) { Deleter(p); })> mPointer;
+        struct Destroy {
+            void operator()(T* p) const { Deleter(p); }
+        };
+
+        std::unique_ptr<T, Destroy> mPointer;
 
         static auto check(T* result) -> T* {
             if (!result) throw std::runtime_error("GLFW Error");

@@ -6,64 +6,103 @@ on:
     branches:
       - main
       - integration
+
 jobs:
   style:
     name: Style Checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: prefix-dev/setup-pixi@v0.9.6
         with:
-          python-version: '3.x'
-      - name: Install Python style tools
-        run: pip install black==26.5.1 mypy==1.11.2
-      - name: Install clang-format
-        run: |
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo add-apt-repository 'deb https://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main'
-          sudo apt-get update
-          sudo apt-get install -y clang-format-18
-      - name: Install shellcheck
-        run: sudo apt-get install -y shellcheck
-      - uses: oven-sh/setup-bun@v2
-      - name: Install Frontend Dependencies
-        run: cd teleoperation/basestation_gui/frontend && bun install
-      - name: Run Style Check
+          activate-environment: true
+          cache: true
+      - uses: actions/cache@v6
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ hashFiles('teleoperation/basestation_gui/frontend/bun.lockb') }}
+          restore-keys: bun-
+      - name: Style Check
         run: ./style.sh
 
-  ci:
-    name: Build
-    runs-on: ubuntu-latest
+  build:
+    name: Build (pixi Ubuntu 26)
+    runs-on: ubuntu-26.04
     needs: style
-    container:
-      image: umrover1/ros2-ci:jammy
-      # GitHub is silly and requires us to be running as root for their checkout action
-      # Our docker container exports the user mrover, so we have to specific this explicitly
-      options: --user root
     steps:
       - uses: actions/checkout@v7
+      - name: Dawn Cache
+        uses: actions/cache@v6
         with:
-          # Re-enable when we put the simulator in the CI pipeline.
-          # lfs: "true"
-          # This makes sure that $GITHUB_WORKSPACE is the catkin workspace path
-          path: "src/mrover"
+          path: deps/dawn-prebuilt
+          key: dawn-${{ hashFiles('scripts/setup_dawn.sh') }}
+      - name: Setup Dawn
+        run: ./scripts/setup_dawn.sh
+      - name: Imgui Cache
+        uses: actions/cache@v6
+        with:
+          path: deps/imgui-src
+          key: imgui-${{ hashFiles('scripts/setup_imgui.sh') }}
+      - name: Setup Imgui
+        run: ./scripts/setup_imgui.sh
       - name: Compiler Cache
-        if: github.event.pull_request.draft == false
         uses: hendrikmuhs/ccache-action@v1.2.23
+      - uses: prefix-dev/setup-pixi@v0.9.6
+        with:
+          activate-environment: true
+          cache: true
+      - name: Build
+        run: ./build.sh
+
+  build-native:
+    name: Build (native Ubuntu 24)
+    runs-on: ubuntu-24.04
+    container:
+      image: kevinjin0420/mrover-ci:latest
+      # by pass github's dubious ownership check
+      options: --user root
+    needs: style
+    env:
+      # directory owned by mrover so CI can write to it and use caching
+      # this is new for ubuntu 24
+      HOME: /home/mrover
+    steps:
+      - uses: actions/checkout@v7
+        # Re-enable lfs: "true" when we put the simulator in the CI pipeline.
+      - name: Trust checkout directory
+        # bypass GitHub's dubious ownership check when running as root in the container
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Dawn Cache
         if: github.event.pull_request.draft == false
         uses: actions/cache@v6
         with:
-          path: src/mrover/deps/dawn-prebuilt
-          key: dawn-${{ hashFiles('src/mrover/scripts/setup_dawn.sh') }}
+          path: deps/dawn-prebuilt
+          key: dawn-${{ hashFiles('scripts/setup_dawn.sh') }}
       - name: Setup Dawn
-        if: github.event.pull_request.draft == false
         run: ./scripts/setup_dawn.sh
-        working-directory: "${{ github.workspace }}/src/mrover"
+      - name: Manif Cache
+        uses: actions/cache@v6
+        with:
+          path: deps/manif-src
+          key: manif-${{ hashFiles('scripts/setup_manif.sh') }}
+      - name: Setup Manif
+        run: ./scripts/setup_manif.sh
+      - name: Imgui Cache
+        uses: actions/cache@v6
+        with:
+          path: deps/imgui-src
+          key: imgui-${{ hashFiles('scripts/setup_imgui.sh') }}
+      - name: Setup Imgui
+        run: ./scripts/setup_imgui.sh
+      - name: Pip Cache
+        uses: actions/cache@v6
+        with:
+          path: /home/mrover/.cache/pip
+          key: pip-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            pip-
+      - name: Compiler Cache
+        uses: hendrikmuhs/ccache-action@v1.2.23
       - name: Build
-        if: github.event.pull_request.draft == false
         shell: bash
-        run: . /opt/ros/humble/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./build.sh
-      # - name: Test
-      #   if: github.event.pull_request.draft == false
-      #   run: . /opt/ros/noetic/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && . $GITHUB_WORKSPACE/devel/setup.sh && catkin test && rostest mrover integration.test --text
+        run: source /opt/ros/jazzy/setup.bash && source /home/mrover/mrover-ros2/venv/bin/activate && ./build.sh Release
