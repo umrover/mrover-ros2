@@ -59,3 +59,6 @@ data/raw-pano-images
 # Dynamixel Ignores
 .catkin_tools/
 .dynamixel_sdk/
+
+# FetchContent cache (esw mrover_can, and CMake's own FetchContent staging dirs)
+/deps/.fetchcontent/
