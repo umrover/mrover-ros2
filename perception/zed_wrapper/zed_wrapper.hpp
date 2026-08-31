@@ -23,8 +23,8 @@ namespace mrover {
 
             Measures() = default;
 
-            // Should never assign Measures without using custom swap() function 
-            
+            // Should never assign Measures without using custom swap() function
+
             // Delete copy constructor and copy assignment operator
             Measures(Measures const&) = delete;
             auto operator=(Measures const&) -> Measures& = delete;
@@ -60,6 +60,7 @@ namespace mrover {
         bool mUseBuiltinPosTracking{};
         bool mUsePoseSmoothing{};
         bool mUseAreaMemory{};
+        bool mUseRightImage{};
 
         double mDepthMaximumDistance{};
 
