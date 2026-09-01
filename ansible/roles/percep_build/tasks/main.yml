@@ -42,6 +42,6 @@
 
 - name: ZED SDK Install
   # Silent mode prevents any user input prompting
-  command: ~/Downloads/ZED_SDK_Ubuntu24_cuda13.0_tensorrt10.13_v5.4.1.zstd.run --silent
+  command: ~/Downloads/ZED_SDK_Ubuntu24_cuda13.0_tensorrt10.13_v5.4.1.zstd.run
   args:
     creates: /usr/local/zed

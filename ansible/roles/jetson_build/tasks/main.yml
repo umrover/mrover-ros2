@@ -31,7 +31,7 @@
 
 - name: ZED SDK Install
   # Silent mode prevents any user input prompting
-  command: /tmp/ZED_SDK_Tegra_L4T39.2_v5.4.1.zstd.run --silent
+  command: /tmp/ZED_SDK_Tegra_L4T39.2_v5.4.1.zstd.run -- silent
   args:
     creates: /usr/local/zed
 
