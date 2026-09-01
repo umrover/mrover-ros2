@@ -5,7 +5,7 @@
 
 - name: Download CUDA Keyring
   get_url:
-    url: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/arm64/cuda-keyring_1.1-1_all.deb
+    url: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/arm64/cuda-keyring_1.1-1_all.deb
     dest: /tmp/cuda-keyring_1.1-1_all.deb
 
 - name: Install CUDA Keyring
@@ -25,13 +25,13 @@
 
 - name: ZED SDK Download
   get_url:
-    url: https://download.stereolabs.com/zedsdk/5.1/l4t36.4/jetsons
-    dest: /tmp/ZED_SDK_Tegra_L4T36.4_v5.1.2.zstd.run
+    url: https://download.stereolabs.com/zedsdk/5.4/l4t39.2/jetsons
+    dest: /tmp/ZED_SDK_Tegra_L4T39.2_v5.4.1.zstd.run
     mode: 0755
 
 - name: ZED SDK Install
   # Silent mode prevents any user input prompting
-  command: /tmp/ZED_SDK_Tegra_L4T36.4_v5.1.2.zstd.run -- silent
+  command: /tmp/ZED_SDK_Tegra_L4T39.2_v5.4.1.zstd.run --silent
   args:
     creates: /usr/local/zed
 

@@ -30,7 +30,7 @@
     update_cache: true
     state: latest
     name:
-      - cuda-toolkit-13-3
+      - cuda-toolkit-13-2
       - g++-9
       - zstd # Required to unpack ZED installer
 
