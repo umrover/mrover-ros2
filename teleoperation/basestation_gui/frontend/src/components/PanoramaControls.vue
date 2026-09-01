@@ -1,70 +1,74 @@
 <template>
   <div class="flex flex-col gap-2 w-full h-full">
     <h4 class="component-header">Panorama</h4>
-    <button :class="['btn', buttonClass]" :disabled="loading" data-testid="pw-panorama-toggle" @click="toggle">
-      <span class="inline-flex items-center gap-2">
-        <span>{{ buttonText }}</span>
-        <span v-if="loading" class="spinner spinner-sm"></span>
-      </span>
-    </button>
+    <div class="flex flex-col gap-2">
+      <button class="btn btn-primary " :disabled="startLoading" data-testid="pw-panorama-start" @click="start">
+        <span class="inline-flex items-center gap-2">
+          <span>{{ startLoading ? 'Starting...' : 'Start' }}</span>
+          <span v-if="startLoading" class="spinner spinner-sm"></span>
+        </span>
+      </button>
+      <button class="btn btn-danger " :disabled="stopLoading" data-testid="pw-panorama-stop" @click="stop">
+        <span class="inline-flex items-center gap-2">
+          <span>{{ stopLoading ? 'Stopping...' : 'Stop' }}</span>
+          <span v-if="stopLoading" class="spinner spinner-sm"></span>
+        </span>
+      </button>
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { chassisAPI } from '@/utils/chassisAPI'
 import { useNotificationsStore } from '@/stores/notifications'
 
 const notificationsStore = useNotificationsStore()
 
-const capturing = ref(false)
-const loading = ref(false)
+const startLoading = ref(false)
+const stopLoading = ref(false)
 
-const buttonText = computed(() => {
-  if (loading.value) {
-    return capturing.value ? 'Stopping...' : 'Starting...'
-  }
-  return capturing.value ? 'Stop' : 'Start'
-})
-
-const buttonClass = computed(() => {
-  if (loading.value) return 'btn-warning'
-  return capturing.value ? 'btn-danger' : 'btn-primary'
-})
-
-async function toggle() {
-  loading.value = true
+async function start() {
+  startLoading.value = true
   try {
-    if (capturing.value) {
-      const response = await chassisAPI.stopPanorama()
-      if (response.status === 'error') {
-        notificationsStore.addNotification({
-          component: 'Panorama',
-          message: response.message || 'Failed to stop panorama',
-          fullData: response
-        })
-      }
-      capturing.value = false
-    } else {
-      const response = await chassisAPI.startPanorama()
-      if (response.status === 'error') {
-        notificationsStore.addNotification({
-          component: 'Panorama',
-          message: response.message || 'Failed to start panorama',
-          fullData: response
-        })
-      } else {
-        capturing.value = true
-      }
+    const response = await chassisAPI.startPanorama()
+    if (response.status === 'error') {
+      notificationsStore.addNotification({
+        component: 'Panorama',
+        message: response.message || 'Failed to start panorama',
+        fullData: response
+      })
     }
   } catch (err) {
     notificationsStore.addNotification({
       component: 'Panorama',
-      message: 'Panorama request failed',
+      message: 'Panorama start request failed',
       fullData: err
     })
   } finally {
-    loading.value = false
+    startLoading.value = false
+  }
+}
+
+async function stop() {
+  stopLoading.value = true
+  try {
+    const response = await chassisAPI.stopPanorama()
+    if (response.status === 'error') {
+      notificationsStore.addNotification({
+        component: 'Panorama',
+        message: response.message || 'Failed to stop panorama',
+        fullData: response
+      })
+    }
+  } catch (err) {
+    notificationsStore.addNotification({
+      component: 'Panorama',
+      message: 'Panorama stop request failed',
+      fullData: err
+    })
+  } finally {
+    stopLoading.value = false
   }
 }
 </script>

@@ -4,6 +4,7 @@ from backend.managers.ros import get_node, get_logger
 from backend.database import get_recordings_db
 from sensor_msgs.msg import NavSatFix
 from rclpy.qos import qos_profile_sensor_data
+from rclpy.subscription import Subscription
 
 RECORDING_RATE_HZ = 5
 
@@ -19,14 +20,16 @@ class RecordingManager:
 
         self.rover_lat = 0.0
         self.rover_lon = 0.0
+        self.rover_alt = 0.0
         self.drone_lat = 0.0
         self.drone_lon = 0.0
+        self.drone_alt = 0.0
 
-        self.rover_gps_sub = self.node.create_subscription(
+        self.rover_gps_sub: Subscription | None = self.node.create_subscription(
             NavSatFix, "/gps/fix", self.handle_rover_gps, qos_profile=qos_profile_sensor_data
         )
 
-        self.drone_gps_sub = self.node.create_subscription(
+        self.drone_gps_sub: Subscription | None = self.node.create_subscription(
             NavSatFix, "/drone_odom", self.handle_drone_gps, qos_profile=qos_profile_sensor_data
         )
 
@@ -44,10 +47,12 @@ class RecordingManager:
     def handle_rover_gps(self, msg: NavSatFix):
         self.rover_lat = msg.latitude
         self.rover_lon = msg.longitude
+        self.rover_alt = msg.altitude
 
     def handle_drone_gps(self, msg: NavSatFix):
         self.drone_lat = msg.latitude
         self.drone_lon = msg.longitude
+        self.drone_alt = msg.altitude
 
     def recording_callback(self):
         if not self.is_recording or self.current_recording_id is None:
@@ -55,6 +60,7 @@ class RecordingManager:
 
         lat = self.drone_lat if self.is_drone_recording else self.rover_lat
         lon = self.drone_lon if self.is_drone_recording else self.rover_lon
+        alt = self.drone_alt if self.is_drone_recording else self.rover_alt
 
         if lat == 0.0 and lon == 0.0:
             return
@@ -64,10 +70,10 @@ class RecordingManager:
             conn = get_recordings_db()
             conn.execute(
                 """
-                INSERT INTO recorded_waypoints (recording_id, latitude, longitude, sequence)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO recorded_waypoints (recording_id, latitude, longitude, altitude, sequence)
+                VALUES (?, ?, ?, ?, ?)
             """,
-                (self.current_recording_id, lat, lon, self.recording_sequence),
+                (self.current_recording_id, lat, lon, alt, self.recording_sequence),
             )
             conn.commit()
             self.recording_sequence += 1

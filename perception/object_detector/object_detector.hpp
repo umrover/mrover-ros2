@@ -72,6 +72,9 @@ namespace mrover {
         int mObjDecrementWeight{};
         int mObjMaxHitcount{};
         float mModelScoreThreshold{};
+        float mMalletScoreThreshold{};
+        float mBottleScoreThreshold{};
+        float mPickScoreThreshold{};
         float mModelNMSThreshold{};
         float mDistanceDetectionThreshold{};
         bool mDebug{};

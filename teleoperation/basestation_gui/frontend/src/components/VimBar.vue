@@ -49,27 +49,27 @@ defineExpose({ open, close, active })
 <style>
 .vim-command-bar {
   position: fixed;
+  right: 0;
   bottom: 0;
   left: 0;
-  right: 0;
+  z-index: 99999;
   display: flex;
   align-items: center;
   padding: 0.25rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.05em;
   color: #fff;
+  letter-spacing: 0.05em;
   background-color: var(--status-ok);
   border-top: 2px solid var(--status-ok);
-  z-index: 99999;
 }
 
 .vim-command-prompt {
+  margin-right: 0.25rem;
   font-family: monospace;
   font-size: 0.75rem;
   font-weight: 700;
   color: #fff;
-  margin-right: 0.25rem;
 }
 
 .vim-command-input {
@@ -78,12 +78,12 @@ defineExpose({ open, close, active })
   font-size: 0.75rem;
   font-weight: 600;
   color: #fff;
+  outline: none;
   background: transparent;
   border: none;
-  outline: none;
 }
 
 .vim-command-input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
+  color: rgb(255 255 255 / 50%);
 }
 </style>

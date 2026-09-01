@@ -14,6 +14,7 @@ source_mrover_overlay(){
     source ~/ros2_ws/src/mrover/venv/bin/activate
 
     build_profiles=("RelWithDebInfo" "Release" "Debug")
+    unset MROVER_BUILD_PROFILE
 
     target_file=""
 
@@ -22,8 +23,10 @@ source_mrover_overlay(){
 
         if [ -f "${file}" ]; then
             if [[ -z "${target_file}" ]]; then
+                export MROVER_BUILD_PROFILE="${profile}"
                 target_file="${file}"
             elif [[ "${file}" -nt "${target_file}" ]]; then
+                export MROVER_BUILD_PROFILE="${profile}"
                 target_file="${file}"
             fi
         fi
@@ -48,3 +51,16 @@ export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
+[ -s "$BUN_INSTALL/_bun" ] && source "$BUN_INSTALL/_bun"
+
+alias mrover="cd ~/ros2_ws/src/mrover && source_mrover_overlay"
+function build_mrover() {
+    ./build.sh ${1} && mrover
+}
+alias clean_mrover="./clean.sh && mrover"
+
+# ros2 completions
+if command -v register-python-argcomplete3 &>/dev/null; then
+    eval "$(register-python-argcomplete3 ros2)"
+    eval "$(register-python-argcomplete3 colcon)"
+fi

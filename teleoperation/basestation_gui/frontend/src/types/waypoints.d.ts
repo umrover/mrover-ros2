@@ -30,3 +30,11 @@ export interface MapRouteWaypoint extends MapWaypoint {
   type: number
   enable_costmap: boolean
 }
+
+export interface ScienceWaypointRecord {
+  id?: number
+  name: string
+  lat: number
+  lon: number
+  altitude: number
+}

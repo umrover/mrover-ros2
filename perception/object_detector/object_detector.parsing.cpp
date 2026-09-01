@@ -1,4 +1,5 @@
 #include "object_detector.hpp"
+
 namespace mrover {
     auto ObjectDetectorBase::preprocessYOLOv8Input(Model const& model, cv::Mat const& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) -> void {
         if (model.inputTensorSize.size() != 4) {

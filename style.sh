@@ -27,7 +27,7 @@ if [ $# -eq 0 ] || [ "$1" != "--fix" ]; then
 fi
 
 function print_update_error() {
-  echo -e "${RED}[Error] Please update with ./ansible.sh build.yml${NC}"
+  echo -e "${RED}[Error] Please update with ./ansible.sh build.yml${NC}" >&2
   exit 1
 }
 
@@ -36,11 +36,11 @@ function find_executable() {
   local -r version="$2"
   local -r path=$(which "${executable}")
   if [ ! -x "${path}" ]; then
-    echo -e "${RED}[Error] Could not find ${executable}${NC}"
+    echo -e "${RED}[Error] Could not find ${executable}${NC}" >&2
     print_update_error
   fi
   if ! "${path}" --version | grep -q "${version}"; then
-    echo -e "${RED}[Error] Wrong ${executable} version${NC}"
+    echo -e "${RED}[Error] Wrong ${executable} version${NC}" >&2
     print_update_error
   fi
   echo "${path}"
@@ -48,9 +48,12 @@ function find_executable() {
 
 ## Check that all tools are installed
 
-readonly CLANG_FORMAT_PATH=$(find_executable clang-format-18 18.1)
-readonly BLACK_PATH=$(find_executable black 24.8.0)
-readonly MYPY_PATH=$(find_executable mypy 1.11.2)
+CLANG_FORMAT_PATH=$(find_executable clang-format-18 18.1)
+readonly CLANG_FORMAT_PATH
+BLACK_PATH=$(find_executable black 26.5.1)
+readonly BLACK_PATH
+MYPY_PATH=$(find_executable mypy 1.11.2)
+readonly MYPY_PATH
 
 ## Run checks
 
@@ -70,6 +73,7 @@ readonly PYTHON_LINT_DIRS=(
   ./state_machine
   ./lie
   ./superstructure
+  ./teleoperation/
 )
 readonly PYTHON_STYLE_DIRS=(
   "${PYTHON_LINT_DIRS[@]}"

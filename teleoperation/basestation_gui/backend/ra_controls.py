@@ -40,7 +40,7 @@ async def call_ik_mode_service(mode: int) -> bool:
     client = get_service_client(IkMode, "/ik_mode")
     request = IkMode.Request()
     request.mode = mode
-    result = await call_service_async(client, request, timeout=5.0)
+    result, _ = await call_service_async(client, request, timeout=5.0)
     return result.success if result else False
 
 
@@ -77,7 +77,7 @@ JOINT_SCALES = [
     1.0,
     -1.0,
     1.0,
-    0.4,
+    1.0,
     1.0,
 ]
 

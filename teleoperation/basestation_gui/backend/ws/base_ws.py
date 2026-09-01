@@ -1,16 +1,20 @@
 import asyncio
 import math
+import numbers
 import threading
 import time
 import msgpack
 from fastapi import WebSocket
+from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_sensor_data
+from rclpy.subscription import Subscription
+from rclpy.timer import Timer
 from rosidl_runtime_py.convert import message_to_ordereddict
 from backend.managers.ros import get_node, get_logger
 
 
 def sanitize_floats(obj):
-    if isinstance(obj, float) and not math.isfinite(obj):
+    if isinstance(obj, numbers.Real) and not isinstance(obj, bool) and not math.isfinite(obj):
         return None
     if isinstance(obj, dict):
         return {k: sanitize_floats(v) for k, v in obj.items()}
@@ -28,9 +32,9 @@ class WebSocketHandler:
         self.websocket = websocket
         self.endpoint = endpoint
         self.node = get_node()
-        self.subscriptions = []
-        self.publishers = []
-        self.timers = []
+        self.subscriptions: list[Subscription] = []
+        self.publishers: list[Publisher] = []
+        self.timers: list[Timer] = []
         self.loop = asyncio.get_running_loop()
         self.closed = False
         self.callback_lock = threading.Lock()
@@ -68,9 +72,7 @@ class WebSocketHandler:
                 data_to_send = {"type": gui_msg_type, **message_to_ordereddict(ros_message)}
                 self.schedule_send(data_to_send)
 
-        sub = self.node.create_subscription(
-            topic_type, topic_name, callback, qos_profile=qos_profile_sensor_data
-        )
+        sub = self.node.create_subscription(topic_type, topic_name, callback, qos_profile=qos_profile_sensor_data)
         self.subscriptions.append(sub)
 
     async def cleanup(self):

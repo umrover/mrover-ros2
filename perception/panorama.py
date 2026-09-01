@@ -18,6 +18,8 @@ import numpy as np
 import copy
 import datetime
 
+import open3d as o3d
+
 from Source import *
 
 class Panorama(Node):
@@ -51,7 +53,7 @@ class Panorama(Node):
         # Heading variables
         self.heading_sub = self.create_subscription(Heading, "/heading/fix", self.heading_callback, 1)
         self.pano_dirs = ['E', 'S', 'W', 'N'] # E = 0, N = 270 (as per localization)
-        self.cur_heading = 0.0 # degrees
+        self.cur_heading = 0.0 # radians!!
 
         # PC/Image Stitching Variables
         self.pc_sub = message_filters.Subscriber(self, PointCloud2, f"/{self.zed_version}/left/points")
@@ -136,7 +138,19 @@ class Panorama(Node):
         
         self.img_list.append(copy.deepcopy(self.current_img))
         self.img_dirs.append(pos)
-        self.headings.append((self.cur_heading + pos + np.pi) % (2 * np.pi))
+
+        # Original way of calculating absolute heading
+        # self.headings.append((self.cur_heading + pos + np.pi) % (2 * np.pi))
+
+        # The following should be the correct way to calculate the absolute position of the image. 
+        # The labeling function assumes each image starts at this heading. The above appends what angle 
+        # the center of each image is at. As a result the check for whether the closest direction 
+        # is within 20 degrees fails for West. The following line should say that the absolute heading 
+        # of the start of the current image is the start heading, plus the current position (where pi 
+        # is facing the same direction of the rover), plus half of the zed fov (because the start heading 
+        # of the image is to the left of the center i.e. ccw), plus pi (since E (pi in terms of the
+        # servo) = 0), all modded by 2pi. 
+        self.headings.append((self.cur_heading + pos + (self.zed_fov_rad / 2) + np.pi) % (2 * np.pi))
         
         # Record the PC
         self.get_logger().info("Grabbing a PC")
@@ -162,11 +176,9 @@ class Panorama(Node):
         self.stitched_pc = np.vstack((self.stitched_pc, rotated_pc))
 
     def heading_callback(self, heading: Heading):
-        self.get_logger().info("Heading is {heading.heading}")
         self.cur_heading = heading.heading
 
     def label_pano(self, num_images, pano: np.ndarray):
-        # label hard coded NESW as a test
         fontFace = cv2.FONT_HERSHEY_SIMPLEX
         fontScale = 2.0
         color = (93, 236, 251)
@@ -175,7 +187,6 @@ class Panorama(Node):
         order = np.arange(0, num_images)
 
         # For each cardinal dir, find which image has closest heading to that direction
-        # Then find the image closest to that one in number from the order list
         # Put the direction where that image "starts" in the pano (assume each indiv.
         # image takes up roughly the same amount of space)
         y_org = int(pano.shape[0] / 4)
@@ -188,6 +199,7 @@ class Panorama(Node):
             diffs = np.abs(order - int(closest))
             pos = diffs.argmin()
 
+            # Only add the cardinal direction if the candidate image is within 20 degrees of it
             if abs(self.headings[int(pos)] - head) > (20 * np.pi / 180):
                 continue
             
@@ -198,7 +210,7 @@ class Panorama(Node):
         return pano
         
     def start_callback(self, _, response):
-        self.get_logger().info('Starting Pano...')
+        self.get_logger().info(f"Starting Pano with Heading {self.cur_heading}...")
 
         if self.sync is None: 
             self.pc_sub = message_filters.Subscriber(self, PointCloud2, f"/{self.zed_version}/left/points")
@@ -244,22 +256,23 @@ class Panorama(Node):
             self.sync = None
 
         # construct pc from stitched
-        try:
-            pc_msg = PointCloud2()
-            pc_msg.width = self.stitched_pc.shape[0]
-            stitched_pc = self.stitched_pc.flatten()
-            header = Header()
-            header.frame_id = "map"
-            pc_msg.header = header
-            pc_msg.fields = self.current_pc.fields
-            pc_msg.is_bigendian = self.current_pc.is_bigendian
-            pc_msg.data = stitched_pc.tobytes()
-            pc_msg.height = 1
-            pc_msg.point_step = int(len(pc_msg.data) / pc_msg.width)
-            pc_msg.is_dense = self.current_pc.is_dense
-            self.pc_publisher.publish(pc_msg)
-        except:
-            self.get_logger().info("Failed to create point cloud message...")
+        self.get_logger().info(f"Shape: {self.stitched_pc.shape}")
+        lens = np.linalg.norm(self.stitched_pc[:, 0:3], axis=1)
+
+        filtered_pts = self.stitched_pc[lens < 10, :]
+
+        self.get_logger().info(f"Lens shape: {lens.shape}")
+
+        pcd = o3d.geometry.PointCloud()
+
+        pcd.points = o3d.utility.Vector3dVector(filtered_pts[:, 0:3])
+
+        colors = filtered_pts[:, 3].copy(order='C').view(np.uint8).reshape((filtered_pts.shape[0], 4))[:, 2::-1].copy(order='C').astype(np.float32) / 255
+
+        self.get_logger().info(f"View shape: {colors.shape}")
+
+        pcd.colors = o3d.utility.Vector3dVector(colors)
+
 
         # if we do not receive any images, then this will crash
         if len(self.img_list) == 0:
@@ -301,6 +314,7 @@ class Panorama(Node):
             # label and save the panorama if it succeeds
             self.label_pano(num_images, pano)
             cv2.imwrite(f"{new_path}/pano.png", pano)
+            o3d.io.write_point_cloud(f"{new_path}/pano.ply", pcd)
             
             # convert the panorama to bgra for transport through ROS
             pano = np.clip(pano, 0, 255).astype(np.uint8)

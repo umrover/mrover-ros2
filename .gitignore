@@ -3,6 +3,10 @@
 /install/
 /log/
 
+# Downloaded prebuilt dependencies
+/deps/dawn-prebuilt/
+/deps/.fetchcontent/
+
 # Common IDE's, ideally this should be in global gitignore per user
 .vscode/
 .idea/
@@ -52,3 +56,6 @@ data/raw-pano-images
 # Dynamixel Ignores
 .catkin_tools/
 .dynamixel_sdk/
+
+# Persistent esw mrover_can FetchContent cache (survives a clean build, not tracked)
+/.cache/esw/
