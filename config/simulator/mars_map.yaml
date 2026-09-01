@@ -12,3 +12,7 @@ objects:
   mars_world:
     type: urdf
     uri: package://mrover/urdf/world/mars.urdf.xacro
+  lander:
+    type: urdf
+    uri: package://mrover/urdf/world/lander.urdf.xacro
+    position: [ -5, 2, -0.75 ]

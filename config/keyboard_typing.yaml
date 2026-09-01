@@ -1,0 +1,37 @@
+/**:
+  ros__parameters:
+    tag_size: 0.02
+    # Format: [id, x, y, z]
+
+    # Distance of each tag to bottom left tag, probably wont be needed but change if necessary
+    # Will need to change tag id on day of comp
+    tag_offsets: [
+      4.0, 0.0,     0.0,      0.0, # Bottom-left
+      5.0, 0.41407, 0.0,      0.0, # Bottom-right
+      3.0, 0.41407, 0.183444, 0.0, # Top-left
+      2.0, 0.0,     0.183444, 0.0 # Top-right
+    ]
+    min_code_length: 3
+    max_code_length: 6
+
+    camera_matrix: [297.5423204165929, 0.0,               306.51784066632075, 
+                    0.0,               295.1006235094907, 247.4880266546329, 
+                    0.0,               0.0,               1.0]
+
+    # camera_matrix: [294.8447664894051, 0.0,               320.781111263661, 
+    #                 0.0,               292.9945007031336, 241.50291271027783, 
+    #                 0.0,               0.0,               1.0]
+    
+    distortion_coefficients: [-0.002013779189917317,
+                              -0.05320314517636387,
+                              -0.0013949346108894896,
+                              0.00023247660995265573,
+                              0.018284177139663432]
+    
+    # Add vertical and horizontal dist from tag center to keyboard as needed
+    # vertical z key from keyboard corner = 0.031575
+    # horizontal z key from keyboard corner 0.05495
+    z_key_transform: [0.041575, 0.06495, 0.0303784]
+    
+
+
