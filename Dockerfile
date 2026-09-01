@@ -1,4 +1,4 @@
-FROM ubuntu:jammy
+FROM ubuntu:noble
 
 # DEBIAN_FRONTEND=noninteractive prevents apt from asking for user input
 # software-properties-common is needed for apt-add-repository
@@ -8,13 +8,13 @@ RUN apt-get update -y && apt-get install software-properties-common sudo -y
 RUN apt-add-repository ppa:ansible/ansible -y && apt-get install -y git git-lfs ansible
 
 RUN useradd --create-home --shell /bin/zsh mrover
-# using per user rule over sudo group because a later group rule can require a
-# password and beat an earlier NOPASSWD one for the same group
+# using per user rule over sudo group because noble's default %sudo rule
+# requires a password and beats a NOPASSWD one for the same group
 RUN echo 'mrover ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/mrover && chmod 0440 /etc/sudoers.d/mrover
 
 USER mrover
-RUN mkdir -p /home/mrover/ros2_ws/src/mrover
-WORKDIR /home/mrover/ros2_ws/src/mrover
+RUN mkdir -p /home/mrover/mrover-ros2
+WORKDIR /home/mrover/mrover-ros2
 # Defines the APT packages that need to be installed
 # rosdep is called from Ansible to install them
 ADD --chown=mrover:mrover ./package.xml .
@@ -26,6 +26,7 @@ ADD --chown=mrover:mrover ./mrover ./mrover
 ADD --chown=mrover:mrover ./ansible ./ansible
 ADD --chown=mrover:mrover ./ansible.sh .
 ADD --chown=mrover:mrover ./pkg ./pkg
+ADD --chown=mrover:mrover ./scripts ./scripts
 # clean in the same layer so apt cache/lists don't just get removed later and still count towards size
 RUN ./ansible.sh ci.yml && sudo apt-get clean && sudo rm -rf /var/lib/apt/lists/*
 

@@ -1,69 +1,31 @@
-# Allows us to install Python versions newer than 3.10
-- name: Add Python PPA Key
-  become: True
-  apt_key:
-    keyserver: keyserver.ubuntu.com
-    id: F23C5A6CF475977595C89F51BA6932366A755776
-    keyring: /usr/share/keyrings/deadsnakes-ppa-keyring.gpg
-
-- name: Add Python PPA
-  become: True
-  apt_repository:
-    repo: deb [signed-by=/usr/share/keyrings/deadsnakes-ppa-keyring.gpg] http://ppa.launchpad.net/deadsnakes/ppa/ubuntu {{ ubuntu_release }} main
-
-# Allows us to install G++13, so we can use an updated libstdc++ which provides more standard library features (C++20)
-- name: Add GCC PPA Key
-  become: True
-  apt_key:
-    keyserver: keyserver.ubuntu.com
-    id: 60C317803A41BA51845E371A1E9377A2BA9EF27F
-    keyring: /usr/share/keyrings/ubuntu-toolchain-r-ppa-keyring.gpg
-
-- name: Add GCC PPA
-  become: True
-  apt_repository:
-    repo: deb [signed-by=/usr/share/keyrings/ubuntu-toolchain-r-ppa-keyring.gpg] http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu {{ ubuntu_release }} main
-
-- name: Add LLVM APT Key
-  become: True
-  apt_key:
-    url: https://apt.llvm.org/llvm-snapshot.gpg.key
-    id: 6084F3CF814B57C1CF12EFD515CF4D18AF4F7421
-    keyring: /usr/share/keyrings/llvm-archive-keyring.gpg
+- name: Install python3-debian
+  become: true
+  ansible.builtin.apt:
+    name: python3-debian
+    state: present
 
 # Allows us to install LLVM tools
-- name: Add LLVM APT List
-  become: True
-  apt_repository:
-    repo: deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.gpg] https://apt.llvm.org/{{ ubuntu_release }}/ llvm-toolchain-{{ ubuntu_release }}-18 main
-    filename: llvm
+- name: Add LLVM APT Repo
+  become: true
+  ansible.builtin.deb822_repository:
+    name: llvm
+    types: deb
+    uris: "https://apt.llvm.org/{{ ubuntu_release }}/"
+    suites: "llvm-toolchain-{{ ubuntu_release }}-18"
+    components: main
+    signed_by: https://apt.llvm.org/llvm-snapshot.gpg.key
+  register: llvm_repo
 
-- name: Add CMake APT Key
-  become: True
-  apt_key:
-    url: https://apt.kitware.com/keys/kitware-archive-latest.asc
-    id: 4DBEBE3EEC96E7B8C6EC5BE99E92FDC6C5B9BA75
-    keyring: /usr/share/keyrings/kitware-archive-keyring.gpg
-
-# Allows us to install CMake versions newer than 3.22
-- name: Add CMake APT List
-  become: True
-  apt_repository:
-    repo: deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ {{ ubuntu_release }} main
-    filename: kitware
-
-- name: Add ROS APT Key
-  become: True
-  apt_key:
-    url: https://raw.githubusercontent.com/ros/rosdistro/master/ros.key
-    id: C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
-    keyring: /usr/share/keyrings/ros-archive-keyring.gpg
-
-- name: Add ROS APT List
-  become: True
-  apt_repository:
-    repo: deb [signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu {{ ubuntu_release }} main
-    filename: ros
+- name: Add ROS APT Repo
+  become: true
+  ansible.builtin.deb822_repository:
+    name: ros
+    types: deb
+    uris: http://packages.ros.org/ros2/ubuntu
+    suites: "{{ ubuntu_release }}"
+    components: main
+    signed_by: https://raw.githubusercontent.com/ros/rosdistro/master/ros.key
+  register: ros_repo
 
 - name: Sync APT Preferences
   become: true
@@ -72,18 +34,25 @@
     dest: /etc/apt/preferences.d
     recursive: true
 
+# deb822_repository doesn't call apt update, do so manually
+- name: Update APT Cache if Repos Changed
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+  when: llvm_repo.changed or ros_repo.changed
+
 - name: Upgrade APT Packages
-  become: True
-  apt:
+  become: true
+  ansible.builtin.apt:
     cache_valid_time: 604800
-    state: latest
+    state: present
     upgrade: yes
 
 - name: Install APT Packages
-  become: True
-  apt:
+  become: true
+  ansible.builtin.apt:
     cache_valid_time: 604800
-    state: latest
+    state: present
     name:
       - zsh
       - fzf
@@ -122,51 +91,48 @@
       - libgstreamer-plugins-base1.0-dev
       - vainfo
       - x264
-      - ros-humble-ros-base
-      - ros-humble-rviz2
-      - ros-humble-xacro
-      - ros-humble-magic-enum
-      - ros-humble-rtcm-msgs
-      - ros-humble-dynamixel-sdk
+      - ros-{{ ros_distro }}-ros-base
+      - ros-{{ ros_distro }}-rviz2
+      - ros-{{ ros_distro }}-xacro
+      - ros-{{ ros_distro }}-magic-enum
+      - ros-{{ ros_distro }}-rtcm-msgs
+      - ros-{{ ros_distro }}-dynamixel-sdk
       # TODO (ali): why does this need to be installed manually
       - libboost-dev
-      - qtbase5-dev
-      - qtmultimedia5-dev
-      - libqt5multimedia5-plugins
-      - python3-pyqt5
-
-# manif's build backend now requires packaging>=26.2, temp upgrade for ubuntu 22
-- name: Upgrade pip for manifpy build isolation
-  become: True
-  pip:
-    name: pip
-    state: latest
+      - qt6-base-dev
+      - qt6-multimedia-dev
 
 - name: Install manifpy
-  become: True
-  pip:
-    name: "git+https://github.com/artivis/manif.git@0.0.5"
+  become: true
+  ansible.builtin.command: pip install --break-system-packages "git+https://github.com/artivis/manif.git@0.0.5"
 
 - name: Download prebuilt Dawn
-  command: ./scripts/setup_dawn.sh
+  ansible.builtin.command: ./scripts/setup_dawn.sh
   args:
-    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
+    chdir: "{{ mrover_repo }}"
+
+- name: Download manif source
+  ansible.builtin.command: ./scripts/setup_manif.sh
+  args:
+    chdir: "{{ mrover_repo }}"
+
+- name: Download imgui source
+  ansible.builtin.command: ./scripts/setup_imgui.sh
+  args:
+    chdir: "{{ mrover_repo }}"
 
 - name: Initialize rosdep
-  become: True
-  command: rosdep init
+  become: true
+  ansible.builtin.command: rosdep init
   args:
     # This command will be skipped if this file already exists
     creates: /etc/ros/rosdep/sources.list.d/20-default.list
 
 - name: Update rosdep
-  command: rosdep update
-
-# - name: Install ROS Packages
-#   # command: rosdep install --from-paths {{ ros2_workspace }}/src --ignore-src -y --rosdistro={{ ros_distro }}
+  ansible.builtin.command: rosdep update
 
 - name: Set G++ 13 as Default
-  become: True
+  become: true
   alternatives:
     name: g++
     path: /usr/bin/g++-13
@@ -174,7 +140,7 @@
     priority: 130
 
 - name: Set GCC 13 as Default
-  become: True
+  become: true
   alternatives:
     name: gcc
     path: /usr/bin/gcc-13
@@ -182,7 +148,7 @@
     priority: 130
 
 - name: Set clang++18 as Default
-  become: True
+  become: true
   alternatives:
     name: clang++
     path: /usr/bin/clang++-18
@@ -190,7 +156,7 @@
     priority: 180
 
 - name: Set clang-18 as Default
-  become: True
+  become: true
   alternatives:
     name: clang
     path: /usr/bin/clang-18
@@ -198,7 +164,7 @@
     priority: 180
 
 - name: Set clangd 18 as Default
-  become: True
+  become: true
   alternatives:
     name: clangd
     path: /usr/bin/clangd-18
@@ -206,7 +172,7 @@
     priority: 180
 
 - name: Set LLD 18 as Default
-  become: True
+  become: true
   alternatives:
     name: lld
     path: /usr/bin/lld-18
@@ -214,7 +180,7 @@
     priority: 180
 
 - name: Set clang-tidy 18 as Default
-  become: True
+  become: true
   alternatives:
     name: clang-tidy
     path: /usr/bin/clang-tidy-18
@@ -222,32 +188,32 @@
     priority: 180
 
 - name: Setup Python Virtual Environment
-  pip:
+  ansible.builtin.pip:
     name:
       # Installs from pyproject.toml
-      - "{{ ros2_workspace }}/src/mrover[dev]"
-    virtualenv: "{{ ros2_workspace }}/src/mrover/venv"
-    virtualenv_command: /usr/bin/python3.10 -m venv
+      - "{{ mrover_repo }}[dev]"
+    virtualenv: "{{ mrover_repo }}/venv"
+    virtualenv_command: /usr/bin/python3 -m venv
 
 - name: Install Chromium
-  become: True
-  snap:
+  become: true
+  ansible.builtin.snap:
     name: chromium
 
 - name: Download Bun installer
-  get_url:
+  ansible.builtin.get_url:
     url: https://bun.sh/install
     dest: /tmp/bun_install.sh
-    mode: '0755'
+    mode: "0755"
 
 - name: Install or Upgrade Bun
-  shell: /tmp/bun_install.sh
+  ansible.builtin.shell: /tmp/bun_install.sh
   args:
     executable: /bin/bash
   environment:
     BUN_INSTALL: "{{ ansible_env.HOME }}/.bun"
 
 - name: Install Bun Packages
-  command: "{{ ansible_env.HOME }}/.bun/bin/bun install"
+  ansible.builtin.command: "{{ ansible_env.HOME }}/.bun/bin/bun install"
   args:
-    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/teleoperation/basestation_gui/frontend"
+    chdir: "{{ mrover_repo }}/teleoperation/basestation_gui/frontend"

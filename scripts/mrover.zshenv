@@ -1,17 +1,18 @@
 # MRover ROS
-readonly MROVER_ROS2_WS_PATH="$HOME/ros2_ws"
+export MROVER_REPO="${MROVER_REPO:-$HOME/mrover-ros2}"
+readonly MROVER_REPO
 
-source /opt/ros/humble/setup.zsh
+source /opt/ros/jazzy/setup.zsh
 
 export ROS_DOMAIN_ID=5
 export COLCON_TRACE=0
 
-remove_ros2_ws_from_path(){
-    export ${1}="$(echo ${(P)1} | tr ':' '\n' | grep -v "ros2_ws" | paste -s -d ':')"
+remove_mrover_from_path(){
+    export ${1}="$(echo ${(P)1} | tr ':' '\n' | grep -vF "${MROVER_REPO}" | paste -s -d ':')"
 }
 
 source_mrover_overlay(){
-    source ~/ros2_ws/src/mrover/venv/bin/activate
+    source "${MROVER_REPO}/venv/bin/activate"
 
     build_profiles=("RelWithDebInfo" "Release" "Debug")
     unset MROVER_BUILD_PROFILE
@@ -19,7 +20,7 @@ source_mrover_overlay(){
     target_file=""
 
     for profile in "${build_profiles[@]}"; do
-        file="${MROVER_ROS2_WS_PATH}/install/${profile}/setup.zsh"
+        file="${MROVER_REPO}/install/${profile}/setup.zsh"
 
         if [ -f "${file}" ]; then
             if [[ -z "${target_file}" ]]; then
@@ -33,15 +34,17 @@ source_mrover_overlay(){
     done
 
     # clean up current ROS environment
-    remove_ros2_ws_from_path LD_LIBRARY_PATH
-    remove_ros2_ws_from_path AMENT_PREFIX_PATH
-    remove_ros2_ws_from_path PYTHONPATH
-    remove_ros2_ws_from_path COLCON_PREFIX_PATH
-    remove_ros2_ws_from_path CMAKE_PREFIX_PATH
+    remove_mrover_from_path LD_LIBRARY_PATH
+    remove_mrover_from_path AMENT_PREFIX_PATH
+    remove_mrover_from_path PYTHONPATH
+    remove_mrover_from_path COLCON_PREFIX_PATH
+    remove_mrover_from_path CMAKE_PREFIX_PATH
 
     if [ -f "${target_file}" ]; then
         source "${target_file}" >> /dev/null
     fi
+
+    command -v register-python-argcomplete3 &>/dev/null && command -v colcon &>/dev/null && eval "$(register-python-argcomplete3 colcon)"
 }
 
 # cuda
@@ -53,14 +56,15 @@ export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 [ -s "$BUN_INSTALL/_bun" ] && source "$BUN_INSTALL/_bun"
 
-alias mrover="cd ~/ros2_ws/src/mrover && source_mrover_overlay"
-function build_mrover() {
-    ./build.sh ${1} && mrover
-}
-alias clean_mrover="./clean.sh && mrover"
+alias mrover="cd ${MROVER_REPO} && source_mrover_overlay"
 
-# ros2 completions
+build_mrover(){
+    cd "${MROVER_REPO}" && ./build.sh "${1}" && mrover
+}
+
+alias clean_mrover="cd ${MROVER_REPO} && ./clean.sh && mrover"
+
 if command -v register-python-argcomplete3 &>/dev/null; then
     eval "$(register-python-argcomplete3 ros2)"
-    eval "$(register-python-argcomplete3 colcon)"
+    command -v colcon &>/dev/null && eval "$(register-python-argcomplete3 colcon)"
 fi
