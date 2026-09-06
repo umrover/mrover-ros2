@@ -21,12 +21,7 @@ if [ ! -f ~/.ssh/id_ed25519 ] && [ ! -f ~/.ssh/id_rsa ]; then
   exit 1
 fi
 
-# only git is needed to clone; setup.sh installs Ansible
-if ! grep -rq "^deb .*git-core/ppa" /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null; then
-  echo -e "${GREY}Adding PPA: git-core/ppa${NC}"
-  sudo apt-add-repository ppa:git-core/ppa -y
-  sudo apt update
-fi
+# distro git is fine for cloning; no git-core PPA, the version gap isn't meaningful and CVEs are backported
 sudo apt install -y git git-lfs
 
 readonly MROVER_PATH=~/mrover-ros2
