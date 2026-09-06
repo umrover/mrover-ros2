@@ -28,7 +28,9 @@
   blockinfile:
     path: ~/.zshenv
     marker: "# {mark} MROVER"
-    block: source ~/ros2_ws/src/mrover/scripts/mrover.zshenv # hardcoded for now, change in re-arch
+    block: |
+      export MROVER_REPO="{{ mrover_repo }}"
+      source "${MROVER_REPO}/scripts/mrover.zshenv"
     create: true
 
 - name: Check for existing zshrc
@@ -89,5 +91,20 @@
       - gh
       - code
 
+- name: Initialize Git LFS
+  command: git lfs install
+  args:
+    chdir: "{{ mrover_repo }}"
+
+- name: Pull Git LFS objects
+  command: git lfs pull
+  args:
+    chdir: "{{ mrover_repo }}"
+
+- name: Initialize Git submodules
+  command: git submodule update --init --recursive
+  args:
+    chdir: "{{ mrover_repo }}"
+
 - name: Install vscode debugger extension
-  command: code --install-extension ../pkg/file-selector-0.0.1.vsix
+  command: code --install-extension {{ mrover_repo }}/pkg/file-selector-0.0.1.vsix

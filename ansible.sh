@@ -7,7 +7,10 @@ if [ "$#" -le 0 ]; then
     exit 1
 fi
 
-readonly MROVER_PATH=$(dirname "$0")
-readonly ROS2_WS_PATH=$(realpath "${MROVER_PATH}"/../..)
+readonly MROVER_PATH=$(dirname "$(realpath "$0")")
+# pass flags correctly, pull out playbook name then shift vars
+readonly PLAYBOOK=$1
+shift
 
-ansible-playbook -i "localhost," -c local -K "${MROVER_PATH}"/ansible/"$1" --extra-vars "ros2_workspace=${ROS2_WS_PATH} $2"
+ansible-playbook -i "localhost," -c local -K "${MROVER_PATH}/ansible/${PLAYBOOK}" \
+    --extra-vars "mrover_repo=${MROVER_PATH}" "$@"

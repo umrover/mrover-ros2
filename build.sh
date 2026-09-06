@@ -16,9 +16,6 @@ fi
 
 echo "Using build profile: $build_profile"
 
-# Build in the colcon workspace, not the package
-pushd ../..
-
 # Set C/C++ compilers
 export CC=clang
 export CXX=clang++
@@ -37,4 +34,4 @@ COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification colcon
 
 rm -rf "$(pwd)/build/$build_profile/mrover/.cmake/api"
 
-ln -sf "$(pwd)/build/$build_profile/compile_commands.json" "$(pwd)/src/mrover/compile_commands.json"
+ln -sf "$(pwd)/build/$build_profile/mrover/compile_commands.json" "$(pwd)/compile_commands.json"

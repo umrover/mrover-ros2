@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: '3.x'
+          python-version: "3.x"
       - name: Install Python style tools
         run: pip install black==26.5.1 mypy==1.11.2
       - name: Install clang-format
@@ -42,11 +42,9 @@ jobs:
       options: --user root
     steps:
       - uses: actions/checkout@v7
-        with:
-          # Re-enable when we put the simulator in the CI pipeline.
-          # lfs: "true"
-          # This makes sure that $GITHUB_WORKSPACE is the catkin workspace path
-          path: "src/mrover"
+        # with:
+        #   Re-enable when we put the simulator in the CI pipeline.
+        #   lfs: "true"
       - name: Compiler Cache
         if: github.event.pull_request.draft == false
         uses: hendrikmuhs/ccache-action@v1.2.23
@@ -54,16 +52,12 @@ jobs:
         if: github.event.pull_request.draft == false
         uses: actions/cache@v6
         with:
-          path: src/mrover/deps/dawn-prebuilt
-          key: dawn-${{ hashFiles('src/mrover/scripts/setup_dawn.sh') }}
+          path: deps/dawn-prebuilt
+          key: dawn-${{ hashFiles('scripts/setup_dawn.sh') }}
       - name: Setup Dawn
         if: github.event.pull_request.draft == false
         run: ./scripts/setup_dawn.sh
-        working-directory: "${{ github.workspace }}/src/mrover"
       - name: Build
         if: github.event.pull_request.draft == false
         shell: bash
-        run: . /opt/ros/humble/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && cd $GITHUB_WORKSPACE/src/mrover/ && ./build.sh
-      # - name: Test
-      #   if: github.event.pull_request.draft == false
-      #   run: . /opt/ros/noetic/setup.sh && . /home/mrover/ros2_ws/src/mrover/venv/bin/activate && . $GITHUB_WORKSPACE/devel/setup.sh && catkin test && rostest mrover integration.test --text
+        run: . /opt/ros/humble/setup.sh && . /home/mrover/mrover-ros2/venv/bin/activate && ./build.sh
