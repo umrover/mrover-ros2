@@ -8,4 +8,8 @@ if [ "$#" -le 0 ]; then
 fi
 
 readonly MROVER_PATH=$(dirname "$(realpath "$0")")
-ansible-playbook -i "localhost," -c local --ask-become-pass "${MROVER_PATH}"/ansible/"$1" --extra-vars "mrover_repo=${MROVER_PATH}" ${2:+"$2"}
+readonly PLAYBOOK=$1
+shift
+
+ansible-playbook -i "localhost," -c local --ask-become-pass "${MROVER_PATH}/ansible/${PLAYBOOK}" \
+    --extra-vars "mrover_repo=${MROVER_PATH}" "$@"
