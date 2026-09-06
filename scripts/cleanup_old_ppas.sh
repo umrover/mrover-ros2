@@ -19,6 +19,8 @@ OLD_PPA_FILES=(
     "$SOURCES_DIR/llvm.list"
     "$SOURCES_DIR/kitware.list"
     "$SOURCES_DIR/ros.list"
+    "$SOURCES_DIR/github-cli.list"
+    "$SOURCES_DIR/vscode.list"
 )
 
 # Removed to avoid "Key is stored in legacy trusted.gpg keyring" warning
@@ -30,6 +32,7 @@ OLD_GPG_KEYS=(
     "EA587CE6512D89C580AAE55BA65337CCA8A748B8"    # Kitware (old)
     "4DBEBE3EEC96E7B8C6EC5BE99E92FDC6C5B9BA75"    # Kitware (current)
     "C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654"    # ROS
+    "23F3D4EA75716059"                            # GitHub CLI
 )
 
 for pattern in "${OLD_PPA_FILES[@]}"; do
@@ -64,6 +67,8 @@ fi
 if [ -d "$KEYRINGS_DIR" ]; then
     OLD_SIGNED_BY_KEYRINGS=(
         "$KEYRINGS_DIR/kitware-archive-keyring.gpg"
+        "$KEYRINGS_DIR/githubcli-archive-keyring.gpg"
+        "$KEYRINGS_DIR/packages.microsoft.gpg"
     )
 
     for pattern in "${OLD_SIGNED_BY_KEYRINGS[@]}"; do
