@@ -53,3 +53,6 @@ data/raw-pano-images
 # Dynamixel Ignores
 .catkin_tools/
 .dynamixel_sdk/
+
+# Persistent esw mrover_can FetchContent cache (survives a clean build, not tracked)
+/.cache/esw/
