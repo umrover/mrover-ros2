@@ -146,11 +146,12 @@
   become: True
   pip:
     name: "git+https://github.com/artivis/manif.git@0.0.5"
+    extra_args: --ignore-installed
 
 - name: Download prebuilt Dawn
   command: ./scripts/setup_dawn.sh
   args:
-    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/"
+    chdir: "{{ mrover_repo }}"
 
 - name: Initialize rosdep
   become: True
@@ -225,8 +226,8 @@
   pip:
     name:
       # Installs from pyproject.toml
-      - "{{ ros2_workspace }}/src/mrover[dev]"
-    virtualenv: "{{ ros2_workspace }}/src/mrover/venv"
+      - "{{ mrover_repo }}[dev]"
+    virtualenv: "{{ mrover_repo }}/venv"
     virtualenv_command: /usr/bin/python3.10 -m venv
 
 - name: Install Chromium
@@ -250,4 +251,4 @@
 - name: Install Bun Packages
   command: "{{ ansible_env.HOME }}/.bun/bin/bun install"
   args:
-    chdir: "{{ ansible_env.HOME }}/ros2_ws/src/mrover/teleoperation/basestation_gui/frontend"
+    chdir: "{{ mrover_repo }}/teleoperation/basestation_gui/frontend"
