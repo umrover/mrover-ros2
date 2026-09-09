@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 
-JETSON_SOURCE_DIR="/tmp/jetson-flash"
+JETSON_SOURCE_DIR="$0"
+UBUNTU_CODENAME="$1"
 
 # Make Variables
-export CROSS_COMPILE="/tmp/aarch64--glibc--stable-2022.08-1/bin/aarch64-buildroot-linux-gnu-"
+export CROSS_COMPILE="/tmp/x-tools/bin/aarch64-none-linux-gnu-"
 export INSTALL_MOD_PATH="${JETSON_SOURCE_DIR}/Linux_for_Tegra/rootfs/"
-export KERNEL_HEADERS="${JETSON_SOURCE_DIR}/Linux_for_Tegra/source/kernel/kernel-jammy-src"
+export KERNEL_HEADERS="${JETSON_SOURCE_DIR}/Linux_for_Tegra/source/kernel/kernel-${UBUNTU_CODENAME}"
 export INSTALL_MOD_PATH="${JETSON_SOURCE_DIR}/Linux_for_Tegra/rootfs/"
 
 # Change to the kernel sources directory
@@ -16,7 +17,7 @@ pushd "${JETSON_SOURCE_DIR}/Linux_for_Tegra/source" || exit
 make clean
 make KERNEL_DEF_CONFIG=oldconfig -C kernel
 sudo -E make install -C kernel
-cp "kernel/kernel-jammy-src/arch/arm64/boot/Image" "${JETSON_SOURCE_DIR}/Linux_for_Tegra/kernel/Image"
+cp "kernel/kernel-${UBUNTU_CODENAME}-src/arch/arm64/boot/Image" "${JETSON_SOURCE_DIR}/Linux_for_Tegra/kernel/Image"
 
 # Make NVIDIA Out Of Tree Modules
 make modules
