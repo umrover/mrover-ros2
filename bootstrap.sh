@@ -39,12 +39,6 @@ if [ ! -d "${MROVER_PATH}" ]; then
     mkdir -p "${CATKIN_PATH}"/src
     git clone git@github.com:umrover/mrover-ros2 "${CATKIN_PATH}"/src/mrover
     cd "${CATKIN_PATH}"/src/mrover
-    FIRST_TIME_SETUP=true
 fi
 
 exec "${MROVER_PATH}/setup.sh"
-
-if [ "${FIRST_TIME_SETUP}" ]; then
-    echo -e "${GREY_BOLD}All done! Welcome to MRover!${NC}"
-    echo -e "${YELLOW_BOLD}Please log out and back in!${NC}"
-fi
