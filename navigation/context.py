@@ -4,7 +4,6 @@ from dataclasses import dataclass
 
 import numpy as np
 import pymap3d
-import rclpy
 from scipy import ndimage
 from rclpy.parameter import Parameter
 

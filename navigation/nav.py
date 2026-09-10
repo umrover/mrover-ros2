@@ -8,7 +8,7 @@ from navigation.context import Context
 from navigation.long_range import LongRangeState
 from navigation.backup import BackupState
 from navigation.stuck_recovery import StuckRecoveryState
-from navigation.costmap_search import CostmapSearchState
+from navigation.search import SearchState
 from navigation.state import DoneState, OffState, off_check
 from navigation.waypoint import WaypointState
 from rclpy import Parameter
@@ -111,7 +111,7 @@ class Navigation(Node):
             ApproachTargetState(),
             [
                 WaypointState(),
-                CostmapSearchState(),
+                SearchState(),
                 StuckRecoveryState(),
                 BackupState(),
                 DoneState(),
@@ -128,7 +128,7 @@ class Navigation(Node):
             StuckRecoveryState(),
             [
                 WaypointState(),
-                CostmapSearchState(),
+                SearchState(),
                 BackupState(),
                 ApproachTargetState(),
                 LongRangeState(),
@@ -146,7 +146,7 @@ class Navigation(Node):
                 BackupState(),
                 ApproachTargetState(),
                 LongRangeState(),
-                CostmapSearchState(),
+                SearchState(),
                 StuckRecoveryState(),
                 DoneState(),
             ],
@@ -155,13 +155,13 @@ class Navigation(Node):
             LongRangeState(),
             [
                 ApproachTargetState(),
-                CostmapSearchState(),
+                SearchState(),
                 WaypointState(),
                 StuckRecoveryState(),
             ],
         )
         self.state_machine.add_transitions(
-            CostmapSearchState(), 
+            SearchState(), 
             [
                 WaypointState(), 
                 StuckRecoveryState(), 

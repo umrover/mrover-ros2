@@ -11,7 +11,6 @@ from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.publisher import Publisher
 from trajectory import Trajectory
-from visualization_msgs.msg import Marker
 
 
 class DriveController:

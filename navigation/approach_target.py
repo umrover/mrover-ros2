@@ -1,14 +1,10 @@
 import numpy as np
-from typing import Any
 from navigation.trajectory import Trajectory
-from navigation.astar import AStar, NoPath, OutOfBounds
-from . import costmap_search, stuck_recovery, waypoint, backup, state
+from navigation.astar import AStar
+from . import search, stuck_recovery, waypoint, state
 from .context import Context
 from state_machine.state import State
 from geometry_msgs.msg import Twist
-from nav_msgs.msg import Path
-from visualization_msgs.msg import Marker
-from rclpy.publisher import Publisher
 from rclpy.time import Time
 from rclpy.timer import Timer
 from rclpy.duration import Duration
@@ -347,7 +343,7 @@ class ApproachTargetState(State):
 
             # Otherwise, if we lost sight of the target, but were in the regular state it means we were pretty
             # close so we should just return to spiral searching
-            return costmap_search.CostmapSearchState()
+            return search.SearchState()
 
         # If we are within the distance threshold of the target we have finished
         if self.self_in_stop_threshold(context) and not isinstance(self, LongRangeState):

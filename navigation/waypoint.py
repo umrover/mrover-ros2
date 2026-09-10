@@ -2,27 +2,20 @@ from state_machine.state import State
 from . import (
     backup,
     state,
-    costmap_search,
+    search,
     stuck_recovery,
 )
 from mrover.msg import WaypointType
-from mrover.srv import MoveCostMap
 from .context import Context
-import rclpy
 from .context import Context
-from navigation.astar import AStar, SpiralEnd, NoPath, OutOfBounds
+from navigation.astar import AStar
 from navigation.coordinate_utils import segment_path, is_high_cost_point, d_calc, cartesian_to_ij
-from navigation.trajectory import Trajectory, SearchTrajectory
+from navigation.trajectory import Trajectory
 from typing import Optional
-from rclpy.publisher import Publisher
 from rclpy.time import Time
 from rclpy.timer import Timer
-import time
 from rclpy.duration import Duration
-from geometry_msgs.msg import Pose, PoseStamped, Point, Quaternion, Twist
-from nav_msgs.msg import Path
-from std_msgs.msg import Header
-from visualization_msgs.msg import Marker
+from geometry_msgs.msg import Twist
 import numpy as np
 from navigation.smoothing import smoothing
 
@@ -285,7 +278,7 @@ class WaypointState(State):
         if current_wp is None:
             return state.DoneState()
         if current_wp.type.val != WaypointType.NO_SEARCH:
-            return costmap_search.CostmapSearchState()
+            return search.SearchState()
         else:
             if self.time_no_search_wait is None:
                 self.time_no_search_wait = context.node.get_clock().now()
