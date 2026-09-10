@@ -32,7 +32,6 @@ sudo apt install -y git git-lfs
 readonly CATKIN_PATH=~/ros2_ws
 
 readonly MROVER_PATH=${CATKIN_PATH}/src/mrover
-FIRST_TIME_SETUP=false
 
 if [ ! -d "${MROVER_PATH}" ]; then
     echo -e "${GREY_BOLD}Creating ROS workspace ...${NC}"
