@@ -35,13 +35,11 @@
     dest: ~/.zshrc
   when: not zshrc_stat.stat.exists
 
-- name: Wire mrover shell env
+- name: Source mrover zshenv
   ansible.builtin.blockinfile:
-    path: ~/.zshrc
+    path: ~/.zshenv
     marker: "# {mark} MROVER"
-    block: |
-      export MROVER_REPO="{{ mrover_repo }}"
-      source "${MROVER_REPO}/scripts/mrover.zshenv"
+    block: source ~/ros2_ws/src/mrover/scripts/mrover.zshenv # hardcoded for now, change in re-arch
     create: true
 
 - name: Deploy mrover tmux config
@@ -70,17 +68,17 @@
 - name: Initialize Git LFS
   ansible.builtin.command: git lfs install
   args:
-    chdir: "{{ mrover_repo }}"
+    chdir: "{{ ros2_workspace }}/src/mrover"
 
 - name: Pull Git LFS objects
   ansible.builtin.command: git lfs pull
   args:
-    chdir: "{{ mrover_repo }}"
+    chdir: "{{ ros2_workspace }}/src/mrover"
 
 - name: Initialize Git submodules
   ansible.builtin.command: git submodule update --init --recursive
   args:
-    chdir: "{{ mrover_repo }}"
+    chdir: "{{ ros2_workspace }}/src/mrover"
 
 - name: Install VSCode extension
-  ansible.builtin.command: code --install-extension {{ mrover_repo }}/pkg/file-selector-0.0.1.vsix
+  ansible.builtin.command: code --install-extension {{ ros2_workspace }}/src/mrover/pkg/file-selector-0.0.1.vsix

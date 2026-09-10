@@ -13,8 +13,8 @@ RUN useradd --create-home --shell /bin/zsh mrover
 RUN echo 'mrover ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/mrover && chmod 0440 /etc/sudoers.d/mrover
 
 USER mrover
-RUN mkdir -p /home/mrover/mrover-ros2
-WORKDIR /home/mrover/mrover-ros2
+RUN mkdir -p /home/mrover/ros2_ws/src/mrover
+WORKDIR /home/mrover/ros2_ws/src/mrover
 # Defines the APT packages that need to be installed
 # rosdep is called from Ansible to install them
 ADD --chown=mrover:mrover ./package.xml .
