@@ -54,6 +54,7 @@
     cache_valid_time: 604800
     state: present
     name:
+      - build-essential
       - zsh
       - fzf
       - sudo
