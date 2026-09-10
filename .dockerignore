@@ -1,0 +1,10 @@
+.cache
+build
+install
+log
+deps/dawn-prebuilt
+node_modules
+__pycache__
+*.pyc
+.git
+venv

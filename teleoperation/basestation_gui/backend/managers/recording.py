@@ -4,6 +4,7 @@ from backend.managers.ros import get_node, get_logger
 from backend.database import get_recordings_db
 from sensor_msgs.msg import NavSatFix
 from rclpy.qos import qos_profile_sensor_data
+from rclpy.subscription import Subscription
 
 RECORDING_RATE_HZ = 5
 
@@ -24,11 +25,11 @@ class RecordingManager:
         self.drone_lon = 0.0
         self.drone_alt = 0.0
 
-        self.rover_gps_sub = self.node.create_subscription(
+        self.rover_gps_sub: Subscription | None = self.node.create_subscription(
             NavSatFix, "/gps/fix", self.handle_rover_gps, qos_profile=qos_profile_sensor_data
         )
 
-        self.drone_gps_sub = self.node.create_subscription(
+        self.drone_gps_sub: Subscription | None = self.node.create_subscription(
             NavSatFix, "/drone_odom", self.handle_drone_gps, qos_profile=qos_profile_sensor_data
         )
 

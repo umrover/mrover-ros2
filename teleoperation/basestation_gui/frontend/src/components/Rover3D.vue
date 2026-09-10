@@ -364,14 +364,14 @@ onMessage<OrientationMessage>('nav', 'orientation', (msg) => {
 }
 
 .disabled-overlay {
-  width: 100%;
-  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #1a1a1a;
-  color: #555;
+  width: 100%;
+  height: 100%;
   font-size: 0.85rem;
+  color: #555;
   letter-spacing: 0.05em;
+  background: #1a1a1a;
 }
 </style>

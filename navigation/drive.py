@@ -8,6 +8,7 @@ from lie import SE3, normalized, angle_to_rotate_2d
 from geometry_msgs.msg import Twist, Vector3
 from navigation.marker_utils import gen_marker, ring_marker
 from rclpy.node import Node
+from rclpy.parameter import Parameter
 from rclpy.publisher import Publisher
 from trajectory import Trajectory
 from visualization_msgs.msg import Marker
@@ -33,7 +34,9 @@ class DriveController:
         self._last_target = None
         self._last_lookahead_dist = self.node.get_parameter("pure_pursuit.min_lookahead_distance").value
         self._last_point = None
-        self.USE_PURE_PURSUIT = self.node.get_parameter_or("pure_pursuit.use_pure_pursuit", True).value
+        self.USE_PURE_PURSUIT = self.node.get_parameter_or(
+            "pure_pursuit.use_pure_pursuit", Parameter("pure_pursuit.use_pure_pursuit", Parameter.Type.BOOL, True)
+        ).value
         self.lookahead_pub = lookahead_pub
         self.intersection_pub = intersect_pub
         self._driver_state = self.DriveMode.STOPPED

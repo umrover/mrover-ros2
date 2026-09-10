@@ -2,6 +2,7 @@ import logging
 import rclpy
 import threading
 import atexit
+from rclpy.client import Client
 from rclpy.node import Node
 from rclpy.executors import SingleThreadedExecutor
 
@@ -10,10 +11,10 @@ logger = logging.getLogger(__name__)
 lock = threading.Lock()
 initialized = threading.Event()
 
-context = None
-node = None
-ros_thread = None
-service_clients = {}
+context: rclpy.Context | None = None
+node: Node | None = None
+ros_thread: threading.Thread | None = None
+service_clients: dict[str, Client] = {}
 service_clients_lock = threading.Lock()
 
 
@@ -22,6 +23,7 @@ def get_node() -> Node:
         with lock:
             if not initialized.is_set():
                 init_ros()
+    assert node is not None
     return node
 
 
@@ -50,6 +52,7 @@ def get_context():
 
 
 def ros_spin():
+    assert node is not None
     executor = SingleThreadedExecutor(context=context)
     executor.add_node(node)
     try:

@@ -40,6 +40,7 @@ class RecoveryState(State):
         stop_thresh = context.node.get_parameter("recovery.stop_threshold").value
         drive_fwd_thresh = context.node.get_parameter("recovery.drive_forward_threshold").value
 
+        assert self.start_time is not None
         if context.node.get_clock().now() - self.start_time > Duration(seconds=give_up_time):
             return context.rover.previous_state
 

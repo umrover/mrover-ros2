@@ -1,6 +1,6 @@
 <template>
   <div class="flex justify-center items-center p-6 flex-1 min-h-screen bg-theme-view">
-    <div class="w-full bg-theme-card border rounded-sm shadow-lg" style="max-width: 600px; border-color: var(--panel-border);">
+    <div class="w-full bg-theme-card border rounded-sm shadow-lg max-w-150 colored-border-panel">
       <div class="p-6">
         <div class="flex items-center flex-wrap mb-4">
           <span class="text-success">rover@basestation</span><span>:</span><span class="text-muted">~</span><span class="mr-2">$</span>
@@ -32,3 +32,8 @@ export default defineComponent({
 })
 </script>
 
+<style scoped>
+  .colored-border-panel {
+    border-color: var(--panel-border);
+  }
+</style>

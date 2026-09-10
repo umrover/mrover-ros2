@@ -337,12 +337,12 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .btn-xs {
+  display: inline-flex;
+  align-items: center;
+  height: 2em;
   padding: 0 0.3rem;
   font-size: 0.7rem;
   line-height: 1;
-  height: 2em;
-  display: inline-flex;
-  align-items: center;
 }
 
 .btn-xs i {

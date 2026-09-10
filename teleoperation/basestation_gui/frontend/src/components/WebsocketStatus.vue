@@ -1,5 +1,5 @@
 <template>
-  <div class="flex justify-center" style="user-select: none;">
+  <div class="flex justify-center select-none">
     <div
       v-if="Object.keys(connectionStatus as Record<string, any>).length > 0"
       class="justify-center items-center border-2 rounded px-1 mr-1"
@@ -26,14 +26,12 @@
 
         <div class="flex justify-center items-center gap-2">
           <div
-            class="rounded-full"
+            class="rounded-full indicator-dot"
             :class="flashOutDisplay[id] ? 'bg-success' : 'bg-secondary'"
-            style="width: 16px; height: 16px"
           ></div>
           <div
-            class="rounded-full"
+            class="rounded-full indicator-dot"
             :class="flashInDisplay[id] ? 'bg-danger' : 'bg-secondary'"
-            style="width: 16px; height: 16px"
           ></div>
         </div>
       </div>
@@ -120,3 +118,8 @@ onBeforeUnmount(() => {
 })
 </script>
 
+<style scoped>
+  .indicator-dot {
+    width: 16px; height: 16px
+  }
+</style>

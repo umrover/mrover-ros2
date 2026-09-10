@@ -49,24 +49,42 @@ websocketStore.onMessage<NavStateMessage>('nav', 'nav_state', (msg) => {
   border-color: var(--status-error);
 }
 
-.nav-state--error .data-label { color: var(--text-on-status); opacity: 0.8; }
-.nav-state--error .nav-state-value { color: var(--text-on-status); }
+.nav-state--error .data-label {
+  color: var(--text-on-status);
+  opacity: 0.8;
+}
+
+.nav-state--error .nav-state-value {
+   color: var(--text-on-status);
+}
 
 .nav-state--ok {
   background-color: var(--status-ok);
   border-color: var(--status-ok);
 }
 
-.nav-state--ok .data-label { color: var(--text-on-status); opacity: 0.8; }
-.nav-state--ok .nav-state-value { color: var(--text-on-status); }
+.nav-state--ok .data-label {
+  color: var(--text-on-status);
+  opacity: 0.8;
+}
+
+.nav-state--ok .nav-state-value {
+  color: var(--text-on-status);
+}
 
 .nav-state--info {
   background-color: var(--accent);
   border-color: var(--accent);
 }
 
-.nav-state--info .data-label { color: var(--text-on-status); opacity: 0.8; }
-.nav-state--info .nav-state-value { color: var(--text-on-status); }
+.nav-state--info .data-label {
+  color: var(--text-on-status);
+  opacity: 0.8;
+}
+
+.nav-state--info .nav-state-value {
+  color: var(--text-on-status);
+}
 
 .nav-state--blink {
   animation: blink-bg 1s infinite;

@@ -166,12 +166,12 @@ h1 {
 }
 
 .theme-btn-inline {
+  flex-shrink: 0;
   width: 28px;
   height: 28px;
   padding: 0;
   cursor: pointer;
   background-color: var(--card-bg);
-  flex-shrink: 0;
 }
 
 .theme-btn-inline i {
@@ -180,7 +180,7 @@ h1 {
 
 @keyframes jetson-flash-red {
   0%, 100% { background-color: transparent; }
-  50% { background-color: rgba(220, 53, 69, 0.4); }
+  50% { background-color: rgb(220 53 69 / 40%); }
 }
 
 .jetson-high-latency {

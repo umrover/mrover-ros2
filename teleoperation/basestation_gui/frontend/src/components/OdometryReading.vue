@@ -189,9 +189,9 @@ websocketStore.onMessage<CmdVelMessage>('nav', 'cmd_vel', msg => {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  min-width: 0;
   padding: 0.5rem 0.75rem;
   border-right: 1px solid var(--panel-border);
-  min-width: 0;
 }
 
 .odom-col-last {
@@ -213,9 +213,9 @@ websocketStore.onMessage<CmdVelMessage>('nav', 'cmd_vel', msg => {
 
 .odom-row {
   display: flex;
+  gap: 0.5rem;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
   line-height: 1;
 }
 
@@ -236,9 +236,9 @@ websocketStore.onMessage<CmdVelMessage>('nav', 'cmd_vel', msg => {
 }
 
 .odom-unit {
+  margin-left: auto;
   color: var(--text-muted);
   text-align: right;
-  margin-left: auto;
 }
 
 </style>

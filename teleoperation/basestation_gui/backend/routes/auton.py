@@ -19,6 +19,7 @@ BACKUP_PUBLISH_HZ = 10
 
 _backup_publisher = None
 
+
 def get_backup_publisher():
     global _backup_publisher
     if _backup_publisher is None:
@@ -52,11 +53,7 @@ async def enable_auton(data: AutonEnableRequest):
         if result is None:
             raise HTTPException(status_code=500, detail="Service /enable_auton is not available or timed out")
 
-        return {
-            'status': 'success',
-            'enabled': data.enabled,
-            'waypoint_count': len(data.waypoints)
-        }
+        return {"status": "success", "enabled": data.enabled, "waypoint_count": len(data.waypoints)}
 
     except HTTPException:
         raise
@@ -73,7 +70,7 @@ async def enable_auton(data: AutonEnableRequest):
 @router.post("/enable_teleop/")
 def enable_teleop(data: TeleopEnableRequest):
     set_teleop_enabled(data.enabled)
-    return {'status': 'success', 'enabled': data.enabled}
+    return {"status": "success", "enabled": data.enabled}
 
 
 @router.post("/toggle_pure_pursuit/")
@@ -83,7 +80,7 @@ async def toggle_pure_pursuit(data: TeleopEnableRequest):
     result = await call_service_async(client, request)
     if result is None:
         raise HTTPException(status_code=500, detail="Service /toggle_pure_pursuit is not available or timed out")
-    return {'status': 'success', 'enabled': data.enabled}
+    return {"status": "success", "enabled": data.enabled}
 
 
 @router.post("/toggle_path_relaxation/")
@@ -93,7 +90,7 @@ async def toggle_path_relaxation(data: TeleopEnableRequest):
     result = await call_service_async(client, request)
     if result is None:
         raise HTTPException(status_code=500, detail="Service /toggle_path_relaxation is not available or timed out")
-    return {'status': 'success', 'enabled': data.enabled}
+    return {"status": "success", "enabled": data.enabled}
 
 
 @router.post("/toggle_path_interpolation/")
@@ -103,7 +100,7 @@ async def toggle_path_interpolation(data: TeleopEnableRequest):
     result = await call_service_async(client, request)
     if result is None:
         raise HTTPException(status_code=500, detail="Service /toggle_path_interpolation is not available or timed out")
-    return {'status': 'success', 'enabled': data.enabled}
+    return {"status": "success", "enabled": data.enabled}
 
 
 @router.post("/drive_back/")
@@ -117,4 +114,4 @@ async def drive_back(data: DriveBackRequest):
             await asyncio.sleep(1.0 / BACKUP_PUBLISH_HZ)
     finally:
         pub.publish(Twist())
-    return {'status': 'success'}
+    return {"status": "success"}
