@@ -28,8 +28,13 @@ cd "${MROVER_PATH}"
 echo -e "${CYAN}Installing Ansible collections ...${NC}"
 ansible-galaxy collection install -r ansible/requirements.yml
 
-echo -e "${CYAN}Running Ansible ...${NC}"
-"${MROVER_PATH}/ansible.sh" dev.yml
+playbook=dev.yml
+if [ -f /etc/nv_tegra_release ]; then
+    playbook=jetson_build.yml
+fi
+
+echo -e "${CYAN}Running Ansible (${playbook}) ...${NC}"
+"${MROVER_PATH}/ansible.sh" "${playbook}"
 
 echo ""
 echo -e "${GREEN}================================================================${NC}"
