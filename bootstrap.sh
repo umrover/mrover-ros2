@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# First-time native Ubuntu 24 setup. 
+# First-time native Ubuntu 24 setup.
 # Ensures git is installed, clones the repo, then runs setup.sh.
 # If you already have the repo, just run setup.sh directly.
 
@@ -11,29 +11,40 @@ readonly GREY_BOLD='\033[1;30m'
 readonly NC='\033[0m'
 
 if ! grep -q '^VERSION_CODENAME=noble' /etc/os-release 2>/dev/null; then
-  echo -e "${RED_BOLD}This script requires Ubuntu 24.04.${NC}"
-  exit 1
+    echo -e "${RED_BOLD}This script requires Ubuntu 24.04.${NC}"
+    exit 1
 fi
 
 echo -e "${GREY_BOLD}Ensuring SSH keys are set up ...${NC}"
 if [ ! -f ~/.ssh/id_ed25519 ] && [ ! -f ~/.ssh/id_rsa ]; then
-  echo -e "${RED_BOLD}Please see: https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent${NC}"
-  exit 1
+    echo -e "${RED_BOLD}Please see: https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent${NC}"
+    exit 1
 fi
 
 # git via PPA
 if ! grep -rq "^deb .*git-core/ppa" /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null; then
-  echo -e "${GREY_BOLD}Adding PPA: git-core/ppa${NC}"
-  sudo apt-add-repository ppa:git-core/ppa -y
-  sudo apt update
+    echo -e "${GREY_BOLD}Adding PPA: git-core/ppa${NC}"
+    sudo apt-add-repository ppa:git-core/ppa -y
+    sudo apt update
 fi
 sudo apt install -y git git-lfs
 
-readonly MROVER_PATH=~/mrover-ros2
+readonly CATKIN_PATH=~/ros2_ws
 
-if [ ! -d "${MROVER_PATH}/.git" ]; then
-  echo -e "${GREY_BOLD}Cloning mrover-ros2 ...${NC}"
-  git clone git@github.com:umrover/mrover-ros2 "${MROVER_PATH}"
+readonly MROVER_PATH=${CATKIN_PATH}/src/mrover
+FIRST_TIME_SETUP=false
+
+if [ ! -d "${MROVER_PATH}" ]; then
+    echo -e "${GREY_BOLD}Creating ROS workspace ...${NC}"
+    mkdir -p "${CATKIN_PATH}"/src
+    git clone git@github.com:umrover/mrover-ros2 "${CATKIN_PATH}"/src/mrover
+    cd "${CATKIN_PATH}"/src/mrover
+    FIRST_TIME_SETUP=true
 fi
 
 exec "${MROVER_PATH}/setup.sh"
+
+if [ "${FIRST_TIME_SETUP}" ]; then
+    echo -e "${GREY_BOLD}All done! Welcome to MRover!${NC}"
+    echo -e "${YELLOW_BOLD}Please log out and back in!${NC}"
+fi

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Native Ubuntu 24 setup. Run after cloning. 
+# Native Ubuntu 24 setup. Run after cloning.
 
 set -Eeuo pipefail
 
@@ -9,22 +9,17 @@ readonly RED='\033[1;31m'
 readonly NC='\033[0m'
 
 if ! grep -q '^VERSION_CODENAME=noble' /etc/os-release 2>/dev/null; then
-  echo -e "${RED}This script requires Ubuntu 24.${NC}" >&2
-  exit 1
+    echo -e "${RED}This script requires Ubuntu 24.${NC}" >&2
+    exit 1
 fi
 
 if ! command -v ansible-playbook >/dev/null 2>&1; then
-  echo -e "${CYAN}Installing Ansible ...${NC}"
-  if ! grep -rq "^deb .*ansible/ansible" /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null; then
-    sudo apt-add-repository ppa:ansible/ansible -y
-    sudo apt update
-  fi
-  sudo apt install -y ansible
-fi
-
-if ! command -v git-lfs >/dev/null 2>&1; then
-  echo -e "${CYAN}Installing git-lfs ...${NC}"
-  sudo apt install -y git-lfs
+    echo -e "${CYAN}Installing Ansible ...${NC}"
+    if ! grep -rq "^deb .*ansible/ansible" /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null; then
+        sudo apt-add-repository ppa:ansible/ansible -y
+        sudo apt update
+    fi
+    sudo apt install -y ansible
 fi
 
 readonly MROVER_PATH=$(dirname "$(realpath "$0")")
