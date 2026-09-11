@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-JETSON_SOURCE_DIR="$0"
-UBUNTU_CODENAME="$1"
+JETSON_SOURCE_DIR="$1"
+UBUNTU_CODENAME="$2"
 
 # Make Variables
-export CROSS_COMPILE="/tmp/x-tools/bin/aarch64-none-linux-gnu-"
+export CROSS_COMPILE="${JETSON_SOURCE_DIR}/x-tools/*/bin/aarch64-none-linux-gnu-"
 export INSTALL_MOD_PATH="${JETSON_SOURCE_DIR}/Linux_for_Tegra/rootfs/"
 export KERNEL_HEADERS="${JETSON_SOURCE_DIR}/Linux_for_Tegra/source/kernel/kernel-${UBUNTU_CODENAME}"
 export INSTALL_MOD_PATH="${JETSON_SOURCE_DIR}/Linux_for_Tegra/rootfs/"

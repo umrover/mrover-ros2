@@ -2,9 +2,9 @@
 
 set -euxo pipefail
 
-JETSON_SOURCE_DIR="$0"
-PCAN_SOURCE_DIR="$1"
+JETSON_SOURCE_DIR="$1"
 UBUNTU_CODENAME="$2"
+PCAN_SOURCE_DIR="${JETSON_SOURCE_DIR}/peak-linux-driver-${1}-${2}-${3}"
 
 # Make Variables
 export CROSS_COMPILE="/tmp/x-tools/bin/aarch64-none-linux-gnu-"

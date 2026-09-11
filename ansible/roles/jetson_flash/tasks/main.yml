@@ -55,13 +55,6 @@
       dest: "{{ jetson_flash_dir }}"
       creates: "{{ jetson_flash_dir }}/peak-linux-driver-{{ pcan_version_major }}.{{ pcan_version_minor }}.{{ pcan_version_patch }}"
 
-  - name: Remove PCAN Testing
-    # TODO(john): this is not the best solution
-    replace:
-      path: "{{ jetson_flash_dir }}/peak-linux-driver-{{ pcan_version_major }}.{{ pcan_version_minor }}.{{ pcan_version_patch }}/Makefile"
-      regexp: "\\@\\$\\(MAKE\\) -C test \\$1"
-      replace: ""
-
   - name: Run L4T Flash Prerequisites
     become: true
     shell:
@@ -92,42 +85,56 @@
     shell:
       chdir: "{{ jetson_flash_dir }}/Linux_for_Tegra/source"
       cmd: ./source_sync.sh -k -t jetson_{{ jetson_linux_version_major }}.{{ jetson_linux_version_minor }}.{{ jetson_linux_version_patch }}
-      creates: "{{ jetson_flash_dir }}/Linux_for_Tegra/source/kernel/kernel-{{ ubuntu_codename }}-src"
-  #
-  # - name: Sync Kernel Configuration
-  #   synchronize:
-  #     src: files/config
-  #     dest: "{{ jetson_flash_dir }}/jetson-flash/Linux_for_Tegra/source/kernel/kernel-{{ ubuntu_codename }}-src/.config"
-  #
-  # - name: Sync Kernel Configuration With Oldconfig
-  #   synchronize:
-  #     src: files/config
-  #     dest: "{{ jetson_flash_dir }}/jetson-flash/Linux_for_Tegra/source/kernel/kernel-{{ ubuntu_codename }}-src/arch/arm64/configs/oldconfig"
-  #
-  # - name: Build Jetson Kernel
-  #   become: true
-  #   command: ./ansible/roles/jetson_flash/files/scripts/build_jetson_kernel.sh
-  #   failed_when: False # this is not ideal
-  #   args:
-  #     chdir: "{{ mrover_repo }}"
-  #     # no creates here because it is always desired to recompile the kernel if running this ansible
-  #
-  # - name: Build PCAN
-  #   become: true
-  #   command: ./ansible/roles/jetson_flash/files/scripts/build_pcan_drivers.sh {{ pcan_version_major }} {{ pcan_version_minor }} {{ pcan_version_patch }}
-  #   args:
-  #     chdir: "{{ mrover_repo }}"
-  #     # no creates here because we always rebuild
-  #
-  # - name: Ensure Jetson Is Connected In Recovery Mode
-  #   shell:
-  #     cmd: lsusb | grep "7023 NVIDIA"
-  #
-  # - name: Flash Jetson
-  #   become: true
-  #   command: ./flash.sh jetson-agx-orin-devkit internal
-  #   args:
-  #     chdir: "{{ jetson_flash_dir }}/jetson-flash/Linux_for_Tegra"
+      creates: "{{ jetson_flash_dir }}/Linux_for_Tegra/source/kernel/kernel-{{ ubuntu_codename }}"
+  
+  - name: Sync Kernel Configuration
+    synchronize:
+      src: files/config
+      dest: "{{ jetson_flash_dir }}/Linux_for_Tegra/source/kernel/kernel-{{ ubuntu_codename }}/.config"
+ 
+  - name: Sync Kernel Configuration With Oldconfig
+    synchronize:
+      src: files/config
+      dest: "{{ jetson_flash_dir }}/Linux_for_Tegra/source/kernel/kernel-{{ ubuntu_codename }}/arch/arm64/configs/oldconfig"
+ 
+  - name: Build Jetson Kernel
+    become: true
+    command: ./ansible/roles/jetson_flash/files/scripts/build_jetson_kernel.sh {{ jetson_flash_dir }} {{ ubuntu_codename }}
+    args:
+      chdir: "{{ mrover_repo }}"
+      # no creates here because it is always desired to recompile the kernel if running this ansible
+ 
+  - name: Remove PCAN Testing
+    # TODO(john): this is not the best solution
+    replace:
+      path: "{{ jetson_flash_dir }}/peak-linux-driver-{{ pcan_version_major }}.{{ pcan_version_minor }}.{{ pcan_version_patch }}/Makefile"
+      regexp: "\\@\\$\\(MAKE\\) -C test \\$1"
+      replace: ""
+ 
+  - name: Build PCAN
+    become: true
+    command: ./ansible/roles/jetson_flash/files/scripts/build_pcan_drivers.sh {{ jetson_flash_dir }} {{ ubuntu_codename }} {{ pcan_version_major }} {{ pcan_version_minor }} {{ pcan_version_patch }}
+    args:
+      chdir: "{{ mrover_repo }}"
+      # no creates here because we always rebuild
+      #
+  
+  - name: Create Default User(skip oem config)
+    become: true
+    command: ./tools/l4t_create_default_user.sh -u mrover -p mrover -n jetson -a --accept-license
+    args:
+      chdir: " {{ jetson_flash_dir }}/Linux_for_Tegra"
+ 
+  - name: Ensure Jetson Is Connected In Recovery Mode
+    shell:
+      cmd: lsusb | grep "7023 NVIDIA"
+ 
+  - name: Flash Jetson
+    become: true
+    command: ./flash.sh jetson-agx-orin-devkit internal
+    args:
+      chdir: "{{ jetson_flash_dir }}/Linux_for_Tegra"
 
   vars:
     jetson_flash_dir: "/tmp/jetson_flash-{{ jetson_linux_version_major }}-{{ jetson_linux_version_minor }}-{{ jetson_linux_version_patch }}"
+    mrover_repo: "{{ ros2_workspace }}/src/mrover"
