@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euxo pipefail
+
 JETSON_SOURCE_DIR="$1"
 UBUNTU_CODENAME="$2"
 X_TOOLS_NAME="$3"

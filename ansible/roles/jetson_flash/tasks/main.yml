@@ -99,7 +99,7 @@
  
   - name: Build Jetson Kernel
     become: true
-    command: ./ansible/roles/jetson_flash/files/scripts/build_jetson_kernel.sh {{ jetson_flash_dir }} {{ ubuntu_codename }} {{ x_tools_path }}
+    command: ./ansible/roles/jetson_flash/files/scripts/build_jetson_kernel.sh {{ jetson_flash_dir }} {{ ubuntu_codename }} {{ x_tools_name }}
     args:
       chdir: "{{ mrover_repo }}"
       # no creates here because it is always desired to recompile the kernel if running this ansible
@@ -113,7 +113,7 @@
  
   - name: Build PCAN
     become: true
-    command: ./ansible/roles/jetson_flash/files/scripts/build_pcan_drivers.sh {{ jetson_flash_dir }} {{ ubuntu_codename }} {{ pcan_version_major }} {{ pcan_version_minor }} {{ pcan_version_patch }} {{ x_tools_path }}
+    command: ./ansible/roles/jetson_flash/files/scripts/build_pcan_drivers.sh {{ jetson_flash_dir }} {{ ubuntu_codename }} {{ pcan_version_major }} {{ pcan_version_minor }} {{ pcan_version_patch }} {{ x_tools_name }}
     args:
       chdir: "{{ mrover_repo }}"
       # no creates here because we always rebuild
@@ -138,4 +138,4 @@
   vars:
     jetson_flash_dir: "/tmp/jetson_flash-{{ jetson_linux_version_major }}-{{ jetson_linux_version_minor }}-{{ jetson_linux_version_patch }}"
     mrover_repo: "{{ ros2_workspace }}/src/mrover"
-    x_tools_path: "{{ jetson_flash_dir }}/x-tools/aarch64-none-linux-gnu"
+    x_tools_path: "{{ jetson_flash_dir }}/x-tools/{{ x_tools_name }}"
