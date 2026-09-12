@@ -192,6 +192,13 @@
     virtualenv: "{{ mrover_repo }}/venv"
     virtualenv_command: /usr/bin/python3 -m venv
 
+- name: Install pybind11-global
+  # build dependency for manifpy, which compiles a C++ extension from source below
+  ansible.builtin.pip:
+    name: "pybind11-global>=3.1.0"
+    virtualenv: "{{ mrover_repo }}/venv"
+    virtualenv_command: python3 -m venv
+
 - name: Install manifpy
   ansible.builtin.pip:
     name: "git+https://github.com/artivis/manif.git@0.0.5"
