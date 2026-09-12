@@ -46,7 +46,7 @@ jobs:
       - name: Setup Imgui
         run: ./scripts/setup_imgui.sh
       - name: Compiler Cache
-        uses: hendrikmuhs/ccache-action@v1.2.23
+        uses: hendrikmuhs/ccache-action@v1.2.24
       - uses: prefix-dev/setup-pixi@v0.9.6
         with:
           activate-environment: true
@@ -59,7 +59,7 @@ jobs:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-24.04
     container:
-      image: kevinjin0420/mrover-ci:latest
+      image: umrover1/ros2-ci:noble
       # by pass github's dubious ownership check
       options: --user root
     needs: style
@@ -67,42 +67,44 @@ jobs:
       # directory owned by mrover so CI can write to it and use caching
       # this is new for ubuntu 24
       HOME: /home/mrover
+    defaults:
+      run:
+        working-directory: src/mrover
     steps:
       - uses: actions/checkout@v7
         # Re-enable lfs: "true" when we put the simulator in the CI pipeline.
-      - name: Trust checkout directory
-        # bypass GitHub's dubious ownership check when running as root in the container
-        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+        with:
+          path: src/mrover
       - name: Compiler Cache
         uses: hendrikmuhs/ccache-action@v1.2.24
       - name: Dawn Cache
         uses: actions/cache@v6
         with:
-          path: deps/dawn-prebuilt
-          key: dawn-${{ hashFiles('scripts/setup_dawn.sh') }}
+          path: src/mrover/deps/dawn-prebuilt
+          key: dawn-${{ hashFiles('src/mrover/scripts/setup_dawn.sh') }}
       - name: Setup Dawn
         run: ./scripts/setup_dawn.sh
       - name: Manif Cache
         uses: actions/cache@v6
         with:
-          path: deps/manif-src
-          key: manif-${{ hashFiles('scripts/setup_manif.sh') }}
+          path: src/mrover/deps/manif-src
+          key: manif-${{ hashFiles('src/mrover/scripts/setup_manif.sh') }}
       - name: Setup Manif
         run: ./scripts/setup_manif.sh
       - name: Imgui Cache
         uses: actions/cache@v6
         with:
-          path: deps/imgui-src
-          key: imgui-${{ hashFiles('scripts/setup_imgui.sh') }}
+          path: src/mrover/deps/imgui-src
+          key: imgui-${{ hashFiles('src/mrover/scripts/setup_imgui.sh') }}
       - name: Setup Imgui
         run: ./scripts/setup_imgui.sh
       - name: Pip Cache
         uses: actions/cache@v6
         with:
           path: /home/mrover/.cache/pip
-          key: pip-${{ hashFiles('pyproject.toml') }}
+          key: pip-${{ hashFiles('src/mrover/pyproject.toml', 'src/mrover/esw/fw/tools/pyproject.toml') }}
           restore-keys: |
             pip-
       - name: Build
         shell: bash
-        run: source /opt/ros/jazzy/setup.bash && source /home/mrover/mrover-ros2/venv/bin/activate && ./build.sh Release
+        run: source /opt/ros/jazzy/setup.bash && source /home/mrover/ros2_ws/src/mrover/venv/bin/activate && ./build.sh Release
