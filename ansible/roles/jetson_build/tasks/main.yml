@@ -2,6 +2,8 @@
   become: true
   pip:
     name: jetson-stats
+    virtualenv: "{{ ros2_workspace }}/src/mrover/venv/"
+    virtualenv_command: python3 -m venv
 
 - name: Download CUDA Keyring
   get_url:
@@ -79,6 +81,7 @@
     recursive: true
 
 - name: Reload Systemd Daemon
+  become: true
   systemd_service:
     state: restarted
     daemon_reload: true

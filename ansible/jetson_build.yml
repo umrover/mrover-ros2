@@ -3,7 +3,7 @@
   vars_files:
     - vars/native.yml
   vars:
-    ifname: eth0
+    ifname: end0
   roles:
     - jetson_pre_build
     - build
