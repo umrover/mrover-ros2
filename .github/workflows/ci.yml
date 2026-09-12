@@ -61,30 +61,35 @@ jobs:
           path: src/mrover/deps/dawn-prebuilt
           key: dawn-${{ hashFiles('src/mrover/scripts/setup_dawn.sh') }}
       - name: Setup Dawn
+        if: github.event.pull_request.draft == false
         run: ./scripts/setup_dawn.sh
       - name: Manif Cache
+        if: github.event.pull_request.draft == false
         uses: actions/cache@v6
         with:
           path: src/mrover/deps/manif-src
           key: manif-${{ hashFiles('src/mrover/scripts/setup_manif.sh') }}
       - name: Setup Manif
+        if: github.event.pull_request.draft == false
         run: ./scripts/setup_manif.sh
       - name: Imgui Cache
+        if: github.event.pull_request.draft == false
         uses: actions/cache@v6
         with:
           path: src/mrover/deps/imgui-src
           key: imgui-${{ hashFiles('src/mrover/scripts/setup_imgui.sh') }}
       - name: Setup Imgui
+        if: github.event.pull_request.draft == false
         run: ./scripts/setup_imgui.sh
       - name: Pip Cache
+        if: github.event.pull_request.draft == false
         uses: actions/cache@v6
         with:
           path: /home/mrover/.cache/pip
           key: pip-${{ hashFiles('src/mrover/pyproject.toml', 'src/mrover/esw/fw/tools/pyproject.toml') }}
           restore-keys: |
             pip-
-      - name: Compiler Cache
-        uses: hendrikmuhs/ccache-action@v1.2.23
       - name: Build
+        if: github.event.pull_request.draft == false
         shell: bash
         run: source /opt/ros/jazzy/setup.bash && source /home/mrover/ros2_ws/src/mrover/venv/bin/activate && ./build.sh Release
