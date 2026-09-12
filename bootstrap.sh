@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# First-time native Ubuntu/Jetpack setup: clones the repo then runs setup.sh.
+# First-time native Ubuntu 24 setup: clones the repo then runs setup.sh.
 # If you already have the repo, just run ./setup.sh directly.
 # For other platforms, use bootstrap-portable.sh.
 
@@ -10,8 +10,8 @@ readonly GREY='\033[1;30m'
 readonly RED='\033[1;31m'
 readonly NC='\033[0m'
 
-if ! grep -qi "ubuntu" /etc/os-release 2>/dev/null; then
-  echo -e "${RED}This script requires Ubuntu. For other platforms, use bootstrap-portable.sh.${NC}"
+if ! grep -q '^VERSION_CODENAME=noble' /etc/os-release 2>/dev/null; then
+  echo -e "${RED}This script requires Ubuntu 24.04 (noble). For other platforms, use bootstrap-portable.sh.${NC}"
   exit 1
 fi
 

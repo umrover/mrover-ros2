@@ -30,7 +30,8 @@ if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
             -DCMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
             "${os_cmake_args[@]}" \
         --symlink-install \
-        --event-handlers console_direct+
+        --event-handlers console_direct+ \
+        --packages-select mrover
 
 	# TODO(kevin), omitted $build_profile?
     ln -sf "$(pwd)/build/mrover/compile_commands.json" "$(pwd)/compile_commands.json"
@@ -43,7 +44,7 @@ else
 
 	# Set CUDA compilers
 	export CUDAHOSTCXX=g++-9
-	export CUDACXX=/usr/local/cuda-12/bin/nvcc
+	export CUDACXX=/usr/local/cuda/bin/nvcc
 
     COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification colcon build \
         --cmake-args -G Ninja -W no-dev \
@@ -51,7 +52,8 @@ else
         --symlink-install \
         --event-handlers console_direct+ \
         --build-base "build/$build_profile" \
-        --install-base "install/$build_profile"
+        --install-base "install/$build_profile" \
+        --packages-select mrover
 
     rm -rf "$(pwd)/build/$build_profile/mrover/.cmake/api"
     ln -sf "$(pwd)/build/$build_profile/mrover/compile_commands.json" "$(pwd)/compile_commands.json"

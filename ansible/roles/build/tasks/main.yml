@@ -29,10 +29,10 @@
 
 - name: Sync APT Preferences
   become: true
-  ansible.builtin.copy:
+  synchronize:
     src: files/apt-preferences/
-    dest: /etc/apt/preferences.d/
-    mode: '0644'
+    dest: /etc/apt/preferences.d
+    recursive: true
 
 # deb822_repository doesn't call apt update, do so manually
 - name: Update APT Cache if Repos Changed
@@ -54,6 +54,7 @@
     cache_valid_time: 604800
     state: present
     name:
+      - build-essential
       - zsh
       - fzf
       - sudo
@@ -91,27 +92,16 @@
       - libgstreamer-plugins-base1.0-dev
       - vainfo
       - x264
-      - ros-jazzy-ros-base
-      - ros-jazzy-rviz2
-      - ros-jazzy-xacro
-      - ros-jazzy-magic-enum
-      - ros-jazzy-rtcm-msgs
-      - ros-jazzy-dynamixel-sdk
+      - ros-{{ ros_distro }}-ros-base
+      - ros-{{ ros_distro }}-rviz2
+      - ros-{{ ros_distro }}-xacro
+      - ros-{{ ros_distro }}-magic-enum
+      - ros-{{ ros_distro }}-rtcm-msgs
+      - ros-{{ ros_distro }}-dynamixel-sdk
       # TODO (ali): why does this need to be installed manually
       - libboost-dev
       - qt6-base-dev
       - qt6-multimedia-dev
-
-# manif's build backend now requires packaging>=26.2, temp upgrade for ubuntu 22
-- name: Upgrade pip for manifpy build isolation
-  become: True
-  pip:
-    name: pip
-    state: latest
-
-- name: Install manifpy
-  become: true
-  ansible.builtin.command: pip install --break-system-packages "git+https://github.com/artivis/manif.git@0.0.5"
 
 - name: Download prebuilt Dawn
   ansible.builtin.command: ./scripts/setup_dawn.sh
@@ -201,6 +191,12 @@
       - "{{ mrover_repo }}[dev]"
     virtualenv: "{{ mrover_repo }}/venv"
     virtualenv_command: /usr/bin/python3 -m venv
+
+- name: Install manifpy
+  ansible.builtin.pip:
+    name: "git+https://github.com/artivis/manif.git@0.0.5"
+    virtualenv: "{{ mrover_repo }}/venv"
+    virtualenv_command: python3 -m venv
 
 - name: Download Bun installer
   ansible.builtin.get_url:

@@ -33,12 +33,13 @@ ansible-galaxy collection install -r ansible/requirements.yml
 
 "${MROVER_PATH}/scripts/fix_sudo_rs.sh"
 
-echo -e "${CYAN}Running Ansible ...${NC}"
+playbook=dev.yml
 if [ -f /etc/nv_tegra_release ]; then
-  "${MROVER_PATH}/ansible.sh" jetson_build.yml
-else
-  "${MROVER_PATH}/ansible.sh" dev.yml
+  playbook=jetson_build.yml
 fi
+
+echo -e "${CYAN}Running Ansible (${playbook}) ...${NC}"
+"${MROVER_PATH}/ansible.sh" "${playbook}"
 
 echo ""
 echo -e "${GREEN}================================================================${NC}"

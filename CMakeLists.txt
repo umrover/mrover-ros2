@@ -5,7 +5,10 @@ project(mrover VERSION 2025.0.0 LANGUAGES C CXX)
 cmake_policy(SET CMP0148 NEW)
 
 set(CMAKE_CXX_STANDARD 23)
-set(CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(CMAKE_CUDA_STANDARD 17)
+set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 # Generate compile_commands.json for clangd language server.
 # Can be used by VSCode, CLion, VIM, etc.
@@ -297,20 +300,39 @@ target_link_libraries(pose_filter lie)
 
 find_package(ZED QUIET)
 find_package(CUDA QUIET)
+
 if(ZED_FOUND AND CUDA_FOUND)
     enable_language(CUDA)
+
+    find_package(CUDAToolkit REQUIRED)
+
+    find_package(
+        CCCL REQUIRED CONFIG
+        HINTS
+            "${CUDAToolkit_LIBRARY_DIR}/cmake/cccl"
+    )
+
     # CUDA Compile Options
     add_library(cuda_compiler_flags INTERFACE)
-    target_compile_options(cuda_compiler_flags INTERFACE 
-        -Wno-pedantic 
-        -Wno-deprecated 
-        -Wno-unused-parameter 
-        -diag-suppress=815 
-        -diag-suppress=780 
-        -Wno-deprecated-copy 
-        -Wno-unused-command-line-argument 
-        -Wno-ignored-qualifiers 
-        -Wno-sometimes-uninitialized
+
+    target_compile_options(
+        cuda_compiler_flags
+        INTERFACE
+            -Wno-pedantic
+            -Wno-deprecated
+            -Wno-unused-parameter
+            -diag-suppress=815
+            -diag-suppress=780
+            -Wno-deprecated-copy
+            -Wno-unused-command-line-argument
+            -Wno-ignored-qualifiers
+            -Wno-sometimes-uninitialized
+    )
+
+    target_link_libraries(
+        cuda_compiler_flags
+        INTERFACE
+            CCCL::Thrust
     )
 
     # ZED Wrapper
@@ -338,7 +360,7 @@ if(ZED_FOUND AND CUDA_FOUND)
     # Object Detector
     mrover_add_component(object_detector perception/object_detector/*.c* perception/object_detector/pch.hpp StereoObjectDetector ImageObjectDetector)
     mrover_link_component(object_detector opencv_core opencv_dnn opencv_imgproc lie tbb tensorrt opencv_imgcodecs opencv_highgui loop_profiler parameter_utils cuda_compiler_flags)
-    mrover_ament_component(object_detector rclcpp sensor_msgs rclcpp_components CUDA tf2 tf2_ros)
+    mrover_ament_component(object_detector rclcpp sensor_msgs rclcpp_components ament_index_cpp CUDA tf2 tf2_ros)
 
     mrover_executable_from_component(stereo_object_detector perception/executables/stereo_object_detector.cpp object_detector_component)
     mrover_executable_from_component(image_object_detector perception/executables/image_object_detector.cpp object_detector_component)

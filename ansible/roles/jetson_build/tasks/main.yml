@@ -2,10 +2,11 @@
   become: true
   ansible.builtin.pip:
     name: jetson-stats
+    extra_args: "--break-system-packages"
 
 - name: Download CUDA Keyring
   ansible.builtin.get_url:
-    url: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/arm64/cuda-keyring_1.1-1_all.deb
+    url: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/arm64/cuda-keyring_1.1-1_all.deb
     dest: /tmp/cuda-keyring_1.1-1_all.deb
 
 - name: Install CUDA Keyring
@@ -17,7 +18,7 @@
   become: true
   ansible.builtin.apt:
     cache_valid_time: 604800
-    state: present
+    state: latest
     name:
       - zstd # Required to unpack ZED installer
       - g++-9
@@ -25,21 +26,22 @@
 
 - name: ZED SDK Download
   ansible.builtin.get_url:
-    url: https://download.stereolabs.com/zedsdk/5.1/l4t36.4/jetsons
-    dest: /tmp/ZED_SDK_Tegra_L4T36.4_v5.1.2.zstd.run
+    url: https://download.stereolabs.com/zedsdk/5.4/l4t39.2/jetsons
+    dest: /tmp/ZED_SDK_Tegra_L4T39.2_v5.4.1.zstd.run
     mode: 0755
 
 - name: ZED SDK Install
   # Silent mode prevents any user input prompting
-  ansible.builtin.command: /tmp/ZED_SDK_Tegra_L4T36.4_v5.1.2.zstd.run -- silent
+  ansible.builtin.command: /tmp/ZED_SDK_Tegra_L4T39.2_v5.4.1.zstd.run -- silent
   args:
     creates: /usr/local/zed
 
 - name: Sync all udev Rules
   become: true
-  ansible.builtin.copy:
+  synchronize:
     src: files/rules/
     dest: /etc/udev/rules.d
+    recursive: true
 
 - name: Udev Reload Rules
   become: true
@@ -51,9 +53,10 @@
 
 - name: Sync blacklists
   become: true
-  ansible.builtin.copy:
+  synchronize:
     src: files/modprobe/
     dest: /etc/modprobe.d
+    recursive: true
 
 - name: Build OpenCV
   become: true
@@ -64,18 +67,20 @@
 
 - name: Sync Bin
   become: true
-  ansible.builtin.copy:
+  synchronize:
     src: files/bin/
     dest: /usr/local/bin
-    mode: '0755'
+    recursive: true
 
 - name: Sync Systemd
   become: true
-  ansible.builtin.copy:
+  synchronize:
     src: files/systemd/
     dest: /etc/systemd/system
+    recursive: true
 
 - name: Reload Systemd Daemon
+  become: true
   ansible.builtin.systemd_service:
     state: restarted
     daemon_reload: true

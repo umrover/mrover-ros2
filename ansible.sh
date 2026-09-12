@@ -11,5 +11,7 @@ readonly MROVER_PATH=$(dirname "$(realpath "$0")")
 readonly PLAYBOOK=$1
 shift
 
+export ANSIBLE_CONFIG="${MROVER_PATH}/ansible/ansible.cfg"
+
 ansible-playbook -i "localhost," -c local --ask-become-pass "${MROVER_PATH}/ansible/${PLAYBOOK}" \
     --extra-vars "mrover_repo=${MROVER_PATH}" "$@"

@@ -1,9 +1,9 @@
 ---
 - hosts: all
+  vars_files:
+    - vars/native.yml
   vars:
-    ros_distro: jazzy
-    ubuntu_release: noble
-    ifname: eth0
+    ifname: end0
   roles:
     - jetson_pre_build
     - build
