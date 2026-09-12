@@ -12,7 +12,7 @@ export CROSS_COMPILE="${JETSON_SOURCE_DIR}/x-tools/${X_TOOLS_NAME}/bin/${X_TOOLS
 export KERNEL_LOCATION="${JETSON_SOURCE_DIR}/Linux_for_Tegra/source/kernel/kernel-${UBUNTU_CODENAME}/"
 export ARCH="arm64"
 export PCAN_BASIC=""
-PATH="$PATH:{JETSON_SOURCE_DIR}/x-tools/"
+PATH="$PATH:${JETSON_SOURCE_DIR}/x-tools/"
 
 # Change to the kernel sources directory
 pushd "${PCAN_SOURCE_DIR}/" || exit

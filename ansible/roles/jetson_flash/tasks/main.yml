@@ -99,7 +99,7 @@
  
   - name: Build Jetson Kernel
     become: true
-    command: ./ansible/roles/jetson_flash/files/scripts/build_jetson_kernel.sh {{ jetson_flash_dir }} {{ ubuntu_codename }}
+    command: ./ansible/roles/jetson_flash/files/scripts/build_jetson_kernel.sh {{ jetson_flash_dir }} {{ ubuntu_codename }} {{ x_tools_path }}
     args:
       chdir: "{{ mrover_repo }}"
       # no creates here because it is always desired to recompile the kernel if running this ansible
@@ -113,7 +113,7 @@
  
   - name: Build PCAN
     become: true
-    command: ./ansible/roles/jetson_flash/files/scripts/build_pcan_drivers.sh {{ jetson_flash_dir }} {{ ubuntu_codename }} {{ pcan_version_major }} {{ pcan_version_minor }} {{ pcan_version_patch }}
+    command: ./ansible/roles/jetson_flash/files/scripts/build_pcan_drivers.sh {{ jetson_flash_dir }} {{ ubuntu_codename }} {{ pcan_version_major }} {{ pcan_version_minor }} {{ pcan_version_patch }} {{ x_tools_path }}
     args:
       chdir: "{{ mrover_repo }}"
       # no creates here because we always rebuild
