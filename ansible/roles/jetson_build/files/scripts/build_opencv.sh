@@ -41,10 +41,12 @@ echo "------------------------------------"
 echo "** Install opencv ${version} (4/4)"
 echo "------------------------------------"
 sudo make install
-echo "export LIBRARY_PATH=/usr/local/lib:$LIBRARY_PATH" >>~/.bashrc
-echo "export CPLUS_INCLUDE_PATH=/usr/local/lib:$CPLUS_INCLUDE_PATH" >>~/.bashrc
-echo "export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH" >>~/.bashrc
-echo "export PYTHONPATH=/usr/local/lib/python3.12/site-packages/:$PYTHONPATH" >>~/.bashrc
+cat >> ~/.bashrc <<'EOF'
+export LIBRARY_PATH=/usr/local/lib${LIBRARY_PATH:+:$LIBRARY_PATH}
+export CPLUS_INCLUDE_PATH=/usr/local/include${CPLUS_INCLUDE_PATH:+:$CPLUS_INCLUDE_PATH}
+export LD_LIBRARY_PATH=/usr/local/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+export PYTHONPATH=/usr/local/lib/python3.12/site-packages${PYTHONPATH:+:$PYTHONPATH}
+EOF
 # shellcheck disable=SC1091
 source "${HOME}/.bashrc"
 
