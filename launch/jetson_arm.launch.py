@@ -78,4 +78,13 @@ def generate_launch_description():
         )
     )
 
-    return LaunchDescription([launch_include_jetson_base, arm_hw_bridge_node, cam_container, launch_localization, keyboard_typing_node, arm_e_link_to_cam])
+    return LaunchDescription(
+        [
+            launch_include_jetson_base,
+            arm_hw_bridge_node,
+            cam_container,
+            launch_localization,
+            keyboard_typing_node,
+            arm_e_link_to_cam,
+        ]
+    )
