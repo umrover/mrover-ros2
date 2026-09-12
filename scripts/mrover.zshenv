@@ -1,7 +1,7 @@
 # MRover ROS
 readonly MROVER_ROS2_WS_PATH="$HOME/ros2_ws"
 
-source /opt/ros/humble/setup.zsh
+source /opt/ros/jazzy/setup.zsh
 
 export ROS_DOMAIN_ID=5
 export COLCON_TRACE=0
