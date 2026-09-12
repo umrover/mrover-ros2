@@ -256,7 +256,9 @@ namespace mrover {
         auto debugPointCloudPtr = std::make_unique<sensor_msgs::msg::PointCloud2>();
         fillPointCloudMessageHeader(debugPointCloudPtr);
         debugPointCloudPtr->is_bigendian = __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__;
-        debugPointCloudPtr->is_dense = true;
+
+        // is_dense = true promises there are no invalid/NaN points. Should be false since PC can contain NaNs.
+        debugPointCloudPtr->is_dense = false;
         debugPointCloudPtr->height = 1;
         debugPointCloudPtr->width = mInliers.size();
         debugPointCloudPtr->header.stamp = get_clock()->now();
