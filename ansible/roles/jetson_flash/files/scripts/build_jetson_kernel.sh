@@ -2,7 +2,7 @@
 
 JETSON_SOURCE_DIR="$1"
 UBUNTU_CODENAME="$2"
-X_TOOLS_NAME="$4"
+X_TOOLS_NAME="$3"
 
 # Make Variables
 export CROSS_COMPILE="${JETSON_SOURCE_DIR}/x-tools/${X_TOOLS_NAME}/bin/${X_TOOLS_NAME}-"
