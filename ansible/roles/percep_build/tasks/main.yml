@@ -31,6 +31,8 @@
     state: latest
     name:
       - cuda-toolkit-13-0
+      - libnvinfer-dev
+      - libnvonnxparsers-dev
       - g++-9
       - zstd # Required to unpack ZED installer
 
