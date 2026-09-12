@@ -9,7 +9,7 @@
     pcan_version_patch: 0
     ubuntu_codename: "noble"
 
-    # This needs a dedicated url since the toolchain supports multiple versions(this suports 7.x)
+    # This needs a dedicated url since the toolchain supports multiple versions(this supports 7.x)
     x_tools_url: "https://developer.nvidia.com/downloads/embedded/L4T/r38_Release_v2.0/release/x-tools.tbz2"
     x_tools_name: "aarch64-none-linux-gnu"
   roles:
