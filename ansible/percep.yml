@@ -1,6 +1,5 @@
 ---
 - hosts: all
-  vars:
   vars_files:
     - vars/native.yml
   roles:
