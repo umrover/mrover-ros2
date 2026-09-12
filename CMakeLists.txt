@@ -306,7 +306,6 @@ if(ZED_FOUND AND CUDA_FOUND)
         CCCL REQUIRED CONFIG
         HINTS
             "${CUDAToolkit_LIBRARY_DIR}/cmake/cccl"
-            "${CUDAToolkit_LIBRARY_ROOT}/targets/${CMAKE_SYSTEM_PROCESSOR}-linux/lib/cmake/cccl"
     )
 
     # CUDA Compile Options
