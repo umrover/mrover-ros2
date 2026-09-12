@@ -123,7 +123,7 @@
     become: true
     command: ./tools/l4t_create_default_user.sh -u mrover -p mrover -n jetson -a --accept-license
     args:
-      chdir: " {{ jetson_flash_dir }}/Linux_for_Tegra"
+      chdir: "{{ jetson_flash_dir }}/Linux_for_Tegra"
  
   - name: Ensure Jetson Is Connected In Recovery Mode
     shell:
