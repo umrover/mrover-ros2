@@ -33,6 +33,7 @@ jobs:
 
   build-native:
     name: Build (native Ubuntu 24)
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-24.04
     container:
       image: umrover1/ros2-ci:noble
@@ -52,37 +53,8 @@ jobs:
         with:
           path: src/mrover
       - name: Compiler Cache
-        if: github.event.pull_request.draft == false
         uses: hendrikmuhs/ccache-action@v1.2.24
-      - name: Dawn Cache
-        if: github.event.pull_request.draft == false
-        uses: actions/cache@v6
-        with:
-          path: src/mrover/deps/dawn-prebuilt
-          key: dawn-${{ hashFiles('src/mrover/scripts/setup_dawn.sh') }}
-      - name: Setup Dawn
-        if: github.event.pull_request.draft == false
-        run: ./scripts/setup_dawn.sh
-      - name: Manif Cache
-        if: github.event.pull_request.draft == false
-        uses: actions/cache@v6
-        with:
-          path: src/mrover/deps/manif-src
-          key: manif-${{ hashFiles('src/mrover/scripts/setup_manif.sh') }}
-      - name: Setup Manif
-        if: github.event.pull_request.draft == false
-        run: ./scripts/setup_manif.sh
-      - name: Imgui Cache
-        if: github.event.pull_request.draft == false
-        uses: actions/cache@v6
-        with:
-          path: src/mrover/deps/imgui-src
-          key: imgui-${{ hashFiles('src/mrover/scripts/setup_imgui.sh') }}
-      - name: Setup Imgui
-        if: github.event.pull_request.draft == false
-        run: ./scripts/setup_imgui.sh
       - name: Pip Cache
-        if: github.event.pull_request.draft == false
         uses: actions/cache@v6
         with:
           path: /home/mrover/.cache/pip
@@ -90,6 +62,5 @@ jobs:
           restore-keys: |
             pip-
       - name: Build
-        if: github.event.pull_request.draft == false
         shell: bash
         run: source /opt/ros/jazzy/setup.bash && source /home/mrover/ros2_ws/src/mrover/venv/bin/activate && ./build.sh Release
