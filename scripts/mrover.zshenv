@@ -44,8 +44,6 @@ source_mrover_overlay(){
     fi
 }
 
-export ANSIBLE_CONFIG="${MROVER_ROS2_WS_PATH}/src/mrover/ansible/ansible.cfg"
-
 # cuda
 export PATH=/usr/local/cuda/bin:$PATH
 export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH

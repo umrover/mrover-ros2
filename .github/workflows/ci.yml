@@ -54,6 +54,27 @@ jobs:
           path: src/mrover
       - name: Compiler Cache
         uses: hendrikmuhs/ccache-action@v1.2.24
+      - name: Dawn Cache
+        uses: actions/cache@v6
+        with:
+          path: src/mrover/deps/dawn-prebuilt
+          key: dawn-${{ hashFiles('src/mrover/scripts/setup_dawn.sh') }}
+      - name: Setup Dawn
+        run: ./scripts/setup_dawn.sh
+      - name: Manif Cache
+        uses: actions/cache@v6
+        with:
+          path: src/mrover/deps/manif-src
+          key: manif-${{ hashFiles('src/mrover/scripts/setup_manif.sh') }}
+      - name: Setup Manif
+        run: ./scripts/setup_manif.sh
+      - name: Imgui Cache
+        uses: actions/cache@v6
+        with:
+          path: src/mrover/deps/imgui-src
+          key: imgui-${{ hashFiles('src/mrover/scripts/setup_imgui.sh') }}
+      - name: Setup Imgui
+        run: ./scripts/setup_imgui.sh
       - name: Pip Cache
         uses: actions/cache@v6
         with:
