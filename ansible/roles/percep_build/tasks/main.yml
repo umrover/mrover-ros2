@@ -34,14 +34,18 @@
       - g++-9
       - zstd # Required to unpack ZED installer
 
-- name: ZED SDK Download
-  get_url:
-    url: https://download.stereolabs.com/zedsdk/5.4/cu13/ubuntu24
-    dest: ~/Downloads/ZED_SDK_Ubuntu24_cuda13.0_tensorrt10.13_v5.4.1.zstd.run
-    mode: 0755
+- name: ZED SDK
+  block:
+  - name: ZED SDK Download
+    get_url:
+      url: https://download.stereolabs.com/zedsdk/5.4/cu13/ubuntu24
+      dest: "{{ zed_dir }}/ZED_SDK_Ubuntu24_cuda13.0_tensorrt10.13_v5.4.1.zstd.run"
+      mode: 0755
 
-- name: ZED SDK Install
-  # Silent mode prevents any user input prompting
-  command: ~/Downloads/ZED_SDK_Ubuntu24_cuda13.0_tensorrt10.13_v5.4.1.zstd.run
-  args:
-    creates: /usr/local/zed
+  - name: ZED SDK Install
+    # Silent mode prevents any user input prompting
+    command: "{{ zed_dir }}/ZED_SDK_Ubuntu24_cuda13.0_tensorrt10.13_v5.4.1.zstd.run"
+    args:
+      creates: /usr/local/zed
+  - vars:
+    zed_dir: "/tmp/zed/"

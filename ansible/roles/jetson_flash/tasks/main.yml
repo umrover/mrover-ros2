@@ -47,7 +47,7 @@
     unarchive:
       src: "{{ jetson_flash_dir }}/downloads/jetson-cross-compiler.tbz2"
       dest: "{{ jetson_flash_dir }}"
-      creates: "{{ jetson_flash_dir }}/x-tools/aarch64*"
+      creates: "{{ x_tools_path }}"
 
   - name: Unzip PCAN Drivers
     unarchive:
@@ -138,3 +138,4 @@
   vars:
     jetson_flash_dir: "/tmp/jetson_flash-{{ jetson_linux_version_major }}-{{ jetson_linux_version_minor }}-{{ jetson_linux_version_patch }}"
     mrover_repo: "{{ ros2_workspace }}/src/mrover"
+    x_tools_path: "{{ jetson_flash_dir }}/x-tools/aarch64-none-linux-gnu"

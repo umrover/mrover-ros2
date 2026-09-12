@@ -2,8 +2,7 @@
   become: true
   pip:
     name: jetson-stats
-    virtualenv: "{{ ros2_workspace }}/src/mrover/venv/"
-    virtualenv_command: python3 -m venv
+    extra_args: "--break-system-packages"
 
 - name: Download CUDA Keyring
   get_url:
