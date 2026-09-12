@@ -1,4 +1,5 @@
 #include "keyboard_typing.hpp"
+#include <opencv2/objdetect/aruco_detector.hpp>
 
 
 namespace mrover {
@@ -175,7 +176,7 @@ namespace mrover {
 
         std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
         std::vector<int> ids;
-        cv::Ptr<cv::aruco::DetectorParameters> detectorParams = cv::aruco::DetectorParameters::create();
+        cv::Ptr<cv::aruco::DetectorParameters> detectorParams = cv::makePtr<cv::aruco::DetectorParameters>();
 
         detectorParams->cornerRefinementMethod = cv::aruco::CORNER_REFINE_SUBPIX;
 

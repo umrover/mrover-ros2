@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pch.hpp"
+#include <opencv2/objdetect/aruco_dictionary.hpp>
 
 constexpr double key_length = 0.01905;
 constexpr double secondRowX = -0.0095;
@@ -117,7 +118,7 @@ namespace mrover {
         std::optional<SE3d> mCameraToKey = std::nullopt;
         bool mUpdatePoseEstimate = true;
 
-        cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);
+        cv::Ptr<cv::aruco::Dictionary> dictionary = cv::makePtr<cv::aruco::Dictionary>(cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50));
 
         // Layout map (ID -> Bottom-Left Corner Position)
         std::map<int, cv::Vec3d> mTagLayout;
