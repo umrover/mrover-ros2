@@ -5,7 +5,7 @@ function get_build_profile() {
 }
 
 
-PROMPT="%(?:%{$fg_bold[green]%}➜ :%{$fg_bold[red]%}➜ ) %{$fg[yellow]%}%m %{$fg[orange]%}at %{$fg[yellow]%}%d%{$reset_color%}"
+PROMPT="%(?:%{$fg_bold[green]%}➜ :%{$fg_bold[red]%}➜ ) %{$fg[yellow]%}%m %{$fg[green]%}at %{$fg[yellow]%}%d%{$reset_color%}"
 PROMPT+=' $(git_prompt_info)'
 PROMPT+='$(get_build_profile)'
 
