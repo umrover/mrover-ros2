@@ -29,4 +29,4 @@ sudo ./tools/l4t_update_initrd.sh
 # Build the DTBs
 pushd "${JETSON_SOURCE_DIR}/Linux_for_Tegra/source" || exit
 make dtbs
-cp "kernel-devicetree/generic-dts/dtbs/*" "${JETSON_SOURCE_DIR}/Linux_for_Tegra/kernel/dtb/"
+cp -r "./build/nvidia-public/devicetree/generic-dtbs/" "${JETSON_SOURCE_DIR}/Linux_for_Tegra/kernel/dtb/"
