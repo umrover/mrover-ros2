@@ -20,13 +20,16 @@ if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
     os_cmake_args=()
     if [[ "$(uname)" == "Darwin" ]]; then
         macos_sysroot=$(xcrun --sdk macosx --show-sdk-path)
-        os_cmake_args=("-DCMAKE_OSX_SYSROOT=${macos_sysroot}")
+        os_cmake_args=("-DCMAKE_OSX_SYSROOT=${macos_sysroot}" "-DMROVER_BUILD_ESW=OFF")
+    else
+        # conda's pkg-config wrapper runs the GCC-only
+        os_cmake_args=("-DPKG_CONFIG_EXECUTABLE=${CONDA_PREFIX}/bin/pkg-config.bin")
+        os_cmake_args+=("-DCMAKE_DISABLE_FIND_PACKAGE_ZED=ON" "-DCMAKE_DISABLE_FIND_PACKAGE_CUDA=ON")
     fi
 
     COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification colcon build \
         --cmake-args -G Ninja -W no-dev \
         -DCMAKE_BUILD_TYPE="${build_profile}" \
-        -DMROVER_PORTABLE=ON \
         -DCMAKE_PREFIX_PATH="${CONDA_PREFIX}" \
         "${os_cmake_args[@]}" \
         --symlink-install \
@@ -35,7 +38,10 @@ if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
 
     ln -sf "$(pwd)/build/mrover/compile_commands.json" "$(pwd)/compile_commands.json"
 else
-    # native environment (ubuntu 24)
+    # native environment
+
+    # Build in the colcon workspace, not the package
+    pushd ../..
 
     # Set C/C++ compilers
     export CC=clang
@@ -45,17 +51,14 @@ else
     export CUDAHOSTCXX=g++-9
     export CUDACXX=/usr/local/cuda/bin/nvcc
 
-    # Build in the colcon workspace, not the package
-    pushd ../..
-
+    # invoke colcon
     COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification colcon build \
-        --cmake-args -G Ninja -W no-dev \
-        -DCMAKE_BUILD_TYPE="$build_profile" \
+        --cmake-args -G Ninja -W no-dev -DCMAKE_BUILD_TYPE="$build_profile" \
         --symlink-install \
         --event-handlers console_direct+ \
         --build-base "build/$build_profile" \
         --install-base "install/$build_profile" \
-        --packages-select mrover
+        --packages-select mroverrr
 
     rm -rf "$(pwd)/build/$build_profile/mrover/.cmake/api"
     ln -sf "$(pwd)/build/$build_profile/mrover/compile_commands.json" "$(pwd)/src/mrover/compile_commands.json"
