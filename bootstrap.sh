@@ -24,10 +24,12 @@ fi
 # distro git is fine for cloning; no git-core PPA, the version gap isn't meaningful and CVEs are backported
 sudo apt install -y git git-lfs
 
-readonly MROVER_PATH=~/mrover-ros2
+readonly CATKIN_PATH=~/ros2_ws
+readonly MROVER_PATH="${CATKIN_PATH}/src/mrover"
 
 if [ ! -d "${MROVER_PATH}/.git" ]; then
   echo -e "${GREY}Cloning mrover-ros2 ...${NC}"
+  mkdir -p "${CATKIN_PATH}/src"
   git clone git@github.com:umrover/mrover-ros2 "${MROVER_PATH}"
 fi
 

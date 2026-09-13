@@ -46,6 +46,9 @@ else
 	export CUDAHOSTCXX=g++-9
 	export CUDACXX=/usr/local/cuda/bin/nvcc
 
+    # Build in the colcon workspace, not the package
+    pushd ../..
+
     COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification colcon build \
         --cmake-args -G Ninja -W no-dev \
 			-DCMAKE_BUILD_TYPE="$build_profile" \
@@ -56,5 +59,5 @@ else
         --packages-select mrover
 
     rm -rf "$(pwd)/build/$build_profile/mrover/.cmake/api"
-    ln -sf "$(pwd)/build/$build_profile/mrover/compile_commands.json" "$(pwd)/compile_commands.json"
+    ln -sf "$(pwd)/build/$build_profile/mrover/compile_commands.json" "$(pwd)/src/mrover/compile_commands.json"
 fi
