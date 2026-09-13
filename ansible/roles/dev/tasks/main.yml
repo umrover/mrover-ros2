@@ -65,11 +65,9 @@
     shell: "{{ zsh_path.stdout }}"
 
 - name: Initialize Git LFS
-  # use git lfs pre-push hook for ansible changed
   ansible.builtin.command: git lfs install
   args:
     chdir: "{{ mrover_repo }}"
-    creates: "{{ mrover_repo }}/.git/hooks/pre-push"
 
 - name: Pull Git LFS objects
   ansible.builtin.command: git lfs pull
