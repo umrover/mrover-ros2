@@ -32,7 +32,7 @@ jobs:
         run: ./style.sh
 
   build-portable:
-    name: Build (pixi ${{ matrix.name }})
+    name: Build (portable ${{ matrix.name }})
     runs-on: ${{ matrix.os }}
     needs: style
     strategy:
@@ -41,10 +41,11 @@ jobs:
         include:
           - os: ubuntu-26.04
             name: Linux x86_64
-          - os: macos-14
+          - os: macos-latest
             name: macOS arm64
-          - os: macos-13
-            name: macOS x86_64
+          # - os: macos-15
+          #   name: macOS x86_64
+          # github doesnt have runners available lmao
     steps:
       - uses: actions/checkout@v7
       - name: Dawn Cache
