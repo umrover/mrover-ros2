@@ -1,24 +1,18 @@
 # MRover ROS
-#
-# ~/.zshrc always sources this file by a fixed path, regardless of whether
-# the machine was set up natively or via the portable (pixi) path, so that
-# dotfiles shared across machines don't fight over which file to source.
-# Portable machines are detected at runtime and delegated to here instead.
 if [[ -f "$HOME/.pixi/bin/pixi" ]]; then
     source "${${(%):-%x}:A:h}/mrover-portable.zshenv"
     return
 fi
 
-export MROVER_REPO="${${(%):-%x}:A:h:h}"
-readonly MROVER_REPO
+readonly MROVER_REPO="$HOME/ros2_ws/src/mrover"
 
 [ -f /opt/ros/jazzy/setup.zsh ] && source /opt/ros/jazzy/setup.zsh
 
 export ROS_DOMAIN_ID=5
 export COLCON_TRACE=0
 
-remove_mrover_from_path(){
-    export ${1}="$(echo ${(P)1} | tr ':' '\n' | grep -vF "${MROVER_REPO}" | paste -s -d ':')"
+remove_ros2_ws_from_path(){
+    export ${1}="$(echo ${(P)1} | tr ':' '\n' | grep -v "ros2_ws" | paste -s -d ':')"
 }
 
 source_mrover_overlay(){
@@ -44,11 +38,11 @@ source_mrover_overlay(){
     done
 
     # clean up current ROS environment
-    remove_mrover_from_path LD_LIBRARY_PATH
-    remove_mrover_from_path AMENT_PREFIX_PATH
-    remove_mrover_from_path PYTHONPATH
-    remove_mrover_from_path COLCON_PREFIX_PATH
-    remove_mrover_from_path CMAKE_PREFIX_PATH
+    remove_ros2_ws_from_path LD_LIBRARY_PATH
+    remove_ros2_ws_from_path AMENT_PREFIX_PATH
+    remove_ros2_ws_from_path PYTHONPATH
+    remove_ros2_ws_from_path COLCON_PREFIX_PATH
+    remove_ros2_ws_from_path CMAKE_PREFIX_PATH
 
     if [ -f "${target_file}" ]; then
         source "${target_file}" >> /dev/null
