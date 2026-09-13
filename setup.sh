@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Native Ubuntu setup. Run after cloning.
+# Native Ubuntu 24 setup. Run after cloning.
 
 set -Eeuo pipefail
 
@@ -8,8 +8,6 @@ readonly GREEN='\033[1;32m'
 readonly RED='\033[1;31m'
 readonly NC='\033[0m'
 
-# The build role installs ROS and the toolchain from apt, so this path is
-# Ubuntu-only. Everything else goes through pixi.
 if ! grep -q '^VERSION_CODENAME=noble' /etc/os-release 2>/dev/null; then
     echo -e "${RED}This script requires Ubuntu 24.04. For other platforms, use ./setup-portable.sh${NC}" >&2
     exit 1
