@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# First-time portable setup: clones the repo then runs setup-portable.sh.
+# First-time portable setup
+# Clones the repo then runs setup-portable.sh.
 # If you already have the repo, just run ./setup-portable.sh directly.
 
 set -Eeuo pipefail
@@ -29,13 +30,16 @@ fi
 if ! command -v git >/dev/null 2>&1; then
     echo -e "${GREY_BOLD}Installing git ...${NC}"
     case "$OS" in
-        Darwin) brew install git git-lfs ;;
-        Linux)
-            if command -v dnf >/dev/null 2>&1; then sudo dnf install -y git git-lfs
-            elif command -v pacman >/dev/null 2>&1; then sudo pacman -S --noconfirm git git-lfs
-            elif command -v apt-get >/dev/null 2>&1; then sudo apt-get install -y git git-lfs
-            fi
-            ;;
+    Darwin) brew install git git-lfs ;;
+    Linux)
+        if command -v dnf >/dev/null 2>&1; then
+            sudo dnf install -y git git-lfs
+        elif command -v pacman >/dev/null 2>&1; then
+            sudo pacman -S --noconfirm git git-lfs
+        elif command -v apt-get >/dev/null 2>&1; then
+            sudo apt-get install -y git git-lfs
+        fi
+        ;;
     esac
 fi
 
