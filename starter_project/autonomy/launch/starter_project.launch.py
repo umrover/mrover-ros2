@@ -21,7 +21,7 @@ def generate_launch_description():
 
     navigation_node = Node(package="mrover", executable="navigation_starter_project.py", name="navigation")
 
-    localization_node = Node(package="mrover", executable="localization.py", name="localization")
+    localization_node = Node(package="mrover", executable="starter_project_localization", name="localization")
 
     return LaunchDescription(
         [
