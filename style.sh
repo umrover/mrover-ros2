@@ -3,6 +3,10 @@
 # See: https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
 set -Eeuo pipefail
 
+shopt -s nullglob globstar
+GLOBIGNORE="./venv/**"
+GLOBIGNORE="$GLOBIGNORE:./esw/fw/**"
+
 readonly RED='\033[0;31m'
 readonly NC='\033[0m'
 readonly YELLOW_BOLD='\033[1;33m'
@@ -35,63 +39,36 @@ function print_update_error() {
 
 function find_executable() {
   local -r executable="$1"
+  local -r version="$2"
   local -r path=$(which "${executable}")
   if [ ! -x "${path}" ]; then
     echo -e "${RED}[Error] Could not find ${executable}${NC}" >&2
     print_update_error
   fi
+  if ! "${path}" --version | grep -q "${version}"; then
+    echo -e "${RED}[Error] Wrong ${executable} version${NC}" >&2
+    print_update_error
+  fi
   echo "${path}"
-}
-
-function find_first_executable() {
-  local executable
-  for executable in "$@"; do
-    local path
-    path=$(which "${executable}" 2> /dev/null)
-    if [ -x "${path}" ]; then
-      echo "${path}"
-      return
-    fi
-  done
-  echo -e "${RED}[Error] Could not find any of: $*${NC}" >&2
-  print_update_error
 }
 
 ## Check that all tools are installed
 
-CLANG_FORMAT_PATH=$(find_first_executable clang-format clang-format-18)
+CLANG_FORMAT_PATH=$(find_executable clang-format-18 18.1)
 readonly CLANG_FORMAT_PATH
-BLACK_PATH=$(find_executable black)
+BLACK_PATH=$(find_executable black 26.5.1)
 readonly BLACK_PATH
-MYPY_PATH=$(find_executable mypy)
+MYPY_PATH=$(find_executable mypy 1.11.2)
 readonly MYPY_PATH
 
 ## Run checks
 
 # Add new directories with C++ code here:
-CPP_FILES=()
-readonly CPP_DIRS=(
-  ./perception
-  ./lie
-  ./esw
-  ./simulator
-  ./parameter_utils
-  ./teleoperation
+readonly CPP_FILES=(
+  ./{perception,lie,esw,simulator,parameter_utils,teleoperation}/**/*.{cpp,hpp,h,cu,cuh}
 )
 echo "Style checking C++ ..."
-for dir in "${CPP_DIRS[@]}"; do
-  if [ -d "${dir}" ]; then
-    while IFS= read -r -d '' file; do
-      case "${file}" in
-        ./esw/fw/*) continue ;;
-      esac
-      CPP_FILES+=("${file}")
-    done < <(find "${dir}" -type f \( -name "*.cpp" -o -name "*.hpp" -o -name "*.h" -o -name "*.cu" -o -name "*.cuh" \) -print0)
-  fi
-done
-if [ ${#CPP_FILES[@]} -gt 0 ]; then
-  "${CLANG_FORMAT_PATH}" "${CLANG_FORMAT_ARGS[@]}" -i "${CPP_FILES[@]}"
-fi
+"${CLANG_FORMAT_PATH}" "${CLANG_FORMAT_ARGS[@]}" -i "${CPP_FILES[@]}"
 echo "Done"
 
 # Add new directories with Python code here:
@@ -137,27 +114,15 @@ fi
 if command -v shellcheck &> /dev/null; then
   echo
   echo "Linting bash scripts with shellcheck ..."
-  SHELL_FILES=()
-  readonly SHELL_DIRS=(
-    ./ansible
-    ./scripts
-    ./starter_project
-    ./teleoperation
+  readonly SHELL_FILES=(
+    ./ansible/**/*.sh
+    ./scripts/**/*.sh
+    ./starter_project/**/*.sh
+    ./teleoperation/**/*.sh
+    ./*.sh
   )
-  for dir in "${SHELL_DIRS[@]}"; do
-    if [ -d "${dir}" ]; then
-      while IFS= read -r -d '' file; do
-        SHELL_FILES+=("${file}")
-      done < <(find "${dir}" -type f -name "*.sh" -print0)
-    fi
-  done
-  while IFS= read -r -d '' file; do
-    SHELL_FILES+=("${file}")
-  done < <(find . -maxdepth 1 -type f -name "*.sh" -print0)
   # SC2155 is separate declaration and command.
-  if [ ${#SHELL_FILES[@]} -gt 0 ]; then
-    shellcheck --shell=bash --exclude=SC2155 "${SHELL_FILES[@]}"
-  fi
+  shellcheck --shell=bash --exclude=SC2155 "${SHELL_FILES[@]}"
   echo "Done"
 fi
 

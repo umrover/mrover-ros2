@@ -47,10 +47,13 @@ nodejs = "24.*"
 ipython = "*"
 pytest = "*"
 pytest-asyncio = "*"
-black = "*"
-mypy = "*"
+# Keep in sync with the pyproject.toml dev extras, which style.sh version checks
+black = "==26.5.1"
+mypy = "==1.11.2"
 clang-format = "18.*"
 shellcheck = "*"
+# macOS /bin/bash is 3.2, which lacks globstar
+bash = "5.*"
 
 [target.linux-64.dependencies]
 tbb = "*"
