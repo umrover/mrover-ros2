@@ -1,75 +1,75 @@
 - name: Jetson Flash
   block:
   - name: Create Jetson Flash Directory
-    ansible.builtin.file:
+    file:
       path: "{{ jetson_flash_dir }}"
       state: directory
 
   - name: Create Downloads Directory
-    ansible.builtin.file:
+    file:
       path: "{{ jetson_flash_dir }}/downloads"
       state: directory
 
   - name: Get Jetson Drivers
-    ansible.builtin.get_url:
+    get_url:
       url: https://developer.nvidia.com/downloads/embedded/l4t/r{{ jetson_linux_version_major }}_release_v{{ jetson_linux_version_minor }}.{{ jetson_linux_version_patch }}/release/Jetson_Linux_r{{ jetson_linux_version_major }}.{{ jetson_linux_version_minor }}.{{ jetson_linux_version_patch }}_aarch64.tbz2
       dest: "{{ jetson_flash_dir }}/downloads/jetson-driver-package.tbz2"
 
   - name: Get Jetson Root File System
-    ansible.builtin.get_url:
+    get_url:
       url: https://developer.nvidia.com/downloads/embedded/l4t/r{{ jetson_linux_version_major }}_release_v{{ jetson_linux_version_minor }}.{{ jetson_linux_version_patch }}/release/Tegra_Linux_Sample-Root-Filesystem_r{{ jetson_linux_version_major }}.{{ jetson_linux_version_minor }}.{{ jetson_linux_version_patch }}_aarch64.tbz2
       dest: "{{ jetson_flash_dir }}/downloads/jetson-rootfs-package.tbz2"
 
   - name: Get Jetson Cross Compiler
-    ansible.builtin.get_url:
+    get_url:
       url: "{{ x_tools_url }}"
       dest: "{{ jetson_flash_dir }}/downloads/jetson-cross-compiler.tbz2"
 
   - name: Get PCAN Drivers
-    ansible.builtin.get_url:
+    get_url:
       url: https://www.peak-system.com/fileadmin/media/linux/files/peak-linux-driver-{{ pcan_version_major }}.{{ pcan_version_minor }}.{{ pcan_version_patch }}.tar.gz
       dest: "{{ jetson_flash_dir }}/downloads/pcan-drivers.tar.gz"
 
   - name: Unzip Driver Tarball
-    ansible.builtin.unarchive:
+    unarchive:
       src: "{{ jetson_flash_dir }}/downloads/jetson-driver-package.tbz2"
       dest: "{{ jetson_flash_dir }}"
       creates: "{{ jetson_flash_dir }}/Linux_for_Tegra/bootloader"
 
   - name: Unzip RootFs Tarball
     become: true
-    ansible.builtin.unarchive:
+    unarchive:
       src: "{{ jetson_flash_dir }}/downloads/jetson-rootfs-package.tbz2"
       dest: "{{ jetson_flash_dir }}/Linux_for_Tegra/rootfs/"
       creates: "{{ jetson_flash_dir }}/Linux_for_Tegra/rootfs/bin"
 
   - name: Unzip Cross Compiler
-    ansible.builtin.unarchive:
+    unarchive:
       src: "{{ jetson_flash_dir }}/downloads/jetson-cross-compiler.tbz2"
       dest: "{{ jetson_flash_dir }}"
       creates: "{{ x_tools_path }}"
 
   - name: Unzip PCAN Drivers
-    ansible.builtin.unarchive:
+    unarchive:
       src: "{{ jetson_flash_dir }}/downloads/pcan-drivers.tar.gz"
       dest: "{{ jetson_flash_dir }}"
       creates: "{{ jetson_flash_dir }}/peak-linux-driver-{{ pcan_version_major }}.{{ pcan_version_minor }}.{{ pcan_version_patch }}"
 
   - name: Run L4T Flash Prerequisites
     become: true
-    ansible.builtin.shell:
+    shell:
       chdir: "{{ jetson_flash_dir }}/Linux_for_Tegra"
       cmd: ./tools/l4t_flash_prerequisites.sh
 
   - name: Run Apply Binaries
     become: true
-    ansible.builtin.shell:
+    shell:
       chdir: "{{ jetson_flash_dir }}/Linux_for_Tegra"
       cmd: ./apply_binaries.sh
 
   - name: Install Apt Packages
     become: true
-    ansible.builtin.apt:
+    apt:
       cache_valid_time: 604800
       state: latest
       name:
@@ -82,55 +82,56 @@
         - zstd
 
   - name: Sync Kernel Sources
-    ansible.builtin.shell:
+    shell:
       chdir: "{{ jetson_flash_dir }}/Linux_for_Tegra/source"
       cmd: ./source_sync.sh -k -t jetson_{{ jetson_linux_version_major }}.{{ jetson_linux_version_minor }}.{{ jetson_linux_version_patch }}
       creates: "{{ jetson_flash_dir }}/Linux_for_Tegra/source/kernel/kernel-{{ ubuntu_codename }}"
-
+  
   - name: Sync Kernel Configuration
     synchronize:
       src: files/config
       dest: "{{ jetson_flash_dir }}/Linux_for_Tegra/source/kernel/kernel-{{ ubuntu_codename }}/.config"
-
+ 
   - name: Sync Kernel Configuration With Oldconfig
     synchronize:
       src: files/config
       dest: "{{ jetson_flash_dir }}/Linux_for_Tegra/source/kernel/kernel-{{ ubuntu_codename }}/arch/arm64/configs/oldconfig"
-
+ 
   - name: Build Jetson Kernel
     become: true
-    ansible.builtin.command: ./ansible/roles/jetson_flash/files/scripts/build_jetson_kernel.sh {{ jetson_flash_dir }} {{ ubuntu_codename }} {{ x_tools_name }}
+    command: ./ansible/roles/jetson_flash/files/scripts/build_jetson_kernel.sh {{ jetson_flash_dir }} {{ ubuntu_codename }} {{ x_tools_name }}
     args:
       chdir: "{{ mrover_repo }}"
       # no creates here because it is always desired to recompile the kernel if running this ansible
-
+ 
   - name: Remove PCAN Testing
     # TODO(john): this is not the best solution
-    ansible.builtin.replace:
+    replace:
       path: "{{ jetson_flash_dir }}/peak-linux-driver-{{ pcan_version_major }}.{{ pcan_version_minor }}.{{ pcan_version_patch }}/Makefile"
       regexp: "\\@\\$\\(MAKE\\) -C test \\$1"
       replace: ""
-
+ 
   - name: Build PCAN
     become: true
-    ansible.builtin.command: ./ansible/roles/jetson_flash/files/scripts/build_pcan_drivers.sh {{ jetson_flash_dir }} {{ ubuntu_codename }} {{ pcan_version_major }} {{ pcan_version_minor }} {{ pcan_version_patch }} {{ x_tools_name }}
+    command: ./ansible/roles/jetson_flash/files/scripts/build_pcan_drivers.sh {{ jetson_flash_dir }} {{ ubuntu_codename }} {{ pcan_version_major }} {{ pcan_version_minor }} {{ pcan_version_patch }} {{ x_tools_name }}
     args:
       chdir: "{{ mrover_repo }}"
       # no creates here because we always rebuild
-
-  - name: Create Default User (skip oem config)
+      #
+  
+  - name: Create Default User(skip oem config)
     become: true
-    ansible.builtin.command: ./tools/l4t_create_default_user.sh -u mrover -p mrover -n jetson -a --accept-license
+    command: ./tools/l4t_create_default_user.sh -u mrover -p mrover -n jetson -a --accept-license
     args:
       chdir: "{{ jetson_flash_dir }}/Linux_for_Tegra"
-
+ 
   - name: Ensure Jetson Is Connected In Recovery Mode
-    ansible.builtin.shell:
+    shell:
       cmd: lsusb | grep "7023 NVIDIA"
-
+ 
   - name: Flash Jetson
     become: true
-    ansible.builtin.command: ./flash.sh jetson-agx-orin-devkit internal
+    command: ./flash.sh jetson-agx-orin-devkit internal
     args:
       chdir: "{{ jetson_flash_dir }}/Linux_for_Tegra"
 

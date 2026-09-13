@@ -1,13 +1,14 @@
 - name: USB Rules
   become: true
-  ansible.builtin.copy:
+  synchronize:
     src: files/rules/
     dest: /etc/udev/rules.d
+    recursive: true
 
 - name: udev Reload Rules
   become: true
-  ansible.builtin.command: udevadm control --reload-rules
+  command: udevadm control --reload-rules
 
 - name: udev TTY Trigger
   become: true
-  ansible.builtin.command: udevadm trigger --subsystem-match=tty
+  command: udevadm trigger --subsystem-match=tty
