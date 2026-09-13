@@ -434,14 +434,14 @@ if (MROVER_BUILD_ESW AND NOT APPLE)
     mrover_add_esw_bridge_node(pdlb_hw_bridge esw/pdlb_hw_bridge.cpp)
     mrover_add_esw_bridge_node(mast_gimbal_hw_bridge esw/mast_gimbal_hw_bridge.cpp)
 
-    mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
-    ament_target_dependencies(differential_drive_controller rclcpp std_srvs)
-    target_link_libraries(differential_drive_controller units)
-
     mrover_add_node(u2d2_bridge esw/u2d2_bridge.cpp)
     ament_target_dependencies(u2d2_bridge rclcpp std_msgs std_srvs dynamixel_sdk)
     target_link_libraries(u2d2_bridge servo)
 endif()
+
+mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
+ament_target_dependencies(differential_drive_controller rclcpp std_srvs)
+target_link_libraries(differential_drive_controller units)
 
 mrover_add_node(arm_controller navigation/arm_controller/arm_controller.cpp navigation/arm_controller/pch.hpp)
 target_link_libraries(arm_controller lie)
