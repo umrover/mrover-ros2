@@ -6,10 +6,7 @@ namespace mrover {
         return btVector3{static_cast<btScalar>(r3.x()), static_cast<btScalar>(r3.y()), static_cast<btScalar>(r3.z())};
     }
 
-    // imgui >= 1.91.4 made ImTextureID an integer (ImU64). wgpu::TextureView only converts
-    // implicitly to its raw pointer or to bool, so passing it straight to ImGui::Image resolves
-    // to operator bool() and yields the texture id 1 (a bogus pointer) -> crash in the WGPU
-    // backend. Convert through the raw WGPUTextureView pointer explicitly instead.
+    // ImTextureID is ImU64 since imgui 1.91.4; implicit conversion picks operator bool() -> 1, not the pointer.
     auto toImTextureID(wgpu::TextureView const& view) -> ImTextureID {
         return reinterpret_cast<ImTextureID>(static_cast<WGPUTextureView>(view));
     }
