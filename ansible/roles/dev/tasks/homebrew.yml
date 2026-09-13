@@ -16,10 +16,10 @@
     path: /Applications/Visual Studio Code.app
   register: vscode_app
 
-- name: Check if Chromium is already installed
+- name: Check if Google Chrome is already installed
   ansible.builtin.stat:
-    path: /Applications/Chromium.app
-  register: chromium_app
+    path: /Applications/Google Chrome.app
+  register: chrome_app
 
 - name: Install VSCode cask
   community.general.homebrew_cask:
@@ -27,8 +27,8 @@
     state: present
   when: not vscode_app.stat.exists
 
-- name: Install Chromium cask
+- name: Install Google Chrome cask
   community.general.homebrew_cask:
-    name: chromium
+    name: google-chrome
     state: present
-  when: not chromium_app.stat.exists
+  when: not chrome_app.stat.exists
