@@ -1,9 +1,4 @@
 # MRover ROS
-if [[ -f "$HOME/.pixi/bin/pixi" ]]; then
-    source "${${(%):-%x}:A:h}/mrover-portable.zshenv"
-    return
-fi
-
 readonly MROVER_REPO="$HOME/ros2_ws/src/mrover"
 
 [ -f /opt/ros/jazzy/setup.zsh ] && source /opt/ros/jazzy/setup.zsh

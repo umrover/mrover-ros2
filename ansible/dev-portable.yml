@@ -4,4 +4,5 @@
     - role: dev
       vars:
         mrover_repo: "{{ playbook_dir | dirname }}"
+        mrover_zshenv: scripts/mrover-portable.zshenv
     - build-portable

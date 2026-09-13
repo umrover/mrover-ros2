@@ -1,1 +1,2 @@
 mrover_repo: "{{ ros2_workspace }}/src/mrover"
+mrover_zshenv: scripts/mrover.zshenv
