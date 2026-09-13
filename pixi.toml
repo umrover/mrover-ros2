@@ -71,3 +71,7 @@ cxx-compiler = "*"
 
 [pypi-dependencies]
 mrover = { path = ".", editable = true }
+
+[pypi-options]
+# pyproject.toml pins native Ubuntu 24 versions; conda provides newer builds of these
+dependency-overrides = { numpy = ">=1.26.4", empy = ">=3.3.4", moteus = ">=0.3.72", pybind11-global = ">=3.0" }
