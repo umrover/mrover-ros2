@@ -26,6 +26,11 @@ option(MROVER_CLANG_TIDY "Enable static analysis with Clang tidy" ${MROVER_CI})
 option(MROVER_WARNINGS_AS_ERRORS "Treat warnings as errors" ${MROVER_CI})
 option(MROVER_BUILD_ESW "Build ESW (embedded software) targets, requires fetching the esw mrover_can library" ON)
 
+# ESW native only
+if (DEFINED ENV{PIXI_PROJECT_ROOT})
+    set(MROVER_BUILD_ESW OFF)
+endif ()
+
 # Don't build sim for Linux on arm because no dawn prebuilt
 if (NOT DEFINED MROVER_SIMULATOR)
     if (NOT (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64"))

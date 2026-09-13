@@ -20,11 +20,11 @@ if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
     os_cmake_args=()
     if [[ "$(uname)" == "Darwin" ]]; then
         macos_sysroot=$(xcrun --sdk macosx --show-sdk-path)
-        os_cmake_args=("-DCMAKE_OSX_SYSROOT=${macos_sysroot}" "-DMROVER_BUILD_ESW=OFF")
+        os_cmake_args=("-DCMAKE_OSX_SYSROOT=${macos_sysroot}")
     else
         # conda's pkg-config wrapper runs the GCC-only
         os_cmake_args=("-DPKG_CONFIG_EXECUTABLE=${CONDA_PREFIX}/bin/pkg-config.bin")
-        os_cmake_args+=("-DCMAKE_DISABLE_FIND_PACKAGE_ZED=ON" "-DCMAKE_DISABLE_FIND_PACKAGE_CUDA=ON" "-DMROVER_BUILD_ESW=OFF")
+        os_cmake_args+=("-DCMAKE_DISABLE_FIND_PACKAGE_ZED=ON" "-DCMAKE_DISABLE_FIND_PACKAGE_CUDA=ON")
         os_cmake_args+=("-DCMAKE_C_COMPILER=${CONDA_PREFIX}/bin/clang" "-DCMAKE_CXX_COMPILER=${CONDA_PREFIX}/bin/clang++")
     fi
 
