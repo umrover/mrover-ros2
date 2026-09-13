@@ -9,7 +9,8 @@ activate_mrover() {
     return 1
   fi
   cd "$MROVER_REPO" || return 1
-  if [[ -z "$CONDA_PREFIX" ]]; then
+  # conda base environments also set CONDA_PREFIX
+  if [[ "$PIXI_PROJECT_ROOT" != "$MROVER_REPO" ]]; then
     eval "$(pixi shell-hook --as-is)"
     export TERMINFO_DIRS="${CONDA_PREFIX}/share/terminfo:/usr/share/terminfo"
     # conda's ncurses terminfo does not include xterm-kitty; fall back to xterm-256color.
