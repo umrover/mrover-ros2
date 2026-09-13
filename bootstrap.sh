@@ -22,13 +22,18 @@ if [ ! -f ~/.ssh/id_ed25519 ] && [ ! -f ~/.ssh/id_rsa ]; then
     exit 1
 fi
 
-# distro git is fine for cloning; no git-core PPA, the version gap isn't meaningful and CVEs are backported
+# git via PPA
+if ! grep -rq "^deb .*git-core/ppa" /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null; then
+    echo -e "${GREY_BOLD}Adding PPA: git-core/ppa${NC}"
+    sudo apt-add-repository ppa:git-core/ppa -y
+    sudo apt update
+fi
 sudo apt install -y git git-lfs
 
 readonly CATKIN_PATH=~/ros2_ws
 readonly MROVER_PATH=${CATKIN_PATH}/src/mrover
 
-if [ ! -d "${MROVER_PATH}/.git" ]; then
+if [ ! -d "${MROVER_PATH}" ]; then
     echo -e "${GREY_BOLD}Creating ROS workspace ...${NC}"
     mkdir -p "${CATKIN_PATH}"/src
     git clone git@github.com:umrover/mrover-ros2 "${CATKIN_PATH}"/src/mrover
