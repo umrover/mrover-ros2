@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Portable (pixi) setup. Run this after cloning if you did not use
-# bootstrap-portable.sh. For a native Ubuntu install, use setup.sh.
+# Portable (pixi) setup.
+# Run this after cloning if you did not use bootstrap-portable.sh
+# For native Ubuntu 24 install, use setup.sh
 
 set -Eeuo pipefail
 
@@ -12,11 +13,9 @@ readonly NC='\033[0m'
 OS="$(uname -s)"
 ARCH="$(uname -m)"
 
-# pixi.toml declares platforms = ["osx-arm64", "osx-64", "linux-64"]; bail before doing
-# any work rather than failing deep inside `pixi install`
 case "${OS}/${ARCH}" in
-  Linux/x86_64 | Darwin/arm64 | Darwin/x86_64) ;;
-  *)
+Linux/x86_64 | Darwin/arm64 | Darwin/x86_64) ;;
+*)
     echo -e "${RED}The portable environment supports Linux x86_64 and macOS (arm64/x86_64), not ${OS}/${ARCH}.${NC}" >&2
     echo -e "${RED}Add the platform to pixi.toml, or use the native install: ./ansible.sh dev.yml${NC}" >&2
     exit 1
@@ -24,33 +23,36 @@ case "${OS}/${ARCH}" in
 esac
 
 if [[ "$OS" == "Darwin" ]] && ! command -v brew >/dev/null 2>&1; then
-  echo -e "${CYAN}Installing Homebrew ...${NC}"
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  if [ -f /opt/homebrew/bin/brew ]; then
-    eval "$(/opt/homebrew/bin/brew shellenv)"
-  else
-    eval "$(/usr/local/bin/brew shellenv)"
-  fi
+    echo -e "${CYAN}Installing Homebrew ...${NC}"
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    if [ -f /opt/homebrew/bin/brew ]; then
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+    else
+        eval "$(/usr/local/bin/brew shellenv)"
+    fi
 fi
 
 if ! command -v ansible-playbook >/dev/null 2>&1; then
-  echo -e "${CYAN}Installing Ansible ...${NC}"
-  case "$OS" in
+    echo -e "${CYAN}Installing Ansible ...${NC}"
+    case "$OS" in
     Darwin) brew install ansible ;;
     Linux)
-      if command -v dnf >/dev/null 2>&1; then sudo dnf install -y ansible git git-lfs
-      elif command -v pacman >/dev/null 2>&1; then sudo pacman -S --noconfirm ansible git git-lfs
-      elif command -v apt-get >/dev/null 2>&1; then sudo apt-get install -y ansible git git-lfs
-      else
-        echo -e "${RED}Unsupported package manager. Install Ansible manually and re-run.${NC}"
-        exit 1
-      fi
-      ;;
+        if command -v dnf >/dev/null 2>&1; then
+            sudo dnf install -y ansible git git-lfs
+        elif command -v pacman >/dev/null 2>&1; then
+            sudo pacman -S --noconfirm ansible git git-lfs
+        elif command -v apt-get >/dev/null 2>&1; then
+            sudo apt-get install -y ansible git git-lfs
+        else
+            echo -e "${RED}Unsupported package manager. Install Ansible manually and re-run.${NC}"
+            exit 1
+        fi
+        ;;
     *)
-      echo -e "${RED}Unsupported OS: ${OS}${NC}"
-      exit 1
-      ;;
-  esac
+        echo -e "${RED}Unsupported OS: ${OS}${NC}"
+        exit 1
+        ;;
+    esac
 fi
 
 readonly MROVER_PATH=$(dirname "$(realpath "$0")")

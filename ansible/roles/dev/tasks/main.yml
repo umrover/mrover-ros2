@@ -17,7 +17,6 @@
     repo: https://github.com/zsh-users/zsh-syntax-highlighting
     dest: ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
 
-# theme is deployed regardless
 - name: Deploy mrover oh-my-zsh theme
   ansible.builtin.copy:
     src: files/home/.oh-my-zsh/custom/themes/mrover.zsh-theme
