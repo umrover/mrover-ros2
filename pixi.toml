@@ -45,23 +45,20 @@ nodejs = "24.*"
 ipython = "*"
 pytest = "*"
 pytest-asyncio = "*"
-# Keep in sync with the pyproject.toml dev extras, which style.sh version checks
+# Sync with pyproject.toml dev
 black = "==26.5.1"
 mypy = "==1.11.2"
 clang-format = "18.*"
 shellcheck = "*"
-# macOS /bin/bash is 3.2, which lacks globstar
+# macOS /bin/bash is 3.2, missing globstar
 bash = "5.*"
 
 [target.linux-64.dependencies]
 tbb = "*"
 tbb-devel = "*"
-# Match the native clang-18 toolchain; GCC rejects valid esw motor code
 clang_linux-64 = "18.*"
 clangxx_linux-64 = "18.*"
-# clang's sysroot dependency is unversioned; pin so re-solves can't raise the glibc floor
 sysroot_linux-64 = "2.28.*"
-# Without these, pkg-config falls back to the host's libnl/libudev for esw
 libnl = "*"
 libudev = "*"
 
@@ -73,5 +70,4 @@ cxx-compiler = "*"
 mrover = { path = ".", editable = true }
 
 [pypi-options]
-# pyproject.toml pins native Ubuntu 24 versions; conda provides newer builds of these
 dependency-overrides = { numpy = ">=1.26.4", empy = ">=3.3.4", moteus = ">=0.3.72", pybind11-global = ">=3.0" }
