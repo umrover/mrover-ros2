@@ -54,8 +54,7 @@
     block: source-file ~/.mrover.tmux.conf
     create: true
 
-# this is needed because linux distros install zsh at /usr/bin/zsh, but macos places the zsh binary at /bin/zsh
-- name: Resolve zsh binary path
+- name: Locate zsh binary
   ansible.builtin.command: which zsh
   register: zsh_path
   changed_when: false
