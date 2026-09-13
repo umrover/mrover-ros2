@@ -205,11 +205,16 @@
     virtualenv: "{{ ros2_workspace }}/src/mrover/venv"
     virtualenv_command: python3 -m venv
 
+- name: Install Chromium
+  become: true
+  ansible.builtin.snap:
+    name: chromium
+
 - name: Download Bun installer
   ansible.builtin.get_url:
     url: https://bun.sh/install
     dest: /tmp/bun_install.sh
-    mode: '0755'
+    mode: "0755"
 
 - name: Install or Upgrade Bun
   ansible.builtin.shell: /tmp/bun_install.sh
