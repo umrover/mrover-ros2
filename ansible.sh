@@ -8,10 +8,11 @@ if [ "$#" -le 0 ]; then
 fi
 
 readonly MROVER_PATH=$(dirname "$(realpath "$0")")
+readonly ROS2_WS_PATH=$(realpath "${MROVER_PATH}/../..")
 readonly PLAYBOOK=$1
 shift
 
 export ANSIBLE_CONFIG="${MROVER_PATH}/ansible/ansible.cfg"
 
 ansible-playbook -i "localhost," -c local --ask-become-pass "${MROVER_PATH}/ansible/${PLAYBOOK}" \
-    --extra-vars "mrover_repo=${MROVER_PATH}" "$@"
+    --extra-vars "ros2_workspace=${ROS2_WS_PATH}" "$@"

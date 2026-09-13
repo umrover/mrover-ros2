@@ -106,17 +106,17 @@
 - name: Download prebuilt Dawn
   ansible.builtin.command: ./scripts/setup_dawn.sh
   args:
-    chdir: "{{ mrover_repo }}"
+    chdir: "{{ ros2_workspace }}/src/mrover"
 
 - name: Download manif source
   ansible.builtin.command: ./scripts/setup_manif.sh
   args:
-    chdir: "{{ mrover_repo }}"
+    chdir: "{{ ros2_workspace }}/src/mrover"
 
 - name: Download imgui source
   ansible.builtin.command: ./scripts/setup_imgui.sh
   args:
-    chdir: "{{ mrover_repo }}"
+    chdir: "{{ ros2_workspace }}/src/mrover"
 
 - name: Initialize rosdep
   become: true
@@ -188,21 +188,21 @@
   ansible.builtin.pip:
     name:
       # Installs from pyproject.toml
-      - "{{ mrover_repo }}[dev]"
-    virtualenv: "{{ mrover_repo }}/venv"
+      - "{{ ros2_workspace }}/src/mrover[dev]"
+    virtualenv: "{{ ros2_workspace }}/src/mrover/venv"
     virtualenv_command: /usr/bin/python3 -m venv
 
 - name: Install pybind11-global
   # build dependency for manifpy, which compiles a C++ extension from source below
   ansible.builtin.pip:
     name: "pybind11-global>=3.1.0"
-    virtualenv: "{{ mrover_repo }}/venv"
+    virtualenv: "{{ ros2_workspace }}/src/mrover/venv"
     virtualenv_command: python3 -m venv
 
 - name: Install manifpy
   ansible.builtin.pip:
     name: "git+https://github.com/artivis/manif.git@0.0.5"
-    virtualenv: "{{ mrover_repo }}/venv"
+    virtualenv: "{{ ros2_workspace }}/src/mrover/venv"
     virtualenv_command: python3 -m venv
 
 - name: Download Bun installer
@@ -221,4 +221,4 @@
 - name: Install Bun Packages
   ansible.builtin.command: "{{ ansible_env.HOME }}/.bun/bin/bun install"
   args:
-    chdir: "{{ mrover_repo }}/teleoperation/basestation_gui/frontend"
+    chdir: "{{ ros2_workspace }}/src/mrover/teleoperation/basestation_gui/frontend"

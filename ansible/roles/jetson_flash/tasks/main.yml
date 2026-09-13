@@ -136,4 +136,5 @@
 
   vars:
     jetson_flash_dir: "/tmp/jetson_flash-{{ jetson_linux_version_major }}-{{ jetson_linux_version_minor }}-{{ jetson_linux_version_patch }}"
+    mrover_repo: "{{ ros2_workspace }}/src/mrover"
     x_tools_path: "{{ jetson_flash_dir }}/x-tools/{{ x_tools_name }}"

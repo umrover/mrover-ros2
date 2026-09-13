@@ -1,1 +1,0 @@
-mrover_repo: "{{ playbook_dir | dirname }}"
