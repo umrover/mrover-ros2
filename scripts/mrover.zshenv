@@ -1,5 +1,6 @@
 # MRover ROS
-readonly MROVER_REPO="$HOME/ros2_ws/src/mrover"
+readonly MROVER_ROS2_WS_PATH="$HOME/ros2_ws"
+readonly MROVER_REPO="${MROVER_ROS2_WS_PATH}/src/mrover"
 
 [ -f /opt/ros/jazzy/setup.zsh ] && source /opt/ros/jazzy/setup.zsh
 
@@ -19,7 +20,7 @@ source_mrover_overlay(){
     target_file=""
 
     for profile in "${build_profiles[@]}"; do
-        file="${MROVER_REPO}/install/${profile}/setup.zsh"
+        file="${MROVER_ROS2_WS_PATH}/install/${profile}/setup.zsh"
 
         if [ -f "${file}" ]; then
             if [[ -z "${target_file}" ]]; then
