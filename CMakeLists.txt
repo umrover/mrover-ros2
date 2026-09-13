@@ -22,10 +22,9 @@ option(MROVER_WARNINGS_AS_ERRORS "Treat warnings as errors" ${MROVER_CI})
 option(MROVER_PORTABLE "Exclude rover-only targets: ZED/CUDA, CAN/ESW hardware bridges" OFF)
 option(MROVER_BUILD_ESW "Build ESW (embedded software) targets, requires fetching the esw mrover_can library" ON)
 
-# Simulator needs a prebuilt Dawn, which is only published for Linux x86_64 and macOS arm64.
+# Simulator needs a prebuilt Dawn, which is only published for Linux x86_64 and macOS (arm64/x86_64).
 if (NOT DEFINED MROVER_SIMULATOR)
-    if ((CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64") OR
-        (APPLE AND CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64"))
+    if ((CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64") OR APPLE)
         set(MROVER_SIMULATOR ON)
     else ()
         set(MROVER_SIMULATOR OFF)

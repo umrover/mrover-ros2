@@ -12,12 +12,12 @@ readonly NC='\033[0m'
 OS="$(uname -s)"
 ARCH="$(uname -m)"
 
-# pixi.toml declares platforms = ["osx-arm64", "linux-64"]; bail before doing
+# pixi.toml declares platforms = ["osx-arm64", "osx-64", "linux-64"]; bail before doing
 # any work rather than failing deep inside `pixi install`
 case "${OS}/${ARCH}" in
-  Linux/x86_64 | Darwin/arm64) ;;
+  Linux/x86_64 | Darwin/arm64 | Darwin/x86_64) ;;
   *)
-    echo -e "${RED}The portable environment supports Linux x86_64 and macOS arm64, not ${OS}/${ARCH}.${NC}" >&2
+    echo -e "${RED}The portable environment supports Linux x86_64 and macOS (arm64/x86_64), not ${OS}/${ARCH}.${NC}" >&2
     echo -e "${RED}Add the platform to pixi.toml, or use the native install: ./ansible.sh dev.yml${NC}" >&2
     exit 1
     ;;

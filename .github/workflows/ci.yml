@@ -31,6 +31,47 @@ jobs:
       - name: Run Style Check
         run: ./style.sh
 
+  build-portable:
+    name: Build (pixi ${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    needs: style
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-26.04
+            name: Linux x86_64
+          - os: macos-14
+            name: macOS arm64
+          - os: macos-13
+            name: macOS x86_64
+    steps:
+      - uses: actions/checkout@v7
+      - name: Dawn Cache
+        uses: actions/cache@v6
+        with:
+          path: deps/dawn-prebuilt
+          key: dawn-${{ matrix.os }}-${{ hashFiles('scripts/setup_dawn.sh') }}
+      - name: Setup Dawn
+        run: ./scripts/setup_dawn.sh
+      - name: Imgui Cache
+        uses: actions/cache@v6
+        with:
+          path: deps/imgui-src
+          key: imgui-${{ hashFiles('scripts/setup_imgui.sh') }}
+      - name: Setup Imgui
+        run: ./scripts/setup_imgui.sh
+      - name: Compiler Cache
+        uses: hendrikmuhs/ccache-action@v1.2.24
+        with:
+          key: ${{ matrix.os }}
+      - uses: prefix-dev/setup-pixi@v0.9.6
+        with:
+          activate-environment: true
+          cache: true
+      - name: Build
+        run: ./build.sh
+
   build-native:
     name: Build (native Ubuntu 24)
     if: github.event.pull_request.draft == false
