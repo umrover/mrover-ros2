@@ -7,7 +7,7 @@ platforms = ["osx-arm64", "osx-64", "linux-64"]
 [dependencies]
 python = "3.12.*"
 
-# ROS 2 Humble via RoboStack.
+# ROS 2 Jazzy via RoboStack.
 ros-jazzy-ros-base = "*"
 ros-jazzy-xacro = "*"
 ros-jazzy-rtcm-msgs = "*"

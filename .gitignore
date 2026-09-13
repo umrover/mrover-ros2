@@ -4,10 +4,9 @@
 /log/
 
 # pixi environment
-/.pixi/*
-!/.pixi/config.toml
+/.pixi/
 
-# Prebuild deps
+# Downloaded prebuilt dependencies
 /deps/dawn-prebuilt/
 /deps/manif-src/
 /deps/imgui-src/
