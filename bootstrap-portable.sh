@@ -43,7 +43,7 @@ if ! command -v git >/dev/null 2>&1; then
     esac
 fi
 
-readonly MROVER_PATH=~/mrover-ros2
+readonly MROVER_PATH=~/ros2_ws/src/mrover
 
 if [ ! -d "${MROVER_PATH}" ]; then
     git clone git@github.com:umrover/mrover-ros2 "${MROVER_PATH}"

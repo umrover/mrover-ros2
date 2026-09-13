@@ -1,5 +1,6 @@
 # MRover portable shell env
 MROVER_REPO="${${(%):-%x}:A:h:h}"
+MROVER_ROS2_WS_PATH="${MROVER_REPO:h:h}"
 
 [[ -d "$HOME/.pixi/bin" ]] && export PATH="$HOME/.pixi/bin:$PATH"
 
@@ -21,8 +22,8 @@ activate_mrover() {
     add-zsh-hook -d preexec _conda_clang_preexec 2>/dev/null
     export HOST="${CONDA_BACKUP_HOST:-$HOST}"
   fi
-  [[ -f install/setup.zsh ]] && source install/setup.zsh
-  
+  [[ -f "${MROVER_ROS2_WS_PATH}/install/setup.zsh" ]] && source "${MROVER_ROS2_WS_PATH}/install/setup.zsh"
+
   # ROS's local_setup.zsh sets AMENT_SHELL=zsh without unsetting it
   unset AMENT_SHELL
 

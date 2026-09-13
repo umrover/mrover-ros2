@@ -15,6 +15,9 @@ fi
 
 echo "Using build profile: $build_profile"
 
+# Build in the colcon workspace, not the package
+pushd ../..
+
 if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
     # portable environment
     os_cmake_args=()
@@ -37,12 +40,9 @@ if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
         --event-handlers console_direct+ \
         --packages-select mrover
 
-    ln -sf "$(pwd)/build/mrover/compile_commands.json" "$(pwd)/compile_commands.json"
+    ln -sf "$(pwd)/build/mrover/compile_commands.json" "$(pwd)/src/mrover/compile_commands.json"
 else
     # native environment
-
-    # Build in the colcon workspace, not the package
-    pushd ../..
 
     # Set C/C++ compilers
     export CC=clang
