@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Native Ubuntu setup. Run this after cloning if you did not use bootstrap.sh.
-# For macOS, Arch, Fedora or any non-Ubuntu host, use setup-portable.sh.
+# Native Ubuntu setup. Run after cloning.
 
 set -Eeuo pipefail
 
@@ -12,17 +11,17 @@ readonly NC='\033[0m'
 # The build role installs ROS and the toolchain from apt, so this path is
 # Ubuntu-only. Everything else goes through pixi.
 if ! grep -q '^VERSION_CODENAME=noble' /etc/os-release 2>/dev/null; then
-  echo -e "${RED}This script requires Ubuntu 24.04 (noble). For other platforms, use ./setup-portable.sh${NC}" >&2
-  exit 1
+    echo -e "${RED}This script requires Ubuntu 24.04. For other platforms, use ./setup-portable.sh${NC}" >&2
+    exit 1
 fi
 
 if ! command -v ansible-playbook >/dev/null 2>&1; then
-  echo -e "${CYAN}Installing Ansible ...${NC}"
-  if ! grep -rq "^deb .*ansible/ansible" /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null; then
-    sudo apt-add-repository ppa:ansible/ansible -y
-    sudo apt update
-  fi
-  sudo apt install -y ansible
+    echo -e "${CYAN}Installing Ansible ...${NC}"
+    if ! grep -rq "^deb .*ansible/ansible" /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null; then
+        sudo apt-add-repository ppa:ansible/ansible -y
+        sudo apt update
+    fi
+    sudo apt install -y ansible
 fi
 
 readonly MROVER_PATH=$(dirname "$(realpath "$0")")
@@ -31,11 +30,9 @@ cd "${MROVER_PATH}"
 echo -e "${CYAN}Installing Ansible collections ...${NC}"
 ansible-galaxy collection install -r ansible/requirements.yml
 
-"${MROVER_PATH}/scripts/fix_sudo_rs.sh"
-
 playbook=dev.yml
 if [ -f /etc/nv_tegra_release ]; then
-  playbook=jetson_build.yml
+    playbook=jetson_build.yml
 fi
 
 echo -e "${CYAN}Running Ansible (${playbook}) ...${NC}"
