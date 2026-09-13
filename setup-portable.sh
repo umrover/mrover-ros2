@@ -32,6 +32,13 @@ if [[ "$OS" == "Darwin" ]] && ! command -v brew >/dev/null 2>&1; then
     fi
 fi
 
+# Apple Silicon Homebrew install not on default path
+if [ -x /opt/homebrew/bin/brew ] && ! grep -qs "brew shellenv" ~/.zprofile ~/.zshrc ~/.zshenv; then
+    echo -e "${CYAN}Adding Homebrew to ~/.zprofile ...${NC}"
+    # shellcheck disable=SC2016
+    echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >>~/.zprofile
+fi
+
 if ! command -v ansible-playbook >/dev/null 2>&1; then
     echo -e "${CYAN}Installing Ansible ...${NC}"
     case "$OS" in
