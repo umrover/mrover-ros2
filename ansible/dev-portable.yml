@@ -3,5 +3,5 @@
   roles:
     - role: dev
       vars:
-        mrover_portable: true
+        mrover_repo: "{{ playbook_dir | dirname }}"
     - build-portable

@@ -39,11 +39,9 @@ if ! command -v git >/dev/null 2>&1; then
     esac
 fi
 
-readonly CATKIN_PATH=~/ros2_ws
-readonly MROVER_PATH=${CATKIN_PATH}/src/mrover
+readonly MROVER_PATH=~/mrover-ros2
 
 if [ ! -d "${MROVER_PATH}" ]; then
-    mkdir -p "${CATKIN_PATH}"/src
     git clone git@github.com:umrover/mrover-ros2 "${MROVER_PATH}"
 fi
 

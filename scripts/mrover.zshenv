@@ -1,4 +1,14 @@
 # MRover ROS
+#
+# ~/.zshrc always sources this file by a fixed path, regardless of whether
+# the machine was set up natively or via the portable (pixi) path, so that
+# dotfiles shared across machines don't fight over which file to source.
+# Portable machines are detected at runtime and delegated to here instead.
+if [[ -f "$HOME/.pixi/bin/pixi" ]]; then
+    source "${${(%):-%x}:A:h}/mrover-portable.zshenv"
+    return
+fi
+
 export MROVER_REPO="${${(%):-%x}:A:h:h}"
 readonly MROVER_REPO
 
