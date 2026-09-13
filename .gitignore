@@ -11,6 +11,7 @@
 /deps/dawn-prebuilt/
 /deps/manif-src/
 /deps/imgui-src/
+/deps/tensorrt-prebuilt/
 
 # Common IDE's, ideally this should be in global gitignore per user
 .vscode/
