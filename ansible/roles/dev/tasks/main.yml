@@ -1,7 +1,5 @@
 - name: Install platform-specific packages
-  # dnf5 hosts get the same tasks as dnf, no dnf5.yml needed
-  ansible.builtin.include_tasks:
-    file: "{{ 'dnf' if ansible_pkg_mgr == 'dnf5' else ansible_pkg_mgr }}.yml"
+  ansible.builtin.include_tasks: "{{ ansible_pkg_mgr }}.yml"
 
 - name: Install oh-my-zsh
   ansible.builtin.git:
@@ -29,17 +27,18 @@
     path: ~/.zshrc
   register: zshrc_stat
 
+# if user does not have zshrc, deploy ours
 - name: Deploy default oh-my-zsh zshrc for fresh installs
   ansible.builtin.copy:
     src: files/home/.zshrc
     dest: ~/.zshrc
   when: not zshrc_stat.stat.exists
 
-- name: Source mrover zshenv
+- name: Wire mrover shell env
   ansible.builtin.blockinfile:
-    path: ~/.zshenv
+    path: ~/.zshrc
     marker: "# {mark} MROVER"
-    block: source ~/ros2_ws/src/mrover/scripts/mrover.zshenv # hardcoded for now, change in re-arch
+    block: '[[ -f "{{ mrover_repo }}/{{ mrover_zshenv }}" ]] && source "{{ mrover_repo }}/{{ mrover_zshenv }}"'
     create: true
 
 - name: Deploy mrover tmux config
@@ -68,17 +67,17 @@
 - name: Initialize Git LFS
   ansible.builtin.command: git lfs install
   args:
-    chdir: "{{ ros2_workspace }}/src/mrover"
+    chdir: "{{ mrover_repo }}"
 
 - name: Pull Git LFS objects
   ansible.builtin.command: git lfs pull
   args:
-    chdir: "{{ ros2_workspace }}/src/mrover"
+    chdir: "{{ mrover_repo }}"
 
 - name: Initialize Git submodules
   ansible.builtin.command: git submodule update --init --recursive
   args:
-    chdir: "{{ ros2_workspace }}/src/mrover"
+    chdir: "{{ mrover_repo }}"
 
 - name: Install VSCode extension
-  ansible.builtin.command: code --install-extension {{ ros2_workspace }}/src/mrover/pkg/file-selector-0.0.1.vsix
+  ansible.builtin.command: code --install-extension {{ mrover_repo }}/pkg/file-selector-0.0.1.vsix

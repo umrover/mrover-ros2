@@ -2,6 +2,7 @@
 # First-time native Ubuntu 24 setup.
 # Ensures git is installed, clones the repo, then runs setup.sh.
 # If you already have the repo, just run setup.sh directly.
+# For other platforms, use bootstrap-portable.sh.
 
 # See: https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
 set -Eeuo pipefail
@@ -11,7 +12,7 @@ readonly GREY_BOLD='\033[1;30m'
 readonly NC='\033[0m'
 
 if ! grep -q '^VERSION_CODENAME=noble' /etc/os-release 2>/dev/null; then
-    echo -e "${RED_BOLD}This script requires Ubuntu 24.04.${NC}"
+    echo -e "${RED_BOLD}This script requires Ubuntu 24.04. For other platforms, use bootstrap-portable.sh.${NC}"
     exit 1
 fi
 
@@ -30,7 +31,6 @@ fi
 sudo apt install -y git git-lfs
 
 readonly CATKIN_PATH=~/ros2_ws
-
 readonly MROVER_PATH=${CATKIN_PATH}/src/mrover
 
 if [ ! -d "${MROVER_PATH}" ]; then

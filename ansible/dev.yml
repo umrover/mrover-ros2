@@ -3,5 +3,5 @@
   vars_files:
     - vars/native.yml
   roles:
-    - build
     - dev
+    - build

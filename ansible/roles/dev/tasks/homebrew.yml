@@ -1,0 +1,34 @@
+- name: Install brew packages
+  community.general.homebrew:
+    name:
+      - fzf
+      - tmux
+      - htop
+      - gh
+      - git-lfs
+      - pixi
+      - bun
+      - llvm
+    state: present
+
+- name: Check if VSCode is already installed
+  ansible.builtin.stat:
+    path: /Applications/Visual Studio Code.app
+  register: vscode_app
+
+- name: Check if Chromium is already installed
+  ansible.builtin.stat:
+    path: /Applications/Chromium.app
+  register: chromium_app
+
+- name: Install VSCode cask
+  community.general.homebrew_cask:
+    name: visual-studio-code
+    state: present
+  when: not vscode_app.stat.exists
+
+- name: Install Chromium cask
+  community.general.homebrew_cask:
+    name: chromium
+    state: present
+  when: not chromium_app.stat.exists
