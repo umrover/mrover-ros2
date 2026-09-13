@@ -35,8 +35,8 @@ function print_update_error() {
 
 function find_executable() {
   local -r executable="$1"
-  local path
-  if ! path=$(command -v "${executable}" 2> /dev/null) || [ ! -x "${path}" ]; then
+  local -r path=$(which "${executable}")
+  if [ ! -x "${path}" ]; then
     echo -e "${RED}[Error] Could not find ${executable}${NC}" >&2
     print_update_error
   fi
@@ -47,7 +47,8 @@ function find_first_executable() {
   local executable
   for executable in "$@"; do
     local path
-    if path=$(command -v "${executable}" 2> /dev/null) && [ -x "${path}" ]; then
+    path=$(which "${executable}" 2> /dev/null)
+    if [ -x "${path}" ]; then
       echo "${path}"
       return
     fi
@@ -117,9 +118,6 @@ echo "Linting Python with mypy ..."
 "${MYPY_PATH}" --config-file=mypy.ini --check "${PYTHON_LINT_DIRS[@]}"
 
 if [ -d "./teleoperation/basestation_gui/frontend" ]; then
-  echo
-  echo "Installing frontend dependencies ..."
-  (cd ./teleoperation/basestation_gui/frontend && bun install)
   echo
   echo "Type checking TypeScript with vue-tsc ..."
   (cd ./teleoperation/basestation_gui/frontend && bun run type-check)
