@@ -17,16 +17,16 @@ fi
 
 readonly PLATFORM="$(uname -s)/$(uname -m)"
 
-# Google only publishes Linux x86_64 and macOS (Intel/Apple Silicon), no Linux arm64.
+# missing linux-arm64, which we dont support anyways
 case "${PLATFORM}" in
-    Linux/x86_64)  readonly DAWN_ASSET="ubuntu-latest" ;;
-    Darwin/x86_64) readonly DAWN_ASSET="macos-15-intel" ;;
-    Darwin/arm64)  readonly DAWN_ASSET="macos-latest" ;;
-    *)
-        # avoid exiting nonzero so other scripts running setup_dawn don't fail
-        echo "No prebuilt Dawn published for ${PLATFORM} (Linux x86_64, macOS Intel/Apple Silicon available), skipping. The simulator will not be built."
-        exit 0
-        ;;
+Linux/x86_64) readonly DAWN_ASSET="ubuntu-latest" ;;
+Darwin/x86_64) readonly DAWN_ASSET="macos-15-intel" ;;
+Darwin/arm64) readonly DAWN_ASSET="macos-latest" ;;
+*)
+    # avoid exiting nonzero so other scripts running setup_dawn don't fail
+    echo "No prebuilt Dawn published for ${PLATFORM} (Linux x86_64, macOS Intel/Apple Silicon available), skipping. The simulator will not be built."
+    exit 0
+    ;;
 esac
 
 readonly BINARY_TARBALL="Dawn-${DAWN_SHA}-${DAWN_ASSET}-Release.tar.gz"
@@ -49,5 +49,5 @@ rm -rf "${DEST}"
 mkdir -p "$(dirname "${DEST}")"
 mv "${tmpdir}/dawn" "${DEST}"
 
-echo "${DAWN_SHA}" > "${VERSION_FILE}"
+echo "${DAWN_SHA}" >"${VERSION_FILE}"
 echo "Dawn ${DAWN_SHA} installed."
