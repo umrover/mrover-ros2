@@ -7,13 +7,7 @@ readonly RED='\033[0;31m'
 readonly NC='\033[0m'
 
 function print_update_error() {
-  if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
-    echo -e "${RED}[Error] Please update with ./ansible.sh build-portable.yml${NC}"
-  elif command -v pixi > /dev/null 2>&1; then
-    echo -e "${RED}[Error] The pixi environment is not active. Run 'mrover' first, or update with ./ansible.sh build-portable.yml${NC}"
-  else
-    echo -e "${RED}[Error] Please update with ./ansible.sh build.yml${NC}"
-  fi
+  echo -e "${RED}[Error] Please update with ./ansible.sh build.yml${NC}"
   exit 1
 }
 
