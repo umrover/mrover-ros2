@@ -19,7 +19,7 @@ option(MROVER_CLANG_TIDY "Enable static analysis with Clang tidy" ${MROVER_CI})
 option(MROVER_WARNINGS_AS_ERRORS "Treat warnings as errors" ${MROVER_CI})
 option(MROVER_BUILD_ESW "Build ESW (embedded software) targets, requires fetching the esw mrover_can library" ON)
 
-# Enable Objective C enable for macos, ESW off
+# Enable Objective C for macos, ESW off
 if (APPLE)
     enable_language(OBJCXX)
     set(CMAKE_OBJCXX_STANDARD 23)
