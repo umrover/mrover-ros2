@@ -7,13 +7,6 @@ cmake_policy(SET CMP0148 NEW)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Objective C enable for macos
-if (APPLE)
-    enable_language(OBJCXX)
-    set(CMAKE_OBJCXX_STANDARD 23)
-    set(CMAKE_OBJCXX_STANDARD_REQUIRED ON)
-endif ()
-
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
@@ -26,8 +19,11 @@ option(MROVER_CLANG_TIDY "Enable static analysis with Clang tidy" ${MROVER_CI})
 option(MROVER_WARNINGS_AS_ERRORS "Treat warnings as errors" ${MROVER_CI})
 option(MROVER_BUILD_ESW "Build ESW (embedded software) targets, requires fetching the esw mrover_can library" ON)
 
-# ESW native only
-if (DEFINED ENV{PIXI_PROJECT_ROOT})
+# Enable Objective C enable for macos, ESW off
+if (APPLE)
+    enable_language(OBJCXX)
+    set(CMAKE_OBJCXX_STANDARD 23)
+    set(CMAKE_OBJCXX_STANDARD_REQUIRED ON)
     set(MROVER_BUILD_ESW OFF)
 endif ()
 
