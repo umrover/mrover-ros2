@@ -84,7 +84,7 @@ namespace mrover{
         // Filter that stores filtered pose
         cv::KalmanFilter kf;
         
-        cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);
+        cv::Ptr<cv::aruco::Dictionary> dictionary = cv::makePtr<cv::aruco::Dictionary>(cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50));
 
         // Layout map (ID -> Bottom-Left Corner Position)
         std::map<int, cv::Vec3d> layout;
