@@ -27,7 +27,7 @@ if [[ "$OS" == "Darwin" ]] && ! command -v brew >/dev/null 2>&1; then
     fi
 fi
 
-if ! command -v git >/dev/null 2>&1; then
+if ! command -v git >/dev/null 2>&1 || ! command -v git-lfs >/dev/null 2>&1; then
     echo -e "${GREY_BOLD}Installing git ...${NC}"
     case "$OS" in
     Darwin) brew install git git-lfs ;;
@@ -42,6 +42,7 @@ if ! command -v git >/dev/null 2>&1; then
         ;;
     esac
 fi
+git lfs install --skip-repo
 
 readonly MROVER_PATH=~/ros2_ws/src/mrover
 
