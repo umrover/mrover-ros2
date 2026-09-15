@@ -38,9 +38,12 @@ if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
         "${os_cmake_args[@]}" \
         --symlink-install \
         --event-handlers console_direct+ \
+        --build-base "build/$build_profile" \
+        --install-base "install/$build_profile" \
         --packages-select mrover
 
-    ln -sf "$(pwd)/build/mrover/compile_commands.json" "$(pwd)/src/mrover/compile_commands.json"
+    rm -rf "$(pwd)/build/$build_profile/mrover/.cmake/api"
+    ln -sf "$(pwd)/build/$build_profile/mrover/compile_commands.json" "$(pwd)/src/mrover/compile_commands.json"
 else
     # native environment
 
