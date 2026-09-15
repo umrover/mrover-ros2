@@ -1,0 +1,73 @@
+[workspace]
+name = "mrover"
+version = "2025.0.0"
+channels = ["robostack-jazzy", "conda-forge"]
+platforms = ["osx-arm64", "osx-64", "linux-64"]
+
+[dependencies]
+python = "3.12.*"
+
+# ROS 2 Jazzy via RoboStack.
+ros-jazzy-ros-base = "*"
+ros-jazzy-xacro = "*"
+ros-jazzy-rtcm-msgs = "*"
+ros-jazzy-dynamixel-sdk = "*"
+ros-jazzy-tf-transformations = "*"
+ros-jazzy-ament-cmake = "*"
+ros-jazzy-ament-cmake-python = "*"
+ros-jazzy-rosidl-default-generators = "*"
+ros-jazzy-rosidl-default-runtime = "*"
+ros-jazzy-magic-enum = "*"
+ros-jazzy-rviz2 = "*"
+
+cmake = "*"
+ninja = "*"
+pkg-config = "*"
+ccache = "*"
+colcon-common-extensions = "*"
+
+numpy = ">=2.0"
+libboost-devel = "*"
+
+eigen = "*"
+opencv = "*"
+manif = "*"
+manifpy = ">=0.0.5,<0.0.6"
+glfw = "3.3.*"
+assimp = "*"
+bullet = "*"
+qt6-main = "*"
+qt6-multimedia = "*"
+gstreamer = "*"
+gst-plugins-base = "*"
+bun = "*"
+nodejs = "24.*"
+ipython = "*"
+pytest = "*"
+pytest-asyncio = "*"
+# Sync with pyproject.toml dev
+black = "==26.5.1"
+mypy = "==1.11.2"
+clang-format = "18.*"
+shellcheck = "*"
+# macOS /bin/bash is 3.2, missing globstar
+bash = "5.*"
+
+[target.linux-64.dependencies]
+tbb = "*"
+tbb-devel = "*"
+clang_linux-64 = "18.*"
+clangxx_linux-64 = "18.*"
+sysroot_linux-64 = "2.28.*"
+libnl = "*"
+libudev = "*"
+
+[target.osx.dependencies]
+c-compiler = "*"
+cxx-compiler = "*"
+
+[pypi-dependencies]
+mrover = { path = ".", editable = true }
+
+[pypi-options]
+dependency-overrides = { numpy = ">=1.26.4", empy = ">=3.3.4", moteus = ">=0.3.72", pybind11-global = ">=3.0" }
