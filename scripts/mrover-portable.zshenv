@@ -4,8 +4,8 @@ MROVER_ROS2_WS_PATH="${MROVER_REPO:h:h}"
 
 [[ -d "$HOME/.pixi/bin" ]] && export PATH="$HOME/.pixi/bin:$PATH"
 
-remove_ros2_ws_from_path(){
-  export ${1}="$(echo ${(P)1} | tr ':' '\n' | grep -v "ros2_ws" | paste -s -d ':')"
+remove_ros2_ws_install_from_path(){
+  export ${1}="$(echo ${(P)1} | tr ':' '\n' | grep -v "^${MROVER_ROS2_WS_PATH}/install" | paste -s -d ':')"
 }
 
 activate_mrover() {
@@ -47,11 +47,11 @@ activate_mrover() {
   done
 
   # clean up current ROS environment
-  remove_ros2_ws_from_path LD_LIBRARY_PATH
-  remove_ros2_ws_from_path AMENT_PREFIX_PATH
-  remove_ros2_ws_from_path PYTHONPATH
-  remove_ros2_ws_from_path COLCON_PREFIX_PATH
-  remove_ros2_ws_from_path CMAKE_PREFIX_PATH
+  remove_ros2_ws_install_from_path LD_LIBRARY_PATH
+  remove_ros2_ws_install_from_path AMENT_PREFIX_PATH
+  remove_ros2_ws_install_from_path PYTHONPATH
+  remove_ros2_ws_install_from_path COLCON_PREFIX_PATH
+  remove_ros2_ws_install_from_path CMAKE_PREFIX_PATH
 
   if [ -f "${target_file}" ]; then
     source "${target_file}" >> /dev/null
