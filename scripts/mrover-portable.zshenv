@@ -73,7 +73,7 @@ source_mrover_overlay() { activate_mrover "$@"; }
 mrover() { activate_mrover "$@"; }
 
 build_mrover(){
-  cd "${MROVER_REPO}" && ./build.sh "${1}" && mrover
+  mrover && ./build.sh "${1}" && mrover
 }
 
 clean_mrover(){
