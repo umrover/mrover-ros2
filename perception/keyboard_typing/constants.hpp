@@ -21,11 +21,10 @@ int const DEFAULT_CAM_BRIGHTNESS = 0;
 
 auto const ARUCO_DICT = cv::aruco::DICT_4X4_50;
 auto const DICTIONARY = cv::aruco::getPredefinedDictionary(ARUCO_DICT);
-auto const BOARD = cv::aruco::CharucoBoard::create(
-        SQUARES_VERTICALLY, SQUARES_HORIZONTALLY,
-        SQUARE_LENGTH,
-        MARKER_LENGTH,
-        DICTIONARY);
+
+auto const BOARD = cv::makePtr<cv::aruco::CharucoBoard>(
+    cv::Size(SQUARES_VERTICALLY, SQUARES_HORIZONTALLY), SQUARE_LENGTH, MARKER_LENGTH, DICTIONARY);
+
 auto const PARAMS = cv::aruco::DetectorParameters();
 // auto const DETECTOR = cv::aruco::ArucoDetector(DICTIONARY, PARAMS);
 // ------------------------------

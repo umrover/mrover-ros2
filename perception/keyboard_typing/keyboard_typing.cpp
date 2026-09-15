@@ -69,7 +69,7 @@ namespace mrover{
             std::bind(&KeyboardTypingNode::handle_accepted, this, std::placeholders::_1));
 
         // subscribe to image stream
-        mImageSub = create_subscription<sensor_msgs::msg::Image>("/video4/image", rclcpp::QoS(1), [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
+        mImageSub = create_subscription<sensor_msgs::msg::Image>("/finger_camera/image", rclcpp::QoS(1), [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
             yawCallback(msg);
         });
 
@@ -186,7 +186,7 @@ namespace mrover{
 
         std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
         std::vector<int> ids;
-        cv::Ptr<cv::aruco::DetectorParameters> detectorParams = cv::aruco::DetectorParameters::create();
+        cv::Ptr<cv::aruco::DetectorParameters> detectorParams = cv::makePtr<cv::aruco::DetectorParameters>();
 
         // Could potentially run a mild gaussian blur plus sharpening kernel if instability is encountered
 

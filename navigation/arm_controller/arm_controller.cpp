@@ -1,7 +1,8 @@
 #include "arm_controller.hpp"
 
+
 namespace mrover {
-    rclcpp::Duration const ArmController::TIMEOUT = rclcpp::Duration(0, 0.3 * 1e9); // 0.3 seconds
+    const rclcpp::Duration ArmController::TIMEOUT = rclcpp::Duration(0, 0.3 * 1e9); // 0.3 seconds
 
     ArmController::ArmController() : Node{"arm_controller"}, mLastUpdate{get_clock()->now() - TIMEOUT} {
         mPosPub = create_publisher<msg::Position>("arm_pos_cmd", 10);
@@ -69,11 +70,11 @@ namespace mrover {
         msg::Position positions;
         positions.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
         positions.positions = {
-                static_cast<float>(y),
-                static_cast<float>(q1),
-                static_cast<float>(q2),
-                static_cast<float>(q3),
-                static_cast<float>(target.roll),
+            static_cast<float>(y),
+            static_cast<float>(q1),
+            static_cast<float>(q2),
+            static_cast<float>(q3),
+            static_cast<float>(target.roll),
         };
 
         for (size_t i = 0; i < positions.names.size(); ++i) {
@@ -89,7 +90,7 @@ namespace mrover {
                 return std::nullopt;
             }
         }
-
+        
         return positions;
     }
 
@@ -132,11 +133,11 @@ namespace mrover {
         msg::Velocity velocities;
         velocities.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
         velocities.velocities = {
-                static_cast<float>(vel.linear.y),
-                static_cast<float>(joint_b_vel),
-                static_cast<float>(joint_c_vel),
-                static_cast<float>(joint_de_pitch_vel),
-                static_cast<float>(vel.angular.x),
+            static_cast<float>(vel.linear.y),
+            static_cast<float>(joint_b_vel),
+            static_cast<float>(joint_c_vel),
+            static_cast<float>(joint_de_pitch_vel),
+            static_cast<float>(vel.angular.x),
         };
 
         double scaleFactor = 1;
@@ -158,7 +159,7 @@ namespace mrover {
         // scale down all velocities so that we don't exceed motor velocity limits
         if (scaleFactor > 1)
             RCLCPP_INFO_STREAM_THROTTLE(get_logger(), *get_clock(), 500, "Commanded velocity too high. Scaling down by factor of " << scaleFactor);
-        for (auto& v: velocities.velocities)
+        for (auto& v : velocities.velocities)
             v = static_cast<float>(v / scaleFactor);
 
         return velocities;
@@ -227,94 +228,9 @@ namespace mrover {
         mPosTarget = *ik_target;
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", mPosTarget.toSE3(), get_clock()->now());
         if (mArmMode == ArmMode::POSITION_CONTROL || mArmMode == ArmMode::TYPING)
-            mLastUpdate = get_clock()->now();
-        else
-            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "Received position command in velocity mode!");
-    }
-
-    auto ArmController::handleTypingGoal(const rclcpp_action::GoalUUID & uuid, std::shared_ptr<const action::TypingPosition_Goal> typingGoal) -> rclcpp_action::GoalResponse {
-        (void)typingGoal;
-        
-        if(mArmMode != ArmMode::TYPING) 
-            RCLCPP_WARN(get_logger(), "Rejecting goal: recieved typing goal while not in typing mode!");
-        
-        if(mTypingGoalID) {
-            RCLCPP_WARN(get_logger(), "Rejecting goal: received new typing goal while there already exists an active goal!");
-            return rclcpp_action::GoalResponse::REJECT;
-        }
-
-        mTypingGoalID = uuid;
-        RCLCPP_INFO(get_logger(), "Accepting new typing goal");
-        return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
-    }
-    
-    auto ArmController::handleTypingCancel(const std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingPosition>> typingGoalHandle) -> rclcpp_action::CancelResponse {
-        if(!mTypingGoalID || typingGoalHandle->get_goal_id() != mTypingGoalID.value()) {
-            RCLCPP_WARN(get_logger(), "Rejecting cancel: attempted to cancel an invalid typing goal");
-            return rclcpp_action::CancelResponse::REJECT;
-        } 
-        RCLCPP_INFO(get_logger(), "Accepting typing goal cancel");
-        return rclcpp_action::CancelResponse::ACCEPT;
-    }
-    
-    auto ArmController::handleTypingAccepted(const std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingPosition>> typingGoalHandle) -> void {
-        std::thread([this, typingGoalHandle]() {
-            auto result = std::make_shared<action::TypingPosition::Result>();
-            result->success = false;
-            auto feedback = std::make_shared<action::TypingPosition::Feedback>();
-            RCLCPP_INFO(get_logger(), "Joint A Current: %f, Gripper Current: %f", joints["joint_a"].pos, joints["gripper"].pos);
-            
-
-            // make param
-            rclcpp::Duration typingTimeout = rclcpp::Duration(15, 0);
-            rclcpp::Time startTime = get_clock()->now();
-
-            // make param
-            rclcpp::Rate loopRate(3);
-            while(get_clock()->now() - startTime < typingTimeout) {
                 mLastUpdate = get_clock()->now();
-                mPosTarget.y = mTypingOrigin.y + typingGoalHandle->get_goal()->x;
-                mPosTarget.gripper = mTypingOrigin.gripper + typingGoalHandle->get_goal()->y;
-                RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 100, "Joint A Target: %f, Gripper Target: %f", mPosTarget.y, mPosTarget.gripper);
-                if(typingGoalHandle->is_canceling()) {
-                    result->success = false;
-                    typingGoalHandle->canceled(result);
-
-                    mTypingGoalID = std::nullopt;
-
-                    RCLCPP_INFO(get_logger(), "Typing goal sucessfully cancelled");
-                    return;
-                }
-
-                double distRemaining = sqrt(pow(joints["joint_a"].pos - mPosTarget.y, 2) + pow((joints["gripper"].pos - mPosTarget.gripper), 2));
-                // make param
-                if(distRemaining < 0.004) {
-                    rclcpp::Time start = this->get_clock()->now();
-                    while((this->get_clock()->now().nanoseconds() - start.nanoseconds()) < 3e9) {
-                        continue;
-                    }
-                    result->success = true;
-                    typingGoalHandle->succeed(result);
-
-                    mTypingGoalID = std::nullopt;
-
-                    RCLCPP_INFO(get_logger(), "Typing goal sucessfully finished");
-                    return;
-                }
-
-                // send feedback
-                feedback->dist_remaining = static_cast<float>(distRemaining);
-                typingGoalHandle->publish_feedback(feedback);
-            }
-            result->success = false;
-            typingGoalHandle->abort(result);
-
-            mTypingGoalID = std::nullopt;
-            
-            RCLCPP_INFO(get_logger(), "Aborting goal: typing goal took too long!");
-            return;
-
-        }).detach();
+        else
+                RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "Received position command in velocity mode!");
     }
 
     auto ArmController::handleTypingGoal(const rclcpp_action::GoalUUID & uuid, const std::shared_ptr<const action::TypingPosition_Goal> &typingGoal) -> rclcpp_action::GoalResponse {
@@ -431,11 +347,11 @@ namespace mrover {
         msg::Position mCurrPos;
         mCurrPos.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
         mCurrPos.positions = {
-                static_cast<float>(joints["joint_a"].pos),
-                static_cast<float>(joints["joint_b"].pos),
-                static_cast<float>(joints["joint_c"].pos),
-                static_cast<float>(joints["joint_de_pitch"].pos),
-                static_cast<float>(joints["joint_de_roll"].pos),
+            static_cast<float>(joints["joint_a"].pos),
+            static_cast<float>(joints["joint_b"].pos),
+            static_cast<float>(joints["joint_c"].pos),
+            static_cast<float>(joints["joint_de_pitch"].pos),
+            static_cast<float>(joints["joint_de_roll"].pos),
         };
 
         if (get_clock()->now() - mLastUpdate > TIMEOUT) {
@@ -456,11 +372,13 @@ namespace mrover {
             auto velocities = ikVelCalc(mVelTarget);
             if (velocities &&
                 !(
-                        velocities->velocities[0] == 0 &&
-                        velocities->velocities[1] == 0 &&
-                        velocities->velocities[2] == 0 &&
-                        velocities->velocities[3] == 0 &&
-                        velocities->velocities[4] == 0)) {
+                    velocities->velocities[0] == 0 &&
+                    velocities->velocities[1] == 0 &&
+                    velocities->velocities[2] == 0 &&
+                    velocities->velocities[3] == 0 &&
+                    velocities->velocities[4] == 0
+                )
+            ) {
                 mVelPub->publish(velocities.value());
             } else {
                 if(!velocities) RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");

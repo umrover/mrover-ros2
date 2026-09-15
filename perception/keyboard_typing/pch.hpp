@@ -50,7 +50,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/aruco.hpp>
 #include <opencv2/aruco/charuco.hpp>
-#include <opencv2/aruco/dictionary.hpp>
+#include <opencv2/objdetect/aruco_dictionary.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/core/eigen.hpp>
