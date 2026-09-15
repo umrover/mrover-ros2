@@ -5,7 +5,7 @@ MROVER_ROS2_WS_PATH="${MROVER_REPO:h:h}"
 [[ -d "$HOME/.pixi/bin" ]] && export PATH="$HOME/.pixi/bin:$PATH"
 
 remove_ros2_ws_install_from_path(){
-  export ${1}="$(echo ${(P)1} | tr ':' '\n' | grep -v "^${MROVER_ROS2_WS_PATH}/install" | paste -s -d ':')"
+  export ${1}="$(echo ${(P)1} | tr ':' '\n' | grep -v "^${MROVER_ROS2_WS_PATH}/install" | paste -s -d ':' -)"
 }
 
 activate_mrover() {
