@@ -4,6 +4,10 @@ MROVER_ROS2_WS_PATH="${MROVER_REPO:h:h}"
 
 [[ -d "$HOME/.pixi/bin" ]] && export PATH="$HOME/.pixi/bin:$PATH"
 
+remove_ros2_ws_from_path(){
+  export ${1}="$(echo ${(P)1} | tr ':' '\n' | grep -v "ros2_ws" | paste -s -d ':')"
+}
+
 activate_mrover() {
   if ! command -v pixi >/dev/null 2>&1; then
     echo "pixi not found on PATH" >&2
@@ -22,7 +26,36 @@ activate_mrover() {
     add-zsh-hook -d preexec _conda_clang_preexec 2>/dev/null
     export HOST="${CONDA_BACKUP_HOST:-$HOST}"
   fi
-  [[ -f "${MROVER_ROS2_WS_PATH}/install/setup.zsh" ]] && source "${MROVER_ROS2_WS_PATH}/install/setup.zsh"
+
+  build_profiles=("RelWithDebInfo" "Release" "Debug")
+  unset MROVER_BUILD_PROFILE
+
+  target_file=""
+
+  for profile in "${build_profiles[@]}"; do
+    file="${MROVER_ROS2_WS_PATH}/install/${profile}/setup.zsh"
+
+    if [ -f "${file}" ]; then
+      if [[ -z "${target_file}" ]]; then
+        export MROVER_BUILD_PROFILE="${profile}"
+        target_file="${file}"
+      elif [[ "${file}" -nt "${target_file}" ]]; then
+        export MROVER_BUILD_PROFILE="${profile}"
+        target_file="${file}"
+      fi
+    fi
+  done
+
+  # clean up current ROS environment
+  remove_ros2_ws_from_path LD_LIBRARY_PATH
+  remove_ros2_ws_from_path AMENT_PREFIX_PATH
+  remove_ros2_ws_from_path PYTHONPATH
+  remove_ros2_ws_from_path COLCON_PREFIX_PATH
+  remove_ros2_ws_from_path CMAKE_PREFIX_PATH
+
+  if [ -f "${target_file}" ]; then
+    source "${target_file}" >> /dev/null
+  fi
 
   # ROS's local_setup.zsh sets AMENT_SHELL=zsh without unsetting it
   unset AMENT_SHELL
@@ -33,6 +66,8 @@ activate_mrover() {
     unset DYLD_LIBRARY_PATH
   fi
 }
+
+source_mrover_overlay() { activate_mrover "$@"; }
 
 # named function because it takes priority over autocd
 mrover() { activate_mrover "$@"; }
