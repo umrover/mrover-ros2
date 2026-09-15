@@ -29,7 +29,6 @@ namespace mrover {
             }
         };
 
-
         struct JointWrapper {
             struct JointLimits {
                 double minPos, maxPos, minVel, maxVel;
