@@ -36,3 +36,11 @@ activate_mrover() {
 
 # named function because it takes priority over autocd
 mrover() { activate_mrover "$@"; }
+
+build_mrover(){
+  cd "${MROVER_REPO}" && ./build.sh "${1}" && mrover
+}
+
+clean_mrover(){
+  cd "${MROVER_REPO}" && ./clean.sh && mrover
+}
