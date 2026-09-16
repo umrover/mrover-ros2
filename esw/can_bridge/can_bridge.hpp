@@ -24,7 +24,7 @@ namespace mrover {
         CANNetLink mCANNetLink;
         std::optional<boost::asio::posix::basic_stream_descriptor<>> mStream;
         std::jthread mIOThread;
-        boost::asio::io_service mIOService;
+        boost::asio::io_context mIOService;
         boost::bimap<std::string, std::uint8_t> mDevices;
         std::unordered_map<std::string, CANFDPubSub> mDevicesPubSub;
 

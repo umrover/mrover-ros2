@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - bootstrap.sh
+      - .github/pages/index.html
   workflow_dispatch:
 
 permissions:
@@ -27,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Assemble site
-        run: mkdir -p site && cp bootstrap.sh site/bootstrap.sh
+        run: mkdir -p site && cp bootstrap.sh .github/pages/index.html site/
       - uses: actions/upload-pages-artifact@v5
         with:
           path: site
