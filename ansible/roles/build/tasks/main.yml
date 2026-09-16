@@ -214,9 +214,9 @@
   args:
     executable: /bin/bash
   environment:
-    BUN_INSTALL: "{{ ansible_env.HOME }}/.bun"
+    BUN_INSTALL: "{{ ansible_facts['env']['HOME'] }}/.bun"
 
 - name: Install Bun Packages
-  ansible.builtin.command: "{{ ansible_env.HOME }}/.bun/bin/bun install"
+  ansible.builtin.command: "{{ ansible_facts['env']['HOME'] }}/.bun/bin/bun install"
   args:
     chdir: "{{ ros2_workspace }}/src/mrover/teleoperation/basestation_gui/frontend"
