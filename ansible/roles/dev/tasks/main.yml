@@ -1,6 +1,17 @@
 - name: Install platform-specific packages
   ansible.builtin.include_tasks: "{{ ansible_pkg_mgr }}.yml"
 
+- name: Locate zsh binary
+  ansible.builtin.command: which zsh
+  register: zsh_path
+  changed_when: false
+
+- name: Set zsh as default shell
+  become: true
+  ansible.builtin.user:
+    name: "{{ ansible_facts['user_id'] }}"
+    shell: "{{ zsh_path.stdout }}"
+
 - name: Install oh-my-zsh
   ansible.builtin.git:
     repo: https://github.com/ohmyzsh/ohmyzsh.git
@@ -22,18 +33,31 @@
     src: files/home/.oh-my-zsh/custom/themes/mrover.zsh-theme
     dest: ~/.oh-my-zsh/custom/themes/mrover.zsh-theme
 
-- name: Check for existing zshrc
-  ansible.builtin.stat:
+# EXCLUDES our own marked block before checking for omz
+- name: Check for oh-my-zsh sourcing outside our managed block
+  ansible.builtin.shell: |
+    set -o pipefail
+    awk '/# BEGIN MROVER OMZ/{skip=1} /# END MROVER OMZ/{skip=0; next} !skip' ~/.zshrc 2>/dev/null | grep -q "oh-my-zsh.sh"
+  args:
+    executable: /bin/bash
+  register: omz_sourced_elsewhere
+  changed_when: false
+  failed_when: false
+
+# append omz blockinfile
+- name: Wire oh-my-zsh into zshrc
+  ansible.builtin.blockinfile:
     path: ~/.zshrc
-  register: zshrc_stat
+    marker: "# {mark} MROVER OMZ"
+    block: |
+      export ZSH="$HOME/.oh-my-zsh"
+      ZSH_THEME="mrover"
+      plugins=(git fzf zsh-autosuggestions zsh-syntax-highlighting)
+      source $ZSH/oh-my-zsh.sh
+    create: true
+  when: omz_sourced_elsewhere.rc != 0
 
-# if user does not have zshrc, deploy ours
-- name: Deploy default oh-my-zsh zshrc for fresh installs
-  ansible.builtin.copy:
-    src: files/home/.zshrc
-    dest: ~/.zshrc
-  when: not zshrc_stat.stat.exists
-
+# zshenv depending on native/portable setup
 - name: Wire mrover shell env
   ansible.builtin.blockinfile:
     path: ~/.zshrc
@@ -41,6 +65,7 @@
     block: '[[ -f "{{ mrover_repo }}/{{ mrover_zshenv }}" ]] && source "{{ mrover_repo }}/{{ mrover_zshenv }}"'
     create: true
 
+# TODO (kevin): non-destructive method?
 - name: Deploy mrover tmux config
   ansible.builtin.copy:
     src: files/home/.mrover.tmux.conf
@@ -52,17 +77,6 @@
     marker: "# {mark} MROVER"
     block: source-file ~/.mrover.tmux.conf
     create: true
-
-- name: Locate zsh binary
-  ansible.builtin.command: which zsh
-  register: zsh_path
-  changed_when: false
-
-- name: Set zsh as default shell
-  become: true
-  ansible.builtin.user:
-    name: "{{ ansible_facts['user_id'] }}"
-    shell: "{{ zsh_path.stdout }}"
 
 - name: Initialize Git LFS
   ansible.builtin.command: git lfs install
