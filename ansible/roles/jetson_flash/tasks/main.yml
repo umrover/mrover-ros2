@@ -88,12 +88,12 @@
       creates: "{{ jetson_flash_dir }}/Linux_for_Tegra/source/kernel/kernel-{{ ubuntu_codename }}"
 
   - name: Sync Kernel Configuration
-    ansible.builtin.copy:
+    ansible.posix.synchronize:
       src: files/config
       dest: "{{ jetson_flash_dir }}/Linux_for_Tegra/source/kernel/kernel-{{ ubuntu_codename }}/.config"
 
   - name: Sync Kernel Configuration With Oldconfig
-    ansible.builtin.copy:
+    ansible.posix.synchronize:
       src: files/config
       dest: "{{ jetson_flash_dir }}/Linux_for_Tegra/source/kernel/kernel-{{ ubuntu_codename }}/arch/arm64/configs/oldconfig"
 

@@ -38,9 +38,10 @@
 
 - name: Sync all udev Rules
   become: true
-  ansible.builtin.copy:
+  ansible.posix.synchronize:
     src: files/rules/
     dest: /etc/udev/rules.d
+    recursive: true
 
 - name: Udev Reload Rules
   become: true
@@ -52,9 +53,10 @@
 
 - name: Sync blacklists
   become: true
-  ansible.builtin.copy:
+  ansible.posix.synchronize:
     src: files/modprobe/
     dest: /etc/modprobe.d
+    recursive: true
 
 - name: Build OpenCV
   become: true
@@ -65,15 +67,17 @@
 
 - name: Sync Bin
   become: true
-  ansible.builtin.copy:
+  ansible.posix.synchronize:
     src: files/bin/
     dest: /usr/local/bin
+    recursive: true
 
 - name: Sync Systemd
   become: true
-  ansible.builtin.copy:
+  ansible.posix.synchronize:
     src: files/systemd/
     dest: /etc/systemd/system
+    recursive: true
 
 - name: Reload Systemd Daemon
   become: true

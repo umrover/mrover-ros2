@@ -1,8 +1,9 @@
 - name: USB Rules
   become: true
-  ansible.builtin.copy:
+  ansible.posix.synchronize:
     src: files/rules/
     dest: /etc/udev/rules.d
+    recursive: true
 
 - name: udev Reload Rules
   become: true

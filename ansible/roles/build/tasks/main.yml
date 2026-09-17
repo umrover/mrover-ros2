@@ -29,9 +29,10 @@
 
 - name: Sync APT Preferences
   become: true
-  ansible.builtin.copy:
+  ansible.posix.synchronize:
     src: files/apt-preferences/
     dest: /etc/apt/preferences.d
+    recursive: true
 
 # deb822_repository doesn't call apt update, do so manually
 - name: Update APT Cache if Repos Changed
