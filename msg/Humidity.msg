@@ -1,1 +1,1 @@
-float64 relative_humidity
+float32 relative_humidity

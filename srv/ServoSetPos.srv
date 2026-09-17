@@ -1,4 +1,0 @@
-float32 position
-bool is_counterclockwise
----
-bool success

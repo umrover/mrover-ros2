@@ -1,1 +1,1 @@
-float64 percent
+float32 percent

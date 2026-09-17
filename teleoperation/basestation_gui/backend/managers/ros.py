@@ -1,16 +1,20 @@
+import logging
 import rclpy
 import threading
 import atexit
+from rclpy.client import Client
 from rclpy.node import Node
 from rclpy.executors import SingleThreadedExecutor
+
+logger = logging.getLogger(__name__)
 
 lock = threading.Lock()
 initialized = threading.Event()
 
-context = None
-node = None
-ros_thread = None
-service_clients = {}
+context: rclpy.Context | None = None
+node: Node | None = None
+ros_thread: threading.Thread | None = None
+service_clients: dict[str, Client] = {}
 service_clients_lock = threading.Lock()
 
 
@@ -19,6 +23,7 @@ def get_node() -> Node:
         with lock:
             if not initialized.is_set():
                 init_ros()
+    assert node is not None
     return node
 
 
@@ -28,9 +33,13 @@ def get_logger():
 
 def get_service_client(srv_type, srv_name):
     with service_clients_lock:
-        if srv_name not in service_clients:
-            n = get_node()
-            service_clients[srv_name] = n.create_client(srv_type, srv_name)
+        if srv_name in service_clients:
+            client = service_clients[srv_name]
+            if client.service_is_ready():
+                return client
+            client.destroy()
+        n = get_node()
+        service_clients[srv_name] = n.create_client(srv_type, srv_name)
         return service_clients[srv_name]
 
 
@@ -43,6 +52,7 @@ def get_context():
 
 
 def ros_spin():
+    assert node is not None
     executor = SingleThreadedExecutor(context=context)
     executor.add_node(node)
     try:
@@ -54,7 +64,7 @@ def ros_spin():
 def init_ros():
     global context, node, ros_thread
 
-    print("Initializing ROS Manager...")
+    logger.info("Initializing ROS Manager...")
     context = rclpy.Context()
     rclpy.init(context=context)
 
@@ -64,13 +74,13 @@ def init_ros():
     ros_thread = threading.Thread(target=ros_spin, daemon=True)
     ros_thread.start()
 
-    print("ROS Manager started in a background thread.")
+    logger.info("ROS Manager started in a background thread.")
     initialized.set()
 
 
 def shutdown_ros():
     global context, node
-    print("Shutting down ROS Manager...")
+    logger.info("Shutting down ROS Manager...")
     if context and rclpy.ok(context=context):
         if node:
             node.destroy_node()

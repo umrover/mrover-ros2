@@ -1,458 +1,349 @@
 <template>
-  <div class="wrapper d-flex m-0 p-0 h-100 w-100 gap-2">
-    <!-- Left Column: Waypoint Store (Inactive/All Waypoints) -->
-    <div class="d-flex flex-column w-100">
-      <div class="waypoint-header p-1 d-flex justify-content-between align-items-center">
-        <h3 class="m-0 p-0">Waypoints</h3>
-        <button class="btn btn-success" @click="openModal()">
-          Add from Map
-        </button>
+  <div
+    class="wrapper flex m-0 p-0 h-full w-full gap-2 relative outline-none"
+    :tabindex="vim.vimEnabled.value ? 0 : -1"
+    @keydown="vim.handleKeydown"
+    @focus="vim.editorFocused.value = true"
+    @blur="vim.handleBlur"
+    ref="editorRef"
+  >
+    <div class="editor-column" :class="{ 'column-focused': vim.vimEnabled.value && vim.editorFocused.value && vim.keyboard.focusedColumn.value === 'store' }">
+      <div class="waypoint-header p-2 mb-2 flex justify-between items-center border-b">
+        <div class="flex items-center gap-2">
+          <h4 class="component-header">Waypoint Items</h4>
+          <button
+            class="vim-toggle"
+            :class="vim.vimEnabled.value ? 'vim-toggle--on' : 'vim-toggle--off'"
+            title="Toggle Vim keybindings"
+            @click="vim.toggleVim"
+          >
+            <img src="/vim-logo.svg" alt="Vim" class="vim-logo" />
+          </button>
+        </div>
+        <div class="flex gap-2 items-center">
+          <button
+            class="btn btn-danger btn-sm btn-icon-sm"
+            data-testid="pw-reset-waypoints-btn"
+            @click="resetModal?.open()"
+            title="Reset waypoints"
+          >
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+          <button class="btn btn-sm btn-success" data-testid="pw-add-from-map" @click="addModal?.open()">
+            Add from Map
+          </button>
+        </div>
       </div>
-      <div class="waypoint-wrapper overflow-y-scroll flex-grow-1">
-        <WaypointStore
-          v-for="(waypoint, index) in waypoints"
-          :key="waypoint.id || index"
+      <VueDraggable
+        v-model="autonomyStore.store"
+        :group="{ name: 'waypoints', pull: 'clone', put: false }"
+        :filter="'.btn, input, select'"
+        :prevent-on-filter="false"
+        ghost-class="drag-ghost"
+        class="waypoint-wrapper p-2 rounded grow overflow-auto relative"
+        data-testid="pw-waypoint-store-list"
+      >
+        <div v-if="autonomyStore.store.length === 0" class="course-empty-state">
+          <i class="bi bi-geo-alt"></i>
+          <span>No waypoints in store</span>
+        </div>
+        <WaypointItem
+          v-for="(waypoint, index) in autonomyStore.store"
+          :key="waypoint.db_id || index"
+          :ref="(el: any) => { if (el) storeItemRefs[index] = el }"
           :waypoint="waypoint"
           :index="index"
-          @add="addToRoute"
-          @delete="deleteFromStore"
-          @update="updateStoreWaypoint"
+          :highlighted="vim.vimEnabled.value && vim.editorFocused.value && vim.keyboard.focusedColumn.value === 'store' && vim.keyboard.storeIndex.value === index"
+          :visual-selected="vim.vimEnabled.value && vim.keyboard.storeSelectedIndices.value.has(index)"
+          :on-colon="() => commandBar?.open()"
+          @add="autonomyStore.addToExecution"
+          @delete="autonomyStore.removeFromStore"
+          @update="handleStoreUpdate"
         />
-      </div>
+      </VueDraggable>
     </div>
 
-    <!-- Right Column: Active Route & Controls -->
-    <div class="d-flex flex-column w-100">
-      <!-- Controls Grid -->
-      <div class="datagrid m-0 p-0">
-        <FeedbackButton
-          ref="autonCheckbox"
-          class="auton-checkbox"
-          :name="'Autonomy Mode'"
-          :checked="autonEnabled"
-          :action="autonAction"
-          @toggle="handleAutonToggle"
-        />
-        <div class="stats">
-          <VelocityReading />
+    <div class="editor-column" :class="{ 'column-focused': vim.vimEnabled.value && vim.editorFocused.value && vim.keyboard.focusedColumn.value === 'execution' }">
+      <div class="waypoint-header p-2 mb-2 flex justify-between items-center border-b">
+        <h4 class="component-header">Execution</h4>
+        <div class="flex gap-1">
+          <button
+            class="btn btn-sm btn-danger"
+            :disabled="autonomyStore.execution.length === 0 || autonomyStore.isNavigating"
+            @click="autonomyStore.clearExecution()"
+          >
+            Clear
+          </button>
         </div>
-        <FeedbackButton
-          ref="teleopCheckbox"
-          class="teleop-checkbox"
-          :name="'Teleop Controls'"
-          :checked="teleopEnabled"
-          :action="teleopAction"
-          @toggle="handleTeleopToggle"
-        />
-        <FeedbackButton
-          ref="costmapCheckbox"
-          class="costmap-checkbox"
-          :name="'All Costmaps'"
-          :checked="allCostmapToggle"
-          @toggle="handleCostmapToggle"
-        />
       </div>
+      <VueDraggable
+        v-model="autonomyStore.execution"
+        :group="{ name: 'waypoints', pull: false, put: !autonomyStore.isNavigating }"
+        ghost-class="drag-ghost"
+        class="waypoint-wrapper p-2 rounded grow overflow-auto relative"
+        :disabled="autonomyStore.isNavigating"
+        @add="handleExecutionDragAdd"
+        @end="handleExecutionDragEnd"
+      >
+        <div v-if="autonomyStore.execution.length === 0" class="course-empty-state">
+          <i class="bi bi-cursor"></i>
+          <span>No active waypoints</span>
+        </div>
+        <div
+          v-for="(wp, index) in autonomyStore.execution"
+          :key="wp.db_id ?? index"
+          class="list-item"
+          :class="{
+            'kbd-highlighted': vim.vimEnabled.value && vim.editorFocused.value && vim.keyboard.focusedColumn.value === 'execution' && vim.keyboard.executionIndex.value === index,
+            'kbd-visual-selected': vim.vimEnabled.value && vim.keyboard.executionSelectedIndices.value.has(index),
+          }"
+        >
+          <div class="flex justify-between items-center mb-1">
+            <h5 class="list-item-title">{{ wp.name }}</h5>
+            <span v-if="wp.type === 1 && wp.tag_id != null" class="data-label">#{{ wp.tag_id }}</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <small class="text-muted">{{ wp.lat.toFixed(6) }}N, {{ wp.lon.toFixed(6) }}W</small>
+            <div class="flex gap-1">
+              <button
+                class="btn btn-sm btn-icon"
+                :class="wp.enable_costmap ? 'btn-success' : 'btn-secondary'"
+                :disabled="autonomyStore.isNavigating"
+                :title="wp.enable_costmap ? 'Costmap enabled' : 'Costmap disabled'"
+                @click="autonomyStore.toggleExecutionCostmap(index)"
+              >
+                <i class="bi bi-map" />
+              </button>
+              <button
+                class="btn btn-sm btn-danger btn-icon"
+                :disabled="autonomyStore.isNavigating"
+                @click="autonomyStore.removeFromExecution(wp)"
+              >
+                <i class="bi bi-trash-fill" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </VueDraggable>
+    </div>
 
-      <!-- Active Route List -->
-      <h3 class="m-0 p-0">Current Course</h3>
-      <div class="waypoint-wrapper overflow-y-scroll d-flex flex-column gap-2 flex-grow-1">
-        <WaypointItem
-          v-for="(waypoint, index) in currentRoute"
-          :key="index"
-          :waypoint="waypoint"
-          @delete="deleteFromRoute(waypoint)"
-          @toggleCostmap="toggleRouteCostmap"
-        />
+    <div v-if="vim.vimEnabled.value && vim.keyboard.showCheatSheet.value" class="kbd-cheatsheet" @click="vim.keyboard.showCheatSheet.value = false">
+      <div class="kbd-cheatsheet-content" @click.stop>
+        <div class="flex justify-between items-center mb-3">
+          <h5 class="font-bold">Keyboard Shortcuts</h5>
+          <button class="btn-close" @click="vim.keyboard.showCheatSheet.value = false"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <h6 class="font-semibold mb-1">Navigation</h6>
+            <div class="kbd-row"><kbd>h</kbd><kbd>l</kbd> or <kbd>&larr;</kbd><kbd>&rarr;</kbd> Switch column</div>
+            <div class="kbd-row"><kbd>j</kbd><kbd>k</kbd> or <kbd>&darr;</kbd><kbd>&uarr;</kbd> Move highlight</div>
+            <div class="kbd-row"><kbd>g</kbd><kbd>g</kbd> or <kbd>Home</kbd> Jump to top</div>
+            <div class="kbd-row"><kbd>G</kbd> or <kbd>End</kbd> Jump to bottom</div>
+          </div>
+          <div>
+            <h6 class="font-semibold mb-1">Actions</h6>
+            <div class="kbd-row"><kbd>Enter</kbd> / <kbd>e</kbd> Edit waypoint (store)</div>
+            <div class="kbd-row"><kbd>s</kbd> Stage to execution</div>
+            <div class="kbd-row"><kbd>d</kbd><kbd>d</kbd> Delete</div>
+            <div class="kbd-row"><kbd>J</kbd><kbd>K</kbd> Reorder (store)</div>
+          </div>
+          <div>
+            <h6 class="font-semibold mb-1">Visual Mode</h6>
+            <div class="kbd-row"><kbd>v</kbd> Enter/exit visual mode</div>
+            <div class="kbd-row"><kbd>j</kbd><kbd>k</kbd> Extend selection</div>
+            <div class="kbd-row"><kbd>s</kbd> Stage all selected</div>
+            <div class="kbd-row"><kbd>d</kbd> Delete all selected</div>
+            <div class="kbd-row"><kbd>Escape</kbd> Cancel selection</div>
+          </div>
+          <div>
+            <h6 class="font-semibold mb-1">Command Mode</h6>
+            <div class="kbd-row"><kbd>:</kbd> Open command bar</div>
+            <div class="kbd-row"><kbd>:e</kbd> Edit waypoint</div>
+            <div class="kbd-row"><kbd>:w</kbd> Save edit</div>
+            <div class="kbd-row"><kbd>:q</kbd> Close edit</div>
+            <div class="kbd-row"><kbd>:wq</kbd> / <kbd>:x</kbd> Save and close</div>
+            <div class="kbd-row"><kbd>?</kbd> Toggle this sheet</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Add Waypoint Modal -->
   <Teleport to="body">
-    <div class="modal fade" id="modalWypt" tabindex="-1" role="dialog">
-      <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Add Waypoint</h5>
-            <button type="button" class="btn-close" @click="closeModal"></button>
-          </div>
-          <div class="modal-body">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label for="waypointname" class="form-label">Name:</label>
-                <input
-                  class="form-control"
-                  id="waypointname"
-                  v-model="modalWypt.name"
-                />
-              </div>
-              <div class="col-md-6">
-                <label for="waypointid" class="form-label">Tag ID:</label>
-                <input
-                  v-if="modalWypt.type == 1"
-                  class="form-control"
-                  id="waypointid"
-                  v-model="modalWypt.id"
-                  type="number"
-                  max="249"
-                  min="0"
-                  step="1"
-                />
-                <input
-                  v-else
-                  class="form-control"
-                  id="waypointid"
-                  type="number"
-                  placeholder="-1"
-                  disabled
-                />
-              </div>
-              <div class="col-12">
-                <label class="form-label">Type:</label>
-                <select class="form-select" v-model="modalWypt.type">
-                  <option value="0">No Search</option>
-                  <option value="1">Post</option>
-                  <option value="2">Mallet</option>
-                  <option value="3">Water Bottle</option>
-                  <option value="4">Rock Pick</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              @click="saveNewWaypoint"
-            >
-              Add Waypoint
-            </button>
-          </div>
-        </div>
-      </div>
+    <div v-if="vim.vimEnabled.value && vim.visualSelectedCount.value > 0" class="visual-mode-bar">
+      -- VISUAL -- ({{ vim.visualSelectedCount.value }} selected)
     </div>
   </Teleport>
+
+  <VimBar v-if="vim.vimEnabled.value" ref="commandBar" @execute="vim.handleVimCommand" @close="vim.restoreFocus" />
+
+  <AutonWaypointModal ref="addModal" />
+
+  <ConfirmModal
+    ref="resetModal"
+    modal-id="modalReset"
+    title="Reset Waypoints"
+    confirm-text="Reset"
+    @confirm="autonomyStore.resetAll()"
+  >
+    <p>THIS WILL DROP AND RECREATE DB TABLES</p>
+    <p>THIS WILL REMOVE ALL USER-ADDED WAYPOINTS</p>
+  </ConfirmModal>
 </template>
 
-<script lang="ts">
-import FeedbackButton from './FeedbackButton.vue'
-import VelocityReading from './VelocityReading.vue'
+<script lang="ts" setup>
+import { ref, onMounted } from 'vue'
 import WaypointItem from './AutonWaypointItem.vue'
-import WaypointStore from './AutonWaypointStore.vue'
-
-import L from 'leaflet'
-import { defineComponent } from 'vue'
-import { Modal } from 'bootstrap'
+import AutonWaypointModal from './AutonWaypointModal.vue'
+import ConfirmModal from './ConfirmModal.vue'
+import VimBar from './VimBar.vue'
+import { VueDraggable } from 'vue-draggable-plus'
 import type { AutonWaypoint } from '@/types/waypoints'
-import { waypointsAPI, autonAPI } from '@/utils/api'
-import { useWebsocketStore } from '@/stores/websocket'
 import { useAutonomyStore } from '@/stores/autonomy'
+import { useVim } from '@/composables/useVim'
 
-export default defineComponent({
-  components: {
-    WaypointItem,
-    FeedbackButton,
-    VelocityReading,
-    WaypointStore,
-  },
+const autonomyStore = useAutonomyStore()
 
-  setup() {
-    const websocketStore = useWebsocketStore()
-    const autonomyStore = useAutonomyStore()
-    return { websocketStore, autonomyStore }
-  },
+const editorRef = ref<HTMLElement | null>(null)
+const addModal = ref<InstanceType<typeof AutonWaypointModal> | null>(null)
+const resetModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
+const storeItemRefs: Record<number, InstanceType<typeof WaypointItem>> = {}
+const commandBar = ref<InstanceType<typeof VimBar> | null>(null)
 
-  emits: ['toggleTeleop'],
+const vim = useVim({ editorRef, storeItemRefs, commandBar })
 
-  data() {
-    return {
-      // The "Store": list of all available waypoints
-      waypoints: [] as AutonWaypoint[],
-
-      // The "Active Route": subset of waypoints currently being navigated
-      currentRoute: [] as AutonWaypoint[],
-
-      modal: null as Modal | null,
-      modalWypt: {
-        name: '',
-        id: -1,
-        type: 0,
-        lat: 0,
-        lon: 0,
-        enable_costmap: true,
-      },
-
-      allCostmapToggle: true,
-      nextAvailableTagId: 8,
-    }
-  },
-
-  computed: {
-    navMessage() {
-      return this.websocketStore.messages['nav']
-    },
-    autonEnabled() {
-      return this.autonomyStore.autonEnabled
-    },
-    teleopEnabled() {
-      return this.autonomyStore.teleopEnabled
-    },
-    clickPoint() {
-      return this.autonomyStore.clickPoint
-    },
-  },
-
-  watch: {
-    // Sync Waypoint Store with Backend
-    waypoints: {
-      async handler(newList: AutonWaypoint[]) {
-        // Update map visualization
-        const mapPoints = newList.map(waypoint => ({
-          latLng: L.latLng(waypoint.lat, waypoint.lon),
-          name: waypoint.name
-        }))
-        this.autonomyStore.setWaypointList(mapPoints)
-
-        // Save to backend
-        try {
-          await waypointsAPI.saveAuton(newList)
-        } catch (error) {
-          console.error('Failed to save auton waypoints:', error)
-        }
-      },
-      deep: true,
-    },
-
-    // Sync Active Route with Backend
-    currentRoute: {
-      async handler(newRoute: AutonWaypoint[]) {
-        // Update map visualization
-        const mapPoints = newRoute.map(waypoint => ({
-          latLng: L.latLng(waypoint.lat, waypoint.lon),
-          name: waypoint.name
-        }))
-        this.autonomyStore.setRoute(mapPoints)
-
-        // Save to backend
-        try {
-          await waypointsAPI.saveCurrentAutonCourse(newRoute)
-        } catch (error) {
-          console.error('Failed to save current auton course:', error)
-        }
-      },
-      deep: true,
-    },
-  },
-
-  async mounted() {
-    this.modal = new Modal('#modalWypt', {})
-    await this.fetchData()
-  },
-
-  methods: {
-    async fetchData() {
-      try {
-        // Fetch Store Waypoints
-        const autonData = await waypointsAPI.getAuton()
-        if (autonData.status === 'success') {
-          this.waypoints = autonData.waypoints || []
-
-          // Calculate next available tag ID from existing waypoints
-          const maxTagId = this.waypoints.reduce((max, wp) => {
-            return wp.id > max ? wp.id : max
-          }, 7)
-          this.nextAvailableTagId = maxTagId + 1
-        }
-
-        // Fetch Active Route
-        const courseData = await waypointsAPI.getCurrentAutonCourse()
-        if (courseData.status === 'success') {
-          this.currentRoute = courseData.course || []
-
-          // Mark items in route as "in_route" in the store list for visual feedback
-          this.waypoints.forEach(wp => {
-             wp.in_route = this.currentRoute.some(
-               r => r.name === wp.name && r.id === wp.id && r.type === wp.type
-             )
-          })
-        }
-      } catch (error) {
-        console.error('Failed to load waypoints:', error)
-      }
-    },
-
-    // --- Route Management ---
-
-    addToRoute(waypoint: AutonWaypoint) {
-      // Deep copy to allow independent modification (e.g., enable_costmap) in route vs store
-      const newPoint = { ...waypoint, enable_costmap: this.allCostmapToggle }
-
-      // Visual feedback in store list
-      const storeIndex = this.waypoints.findIndex(w => w === waypoint)
-      if (storeIndex !== -1) {
-        const storeWaypoint = this.waypoints[storeIndex]
-        if (storeWaypoint) {
-          storeWaypoint.in_route = true
-        }
-      }
-
-      this.currentRoute.push(newPoint)
-    },
-
-    deleteFromRoute(waypoint: AutonWaypoint) {
-      const index = this.currentRoute.indexOf(waypoint)
-      if (index > -1) {
-        this.currentRoute.splice(index, 1)
-      }
-
-      // Update visual feedback in store
-      // Check if this type of waypoint still exists in the route elsewhere
-      const stillInRoute = this.currentRoute.some(
-         r => r.name === waypoint.name && r.id === waypoint.id && r.type === waypoint.type
-      )
-
-      if (!stillInRoute) {
-        const storeIndex = this.waypoints.findIndex(
-           w => w.name === waypoint.name && w.id === waypoint.id && w.type === waypoint.type
-        )
-        if (storeIndex !== -1) {
-          const storeWaypoint = this.waypoints[storeIndex]
-          if (storeWaypoint) {
-            storeWaypoint.in_route = false
-          }
-        }
-      }
-    },
-
-    toggleRouteCostmap({ waypoint, enable_costmap }: { waypoint: AutonWaypoint, enable_costmap: boolean }) {
-      waypoint.enable_costmap = enable_costmap
-    },
-
-    handleCostmapToggle(newState: boolean) {
-      this.allCostmapToggle = newState
-      this.currentRoute.forEach((wp: AutonWaypoint) => {
-        wp.enable_costmap = newState
-      })
-    },
-
-    // --- Store Management ---
-
-    saveNewWaypoint() {
-      this.modalWypt.lat = this.clickPoint.lat
-      this.modalWypt.lon = this.clickPoint.lon
-
-      // Assign next available tag ID if this is not a Post type (type 1 allows user to set tag_id)
-      if (this.modalWypt.type !== 1) {
-        this.modalWypt.id = this.nextAvailableTagId
-        this.nextAvailableTagId++
-      }
-
-      // Add to store (default deletable=true)
-      this.waypoints.push({ ...this.modalWypt, enable_costmap: true })
-
-      // Reset modal
-      this.modalWypt = {
-        name: '',
-        id: -1,
-        type: 0,
-        lat: 0,
-        lon: 0,
-        enable_costmap: true,
-      }
-      this.closeModal()
-    },
-
-    async deleteFromStore(index: number) {
-      const wp = this.waypoints[index]
-      if (!wp) return
-
-      // Optimistic UI update
-      this.waypoints.splice(index, 1)
-
-      if (wp.db_id && wp.deletable) {
-        try {
-          await waypointsAPI.deleteAutonWaypoint(wp)
-        } catch (error) {
-          console.error('Failed to delete waypoint:', error)
-          // Revert on failure (optional, but good practice)
-          this.waypoints.splice(index, 0, wp)
-        }
-      }
-    },
-
-    updateStoreWaypoint(waypoint: AutonWaypoint, index: number) {
-      const storeWaypoint = this.waypoints[index]
-      if (storeWaypoint) {
-        storeWaypoint.lat = waypoint.lat
-        storeWaypoint.lon = waypoint.lon
-      }
-    },
-
-    // --- Auton Control ---
-
-    autonAction(newState: boolean) {
-      const waypoints = newState
-        ? this.currentRoute.map((waypoint: AutonWaypoint) => ({
-            latitude_degrees: waypoint.lat,
-            longitude_degrees: waypoint.lon,
-            tag_id: waypoint.id,
-            type: waypoint.type,
-            enable_costmap: waypoint.enable_costmap,
-          }))
-        : []
-
-      return autonAPI.enable(newState, waypoints)
-    },
-
-    handleAutonToggle(newState: boolean) {
-      this.autonomyStore.setAutonMode(newState)
-    },
-
-    teleopAction(newState: boolean) {
-      return autonAPI.enableTeleop(newState)
-    },
-
-    handleTeleopToggle(newState: boolean) {
-      this.autonomyStore.setTeleopMode(newState)
-      this.$emit('toggleTeleop', newState)
-    },
-
-    // --- Modal ---
-    openModal() {
-      this.modal?.show()
-    },
-    closeModal() {
-      if (document.activeElement instanceof HTMLElement) {
-        document.activeElement.blur()
-      }
-      this.modal?.hide()
-    }
-  },
+onMounted(() => {
+  autonomyStore.fetchAll()
 })
+
+function handleStoreUpdate(waypoint: AutonWaypoint, index: number) {
+  const existing = autonomyStore.store[index]
+  if (!existing || existing.db_id == null) return
+
+  const fields: Partial<AutonWaypoint> = {}
+  if (waypoint.name !== existing.name) fields.name = waypoint.name
+  if (waypoint.type !== existing.type) fields.type = waypoint.type
+  if (waypoint.tag_id !== existing.tag_id) fields.tag_id = waypoint.tag_id
+  if (waypoint.lat !== existing.lat) fields.lat = waypoint.lat
+  if (waypoint.lon !== existing.lon) fields.lon = waypoint.lon
+  if (Object.keys(fields).length > 0) {
+    autonomyStore.updateStore(existing.db_id, fields)
+  }
+}
+
+function handleExecutionDragAdd(evt: { newIndex?: number }) {
+  if (evt.newIndex == null) return
+  const wp = autonomyStore.execution[evt.newIndex]
+  if (!wp) return
+  const isDuplicate = autonomyStore.execution.some(
+    (existing, i) => i !== evt.newIndex && existing.db_id === wp.db_id
+  )
+  if (isDuplicate) {
+    const next = [...autonomyStore.execution]
+    next.splice(evt.newIndex, 1)
+    autonomyStore.execution = next
+    return
+  }
+  autonomyStore.saveExecution()
+}
+
+function handleExecutionDragEnd() {
+  autonomyStore.saveExecution()
+}
 </script>
 
 <style scoped>
-.datagrid {
-  display: grid;
-  grid-gap: 6px;
-  grid-template-columns: 65% auto;
-  grid-template-rows: auto auto;
-  grid-template-areas:
-    'auton-check stats'
-    'teleop-check stats'
-    'costmap-check stats';
-  font-family: sans-serif;
-  padding-bottom: 10px;
+.editor-column {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  transition: border-color 0.15s;
+}
+
+.column-focused {
+  border-color: var(--status-ok);
 }
 
 .waypoint-wrapper {
+  scrollbar-gutter: stable;
   background-color: var(--view-bg);
-  padding: 8px;
-  border-radius: 8px;
 }
 
-.teleop-checkbox { grid-area: teleop-check; width: 100%; }
-.costmap-checkbox { grid-area: costmap-check; width: 100%; }
-.stats { grid-area: stats; }
-.auton-checkbox { grid-area: auton-check; }
+.list-item-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.data-label {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  font-size: 0.75rem;
+}
+
+.vim-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 3px;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s;
+}
+
+.vim-toggle--on {
+  background-color: rgb(var(--status-ok-rgb), 0.15);
+  border: 2px solid var(--status-ok);
+  box-shadow: 0 0 6px rgb(var(--status-ok-rgb), 0.3);
+}
+
+.vim-toggle--off {
+  background-color: transparent;
+  border: 2px solid var(--panel-border);
+  opacity: 0.35;
+}
+
+.vim-toggle--off:hover {
+  border-color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.vim-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+</style>
+
+<style>
+.visual-mode-bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1000;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+  letter-spacing: 0.05em;
+  background-color: var(--status-ok);
+  border-top: 2px solid var(--status-ok);
+}
 </style>

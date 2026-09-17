@@ -1,1 +1,1 @@
-float64 ppm
+float32 percent

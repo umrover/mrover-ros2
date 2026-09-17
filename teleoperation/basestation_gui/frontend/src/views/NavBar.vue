@@ -1,105 +1,118 @@
 <template>
-	<div class="wrapper">
-		<div class="ps-3 pe-2 py-2 d-flex justify-content-between align-items-center position-relative">
-			<a class="logo" href="/"><img src="/mrover.png" alt="MRover" title="MRover" width="200" /></a>
-      <div class="d-flex align-items-center gap-3">
-        <h1>{{ title }}</h1>
-        <div v-if="showGridControls" class="d-flex align-items-center gap-1 border rounded px-2 py-1">
+  <div class="wrapper bg-theme-card border-b border-theme">
+    <div class="pl-4 pr-2 py-2 flex justify-between items-center relative flex-nowrap">
+      <a class="logo absolute" href="/"><img src="/mrover.png" alt="MRover" width="200" /></a>
+      <div class="flex items-center gap-2">
+        <h1 class="text-theme-primary">{{ title }}</h1>
+        <div class="dropdown flex relative">
           <button
-            class="btn btn-sm px-2"
-            :class="gridLayoutStore.locked ? 'btn-danger' : 'btn-success'"
-            @click="gridLayoutStore.toggleLock()"
+            class="theme-btn-inline flex items-center justify-center border-2 border-theme rounded"
+            data-testid="pw-theme-dropdown"
+            @click="dropdownOpen = !dropdownOpen"
           >
-            <i :class="gridLayoutStore.locked ? 'bi bi-lock-fill' : 'bi bi-unlock-fill'"></i>
+            <i :class="themeIcon"></i>
           </button>
-          <button
-            class="btn btn-sm btn-secondary px-2"
-            @click="gridLayoutStore.triggerReset()"
-          >
-            <i class="bi bi-arrow-counterclockwise"></i>
-          </button>
-          <span class="ms-1 small text-muted">Grid</span>
-        </div>
-      </div>
-      <div class="d-flex align-items-center gap-3">
-        <WebsocketStatus />
-        <div class="border-start border-2" style="height: 40px;"></div>
-        <div class="dropdown">
-          <button
-            class="btn border border-2 rounded d-flex align-items-center justify-content-center"
-            style="width: 50px; height: 50px;"
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-          >
-            <i :class="themeIcon" class="fs-5"></i>
-          </button>
-          <ul class="dropdown-menu dropdown-menu-end">
+          <ul class="dropdown-menu" :class="{ show: dropdownOpen }">
             <li>
               <button
-                class="dropdown-item d-flex align-items-center gap-2"
+                class="dropdown-item flex items-center gap-2"
                 :class="{ active: themeStore.currentTheme === 'light' }"
-                @click="themeStore.setTheme('light')"
+                @click="themeStore.setTheme('light'); dropdownOpen = false"
               >
                 <i class="bi bi-sun-fill"></i> Light
               </button>
             </li>
             <li>
               <button
-                class="dropdown-item d-flex align-items-center gap-2"
+                class="dropdown-item flex items-center gap-2"
                 :class="{ active: themeStore.currentTheme === 'dark' }"
-                @click="themeStore.setTheme('dark')"
+                @click="themeStore.setTheme('dark'); dropdownOpen = false"
               >
                 <i class="bi bi-moon-fill"></i> Dark
               </button>
             </li>
-            <li>
-              <button
-                class="dropdown-item d-flex align-items-center gap-2"
-                :class="{ active: themeStore.currentTheme === 'high-contrast-light' }"
-                @click="themeStore.setTheme('high-contrast-light')"
-              >
-                <i class="bi bi-circle-half"></i> High Contrast Light
-              </button>
-            </li>
-            <li>
-              <button
-                class="dropdown-item d-flex align-items-center gap-2"
-                :class="{ active: themeStore.currentTheme === 'high-contrast-dark' }"
-                @click="themeStore.setTheme('high-contrast-dark')"
-              >
-                <i class="bi bi-circle-fill"></i> High Contrast Dark
-              </button>
-            </li>
-            <li>
-              <button
-                class="dropdown-item d-flex align-items-center gap-2 text-danger"
-                :class="{ active: themeStore.currentTheme === 'dont-click-me' }"
-                @click="themeStore.setTheme('dont-click-me')"
-              >
-                <i class="bi bi-exclamation-triangle-fill"></i> Don't Click Me
-              </button>
-            </li>
           </ul>
         </div>
+        <div v-if="showGridControls" class="flex items-center gap-1 border-2 border-theme rounded px-2 py-1">
+          <button
+            class="btn btn-sm btn-icon-sm"
+            :class="gridLayoutStore.locked ? 'btn-danger' : 'btn-success'"
+            data-testid="pw-grid-lock-btn"
+            @click="gridLayoutStore.toggleLock()"
+          >
+            <i :class="gridLayoutStore.locked ? 'bi bi-lock-fill' : 'bi bi-unlock-fill'"></i>
+          </button>
+          <button
+            class="btn btn-sm btn-secondary btn-icon-sm"
+            data-testid="pw-grid-reset-btn"
+            @click="gridLayoutStore.triggerReset()"
+          >
+            <i class="bi bi-arrow-counterclockwise"></i>
+          </button>
+          <span class="ml-1 text-sm text-muted">Grid</span>
+        </div>
+      </div>
+      <div class="flex items-stretch gap-2">
+        <div
+          class="border-2 border-theme rounded px-2 flex flex-col justify-center font-mono text-sm"
+          :class="{ 'jetson-high-latency': jetsonLatencyReceived && jetsonLatencyMs !== null && jetsonLatencyMs > 100 }"
+        >
+          <span class="text-muted font-semibold">jetson</span>
+          <span :class="jetsonLatencyReceived && jetsonLatencyMs === null ? 'text-danger' : ''">
+            <span v-html="formatNumber(jetsonLatencyMs, 4, 0)"></span><span :class="jetsonLatencyReceived && jetsonLatencyMs === null ? '' : 'text-muted'">ms</span>
+          </span>
+        </div>
+        <div class="border-l border-2 border-start-theme self-center nav-divider"></div>
+        <WebsocketStatus />
+        <div class="border-l border-2 border-start-theme self-center nav-divider"></div>
         <NotificationCenter />
       </div>
-		</div>
+    </div>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineComponent, ref, onMounted, onUnmounted } from 'vue';
 import WebsocketStatus from '../components/WebsocketStatus.vue';
 import NotificationCenter from '../components/NotificationCenter.vue';
 import { useGridLayoutStore } from '@/stores/gridLayout';
 import { useThemeStore } from '@/stores/theme';
+import { useWebsocketStore } from '@/stores/websocket';
+import { formatNumber } from '@/utils/formatNumber';
 
 export default defineComponent({
   name: 'NavBar',
   setup() {
     const gridLayoutStore = useGridLayoutStore();
     const themeStore = useThemeStore();
-    return { gridLayoutStore, themeStore };
+    const dropdownOpen = ref(false);
+    const jetsonLatencyMs = ref<number | null>(null);
+    const jetsonLatencyReceived = ref(false);
+
+    const websocketStore = useWebsocketStore();
+    websocketStore.setupWebSocket('latency');
+    websocketStore.onMessage<{ type: string; latency_ms: number | null }>('latency', 'jetson_ping', (msg) => {
+      jetsonLatencyMs.value = msg.latency_ms;
+      jetsonLatencyReceived.value = true;
+    });
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (dropdownOpen.value && !target.closest('.dropdown')) {
+        dropdownOpen.value = false;
+      }
+    };
+
+    onMounted(() => {
+      document.addEventListener('click', handleClickOutside);
+    });
+
+    onUnmounted(() => {
+      document.removeEventListener('click', handleClickOutside);
+      websocketStore.closeWebSocket('latency');
+    });
+
+    return { gridLayoutStore, themeStore, dropdownOpen, jetsonLatencyMs, jetsonLatencyReceived, formatNumber };
   },
   computed: {
     title(): string {
@@ -111,18 +124,15 @@ export default defineComponent({
     themeIcon(): string {
       const icons: Record<string, string> = {
         'light': 'bi bi-sun-fill',
-        'dark': 'bi bi-moon-fill',
-        'high-contrast-light': 'bi bi-circle-half',
-        'high-contrast-dark': 'bi bi-circle-fill',
-        'dont-click-me': 'bi bi-exclamation-triangle-fill'
+        'dark': 'bi bi-moon-fill'
       };
       return icons[this.themeStore.currentTheme] || 'bi bi-sun-fill';
     },
   },
-	components: {
+  components: {
     WebsocketStatus,
     NotificationCenter
-	},
+  },
   methods: {
     getTitleForRoute(path: string): string {
       const routeTitles: Record<string, string> = {
@@ -141,7 +151,39 @@ export default defineComponent({
 
 <style scoped>
 .logo {
-  position: absolute;
   left: 48%;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(1.25rem, 1rem + 0.5vw, 1.75rem);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.nav-divider {
+  height: clamp(32px, 2.5vw, 48px);
+}
+
+.theme-btn-inline {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  cursor: pointer;
+  background-color: var(--card-bg);
+}
+
+.theme-btn-inline i {
+  font-size: 0.85rem;
+}
+
+@keyframes jetson-flash-red {
+  0%, 100% { background-color: transparent; }
+  50% { background-color: rgb(220 53 69 / 40%); }
+}
+
+.jetson-high-latency {
+  animation: jetson-flash-red 1s ease-in-out infinite;
 }
 </style>

@@ -1,8 +1,10 @@
 import logging
 
+
 class ROS2Formatter(logging.Formatter):
     def format(self, record):
         return f"[{record.levelname.upper()}] {record.getMessage()}"
+
 
 LOGGING_CONFIG = {
     "version": 1,

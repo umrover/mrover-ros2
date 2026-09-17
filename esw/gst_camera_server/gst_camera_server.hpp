@@ -20,8 +20,6 @@ namespace mrover {
         std::string mDeviceNode;                                                         // Used if captureIsDev()
         rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr mDeviceImageSubscriber; // Used if captureIsTopic()
 
-        bool mDisableAutoWhiteBalance{}; // Useful for science, the UV LEDs can mess with the white balance
-
         int mCropLeft{}, mCropRight{}, mCropTop{}, mCropBottom{};
 
         gst::video::v4l2::CaptureFormat mStreamCaptureFormat;
@@ -55,8 +53,11 @@ namespace mrover {
         auto mediaControlServerCallback(srv::MediaControl::Request::ConstSharedPtr const& req, srv::MediaControl::Response::SharedPtr const& res) -> void;
         auto imageCaptureServerCallback(std_srvs::srv::Trigger::Request::ConstSharedPtr const&, std_srvs::srv::Trigger::Response::SharedPtr const& res) -> void;
 
+        [[nodiscard]] static auto nvHardwareAvailable() -> bool;
+
     public:
         explicit GstCameraServer(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
+        auto stopStreamPipelines() -> void;
 
         ~GstCameraServer() override;
     };

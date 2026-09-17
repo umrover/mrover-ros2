@@ -4,6 +4,7 @@
 #include <tf2_ros/transform_listener.h>
 
 // Messages
+#include <mrover/msg/camera_info.hpp>
 #include <mrover/msg/fix_status.hpp>
 #include <mrover/msg/fix_type.hpp>
 #include <mrover/msg/heading.hpp>

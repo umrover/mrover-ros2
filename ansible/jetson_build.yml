@@ -1,0 +1,12 @@
+---
+- hosts: all
+  vars_files:
+    - vars/native.yml
+  vars:
+    ifname: end0
+  roles:
+    - jetson_pre_build
+    - build
+    - jetson_build
+    - jetson_networks
+    - dev

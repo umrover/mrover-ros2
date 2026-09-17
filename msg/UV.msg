@@ -1,1 +1,1 @@
-uint8 uv_index
+float32 uv_index

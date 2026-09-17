@@ -3,7 +3,8 @@ from backend.managers.ros import get_node
 
 
 class LEDManager:
-    instance = None
+    instance: "LEDManager | None" = None
+    initialized: bool
 
     def __new__(cls):
         if cls.instance is None:
@@ -19,13 +20,19 @@ class LEDManager:
         self.teleop_enabled = False
         self.nav_state = "OffState"
         self.current_led_color = "red"
+        self.mission = "home"
         self.led_pub = None
 
     def get_led_publisher(self):
         if self.led_pub is None:
             node = get_node()
             self.led_pub = node.create_publisher(LED, "/led", 1)
+            node.create_timer(0.5, self.publish_led)
         return self.led_pub
+
+    def set_mission(self, mission: str):
+        self.mission = mission
+        self.update_led()
 
     def set_teleop_enabled(self, enabled: bool):
         self.teleop_enabled = enabled
@@ -36,30 +43,35 @@ class LEDManager:
         self.update_led()
 
     def update_led(self):
-        if self.teleop_enabled:
-            new_color = "blue"
-        elif self.nav_state == "DoneState":
-            new_color = "blinking-green"
+        if self.mission == "auton":
+            if self.teleop_enabled:
+                self.current_led_color = "blue"
+            elif self.nav_state == "DoneState":
+                self.current_led_color = "blinking-green"
+            else:
+                self.current_led_color = "red"
+        elif self.mission in ("dm", "es", "science"):
+            self.current_led_color = "blue"
         else:
-            new_color = "red"
+            self.current_led_color = "red"
+        self.publish_led()
 
-        if new_color != self.current_led_color:
-            self.current_led_color = new_color
-
-            led_pub = self.get_led_publisher()
-            led_msg = LED()
-
-            if new_color == "red":
-                led_msg.color = LED.RED
-            elif new_color == "blue":
-                led_msg.color = LED.BLUE
-            elif new_color == "blinking-green":
-                led_msg.color = LED.BLINKING_GREEN
-
-            led_pub.publish(led_msg)
+    def publish_led(self):
+        led_msg = LED()
+        if self.current_led_color == "red":
+            led_msg.color = LED.RED
+        elif self.current_led_color == "blue":
+            led_msg.color = LED.BLUE
+        elif self.current_led_color == "blinking-green":
+            led_msg.color = LED.BLINKING_GREEN
+        self.get_led_publisher().publish(led_msg)
 
 
 manager = LEDManager()
+
+
+def set_mission(mission: str):
+    manager.set_mission(mission)
 
 
 def set_teleop_enabled(enabled: bool):

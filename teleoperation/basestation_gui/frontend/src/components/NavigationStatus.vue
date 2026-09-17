@@ -1,87 +1,97 @@
 <template>
-  <div class="d-flex flex-column gap-2 flex-fill">
-    <div>
-      <div
-        v-if="!stuckStatus"
-        class="island p-2 rounded bg-success text-center"
-      >
-        <h3 class="m-0 p-0">Nominal Conditions</h3>
+  <div class="flex-1 flex">
+    <div class="panel nav-state-panel flex-1 flex items-center justify-center" data-testid="pw-nav-state-panel" :class="ledColorClass">
+      <div class="flex flex-col items-center gap-1">
+        <span class="data-label">Nav State</span>
+        <span class="nav-state-value" data-testid="pw-nav-state-value">{{ navState }}</span>
       </div>
-      <div v-else class="island p-2 rounded bg-danger text-center">
-        <h3 class="m-0 p-0">Obstruction Detected</h3>
-      </div>
-    </div>
-    <div
-      :class="[
-        'rounded p-2 flex-fill d-flex align-items-center justify-content-center',
-        ledColor,
-      ]"
-    >
-      <h3 class="m-0">Nav State: {{ navState }}</h3>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch } from 'vue'
+import { computed } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
+import { useAutonomyStore } from '@/stores/autonomy'
 import { storeToRefs } from 'pinia'
+import type { NavStateMessage } from '@/types/coordinates'
 
 const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
 
-const ledColor = ref('bg-danger')
-const stuckStatus = ref(false)
-const navState = ref('OffState')
+const autonomyStore = useAutonomyStore()
+const { teleopEnabled, navState } = storeToRefs(autonomyStore)
 
-const scienceMessage = computed(() => messages.value['science'])
-const navMessage = computed(() => messages.value['nav'])
-
-watch(scienceMessage, (msg: unknown) => {
-  if (typeof msg === 'object' && msg !== null && 'type' in msg) {
-    const typedMsg = msg as {
-      type: string
-      red?: boolean
-      green?: boolean
-      blue?: boolean
-    }
-    if (typedMsg.type === 'led') {
-      if (typedMsg.red) ledColor.value = 'bg-danger'
-      else if (typedMsg.green) ledColor.value = 'blink'
-      else if (typedMsg.blue) ledColor.value = 'bg-primary'
-    }
-  }
+const ledColorClass = computed(() => {
+  if (teleopEnabled.value) return 'nav-state--info'
+  if (navState.value === 'DoneState') return 'nav-state--ok nav-state--blink'
+  return 'nav-state--error'
 })
 
-watch(navMessage, (msg: unknown) => {
-  if (typeof msg === 'object' && msg !== null && 'type' in msg) {
-    const typedMsg = msg as { type: string; state?: string; color?: string }
-    if (typedMsg.type === 'nav_state') {
-      navState.value = typedMsg.state || 'OffState'
-    } else if (typedMsg.type === 'led_color') {
-      if (typedMsg.color === 'red') {
-        ledColor.value = 'bg-danger'
-      } else if (typedMsg.color === 'blinking-green') {
-        ledColor.value = 'blink'
-      } else if (typedMsg.color === 'blue') {
-        ledColor.value = 'bg-primary'
-      }
-    }
-  }
+websocketStore.onMessage<NavStateMessage>('nav', 'nav_state', (msg) => {
+  autonomyStore.setNavState(msg.state || 'OffState')
 })
 </script>
 
-<style>
-.blink {
-  animation: blink-green 1s infinite;
+<style scoped>
+.nav-state-panel {
+  min-height: clamp(70px, 5vw, 100px);
+  transition: all var(--transition);
 }
 
-@keyframes blink-green {
-  0%, 50% {
-    background-color: var(--bs-success);
-  }
-  51%, 100% {
-    background-color: transparent;
-  }
+.nav-state-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.nav-state--error {
+  background-color: var(--status-error);
+  border-color: var(--status-error);
+}
+
+.nav-state--error .data-label {
+  color: var(--text-on-status);
+  opacity: 0.8;
+}
+
+.nav-state--error .nav-state-value {
+   color: var(--text-on-status);
+}
+
+.nav-state--ok {
+  background-color: var(--status-ok);
+  border-color: var(--status-ok);
+}
+
+.nav-state--ok .data-label {
+  color: var(--text-on-status);
+  opacity: 0.8;
+}
+
+.nav-state--ok .nav-state-value {
+  color: var(--text-on-status);
+}
+
+.nav-state--info {
+  background-color: var(--accent);
+  border-color: var(--accent);
+}
+
+.nav-state--info .data-label {
+  color: var(--text-on-status);
+  opacity: 0.8;
+}
+
+.nav-state--info .nav-state-value {
+  color: var(--text-on-status);
+}
+
+.nav-state--blink {
+  animation: blink-bg 1s infinite;
+}
+
+@keyframes blink-bg {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.3; }
 }
 </style>

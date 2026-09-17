@@ -1,132 +1,152 @@
 <template>
-  <div class="wrapper d-flex m-0 p-2 justify-content-between gap-3 w-100 h-100">
-    <!-- Left Column: Controls & Creation -->
-    <div class="d-flex flex-column w-100 gap-2">
-      <!-- New Waypoint Form -->
-      <div class="d-flex flex-column gap-2 border border-2 rounded p-2">
-        <div class="d-flex align-items-center">
-          <label for="waypointname" class="form-label m-0 me-2">Name:</label>
-          <div class="col">
-            <input class="form-control" id="waypointname" v-model="name" />
-          </div>
+  <div class="flex m-0 p-0 h-full w-full gap-6">
+    <div class="flex flex-col w-full gap-4">
+      <div class="flex flex-col gap-2">
+        <div class="p-1 border-b-2 flex justify-between items-center h-[var(--btn-height-md)]">
+          <h4 class="component-header">Course Planning</h4>
+          <div class="h-[var(--btn-height-sm)]"></div> <!-- Spacer to match button height -->
         </div>
-        <div class="d-flex gap-2">
-          <div class="flex-fill input-group">
-            <input class="form-control" id="deg1" v-model.number="input.lat.d" />
-            <span class="input-group-text font-monospace px-2">ºN</span>
-          </div>
-          <div class="flex-fill input-group">
-            <input class="form-control" id="deg2" v-model.number="input.lon.d" />
-            <span class="input-group-text font-monospace px-2">ºW</span>
-          </div>
+        <div class="grid grid-cols-1 gap-2">
+          <button
+            class="btn btn-success btn-sm w-full"
+            @click="handleAddWaypoint(formatted_odom, false)"
+          >
+            Drop Waypoint at Rover
+          </button>
+          <button
+            v-if="enableDrone"
+            class="btn btn-info btn-sm w-full"
+            @click="handleAddWaypoint(input, true)"
+          >
+            Add Drone Position
+          </button>
         </div>
-        <button class="btn btn-success" @click="addWaypoint(input, false)">
-          Add Waypoint
-        </button>
+
+        <div class="flex flex-col gap-3 p-3 border rounded">
+          <div class="flex items-center gap-2">
+            <label for="waypointname" class="data-label m-0">Name:</label>
+            <input class="form-control form-control-sm grow" id="waypointname" data-testid="pw-basic-wp-name" v-model="name" />
+          </div>
+          <div class="flex gap-2">
+            <div class="flex-1 input-group input-group-sm">
+              <input class="form-control form-control-sm" id="deg1" v-model.number="input.lat.d" />
+              <span class="input-group-text">N</span>
+            </div>
+            <div class="flex-1 input-group input-group-sm">
+              <input class="form-control form-control-sm" id="deg2" v-model.number="input.lon.d" />
+              <span class="input-group-text">W</span>
+            </div>
+          </div>
+          <button class="btn btn-success btn-sm" data-testid="pw-basic-wp-add-btn" @click="handleAddWaypoint(input, false)">
+            Add Waypoint
+          </button>
+        </div>
       </div>
 
-      <!-- Rover Controls -->
-      <div class="border border-2 rounded p-2 gap-2 d-flex flex-column">
-        <div class="d-flex justify-content-between align-items-center gap-2">
-          <h4>Rover</h4>
-          <button
-            v-if="!isRecordingRover"
-            class="btn btn-success btn-sm"
-            @click="startRecording(false)"
-          >
-            Start Recording
-          </button>
-          <button
-            v-if="isRecordingRover"
-            class="btn btn-danger btn-sm"
-            @click="stopRecording"
-          >
-            Stop Recording
-          </button>
+      <div class="flex flex-col gap-2">
+        <div class="p-1 border-b-2 flex justify-between items-center h-[var(--btn-height-md)]">
+          <h4 class="component-header">Path Recording</h4>
+          <div class="flex items-center h-[var(--btn-height-sm)]">
+            <div v-if="isRecordingRover || isRecordingDrone" class="recording-badge flex items-center gap-1">
+              <span class="recording-dot"></span>
+              REC
+            </div>
+          </div>
         </div>
+
+        <div class="grid grid-cols-1 gap-3">
+          <div class="flex items-center justify-between p-2 border rounded">
+            <span class="data-label">Rover Telemetry</span>
+            <button
+              v-if="!isRecordingRover"
+              class="btn btn-success btn-sm w-20"
+              @click="startRecording(false)"
+              :disabled="isRecordingDrone"
+            >
+              Start
+            </button>
+            <button v-else class="btn btn-danger btn-sm w-20" @click="stopRecording">Stop</button>
+          </div>
+
+          <div v-if="enableDrone" class="flex items-center justify-between p-2 border rounded">
+            <span class="data-label">Drone Telemetry</span>
+            <button
+              v-if="!isRecordingDrone"
+              class="btn btn-success btn-sm w-20"
+              @click="startRecording(true)"
+              :disabled="isRecordingRover"
+            >
+              Start
+            </button>
+            <button v-else class="btn btn-danger btn-sm w-20" @click="stopRecording">Stop</button>
+          </div>
+        </div>
+
         <button
-          class="btn btn-success"
-          @click="addWaypoint(formatted_odom, false)"
+          class="btn btn-primary btn-sm w-full"
+          data-testid="pw-basic-wp-recordings-btn"
+          @click="showRecordingsModal = true"
         >
-          Drop Waypoint at Rover
-        </button>
-      </div>
-
-      <!-- Drone Controls (Conditional) -->
-      <div v-if="enableDrone" class="border border-2 rounded d-flex flex-column p-2 gap-2">
-        <div class="d-flex justify-content-between align-items-center gap-2">
-          <h4>Drone</h4>
-          <button
-            v-if="!isRecordingDrone"
-            class="btn btn-success btn-sm"
-            @click="startRecording(true)"
-          >
-            Start Recording
-          </button>
-          <button
-            v-if="isRecordingDrone"
-            class="btn btn-danger btn-sm"
-            @click="stopRecording"
-          >
-            Stop Recording
-          </button>
-        </div>
-        <button class="btn btn-info" @click="addWaypoint(input, true)">
-          Add Drone Position
-        </button>
-      </div>
-
-      <!-- Action Buttons -->
-      <button class="btn btn-success" @click="showRecordingsModal = true">
-        View Recordings
-      </button>
-      <div class="d-flex gap-2">
-        <button class="btn btn-danger flex-fill" @click="clearAllWaypoints">
-          Clear Waypoints
-        </button>
-        <button class="btn btn-danger flex-fill" @click="clearAllRecordings">
-          Clear Recordings
+          View Recordings
         </button>
       </div>
     </div>
 
-    <!-- Right Column: Active Route List -->
-    <div class="d-flex flex-column w-100">
-      <div class="d-flex mb-2 align-items-center justify-content-between">
-        <h4 class="m-0 p-0">Current Course</h4>
-        <button class="btn btn-danger" @click="clearWaypoint">Clear</button>
+    <div class="flex flex-col w-full gap-2">
+      <div class="p-1 border-b-2 flex justify-between items-center h-[var(--btn-height-md)]">
+        <h4 class="component-header">Current Course</h4>
+        <button class="btn btn-danger btn-sm" data-testid="pw-basic-wp-clear-btn" @click="clearWaypointsModal?.open()">Clear</button>
       </div>
-      <div class="waypoint-wrapper overflow-y-scroll d-flex flex-column gap-2 flex-grow-1">
+      <VueDraggable
+        v-model="erdStore.waypoints"
+        handle=".drag-handle"
+        ghost-class="drag-ghost"
+        class="bg-theme-view p-2 rounded overflow-y-auto flex flex-col gap-2 grow relative border"
+        data-testid="pw-basic-wp-list"
+      >
+        <div v-if="erdStore.waypoints.length === 0" class="course-empty-state">
+          <i class="bi bi-signpost-split"></i>
+          <span>No waypoints in course</span>
+        </div>
         <WaypointItem
-          v-for="(waypoint, i) in storedWaypoints"
-          :key="i"
+          v-for="(waypoint, i) in erdStore.waypoints"
+          :key="waypoint.db_id || i"
           :waypoint="waypoint"
           :index="i"
-          @delete="deleteItem($event)"
-          @find="findWaypoint($event)"
-          @search="searchForWaypoint($event)"
+          @delete="handleDelete($event)"
+          @find="erdStore.setHighlighted($event.index)"
+          @search="erdStore.setSearch($event.index)"
         />
-      </div>
+      </VueDraggable>
     </div>
 
     <RecordingsModal
       :show="showRecordingsModal"
       @close="showRecordingsModal = false"
     />
+
+    <ConfirmModal
+      ref="clearWaypointsModal"
+      modal-id="clearWaypointsModal"
+      title="Clear Waypoints"
+      message="Are you sure you want to delete all waypoints? This cannot be undone."
+      confirm-text="Clear"
+      @confirm="handleConfirmClearWaypoints"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { VueDraggable } from 'vue-draggable-plus'
 import WaypointItem from './BasicWaypointItem.vue'
 import RecordingsModal from './RecordingsModal.vue'
+import ConfirmModal from './ConfirmModal.vue'
 import { useErdStore } from '@/stores/erd'
 import { useWebsocketStore } from '@/stores/websocket'
 import { storeToRefs } from 'pinia'
-import L from 'leaflet'
-import { waypointsAPI, recordingAPI } from '@/utils/api'
-import type { StoreWaypoint, APIBasicWaypoint } from '@/types/waypoints'
-import type { NavMessage } from '@/types/coordinates'
+import { recordingAPI } from '@/utils/api'
+import type { GpsFixMessage } from '@/types/coordinates'
 
 defineProps({
   enableDrone: {
@@ -136,11 +156,9 @@ defineProps({
 })
 
 const erdStore = useErdStore()
-const { highlightedWaypoint, searchWaypoint, clickPoint } = storeToRefs(erdStore)
-const { setWaypointList, setHighlightedWaypoint, setSearchWaypoint } = erdStore
+const { clickPoint } = storeToRefs(erdStore)
 
 const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
 
 const rover_latitude_deg = ref(0)
 const rover_longitude_deg = ref(0)
@@ -150,154 +168,81 @@ const input = ref({
   lat: { d: 0 },
   lon: { d: 0 },
 })
-const storedWaypoints = ref<StoreWaypoint[]>([])
 
 const isRecordingRover = ref(false)
 const isRecordingDrone = ref(false)
 const currentRecordingId = ref<number | null>(null)
 const showRecordingsModal = ref(false)
 
-const formatted_odom = computed(() => {
-  return {
-    lat: { d: rover_latitude_deg.value },
-    lon: { d: rover_longitude_deg.value },
-  }
+const clearWaypointsModal = ref<InstanceType<typeof ConfirmModal> | null>(null)
+
+const formatted_odom = computed(() => ({
+  lat: { d: rover_latitude_deg.value },
+  lon: { d: rover_longitude_deg.value },
+}))
+
+websocketStore.onMessage<GpsFixMessage>('nav', 'gps_fix', (msg) => {
+  rover_latitude_deg.value = msg.latitude
+  rover_longitude_deg.value = msg.longitude
 })
 
-const navMessage = computed(() => messages.value['nav'])
-
-watch(navMessage, async msg => {
-  if (!msg) return
-  const navMsg = msg as NavMessage
-
-  if (navMsg.type === 'gps_fix') {
-    rover_latitude_deg.value = navMsg.latitude
-    rover_longitude_deg.value = navMsg.longitude
-  }
-})
-
-// Watch waypoints to sync with Backend
-watch(storedWaypoints, async (newList) => {
-  setWaypointList(newList) // Update map
-  
-  try {
-    const apiWaypoints: APIBasicWaypoint[] = newList.map(wp => ({
-      name: wp.name,
-      lat: wp.latLng.lat,
-      lon: wp.latLng.lng,
-      drone: wp.drone,
-    }))
-    await waypointsAPI.saveBasic(apiWaypoints)
-  } catch (error) {
-    console.error('Failed to save waypoints:', error)
-  }
-}, { deep: true })
-
-// Watch map clicks
-watch(clickPoint, newClickPoint => {
-  input.value.lat.d = newClickPoint.lat
-  input.value.lon.d = newClickPoint.lon
+watch(clickPoint, (pt) => {
+  input.value.lat.d = pt.lat
+  input.value.lon.d = pt.lon
 })
 
 onMounted(() => {
-  setHighlightedWaypoint(-1)
-  setSearchWaypoint(-1)
-  setWaypointList([])
-  setTimeout(() => loadWaypoints(), 250)
+  erdStore.highlightedWaypoint = -1
+  erdStore.searchWaypoint = -1
+  erdStore.fetchAll()
 })
 
-const loadWaypoints = async () => {
+async function handleAddWaypoint(coord: { lat: { d: number }; lon: { d: number } }, isDrone: boolean) {
   try {
-    const data = await waypointsAPI.getBasic()
-    if (data.status === 'success' && data.waypoints) {
-      storedWaypoints.value = data.waypoints.map((wp: APIBasicWaypoint) => ({
-        name: wp.name,
-        latLng: L.latLng(wp.lat, wp.lon),
-        drone: wp.drone,
-      }))
-    }
+    await erdStore.addWaypoint({
+      name: name.value,
+      lat: coord.lat.d,
+      lon: coord.lon.d,
+      drone: isDrone,
+    })
   } catch (error) {
-    console.error('Failed to load waypoints:', error)
+    console.error('Failed to add waypoint:', error)
   }
 }
 
-const addWaypoint = (coord: { lat: { d: number }, lon: { d: number } }, isDrone: boolean) => {
-  storedWaypoints.value.push({
-    name: name.value,
-    latLng: L.latLng(coord.lat.d, coord.lon.d),
-    drone: isDrone,
-  })
+function handleDelete(payload: { index: number }) {
+  erdStore.deleteWaypoint(payload.index)
 }
 
-const deleteItem = (payload: { index: number }) => {
-  if (highlightedWaypoint.value == payload.index) setHighlightedWaypoint(-1)
-  if (searchWaypoint.value == payload.index) setSearchWaypoint(-1)
-  storedWaypoints.value.splice(payload.index, 1)
-}
-
-const findWaypoint = (payload: { index: number }) => {
-  setHighlightedWaypoint(payload.index === highlightedWaypoint.value ? -1 : payload.index)
-}
-
-const searchForWaypoint = (payload: { index: number }) => {
-  setSearchWaypoint(payload.index === searchWaypoint.value ? -1 : payload.index)
-}
-
-const clearWaypoint = () => {
-  storedWaypoints.value = []
-}
-
-const clearAllWaypoints = async () => {
-  if (!confirm('Are you sure you want to delete all waypoints? This cannot be undone.')) return
+async function handleConfirmClearWaypoints() {
   try {
-    await waypointsAPI.deleteAll()
-    storedWaypoints.value = []
+    await erdStore.clearAll()
   } catch (error) {
     console.error('Failed to clear waypoints:', error)
   }
 }
 
-const clearAllRecordings = async () => {
-  if (!confirm('Are you sure you want to delete all recordings? This cannot be undone.')) return
-  try {
-    await recordingAPI.deleteAll()
-  } catch (error) {
-    console.error('Failed to clear recordings:', error)
-  }
-}
-
-const startRecording = async (isDrone: boolean) => {
+async function startRecording(isDrone: boolean) {
   try {
     const recordingName = `${isDrone ? 'Drone' : 'Rover'} Recording ${new Date().toLocaleString()}`
     const response = await recordingAPI.create(recordingName, isDrone)
 
     if (response.status === 'success' && response.recording_id) {
       currentRecordingId.value = response.recording_id
-
       if (isDrone) {
         isRecordingDrone.value = true
       } else {
         isRecordingRover.value = true
       }
-
-      console.log(`Recording started: ${recordingName} (ID: ${response.recording_id})`)
-    } else {
-      console.error('Failed to start recording:', response.message)
     }
   } catch (error) {
     console.error('Error starting recording:', error)
   }
 }
 
-const stopRecording = async () => {
+async function stopRecording() {
   try {
-    const response = await recordingAPI.stop()
-
-    if (response.status === 'success') {
-      console.log(`Recording stopped`)
-    } else {
-      console.error('Failed to stop recording:', response.message)
-    }
+    await recordingAPI.stop()
   } catch (error) {
     console.error('Error stopping recording:', error)
   } finally {
@@ -308,10 +253,52 @@ const stopRecording = async () => {
 }
 </script>
 
+<script lang="ts">
+export default {
+  name: 'BasicWaypointEditor',
+}
+</script>
+
 <style scoped>
-.waypoint-wrapper {
-  background-color: var(--view-bg);
-  padding: 8px;
-  border-radius: 8px;
+.input-group-text {
+  justify-content: center;
+  min-width: 40px;
+  font-size: 0.75rem;
+}
+
+.recording-badge {
+  padding: 0.125rem 0.375rem;
+  font-size: 0.625rem;
+  font-weight: 800;
+  color: var(--status-error);
+  letter-spacing: 0.05em;
+  background-color: rgb(var(--status-error-rgb), 0.1);
+  border: 1px solid var(--status-error);
+  border-radius: var(--radius-sm);
+}
+
+.recording-dot {
+  width: 6px;
+  height: 6px;
+  background-color: var(--status-error);
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.4;
+    transform: scale(1.2);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 </style>

@@ -1,0 +1,3 @@
+u2d2_bridge:
+  ros__parameters:
+    u2d2_device: "/dev/u2d2"

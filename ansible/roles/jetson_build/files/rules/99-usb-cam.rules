@@ -1,0 +1,7 @@
+SUBSYSTEM=="video4linux", KERNELS=="1-4.1.4.4", ATTR{index}=="0", SYMLINK+="mobcam_left"
+SUBSYSTEM=="video4linux", KERNELS=="1-4.1.1", ATTR{index}=="0", SYMLINK+="mobcam_right"
+SUBSYSTEM=="video4linux", KERNELS=="1-4.1.4.2", ATTR{index}=="0", SYMLINK+="static_cam"
+SUBSYSTEM=="video4linux", KERNELS=="1-4.1.4.3", ATTR{index}=="0", SYMLINK+="boomcam"
+SUBSYSTEM=="video4linux", ATTRS{idVendor}=="2b03", ATTRS{idProduct}=="f682", ATTR{index}=="0", SYMLINK+="zed_mini"
+SUBSYSTEM=="video4linux", ATTRS{idVendor}=="2b03", ATTRS{idProduct}=="f880", ATTR{index}=="0", SYMLINK+="zed"
+SUBSYSTEM=="video4linux", ATTRS{idVendor}=="32e4", ATTRS{idProduct}=="0234", ATTR{index}=="0", SYMLINK+="long_range_cam"

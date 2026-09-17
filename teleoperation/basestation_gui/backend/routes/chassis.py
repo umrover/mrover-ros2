@@ -1,4 +1,4 @@
-import asyncio
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 import numpy as np
@@ -6,24 +6,11 @@ import cv2
 
 from backend.managers.ros import get_node, get_service_client
 from backend.models_pydantic import GimbalAdjustRequest, ServoPositionRequest
+from backend.utils.ros_service import call_service_async
+from backend.database import BASE_DIR
 from mrover.srv import PanoramaStart, PanoramaEnd, ServoPosition
 
-router = APIRouter(prefix="/api", tags=["chassis"])
-
-
-async def call_service_async(client, request, timeout=10.0):
-    if not client.wait_for_service(timeout_sec=1.0):
-        return None
-
-    future = client.call_async(request)
-    try:
-        await asyncio.wait_for(
-            asyncio.get_event_loop().run_in_executor(None, future.result),
-            timeout=timeout
-        )
-        return future.result()
-    except asyncio.TimeoutError:
-        return None
+router = APIRouter(prefix="/api/chassis", tags=["chassis"])
 
 
 @router.post("/panorama/start/")
@@ -31,12 +18,12 @@ async def panorama_start():
     try:
         client = get_service_client(PanoramaStart, "/panorama/start")
         pano_request = PanoramaStart.Request()
-        result = await call_service_async(client, pano_request)
+        result, err = await call_service_async(client, pano_request)
 
         if result is None:
-            raise HTTPException(status_code=500, detail="Service call failed")
+            raise HTTPException(status_code=500, detail=err or "Service call failed")
 
-        return {'status': 'success'}
+        return {"status": "success"}
 
     except HTTPException:
         raise
@@ -49,32 +36,28 @@ async def panorama_stop():
     try:
         client = get_service_client(PanoramaEnd, "/panorama/end")
         pano_request = PanoramaEnd.Request()
-        result = await call_service_async(client, pano_request, timeout=30.0)
+        result, err = await call_service_async(client, pano_request, timeout=120.0)
 
         if result is None:
-            raise HTTPException(status_code=500, detail="Service call failed")
+            raise HTTPException(status_code=500, detail=err or "Service call failed")
 
         if not result.success:
             raise HTTPException(status_code=500, detail="Panorama failed")
 
         img_msg = result.img
-        img_np = np.frombuffer(img_msg.data, dtype=np.uint8).reshape(
-            img_msg.height, img_msg.width, -1
-        )
+        img_np: np.ndarray = np.frombuffer(img_msg.data, dtype=np.uint8).reshape(img_msg.height, img_msg.width, -1)
 
         if img_np.shape[2] == 4:
             img_np = cv2.cvtColor(img_np, cv2.COLOR_RGBA2BGR)
 
         node = get_node()
         timestamp = node.get_clock().now().nanoseconds
-        filename = f"../../data/{timestamp}_panorama.png"
+        data_dir = Path(BASE_DIR) / "data"
+        data_dir.mkdir(parents=True, exist_ok=True)
+        filename = str(data_dir / f"{timestamp}_panorama.png")
         cv2.imwrite(filename, img_np)
 
-        return {
-            'status': 'success',
-            'image_path': filename,
-            'timestamp': timestamp
-        }
+        return {"status": "success", "image_path": filename, "timestamp": timestamp}
 
     except HTTPException:
         raise
@@ -85,7 +68,7 @@ async def panorama_stop():
 @router.post("/gimbal/adjust/")
 async def gimbal_adjust(data: GimbalAdjustRequest):
     try:
-        if data.joint not in ['pitch', 'yaw']:
+        if data.joint not in ["pitch", "yaw"]:
             raise HTTPException(status_code=400, detail="Joint must be pitch or yaw")
 
         node = get_node()
@@ -97,19 +80,15 @@ async def gimbal_adjust(data: GimbalAdjustRequest):
         gimbal_request.names = [data.joint]
         gimbal_request.positions = [data.adjustment]
 
-        result = await call_service_async(client, gimbal_request)
+        result, err = await call_service_async(client, gimbal_request)
 
         if result is None:
-            raise HTTPException(status_code=500, detail="Service call failed")
+            raise HTTPException(status_code=500, detail=err or "Service call failed")
 
         if not result.at_tgts or not result.at_tgts[0]:
             raise HTTPException(status_code=500, detail="Gimbal adjustment failed")
 
-        return {
-            'status': 'success',
-            'joint': data.joint,
-            'adjustment': data.adjustment
-        }
+        return {"status": "success", "joint": data.joint, "adjustment": data.adjustment}
 
     except HTTPException:
         raise
@@ -129,15 +108,12 @@ async def sp_funnel_servo(data: ServoPositionRequest):
         servo_request.names = data.names
         servo_request.positions = data.positions
 
-        result = await call_service_async(client, servo_request)
+        result, err = await call_service_async(client, servo_request)
 
         if result is None:
-            raise HTTPException(status_code=500, detail="Service call failed")
+            raise HTTPException(status_code=500, detail=err or "Service call failed")
 
-        return {
-            'status': 'success',
-            'at_tgts': result.at_tgts
-        }
+        return {"status": "success", "at_tgts": result.at_tgts}
 
     except HTTPException:
         raise

@@ -1,68 +1,65 @@
 <template>
-  <div
-    class="modal-backdrop d-flex justify-content-center align-items-center"
-    @click.self="$emit('close')"
-  >
+  <Teleport to="body">
     <div
-      class="bg-theme-card rounded p-3"
-      style="
-        width: 90%;
-        max-width: 1200px;
-        height: 90vh;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-      "
+      class="modal-backdrop flex justify-center items-center"
+      @click.self="$emit('close')"
     >
-      <div class="d-flex justify-content-between align-items-center pb-2">
-        <h4 class="mb-0">All Sensor Charts</h4>
-        <div class="d-flex gap-2">
-          <button class="btn btn-danger" @click="$emit('reset')">
-            <i class="bi bi-arrow-counterclockwise"></i> Reset
-          </button>
-          <button class="btn btn-secondary" @click="$emit('close')">
+      <div class="sensor-modal-content panel">
+        <div class="sensor-modal-header">
+          <h4 class="component-header">All Sensor Charts</h4>
+          <button class="btn btn-sm btn-outline-danger close-btn" @click="$emit('close')">
             <i class="bi bi-x-lg"></i>
           </button>
         </div>
-      </div>
 
-      <div class="d-flex flex-column gap-2 flex-fill" style="overflow: hidden">
-        <div
-          v-for="(config, index) in chartConfigs"
-          :key="index"
-          class="border rounded p-2 bg-light d-flex flex-row gap-3"
-          style="flex: 1; min-height: 0"
-        >
-          <div
-            class="d-flex flex-column align-items-start"
-            style="width: 180px; flex-shrink: 0"
-          >
-            <h5 class="mb-2 text-nowrap">{{ config.title }}</h5>
-            <div class="d-flex flex-column gap-2">
-              <button class="btn btn-primary" @click="downloadPNG(index)">
-                <i class="bi bi-download"></i> PNG
-              </button>
-              <button class="btn btn-secondary" @click="downloadCSV(index)">
-                <i class="bi bi-download"></i> CSV
-              </button>
+        <div class="sensor-grid">
+          <div class="sensor-title-cell">
+            <span class="config-section-label">Display</span>
+            <div class="config-row">
+              <span class="config-label">Zero Baseline</span>
+              <input type="checkbox" v-model="configBeginAtZero" class="config-checkbox" />
             </div>
+            <div class="config-row">
+              <span class="config-label">Smooth Lines</span>
+              <input type="checkbox" v-model="configSmooth" class="config-checkbox" />
+            </div>
+            <div class="config-divider"></div>
+            <button class="btn btn-sm btn-outline-danger w-full" @click="$emit('reset')">
+              <i class="bi bi-arrow-counterclockwise"></i> Reset History
+            </button>
           </div>
-          <div class="flex-fill d-flex" style="min-width: 0">
-            <canvas
-              :id="`modal-chart-${index}`"
-              style="width: 100%; height: 100%"
-            ></canvas>
+
+          <div
+            v-for="(config, index) in chartConfigs"
+            :key="index"
+            class="sensor-chart-cell"
+          >
+            <div class="sensor-chart-cell-header">
+              <span class="sensor-chart-title">{{ config.title }}</span>
+              <div class="flex gap-1">
+                <button class="btn btn-sm btn-outline-secondary" @click="downloadPNG(index)">
+                  <i class="bi bi-download"></i> PNG
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" @click="downloadCSV(index)">
+                  <i class="bi bi-download"></i> CSV
+                </button>
+              </div>
+            </div>
+            <div class="sensor-chart-canvas">
+              <canvas :id="`modal-chart-${index}`" class="w-full h-full"></canvas>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script lang="ts" setup>
-import { onMounted, onUnmounted, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import Chart from 'chart.js/auto'
 import type { Chart as ChartType } from 'chart.js/auto'
+import { currentTimestamp } from '@/utils/formatNumber'
 
 interface ChartDataset {
   label: string
@@ -98,7 +95,7 @@ const chartConfigs: readonly ChartConfig[] = [
     datasets: [{ label: 'Humidity', color: '#3BB273', historyIndex: 1 }],
   },
   {
-    title: 'Temperature (°C)',
+    title: 'Temperature (C)',
     datasets: [{ label: 'Temp', color: '#E15554', historyIndex: 2 }],
   },
   {
@@ -110,7 +107,7 @@ const chartConfigs: readonly ChartConfig[] = [
     datasets: [{ label: 'Ozone', color: '#F9A825', historyIndex: 4 }],
   },
   {
-    title: 'CO₂ (ppm)',
+    title: 'CO₂ (Rel. %)',
     datasets: [{ label: 'CO₂', color: '#8D6E63', historyIndex: 5 }],
   },
   {
@@ -120,6 +117,29 @@ const chartConfigs: readonly ChartConfig[] = [
 ] as const
 
 const charts: (ChartType | null)[] = Array(chartConfigs.length).fill(null)
+
+const configWindow = 30
+const configBeginAtZero = ref(false)
+const configSmooth = ref(false)
+
+watch(configBeginAtZero, (val) => {
+  for (const chart of charts) {
+    const yScale = chart?.options.scales?.['y'] as { beginAtZero?: boolean } | undefined
+    if (!yScale) continue
+    yScale.beginAtZero = val
+    chart!.update()
+  }
+})
+
+watch(configSmooth, (val) => {
+  for (const chart of charts) {
+    if (!chart) continue
+    chart.data.datasets.forEach(ds => {
+      (ds as { tension: number }).tension = val ? 0.4 : 0.1
+    })
+    chart.update()
+  }
+})
 
 const sanitizeFilename = (title: string): string => {
   return title.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '')
@@ -134,7 +154,7 @@ const downloadPNG = (chartIndex: number): void => {
   const url = canvas.toDataURL('image/png')
   const anchor = document.createElement('a')
   anchor.href = url
-  anchor.download = `${sanitizeFilename(config.title)}.png`
+  anchor.download = `${sanitizeFilename(config.title)}_${currentTimestamp()}.png`
   anchor.click()
 }
 
@@ -153,13 +173,15 @@ const downloadCSV = (chartIndex: number): void => {
 
   const anchor = document.createElement('a')
   anchor.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv)
-  anchor.download = `${sanitizeFilename(config.title)}.csv`
+  anchor.download = `${sanitizeFilename(config.title)}_${currentTimestamp()}.csv`
   anchor.click()
 }
 
 const updateCharts = (): void => {
   const firstHistory = props.sensorHistory[0]
   if (!firstHistory) return
+
+  const windowLen = Math.min(firstHistory.length, configWindow)
 
   for (let i = 0; i < chartConfigs.length; i++) {
     const chart = charts[i]
@@ -170,15 +192,12 @@ const updateCharts = (): void => {
       const dataset = chart.data.datasets[idx]
       const historyData = props.sensorHistory[ds.historyIndex]
       if (dataset && historyData) {
-        dataset.data = [...historyData]
+        dataset.data = historyData.slice(-windowLen)
       }
     })
 
-    const startTime = Math.max(0, props.timeCounter - firstHistory.length + 1)
-    chart.data.labels = Array.from(
-      { length: firstHistory.length },
-      (_, i) => startTime + i,
-    )
+    const startTime = Math.max(0, props.timeCounter - windowLen + 1)
+    chart.data.labels = Array.from({ length: windowLen }, (_, i) => startTime + i)
     chart.update()
   }
 }
@@ -190,7 +209,6 @@ const handleEscape = (event: KeyboardEvent): void => {
 }
 
 onMounted(() => {
-  console.log()
   window.addEventListener('keydown', handleEscape)
 
   const firstHistory = props.sensorHistory[0]
@@ -204,26 +222,24 @@ onMounted(() => {
     const config = chartConfigs[i]
     if (!canvasElement || !config) continue
 
+    const windowLen = Math.min(firstHistory.length, configWindow)
     const datasets = config.datasets.map(ds => {
       const historyData = props.sensorHistory[ds.historyIndex]
       return {
         label: ds.label,
-        data: historyData ? [...historyData] : [],
+        data: historyData ? historyData.slice(-windowLen) : [],
         fill: false,
         borderColor: ds.color,
-        tension: 0.1,
+        tension: configSmooth.value ? 0.4 : 0.1,
       }
     })
 
-    const startTime = Math.max(0, props.timeCounter - firstHistory.length + 1)
+    const startTime = Math.max(0, props.timeCounter - windowLen + 1)
 
     charts[i] = new Chart(canvasElement, {
       type: 'line',
       data: {
-        labels: Array.from(
-          { length: firstHistory.length },
-          (_, i) => startTime + i,
-        ),
+        labels: Array.from({ length: windowLen }, (_, i) => startTime + i),
         datasets,
       },
       options: {
@@ -238,10 +254,22 @@ onMounted(() => {
         },
         scales: {
           y: {
-            beginAtZero: false,
+            beginAtZero: configBeginAtZero.value,
+            title: {
+              display: true,
+              text: config.title,
+              font: { size: 13 },
+            },
             ticks: {
               maxTicksLimit: 10,
               precision: 2,
+            },
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Time (s)',
+              font: { size: 13 },
             },
           },
         },
@@ -257,8 +285,6 @@ onMounted(() => {
     charts.forEach(chart => chart?.destroy())
   })
 })
-
-watch(() => props.sensorHistory, updateCharts, { deep: true })
 </script>
 
 <style scoped>
@@ -266,9 +292,119 @@ watch(() => props.sensorHistory, updateCharts, { deep: true })
   position: fixed;
   top: 0;
   left: 0;
+  z-index: 1000;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
-  z-index: 1000;
+  background-color: var(--backdrop);
+}
+
+.sensor-modal-content {
+  display: flex;
+  flex-direction: column;
+  width: 90%;
+  max-width: 1400px;
+  height: 90vh;
+  overflow: hidden;
+}
+
+.sensor-modal-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 2px solid var(--panel-border);
+}
+
+.close-btn {
+  aspect-ratio: 1;
+  padding: 0.25rem;
+}
+
+.sensor-grid {
+  display: grid;
+  flex: 1;
+  grid-template-rows: repeat(4, 1fr);
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  min-height: 0;
+}
+
+.sensor-title-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: var(--border-width) solid var(--panel-border);
+  border-radius: var(--radius-sm);
+}
+
+.config-section-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.config-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.config-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.config-checkbox {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+}
+
+.config-divider {
+  flex: 1;
+}
+
+.sensor-chart-cell {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0.5rem;
+  border: var(--border-width) solid var(--panel-border);
+  border-radius: var(--radius-sm);
+}
+
+.sensor-chart-cell-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+}
+
+.sensor-chart-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.sensor-chart-cell .btn {
+  font-size: 0.6875rem;
+}
+
+.sensor-chart-canvas {
+  position: relative;
+  flex: 1;
+  min-height: 0;
 }
 </style>

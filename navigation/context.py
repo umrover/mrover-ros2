@@ -6,10 +6,10 @@ import numpy as np
 import pymap3d
 import rclpy
 from scipy import ndimage
+from rclpy.parameter import Parameter
 
 import tf2_ros
 from geometry_msgs.msg import Twist, Point
-from mrover.srv import MoveCostMap, DilateCostMap
 from lie import SE3
 from mrover.msg import (
     Waypoint,
@@ -20,10 +20,11 @@ from mrover.msg import (
     ImageTarget,
     ImageTargets,
 )
-from mrover.srv import EnableAuton
-from nav_msgs.msg import Path
-from nav_msgs.msg import OccupancyGrid
-from visualization_msgs.msg import Marker, MarkerArray
+from mrover.srv import MoveCostMap, DilateCostMap, EnableAuton, ToggleObjectDetector
+from nav_msgs.msg import Path, OccupancyGrid
+from visualization_msgs.msg import Marker
+from std_srvs.srv import SetBool
+from rclpy import Parameter
 from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.publisher import Publisher
@@ -35,8 +36,8 @@ from rclpy.executors import SingleThreadedExecutor
 from state_machine.state import State
 from std_msgs.msg import Bool, Header
 from .drive import DriveController
-from collections import deque
 from copy import deepcopy
+from visualization_msgs.msg import Marker
 
 NO_TAG: int = -1
 
@@ -85,7 +86,7 @@ class Environment:
 
     def get_target_position(self, frame: str) -> np.ndarray | None:
         """
-        :param frame:   Target frame name. Could be for a tag, the hammer, or the water bottle.
+        :param frame:   Target frame name. Could be for a tag, the mallet, rock pick, or the water bottle.
         :return:        Pose of the target in the world frame if it exists and is not too old, otherwise None
         """
         try:
@@ -112,9 +113,11 @@ class Environment:
             case Waypoint(type=WaypointType(val=WaypointType.POST), tag_id=tag_id):
                 return self.get_target_position(f"tag{tag_id}")
             case Waypoint(type=WaypointType(val=WaypointType.MALLET)):
-                return self.get_target_position("hammer")
+                return self.get_target_position("mallet")
             case Waypoint(type=WaypointType(val=WaypointType.WATER_BOTTLE)):
                 return self.get_target_position("bottle")
+            case Waypoint(type=WaypointType(val=WaypointType.ROCK_PICK)):
+                return self.get_target_position("pick")
             case _:
                 return None
 
@@ -257,6 +260,7 @@ class Course:
         return current_waypoint is not None and current_waypoint.type.val in {
             WaypointType.MALLET,
             WaypointType.WATER_BOTTLE,
+            WaypointType.ROCK_PICK,
         }
 
     def image_target_name(self) -> str:
@@ -264,9 +268,11 @@ class Course:
             case Waypoint(tag_id=tag_id, type=WaypointType(val=WaypointType.POST)):
                 return f"tag{tag_id}"
             case Waypoint(type=WaypointType(val=WaypointType.MALLET)):
-                return "hammer"
+                return "mallet"
             case Waypoint(type=WaypointType(val=WaypointType.WATER_BOTTLE)):
                 return "bottle"
+            case Waypoint(type=WaypointType(val=WaypointType.ROCK_PICK)):
+                return "pick"
             case Waypoint(type=WaypointType(val=WaypointType.NO_SEARCH)):
                 return ""
             case _:
@@ -399,11 +405,20 @@ class Context:
     move_future: Future | None
     dilate_future: Future | None
 
+    # Object Detector Clients
+    stereo_cli: Client
+    image_cli: Client
+    stereo_future: Future | None
+    image_future: Future | None
+
     def setup(self, node: Node):
         from .state import OffState
 
         self.node = node
-        self.drive = DriveController(node)
+
+        self.lookahead_pub = self.node.create_publisher(Marker, "lookahead_circle", 10)
+        self.intersection_pub = self.node.create_publisher(Marker, "intersection_points", 10)
+        self.drive = DriveController(node, self.lookahead_pub, self.intersection_pub)
 
         self.world_frame = node.get_parameter("world_frame").value
         self.rover_frame = node.get_parameter("rover_frame").value
@@ -413,6 +428,9 @@ class Context:
         self.disable_requested = False
 
         node.create_service(EnableAuton, "enable_auton", self.enable_auton)
+        node.create_service(SetBool, "toggle_pure_pursuit", self.toggle_pure_pursuit)
+        node.create_service(SetBool, "toggle_path_relaxation", self.toggle_path_relaxation)
+        node.create_service(SetBool, "toggle_path_interpolation", self.toggle_path_interpolation)
 
         self.command_publisher = node.create_publisher(Twist, "nav_cmd_vel", 1)
         self.search_point_publisher = node.create_publisher(GPSPointList, "search_path", 1)
@@ -448,6 +466,11 @@ class Context:
             while not self.dilate_cli.wait_for_service(timeout_sec=1.0):
                 node.get_logger().info("Waiting for dilate_cost service...")
 
+        self.stereo_cli = node.create_client(ToggleObjectDetector, "toggle_stereo_object_detector")
+        self.image_cli = node.create_client(ToggleObjectDetector, "toggle_image_object_detector")
+        self.stereo_future = None
+        self.image_future = None
+
     def enable_auton(self, request: EnableAuton.Request, response: EnableAuton.Response) -> EnableAuton.Response:
         self.node.get_logger().info("Received new course to navigate!")
         if request.enable:
@@ -462,6 +485,65 @@ class Context:
         else:
             self.disable_requested = True
         response.success = True
+        return response
+
+    def toggle_object_detector(self, waypointType: WaypointType.val) -> bool:
+        # Ensure the object detector services are still running
+        while not self.stereo_cli.wait_for_service(timeout_sec=1.0):
+            self.node.get_logger().info("Waiting for stereo_object_detector service...")
+        while not self.image_cli.wait_for_service(timeout_sec=1.0):
+            self.node.get_logger().info("Waiting for image_object_detector service...")
+
+        objRequest = ToggleObjectDetector.Request()
+        objRequest.waypoint.val = waypointType
+
+        toggleType = ""
+        match waypointType:
+            case WaypointType.MALLET:
+                toggleType = "Mallet"
+            case WaypointType.WATER_BOTTLE:
+                toggleType = "Water Bottle"
+            case WaypointType.ROCK_PICK:
+                toggleType = "Rock Pick"
+            case _:
+                toggleType = "Off"
+
+        self.node.get_logger().info(f"Toggling Object Detector to {toggleType}")
+
+        self.stereo_future = self.stereo_cli.call_async(objRequest)
+        self.image_future = self.image_cli.call_async(objRequest)
+
+        return True
+
+    def obj_detector_service_is_done(self) -> bool:
+        # Ensure a service request has been called before
+        if self.image_future is None or self.stereo_future is None:
+            return True
+        # Check to see if the futures have finished
+        if self.image_future.done() and self.stereo_future.done():
+            # If futures have finished, ensure request was not malformed
+            if not self.image_future.result() or not self.stereo_future.result():
+                self.node.get_logger().warn("Object Detector Service Request Failed", throttle_duration_sec=2.0)
+            else:
+                return True
+        else:
+            self.node.get_logger().info("Waiting for Object Detector Service to Complete", throttle_duration_sec=2.0)
+        return False
+
+    def toggle_path_relaxation(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
+        self.node.set_parameters([Parameter("smoothing.use_relaxation", Parameter.Type.BOOL, request.data)])
+        self.node.get_logger().info(f"Set path relaxation toggle to {request.data}.")
+
+        response.success = True
+        response.message = f"Set path relaxation toggle to {request.data}."
+        return response
+
+    def toggle_path_interpolation(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
+        self.node.set_parameters([Parameter("smoothing.use_interpolation", Parameter.Type.BOOL, request.data)])
+        self.node.get_logger().info(f"Set path interpolation toggle to {request.data}.")
+
+        response.success = True
+        response.message = f"Set path interpolation toggle to {request.data}."
         return response
 
     def stuck_callback(self, msg: Bool) -> None:
@@ -574,6 +656,14 @@ class Context:
                 self.dilate_cost(self.current_dilation_radius)
             return True
         return False
+
+    def toggle_pure_pursuit(self, request: SetBool.Request, response: SetBool.Response) -> SetBool.Response:
+        self.node.set_parameters([Parameter("pure_pursuit.use_pure_pursuit", Parameter.Type.BOOL, request.data)])
+        self.drive.USE_PURE_PURSUIT = request.data
+        response.message = f"Set pure pursuit toggle to {request.data}."
+        self.node.get_logger().info(response.message)
+        response.success = True
+        return response
 
     def publish_path_marker(
         self,

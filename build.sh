@@ -3,7 +3,7 @@
 set -euxo pipefail
 
 # determine the build profile
-build_profile=Debug
+build_profile=RelWithDebInfo
 
 if [[ "$#" -ne "0" ]]; then
 	if [[ "$#" -eq "1" && ( "$1" == "Release" || "$1" == "RelWithDebInfo" || "$1" == "Debug" ) ]]; then
@@ -25,7 +25,7 @@ export CXX=clang++
 
 # Set CUDA compilers
 export CUDAHOSTCXX=g++-9
-export CUDACXX=/usr/local/cuda-12/bin/nvcc
+export CUDACXX=/usr/local/cuda/bin/nvcc
 
 # invoke colcon
 COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification colcon build \
@@ -33,7 +33,8 @@ COLCON_EXTENSION_BLOCKLIST=colcon_core.event_handler.desktop_notification colcon
 	--symlink-install \
 	--event-handlers console_direct+ \
 	--build-base "build/$build_profile" \
-	--install-base "install/$build_profile"
+	--install-base "install/$build_profile" \
+	--packages-select mrover
 
 rm -rf "$(pwd)/build/$build_profile/mrover/.cmake/api"
 

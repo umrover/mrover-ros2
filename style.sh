@@ -27,7 +27,7 @@ if [ $# -eq 0 ] || [ "$1" != "--fix" ]; then
 fi
 
 function print_update_error() {
-  echo -e "${RED}[Error] Please update with ./ansible.sh build.yml${NC}"
+  echo -e "${RED}[Error] Please update with ./ansible.sh build.yml${NC}" >&2
   exit 1
 }
 
@@ -36,11 +36,11 @@ function find_executable() {
   local -r version="$2"
   local -r path=$(which "${executable}")
   if [ ! -x "${path}" ]; then
-    echo -e "${RED}[Error] Could not find ${executable}${NC}"
+    echo -e "${RED}[Error] Could not find ${executable}${NC}" >&2
     print_update_error
   fi
   if ! "${path}" --version | grep -q "${version}"; then
-    echo -e "${RED}[Error] Wrong ${executable} version${NC}"
+    echo -e "${RED}[Error] Wrong ${executable} version${NC}" >&2
     print_update_error
   fi
   echo "${path}"
@@ -48,15 +48,18 @@ function find_executable() {
 
 ## Check that all tools are installed
 
-readonly CLANG_FORMAT_PATH=$(find_executable clang-format-18 18.1)
-readonly BLACK_PATH=$(find_executable black 24.8.0)
-readonly MYPY_PATH=$(find_executable mypy 1.11.2)
+CLANG_FORMAT_PATH=$(find_executable clang-format-18 18.1)
+readonly CLANG_FORMAT_PATH
+BLACK_PATH=$(find_executable black 26.5.1)
+readonly BLACK_PATH
+MYPY_PATH=$(find_executable mypy 1.11.2)
+readonly MYPY_PATH
 
 ## Run checks
 
 # Add new directories with C++ code here:
 readonly CPP_FILES=(
-  ./{perception,lie,esw,simulator,parameter_utils}/**/*.{cpp,hpp,h,cu,cuh}
+  ./{perception,lie,esw,simulator,parameter_utils,teleoperation}/**/*.{cpp,hpp,h,cu,cuh}
 )
 echo "Style checking C++ ..."
 "${CLANG_FORMAT_PATH}" "${CLANG_FORMAT_ARGS[@]}" -i "${CPP_FILES[@]}"
@@ -70,6 +73,7 @@ readonly PYTHON_LINT_DIRS=(
   ./state_machine
   ./lie
   ./superstructure
+  ./teleoperation/
 )
 readonly PYTHON_STYLE_DIRS=(
   "${PYTHON_LINT_DIRS[@]}"
@@ -112,7 +116,7 @@ if command -v shellcheck &> /dev/null; then
     ./*.sh
   )
   # SC2155 is separate declaration and command.
-  shellcheck --exclude=SC2155 "${SHELL_FILES[@]}"
+  shellcheck --shell=bash --exclude=SC2155 "${SHELL_FILES[@]}"
   echo "Done"
 fi
 

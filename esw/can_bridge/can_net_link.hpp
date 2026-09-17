@@ -4,27 +4,27 @@
 
 namespace mrover {
 
-    struct CanNetLink {
+    struct CANNetLink {
 
-        CanNetLink() = default;
+        CANNetLink() = default;
 
-        CanNetLink(rclcpp::Logger const& logger, std::string);
+        CANNetLink(rclcpp::Logger const& logger, std::string);
 
-        CanNetLink(CanNetLink const&) = delete;
-        auto operator=(CanNetLink const&) -> CanNetLink& = delete;
+        CANNetLink(CANNetLink const&) = delete;
+        auto operator=(CANNetLink const&) -> CANNetLink& = delete;
 
-        CanNetLink(CanNetLink&& other) noexcept {
+        CANNetLink(CANNetLink&& other) noexcept {
             *this = std::move(other);
         }
 
-        auto operator=(CanNetLink&& other) noexcept -> CanNetLink& {
+        auto operator=(CANNetLink&& other) noexcept -> CANNetLink& {
             mInterface = std::move(other.mInterface);
             mSocket = std::exchange(other.mSocket, nullptr);
             mCache = std::exchange(other.mCache, nullptr);
             return *this;
         }
 
-        ~CanNetLink();
+        ~CANNetLink();
 
         std::string mInterface{};
         nl_cache* mCache{};

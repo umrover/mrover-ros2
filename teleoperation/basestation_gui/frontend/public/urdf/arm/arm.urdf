@@ -79,7 +79,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="../meshes/rover_chassis.dae"/>
+        <mesh filename="../meshes/rover_chassis.glb"/>
       </geometry>
       <material name="red">
         <color rgba="1 1 1 1"/>
@@ -91,7 +91,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <!-- <origin rpy="0 0 0" xyz="16.4882 20.0235 49.1172"/> -->
       <geometry>
-        <mesh filename="../meshes/arm_a_fix.dae"/>
+        <mesh filename="../meshes/arm_a_fix.glb"/>
       </geometry>
       <material name="white">
         <color rgba="1 1 1 1"/>
@@ -103,7 +103,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <!-- <origin rpy="0 0 0" xyz="19.923 20.023 54.02"/> -->
       <geometry>
-        <mesh filename="../meshes/arm_b_fix.dae"/>
+        <mesh filename="../meshes/arm_b_fix.glb"/>
       </geometry>
       <material name="orange">
         <color rgba="1 0.43 0 1"/>
@@ -115,7 +115,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <!-- <origin rpy="0 0 0" xyz="73.3593 20.0235 54.9252"/> -->
       <geometry>
-        <mesh filename="../meshes/arm_c_fix.dae"/>
+        <mesh filename="../meshes/arm_c_fix.glb"/>
       </geometry>
       <material name="yellow">
         <color rgba="1 1 0 1"/>
@@ -127,7 +127,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <!-- <origin rpy="0 0 0" xyz="127.963 20.0235 63.7846"/> -->
       <geometry>
-        <mesh filename="../meshes/arm_d_fix.dae"/>
+        <mesh filename="../meshes/arm_d_fix.glb"/>
       </geometry>
       <material name="green">
         <color rgba="0.43 1 0 1"/>
@@ -139,7 +139,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <!-- <origin rpy="0 0 0" xyz="132.451 20.0235 63.7846"/> -->
       <geometry>
-        <mesh filename="../meshes/arm_e_fix.dae"/>
+        <mesh filename="../meshes/arm_e_fix.glb"/>
       </geometry>
       <material name="blue">
         <color rgba="0 0 1 1"/>
@@ -151,7 +151,7 @@
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <!-- <origin rpy="0 0 0" xyz="132.451 20.0235 63.7846"/> -->
       <geometry>
-        <mesh filename="../meshes/arm_gripper_fix.dae"/>
+        <mesh filename="../meshes/arm_gripper_fix.glb"/>
       </geometry>
       <material name="blue">
         <color rgba="0 0 1 1"/>

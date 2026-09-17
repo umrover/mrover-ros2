@@ -21,7 +21,7 @@
 #include <rclcpp/node.hpp>
 
 #include <boost/asio/error.hpp>
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/posix/basic_stream_descriptor.hpp>
 #include <boost/asio/read.hpp>
 #include <boost/asio/write.hpp>
@@ -33,4 +33,5 @@
 #include <netlink/route/link.h>
 #include <netlink/route/link/can.h>
 
+#include <MRoverCAN.hpp>
 #include <mrover/msg/can.hpp>

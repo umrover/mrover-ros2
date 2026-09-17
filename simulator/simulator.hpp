@@ -94,6 +94,7 @@ namespace mrover {
             boost::container::small_vector<Uniform<ModelUniforms>, 2> visualUniforms;
             boost::container::small_vector<Uniform<ModelUniforms>, 2> collisionUniforms;
             Clock::time_point lastUpdate = Clock::now();
+            bool isHolding = false;
         };
 
         // Bullet Resources
@@ -249,7 +250,7 @@ namespace mrover {
         bool mRenderModels = true;
         bool mRenderWireframeColliders = false;
         bool mRenderSkybox = false;
-        double mPublishHammerDistanceThreshold = 3;
+        double mPublishMalletDistanceThreshold = 3;
         double mPublishBottleDistanceThreshold = 3;
         float mCameraLockSlerp = 0.02;
 
@@ -265,14 +266,18 @@ namespace mrover {
 
         rclcpp::Publisher<msg::ImageTargets>::SharedPtr mImageTargetsPub;
 
+        rclcpp::Service<mrover::srv::ToggleObjectDetector>::SharedPtr dummyStereoToggleServer;
+
+        rclcpp::Service<mrover::srv::ToggleObjectDetector>::SharedPtr dummyImageToggleServer;
+
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
         tf2_ros::TransformBroadcaster mTfBroadcaster{this};
 
         bool mPublishIk = true;
         bool mIkMode = true; // true = position control, false = velocity control
-        Eigen::Vector3f mIkTarget{0.912, 0.01, -0.217};
-        float mIkPitch{0};
+        Eigen::Vector3f mIkTarget{0.340, 0.0f, -0.133};
+        float mIkPitch{0.970};
         float mIkRoll{0};
         // TODO: switch this to a twist
         Eigen::Vector3f mIkVel{0, 0, 0};
@@ -312,7 +317,6 @@ namespace mrover {
         wgpu::Surface mSurface;
         wgpu::Adapter mAdapter;
         wgpu::Device mDevice;
-        std::unique_ptr<wgpu::ErrorCallback> mErrorCallback;
         wgpu::Queue mQueue;
         wgpu::Texture mDepthTexture;
         wgpu::TextureView mDepthTextureView;
@@ -334,6 +338,7 @@ namespace mrover {
 
         bool mHasFocus = false;
         bool mInGui = false;
+        bool mImGuiInitialized = false;
 
         Uniform<SceneUniforms> mSceneUniforms;
         Uniform<SkyboxUniforms> mSkyboxUniforms;

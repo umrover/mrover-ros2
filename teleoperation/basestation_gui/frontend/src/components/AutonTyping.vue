@@ -1,120 +1,114 @@
-<!-- textbox
-submit button for textbox
-enter 3-6 character string (don't need bounds check)
-send submission thru websocket to backend
-once it reaches the backend, create a rosaction (consumers.py)
-make an autonTyping rosaction
-create instance of rosaction in callback area -->
-
 <template>
-  <div class="auton-typing-container">
-    <!-- left col -->
-    <div class="column left">
-      <h5>Typing Input</h5>
-      <form>
-        <div class="form-group">
-          <input
-            v-model="typingMessage"
-            type="text"
-            class="form-control"
-            id="autonTyping"
-            placeholder="Message"
-            maxlength="6"
-            required
-            :disabled="codeSent"
-          />
-        </div>
-        <span class="form-text">Must be 3-6 characters long.</span>
-
-        <div class="button-group">
-          <button
-            v-if="!codeSent"
-            class="btn btn-primary custom-btn"
-            :disabled="typingMessage.length < 3"
-            @click.prevent="submitMessage()"
-          >
-            Submit
-          </button>
-          <button
-            v-if="codeSent"
-            class="btn btn-danger custom-btn"
-            @click.prevent="submitMessage()"
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
+  <div class="typing-panel">
+    <div class="typing-row">
+      <input
+        v-model="typingMessage"
+        type="text"
+        class="typing-input"
+        data-testid="pw-typing-input"
+        maxlength="6"
+        :disabled="codeSent"
+      />
+      <button
+        v-if="!codeSent"
+        class="btn btn-sm btn-outline-control"
+        data-testid="pw-typing-submit"
+        :disabled="typingMessage.length < 3"
+        @click.prevent="submitMessage()"
+      >
+        Send
+      </button>
+      <button
+        v-if="codeSent"
+        class="btn btn-sm btn-outline-danger"
+        data-testid="pw-typing-cancel"
+        @click.prevent="submitMessage()"
+      >
+        Cancel
+      </button>
+      <span class="spacer"></span>
+      <span class="yaw-label">YAW</span>
+      <span class="data-value">{{ yawAngle.toFixed(3) }}</span><span class="data-unit">rad</span>
     </div>
-
-    <div class="stacked-columns">
-      <!-- middle col -->
-      <div class="column middle">
-        <h5>Feedback</h5>
-        <table class="feedback-table">
-          <tbody>
-            <tr>
-              <td
-                v-for="index in 6"
-                :key="index"
-                :class="getLetterClass(letterStates[index - 1] ?? 'grey')"
-              >
-                {{ typingMessage[index - 1] ?? '_' }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- right col, needs implementation, ask for specifics -->
-      <div class="column right">
-        <h5>Planar Alignment</h5>
-        <div class="wrap border border-2 rounded p-1">
-          <h6 class="m-0 p-0 font-monospace text-center">
-            0 degrees
-          </h6>
-        </div>
-      </div>
-    </div>
+    <table class="feedback-table" data-testid="pw-typing-feedback">
+      <tbody>
+        <tr>
+          <td
+            v-for="index in 6"
+            :key="index"
+            :class="getLetterClass(letterStates[index - 1] ?? 'grey')"
+          >
+            {{ typingMessage[index - 1] ?? '_' }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useWebsocketStore } from '@/stores/websocket'
-import { storeToRefs } from 'pinia'
 
 interface TypingFeedbackMessage {
   type: 'typing_feedback'
-  current_key: string
+  current_index: number
   current_state: string
 }
 
+interface TypingCancelledMessage {
+  type: 'typing_cancelled'
+}
+
+interface KeyboardYawMessage {
+  type: 'keyboard_yaw'
+  yaw: number
+}
+
 const websocketStore = useWebsocketStore()
-const { messages } = storeToRefs(websocketStore)
 
 const typingMessage = ref('')
 const codeSent = ref(false)
-const currentKey = ref('')
+const currentIndex = ref(0)
 const currentState = ref('')
 const letterStates = ref<string[]>(Array(6).fill('notTyped'))
+const yawAngle = ref(0)
 
-const autonMessage = computed(() => messages.value['auton'])
+onMounted(() => {
+  websocketStore.setupWebSocket('auton')
+})
 
-watch(autonMessage, (msg: unknown) => {
-  if (!msg || typeof msg !== 'object') return
+onBeforeUnmount(() => {
+  websocketStore.closeWebSocket('auton')
+})
 
-  if ('type' in msg && msg.type === 'typing_feedback') {
-    const typedMsg = msg as TypingFeedbackMessage
-    currentKey.value = typedMsg.current_key
-    currentState.value = typedMsg.current_state
+websocketStore.onMessage<TypingFeedbackMessage>('auton', 'typing_feedback', (msg) => {
+  currentIndex.value = msg.current_index
+  currentState.value = msg.current_state
+
+  if (msg.current_state === 'complete') {
+    for (let i = 0; i < typingMessage.value.length; i++) {
+      letterStates.value[i] = 'typed'
+    }
+    codeSent.value = false
+    typingMessage.value = ''
+  } else {
     updateLetterStates()
   }
 })
 
+websocketStore.onMessage<KeyboardYawMessage>('auton', 'keyboard_yaw', (msg) => {
+  yawAngle.value = msg.yaw
+})
+
+websocketStore.onMessage<TypingCancelledMessage>('auton', 'typing_cancelled', () => {
+  codeSent.value = false
+  typingMessage.value = ''
+  letterStates.value = Array(6).fill('notTyped')
+})
+
 function submitMessage() {
-  console.log('sending a message')
   if (!codeSent.value) {
-    // sending message
     websocketStore.sendMessage('auton', {
       type: 'code',
       code: typingMessage.value,
@@ -122,32 +116,31 @@ function submitMessage() {
     codeSent.value = true
     letterStates.value = new Array(typingMessage.value.length).fill('notTyped')
   } else {
-    // cancel
     websocketStore.sendMessage('auton', {
       type: 'code',
       code: 'cancel',
     })
     codeSent.value = false
-    typingMessage.value = '' // clear field
-    letterStates.value = Array(6).fill('notTyped') // reset 6 empty cells
+    typingMessage.value = ''
+    letterStates.value = Array(6).fill('notTyped')
   }
 }
 
 function updateLetterStates() {
   if (!typingMessage.value) return
   for (let i = 0; i < typingMessage.value.length; i++) {
-    if (i < currentKey.value.length) {
-      letterStates.value[i] = 'typed' // green
-    } else if (i === currentKey.value.length) {
-      letterStates.value[i] = 'inProgress' // orange
+    if (i < currentIndex.value) {
+      letterStates.value[i] = 'typed'
+    } else if (i === currentIndex.value) {
+      letterStates.value[i] = 'inProgress'
     } else {
-      letterStates.value[i] = 'notTyped' // red
+      letterStates.value[i] = 'notTyped'
     }
   }
 }
 
 function getLetterClass(state: string) {
-  if (!codeSent.value) return 'grey-cell' // grey when not sent
+  if (!codeSent.value) return 'grey-cell'
 
   return {
     'grey-cell': state === 'grey',
@@ -159,75 +152,74 @@ function getLetterClass(state: string) {
 </script>
 
 <style scoped>
-.auton-typing-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 40px;
-  justify-content: center;
-  align-items: start;
-  text-align: center;
-  width: 100%;
-  padding: 2px 5px 2px 5px;
-}
-
-.column {
+.typing-panel {
   display: flex;
   flex-direction: column;
+  gap: 0.5rem;
+  justify-content: center;
+  height: 100%;
+  padding: 0.5rem 0.75rem;
+  text-transform: uppercase;
+}
+
+.typing-row {
+  display: flex;
+  gap: 0.375rem;
   align-items: center;
+}
+
+.typing-input {
+  width: 5.5em;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
   text-align: center;
-  width: 100%;
+  letter-spacing: 0.15em;
+  background: var(--view-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
 }
 
-.custom-btn {
-  width: 150px;
-  height: 50px;
+.spacer { flex: 1; }
+
+.yaw-label {
+  margin-right: 0.25rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  opacity: 0.6;
 }
 
-.info {
-  height: 200px;
-  overflow-y: auto;
-}
-
-.percent {
-  font-size: large;
-}
 .feedback-table {
+  width: 100%;
   border-collapse: collapse;
-  margin-top: 10px;
 }
 
 .feedback-table td {
-  width: 40px;
-  height: 40px;
+  height: clamp(32px, 2.5vw, 48px);
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
   text-align: center;
-  font-size: 24px;
-  font-weight: bold;
-  border: 1px solid #ccc;
 }
 
 .grey-cell {
-  background-color: #d3d3d3;
-  color: black;
+  color: var(--text-muted);
+  background-color: var(--view-bg);
 }
 
 .typed-cell {
-  background-color: green;
-  color: white;
+  color: var(--text-on-status);
+  background-color: var(--status-ok);
 }
 
 .in-progress-cell {
-  background-color: orange;
-  color: white;
+  color: var(--text-on-status);
+  background-color: var(--status-warn);
 }
 
 .not-typed-cell {
-  background-color: red;
-  color: white;
-}
-
-.stacked-columns {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  color: var(--text-on-status);
+  background-color: var(--status-error);
 }
 </style>
