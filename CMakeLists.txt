@@ -19,9 +19,17 @@ option(MROVER_CLANG_TIDY "Enable static analysis with Clang tidy" ${MROVER_CI})
 option(MROVER_WARNINGS_AS_ERRORS "Treat warnings as errors" ${MROVER_CI})
 option(MROVER_BUILD_ESW "Build ESW (embedded software) targets, requires fetching the esw mrover_can library" ON)
 
-# Set sim variable based on Linux x86_64
+# Enable Objective C for macos, ESW off
+if (APPLE)
+    enable_language(OBJCXX)
+    set(CMAKE_OBJCXX_STANDARD 23)
+    set(CMAKE_OBJCXX_STANDARD_REQUIRED ON)
+    set(MROVER_BUILD_ESW OFF)
+endif ()
+
+# Don't build sim for Linux on arm because no dawn prebuilt
 if (NOT DEFINED MROVER_SIMULATOR)
-    if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+    if (NOT (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64"))
         set(MROVER_SIMULATOR ON)
     else ()
         set(MROVER_SIMULATOR OFF)
@@ -247,7 +255,7 @@ ament_python_install_package(state_machine)
 include_directories(perception)
 
 mrover_add_library(lie lie/*.cpp lie)
-target_link_libraries(lie manif)
+target_link_libraries(lie MANIF::manif)
 ament_target_dependencies(lie rclcpp geometry_msgs tf2 tf2_ros)
 
 mrover_add_header_only_library(units units)
@@ -348,10 +356,10 @@ if(ZED_FOUND AND CUDA_FOUND)
 
     # Learning Library
     # TODO(john): Update to use the new API
-	mrover_add_library(tensorrt tensorrt/*.c* tensorrt)
-	target_compile_options(tensorrt PRIVATE -Wno-deprecated-declarations $<$<COMPILE_LANGUAGE:CUDA>:-std=c++17>)
-	target_include_directories(tensorrt PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-	target_link_libraries(tensorrt opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb cuda_compiler_flags)
+    mrover_add_library(tensorrt tensorrt/*.c* tensorrt)
+    target_compile_options(tensorrt PRIVATE -Wno-deprecated-declarations $<$<COMPILE_LANGUAGE:CUDA>:-std=c++17>)
+    target_include_directories(tensorrt PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+    target_link_libraries(tensorrt opencv_core opencv_dnn opencv_imgproc lie nvinfer nvonnxparser tbb cuda_compiler_flags)
 
     # Object Detector
     mrover_add_component(object_detector perception/object_detector/*.c* perception/object_detector/pch.hpp StereoObjectDetector ImageObjectDetector)
@@ -422,14 +430,14 @@ if (MROVER_BUILD_ESW AND NOT APPLE)
     mrover_add_esw_bridge_node(pdlb_hw_bridge esw/pdlb_hw_bridge.cpp)
     mrover_add_esw_bridge_node(mast_gimbal_hw_bridge esw/mast_gimbal_hw_bridge.cpp)
 
-    mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
-    ament_target_dependencies(differential_drive_controller rclcpp std_srvs)
-    target_link_libraries(differential_drive_controller units)
-
     mrover_add_node(u2d2_bridge esw/u2d2_bridge.cpp)
     ament_target_dependencies(u2d2_bridge rclcpp std_msgs std_srvs dynamixel_sdk)
     target_link_libraries(u2d2_bridge servo)
 endif()
+
+mrover_add_node(differential_drive_controller esw/differential_drive_controller.cpp)
+ament_target_dependencies(differential_drive_controller rclcpp std_srvs)
+target_link_libraries(differential_drive_controller units)
 
 mrover_add_node(arm_controller navigation/arm_controller/arm_controller.cpp navigation/arm_controller/pch.hpp)
 target_link_libraries(arm_controller lie)
