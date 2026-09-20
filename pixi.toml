@@ -30,7 +30,7 @@ numpy = ">=2.0"
 libboost-devel = "*"
 
 eigen = "*"
-opencv = "*"
+opencv = "4.*"
 manif = "*"
 manifpy = ">=0.0.5,<0.0.6"
 glfw = "3.3.*"
