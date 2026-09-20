@@ -22,10 +22,8 @@ if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
     # portable environment
     os_cmake_args=()
     if [[ "$(uname)" == "Darwin" ]]; then
-        # Use the SDK pinned by conda-forge, NOT the system
-        # macos 27 clt sdk writes a tag that isn't recognized
-        # https://github.com/conda-forge/cctools-and-ld64-feedstock/issues/112
-        os_cmake_args=("-DCMAKE_OSX_SYSROOT=${SDKROOT}")
+        macos_sysroot="${SDKROOT:-$(xcrun --sdk macosx --show-sdk-path)}"
+        os_cmake_args=("-DCMAKE_OSX_SYSROOT=${macos_sysroot}")
     else
         # conda's pkg-config wrapper runs the GCC-only
         os_cmake_args=("-DPKG_CONFIG_EXECUTABLE=${CONDA_PREFIX}/bin/pkg-config.bin")
