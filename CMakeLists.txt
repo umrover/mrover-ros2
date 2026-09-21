@@ -80,6 +80,11 @@ find_package(yaml_cpp_vendor REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(dynamixel_sdk REQUIRED)
 
+if (BUILD_TESTING)
+    find_package(ament_cmake_gtest REQUIRED)
+    find_package(ament_cmake_pytest REQUIRED)
+endif ()
+
 if (MROVER_SIMULATOR)
     find_package(Assimp NAMES Assimp assimp REQUIRED)
     find_package(Bullet REQUIRED)
@@ -152,6 +157,11 @@ if (MROVER_SIMULATOR)
 endif ()
 add_subdirectory(deps/mjbots EXCLUDE_FROM_ALL SYSTEM)
 
+include_directories(BEFORE SYSTEM preload)
+
+include(cmake/macros.cmake)
+# include(cmake/deps.cmake)
+
 if (BUILD_TESTING)
     find_package(ament_lint_auto REQUIRED)
     # the following line skips the linter which checks for copyrights
@@ -162,12 +172,8 @@ if (BUILD_TESTING)
     # a copyright and license is added to all source files
     set(ament_cmake_cpplint_FOUND TRUE)
     ament_lint_auto_find_test_dependencies()
+
 endif ()
-
-include_directories(BEFORE SYSTEM preload)
-
-include(cmake/macros.cmake)
-# include(cmake/deps.cmake)
 
 ## Messages & Services & Actions
 
