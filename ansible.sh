@@ -10,4 +10,6 @@ fi
 readonly MROVER_PATH=$(dirname "$0")
 readonly ROS2_WS_PATH=$(realpath "${MROVER_PATH}"/../..)
 
+export ANSIBLE_CONFIG="${MROVER_PATH}/ansible/ansible.cfg"
+
 ansible-playbook -i "localhost," -c local -K "${MROVER_PATH}"/ansible/"$1" --extra-vars "ros2_workspace=${ROS2_WS_PATH} $2"

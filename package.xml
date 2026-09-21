@@ -19,6 +19,7 @@
     <depend>dynamixel_sdk</depend>
     <depend>magic_enum</depend>
     <depend>yaml_cpp_vendor</depend>
+    <depend>ament_index_cpp</depend>
 
     <buildtool_depend>ament_cmake</buildtool_depend>
     <buildtool_depend>ament_cmake_python</buildtool_depend>

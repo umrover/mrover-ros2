@@ -1,6 +1,6 @@
 - name: Wired Connection
-  become: True
-  nmcli:
+  become: true
+  community.general.nmcli:
     conn_name: MRover
     state: present
     type: ethernet
@@ -20,7 +20,7 @@
 
 - name: Create MRover Group
   become: true
-  group:
+  ansible.builtin.group:
     name: "mrover"
     state: present
 

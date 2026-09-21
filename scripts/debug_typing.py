@@ -11,6 +11,7 @@ from rclpy.client import Client
 from rclpy.task import Future
 from rclpy.time import Time
 from rclpy.duration import Duration
+from typing import Any
 import tkinter as tk
 from mrover.srv import IkMode
 import time
@@ -21,14 +22,14 @@ class DebugTyping(Node):
     ik_mode_client: Client
     typing_client: ActionClient
     goal_entries: list[tk.Entry]
-    typing_future: Future | None
+    typing_future: Any
     cancel: bool
 
     def __init__(self, root: tk.Tk):
         super().__init__("debug_typing")
         self.root = root
         self.cancel = False
-        self.current_goal_handle: ClientGoalHandle | None = None
+        self.current_goal_handle: Any
         self.typing_future = None
 
         self.ik_mode_client = self.create_client(IkMode, "ik_mode")
