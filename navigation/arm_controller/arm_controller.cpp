@@ -7,6 +7,8 @@ namespace mrover {
     ArmController::ArmController() : Node{"arm_controller"}, mLastUpdate{get_clock()->now() - TIMEOUT} {
         mPosPub = create_publisher<msg::Position>("arm_pos_cmd", 10);
         mVelPub = create_publisher<msg::Velocity>("arm_vel_cmd", 10);
+        mEEPathPub = create_publisher<nav_msgs::msg::Path>("ee_path", 10);
+        mEEPointPub = create_publisher<visualization_msgs::msg::Marker>("ee_point", 10);
 
         mIkSub = create_subscription<msg::IK>("ik_pos_cmd", 1, [this](msg::IK::ConstSharedPtr const& msg) {
             posCallback(msg);
@@ -18,6 +20,7 @@ namespace mrover {
 
         mJointSub = create_subscription<msg::ControllerState>("arm_controller_state", 1, [this](msg::ControllerState::ConstSharedPtr const& msg) {
             fkCallback(msg);
+            visualize_ee();
         });
 
         mPusherCli = create_client<srv::Pusher>("pusher");
@@ -194,6 +197,7 @@ namespace mrover {
     }
 
     auto ArmController::visualize_ee() -> void {
+        geometry_msgs::msg::PoseStamped p_stamped;
         visualization_msgs::msg::Marker ee_point;
 
         auto const now = get_clock()->now();

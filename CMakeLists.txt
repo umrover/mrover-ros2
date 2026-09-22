@@ -65,6 +65,7 @@ find_package(rclcpp_components REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rtcm_msgs REQUIRED)
@@ -197,7 +198,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     ${MROVER_MESSAGE_FILE_PATHS}
     ${MROVER_SERVICE_FILE_PATHS}
     ${MROVER_ACTION_FILE_PATHS}
-    DEPENDENCIES nav_msgs sensor_msgs geometry_msgs action_msgs
+    DEPENDENCIES nav_msgs sensor_msgs geometry_msgs visualization_msgs
 )
 
 # rosidl sets raw source-prefixed paths on INTERFACE_INCLUDE_DIRECTORIES, which
@@ -264,7 +265,7 @@ endif ()
 
 if (MROVER_SIMULATOR)
     mrover_add_node(simulator simulator/*.cpp simulator simulator/pch.hpp)
-    ament_target_dependencies(simulator rclcpp rclcpp_components nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf yaml_cpp_vendor ament_index_cpp)
+    ament_target_dependencies(simulator rclcpp rclcpp_components visualization_msgs nav_msgs sensor_msgs geometry_msgs tf2 tf2_ros urdf yaml_cpp_vendor ament_index_cpp)
     target_link_libraries(simulator
         assimp::assimp glfw3webgpu webgpu glfw webgpu_hpp imgui
         ${BULLET_LIBRARIES}

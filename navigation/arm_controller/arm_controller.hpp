@@ -1,5 +1,9 @@
 #pragma once
 #include "pch.hpp"
+#include <nav_msgs/msg/path.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <visualization_msgs/msg/marker.hpp>
+#include <deque>
 
 namespace mrover {
 
@@ -65,6 +69,9 @@ namespace mrover {
 
         rclcpp::Publisher<msg::Position>::SharedPtr mPosPub;
         rclcpp::Publisher<msg::Velocity>::SharedPtr mVelPub;
+        rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr mEEPathPub;
+        rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr mEEPointPub;
+        std::deque<geometry_msgs::msg::PoseStamped> mPathPoses;
         tf2_ros::TransformBroadcaster mTfBroadcaster{this};
         tf2_ros::Buffer mTfBuffer{get_clock()};
         tf2_ros::TransformListener mTfListener{mTfBuffer};
@@ -74,6 +81,12 @@ namespace mrover {
         auto ikPosCalc(ArmPos target) -> std::optional<msg::Position>;
         auto ikVelCalc(geometry_msgs::msg::Twist) -> std::optional<msg::Velocity>;
         auto timerCallback() -> void;
+        auto visualize_ee() -> void;
+        auto configure_posestamped(geometry_msgs::msg::PoseStamped &p_stamped) -> void;
+        auto configure_vis_marker(visualization_msgs::msg::Marker &point,
+                                             ArmController::ArmPos &mTargetPos,
+                                             float x, float y, float z,
+                                             float a, float r, float g, float b) -> void;
 
         ArmPos mArmPos, mTypingOrigin, mPosTarget;
         geometry_msgs::msg::Twist mVelTarget;
