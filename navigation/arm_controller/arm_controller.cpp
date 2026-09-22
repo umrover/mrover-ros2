@@ -165,6 +165,64 @@ namespace mrover {
         return velocities;
     }
 
+    auto ArmController::configure_posestamped(geometry_msgs::msg::PoseStamped &p_stamped) -> void {
+        auto const now = get_clock()->now();
+        p_stamped.header.stamp = now;
+        p_stamped.header.frame_id = "arm_base_link";
+        p_stamped.pose.position.x = mArmPos.x;
+        p_stamped.pose.position.y = mArmPos.y;
+        p_stamped.pose.position.z = mArmPos.z;
+    }
+
+    auto ArmController::configure_vis_marker(visualization_msgs::msg::Marker &point,
+                                             ArmController::ArmPos &mTargetPos,
+                                             float x, float y, float z,
+                                             float a, float r, float g, float b) -> void {
+        auto const now = get_clock()->now();
+        point.header.stamp = now;
+        point.header.frame_id = "arm_base_link";
+        point.pose.position.x = mTargetPos.x;
+        point.pose.position.y = mTargetPos.y;
+        point.pose.position.z = mTargetPos.z;
+        point.scale.x = x;
+        point.scale.y = y;
+        point.scale.z = z;
+        point.color.a = a;
+        point.color.r = r;
+        point.color.g = g;
+        point.color.b = b;
+    }
+
+    auto ArmController::visualize_ee() -> void {
+        visualization_msgs::msg::Marker ee_point;
+
+        auto const now = get_clock()->now();
+
+        configure_posestamped(p_stamped);
+
+        ee_point.ns = "ee_pt";
+        ee_point.id = 0;
+        ee_point.type = visualization_msgs::msg::Marker::SPHERE;
+        ee_point.action = visualization_msgs::msg::Marker::ADD;
+
+        configure_vis_marker(ee_point, mArmPos, 0.05, 0.05, 0.05, 1.0, 1.0, 0.0, 0.0);
+
+        mEEPointPub->publish(ee_point);
+
+        mPathPoses.push_back(p_stamped);
+
+        if (mPathPoses.size() >= 500) {
+            mPathPoses.pop_front();
+        }
+
+        nav_msgs::msg::Path path_msg;
+        path_msg.header.stamp = now;
+        path_msg.header.frame_id = "arm_base_link";
+        path_msg.poses.assign(mPathPoses.begin(), mPathPoses.end());
+
+        mEEPathPub->publish(path_msg);
+    }
+
     void ArmController::velCallback(geometry_msgs::msg::Twist::ConstSharedPtr const& ik_vel) {
         mVelTarget = *ik_vel;
         mVelTarget.linear.x *= MAX_SPEED;
@@ -369,6 +427,7 @@ namespace mrover {
             }
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
             // TODO: Determine joint velocities that cancels out arm sag
+
             auto velocities = ikVelCalc(mVelTarget);
             if (velocities &&
                 !(
