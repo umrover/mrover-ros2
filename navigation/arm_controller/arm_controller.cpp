@@ -230,7 +230,6 @@ namespace mrover {
         mEEPointPub->publish(ee_point);
         mPathEndPointPub->publish(path_end_point);
 
-        
         mPathPoses.push_back(p_stamped);
         mPathEndPoses.push_back(path_end_stamped);
 
@@ -482,9 +481,29 @@ namespace mrover {
             double dt = (now - mPrevTime).seconds();
             mPrevTime = now;
 
-            mPathEndPos.x += mVelTarget.linear.x * dt;
-            mPathEndPos.y += mVelTarget.linear.y * dt;
-            mPathEndPos.z += mVelTarget.linear.z * dt;
+            auto error_x = mPathEndPos.x - mArmPos.x;
+            auto error_y = mPathEndPos.y - mArmPos.y;
+            auto error_z = mPathEndPos.z - mArmPos.z;
+            auto error_pitch = mPathEndPos.pitch - mArmPos.pitch;
+            auto error_roll = mPathEndPos.roll - mArmPos.roll;
+
+            double error_total = std::sqrt((error_x * error_x) +
+                                           (error_y * error_y) +
+                                           (error_z * error_z));
+
+            double error_ratio = error_total/0.05;
+
+            double gate_factor = 1/(1 + (error_ratio * error_ratio));
+
+            auto mVelGated = mVelTarget;
+
+            mVelGated.linear.x *= gate_factor;
+            mVelGated.linear.y *= gate_factor;
+            mVelGated.linear.z *= gate_factor;
+
+            mPathEndPos.x += mVelGated.linear.x * dt;
+            mPathEndPos.y += mVelGated.linear.y * dt;
+            mPathEndPos.z += mVelGated.linear.z * dt;
             mPathEndPos.pitch += mVelTarget.angular.y * dt;
             mPathEndPos.roll += mVelTarget.angular.x * dt;
 
