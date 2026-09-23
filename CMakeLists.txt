@@ -42,6 +42,7 @@ if (APPLE)
     # Ensures that homebrew packages are never used over miniforge packages.
     # TODO (ali): Pretty sure this doesn't do anything on macs
     set(CMAKE_IGNORE_PATH /opt/homebrew)
+    add_link_options(LINKER:-dead_strip_dylibs)
 endif ()
 
 if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
