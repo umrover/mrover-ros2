@@ -3,5 +3,6 @@
   vars_files:
     - vars/native.yml
   roles:
-    - build
+    # do not swap order
     - dev
+    - build

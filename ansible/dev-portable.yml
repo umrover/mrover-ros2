@@ -1,0 +1,9 @@
+---
+- hosts: all
+  roles:
+    # do not swap order
+    - role: dev
+      vars:
+        mrover_repo: "{{ playbook_dir | dirname }}"
+        mrover_zshenv: scripts/mrover-portable.zshenv
+    - build-portable
