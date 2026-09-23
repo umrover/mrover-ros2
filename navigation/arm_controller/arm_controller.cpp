@@ -7,8 +7,12 @@ namespace mrover {
     ArmController::ArmController() : Node{"arm_controller"}, mLastUpdate{get_clock()->now() - TIMEOUT} {
         mPosPub = create_publisher<msg::Position>("arm_pos_cmd", 10);
         mVelPub = create_publisher<msg::Velocity>("arm_vel_cmd", 10);
+
         mEEPathPub = create_publisher<nav_msgs::msg::Path>("ee_path", 10);
         mEEPointPub = create_publisher<visualization_msgs::msg::Marker>("ee_point", 10);
+
+        mPathEndPointPathPub = create_publisher<nav_msgs::msg::Path>("path_end_path", 10);
+        mPathEndPointPub = create_publisher<visualization_msgs::msg::Marker>("path_end_point", 10);
 
         mIkSub = create_subscription<msg::IK>("ik_pos_cmd", 1, [this](msg::IK::ConstSharedPtr const& msg) {
             posCallback(msg);
@@ -168,13 +172,14 @@ namespace mrover {
         return velocities;
     }
 
-    auto ArmController::configure_posestamped(geometry_msgs::msg::PoseStamped &p_stamped) -> void {
+    auto ArmController::configure_posestamped(geometry_msgs::msg::PoseStamped &p_stamped,
+                                              ArmController::ArmPos &mTargetPos) -> void {
         auto const now = get_clock()->now();
         p_stamped.header.stamp = now;
         p_stamped.header.frame_id = "arm_base_link";
-        p_stamped.pose.position.x = mArmPos.x;
-        p_stamped.pose.position.y = mArmPos.y;
-        p_stamped.pose.position.z = mArmPos.z;
+        p_stamped.pose.position.x = mTargetPos.x;
+        p_stamped.pose.position.y = mTargetPos.y;
+        p_stamped.pose.position.z = mTargetPos.z;
     }
 
     auto ArmController::configure_vis_marker(visualization_msgs::msg::Marker &point,
@@ -200,9 +205,13 @@ namespace mrover {
         geometry_msgs::msg::PoseStamped p_stamped;
         visualization_msgs::msg::Marker ee_point;
 
+        geometry_msgs::msg::PoseStamped path_end_stamped;
+        visualization_msgs::msg::Marker path_end_point;
+
         auto const now = get_clock()->now();
 
-        configure_posestamped(p_stamped);
+        configure_posestamped(p_stamped, mArmPos);
+        configure_posestamped(path_end_stamped, mPathEndPos);
 
         ee_point.ns = "ee_pt";
         ee_point.id = 0;
@@ -211,9 +220,19 @@ namespace mrover {
 
         configure_vis_marker(ee_point, mArmPos, 0.05, 0.05, 0.05, 1.0, 1.0, 0.0, 0.0);
 
-        mEEPointPub->publish(ee_point);
+        path_end_point.ns = "path_end_pt";
+        path_end_point.id = 0;
+        path_end_point.type = visualization_msgs::msg::Marker::SPHERE;
+        path_end_point.action = visualization_msgs::msg::Marker::ADD;
 
+        configure_vis_marker(path_end_point, mPathEndPos, 0.05, 0.05, 0.05, 1.0, 1.0, 0.0, 0.0);
+
+        mEEPointPub->publish(ee_point);
+        mPathEndPointPub->publish(path_end_point);
+
+        
         mPathPoses.push_back(p_stamped);
+        mPathEndPoses.push_back(path_end_stamped);
 
         if (mPathPoses.size() >= 500) {
             mPathPoses.pop_front();
@@ -225,6 +244,13 @@ namespace mrover {
         path_msg.poses.assign(mPathPoses.begin(), mPathPoses.end());
 
         mEEPathPub->publish(path_msg);
+
+        nav_msgs::msg::Path path_end_point_msg;
+        path_end_point_msg.header.stamp = now;
+        path_end_point_msg.header.frame_id = "arm_base_link";
+        path_end_point_msg.poses.assign(mPathEndPoses.begin(), mPathEndPoses.end());
+
+        mPathEndPointPathPub->publish(path_end_point_msg);
     }
 
     void ArmController::velCallback(geometry_msgs::msg::Twist::ConstSharedPtr const& ik_vel) {
@@ -293,6 +319,14 @@ namespace mrover {
                 mLastUpdate = get_clock()->now();
         else
                 RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "Received position command in velocity mode!");
+    }
+
+    auto ArmController::velZeroCheck() -> bool {
+         return mVelTarget.linear.x == 0 &&
+                mVelTarget.linear.y == 0 &&
+                mVelTarget.linear.z == 0 &&
+                mVelTarget.angular.x == 0 &&
+                mVelTarget.angular.y == 0;
     }
 
     auto ArmController::handleTypingGoal(const rclcpp_action::GoalUUID & uuid, const std::shared_ptr<const action::TypingPosition_Goal> &typingGoal) -> rclcpp_action::GoalResponse {
@@ -431,6 +465,28 @@ namespace mrover {
             }
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
             // TODO: Determine joint velocities that cancels out arm sag
+
+            auto now = get_clock()->now();
+
+            if (velZeroCheck()) {
+                mPathEndPos = mArmPos;
+                carrot_initialized = false;
+                return;
+            }
+            if (!carrot_initialized) {
+                mPathEndPos = mArmPos;
+                carrot_initialized = true;
+                mPrevTime = now;
+            }
+
+            double dt = (now - mPrevTime).seconds();
+            mPrevTime = now;
+
+            mPathEndPos.x += mVelTarget.linear.x * dt;
+            mPathEndPos.y += mVelTarget.linear.y * dt;
+            mPathEndPos.z += mVelTarget.linear.z * dt;
+            mPathEndPos.pitch += mVelTarget.angular.y * dt;
+            mPathEndPos.roll += mVelTarget.angular.x * dt;
 
             auto velocities = ikVelCalc(mVelTarget);
             if (velocities &&
