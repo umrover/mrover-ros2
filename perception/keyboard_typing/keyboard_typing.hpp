@@ -60,10 +60,10 @@ namespace mrover{
         // Define a board
         cv::Ptr<cv::aruco::Board> rover_board;
 
+        double keyboard_roll = 0;
+
         // Sub to /finger_camera/image topic
         rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr mImageSub;
-
-        int cnt = 0;
 
         LoopProfiler mLoopProfiler;
 
@@ -80,9 +80,6 @@ namespace mrover{
         // std::vector<cv::Vec3d> current_estimate;
         std::optional<SE3d> mCameraToKey = std::nullopt;
         bool mUpdatePoseEstimate = true;
-
-        // Filter that stores filtered pose
-        cv::KalmanFilter kf;
         
         cv::Ptr<cv::aruco::Dictionary> dictionary = cv::makePtr<cv::aruco::Dictionary>(cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50));
 
@@ -95,14 +92,6 @@ namespace mrover{
 
         rclcpp::Time last_prediction_time_;
         bool filter_i0nitialized_ = false;
-
-        // Change the function signature to accept vectors
-        auto updateKalmanFilter(cv::Vec3d &tvec, cv::Vec3d &rvec) -> geometry_msgs::msg::Pose;
-
-        // auto getKeyToCameraTransform(cv::Vec3d const& rvec,
-        //                              cv::Vec3d const& tvec,
-        //                              cv::Vec3d const& tag_offset_key) -> cv::Mat;
-
 
         auto sendIKCommand(float x, float y, float z, float pitch, float roll) -> void;
 

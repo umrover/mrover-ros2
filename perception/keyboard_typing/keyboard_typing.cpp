@@ -57,7 +57,7 @@ namespace mrover{
             
             layout[id] = cv::Vec3d(x, y, z);
         }
-        
+
         // Set up action server
         mTypingClient = rclcpp_action::create_client<action::TypingPosition>(this, "typing_ik");
 
@@ -75,14 +75,14 @@ namespace mrover{
 
         // grab transform from finger_cam to gripper
         // wait until the transformation is acquired
-        // while (true) {
-        //     try {
-        //         gripper_to_cam = SE3Conversions::fromTfTree(tf_buffer, "finger_camera_frame", "arm_fk");
-        //         break;
-        //     } catch (tf2::TransformException const& e) {
-        //         RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
-        //     }
-        // }
+        while (true) {
+            try {
+                gripper_to_cam = SE3Conversions::fromTfTree(tf_buffer, "finger_camera_frame", "arm_fk");
+                break;
+            } catch (tf2::TransformException const& e) {
+                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, std::format("TF tree error processing keyboard typing: {}", e.what()));
+            }
+        }
 
         // Create Ik mode client
         mIkModeClient = create_client<srv::IkMode>("ik_mode");
@@ -151,11 +151,11 @@ namespace mrover{
             SE3d arm_fk_to_tag{arm_fk_pos, transformed_rotation};
 
             // Publish to tf tree
-            // SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_fk", gripper_to_cam*arm_fk_to_tag, get_clock()->now());
+            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_fk", gripper_to_cam*arm_fk_to_tag, get_clock()->now());
 
-            // // Initialize transforms for every key, temporarily here for now
-            // SE3d z_to_tag{mZKeyTransform, Eigen::Quaterniond::Identity()};
-            // SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_z", "keyboard_tag", z_to_tag, get_clock()->now());
+            // publish z key transform
+            SE3d z_to_tag{mZKeyTransform, Eigen::Quaterniond::Identity()};
+            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_z", "keyboard_tag", z_to_tag, get_clock()->now());
         }
     }
 
@@ -292,7 +292,7 @@ namespace mrover{
             std::tie(combined_tvec, combined_rvec) = vectorMedianFilter(combined_tvec, combined_rvec);
 
             RCLCPP_INFO_STREAM(get_logger(), "X: " << combined_tvec[0]);
-            RCLCPP_INFO_STREAM(get_logger(), "Y: " << combined_tvec[1]);
+            RCLCPP_INFO_STREAM(get_logger(), "Y: " << combined_tvec[1]);// Initialize transforms for every key, temporarily here for now
             RCLCPP_INFO_STREAM(get_logger(), "Z: " << combined_tvec[2]);
 
             Eigen::Vector3d rvec(
@@ -329,8 +329,7 @@ namespace mrover{
 
             double yaw_deg = yaw_rad * 180.0 / M_PI;
 
-            // Draw after kalman filter
-            // cv::drawFrameAxes(grayImage, camMatrix, distCoeffs, combined_rvec, combined_tvec, markerLength * 3.0f, 4);
+            // Debug
             cv::drawFrameAxes(bgrImage, mCameraMatrix, mDistCoeffs, combined_rvec, combined_tvec, markerLength * 1.5f, 2);
 
             // Draw circle for debugging
@@ -460,8 +459,12 @@ namespace mrover{
             double r00 = armbase_to_z.transform()(0,0);
             double r10 = armbase_to_z.transform()(1,0);
             double r20 = armbase_to_z.transform()(2,0);
+            double r21 = armbase_to_z.transform()(2,1);
+            double r22 = armbase_to_z.transform()(2,2);
 
             double pitch_rad = -std::atan2(-r20, std::hypot(r00, r10));
+
+            keyboard_roll = std::atan2(r21, r22);
 
             sendIKCommand(armbase_to_armfk.translation().x(),
             armbase_to_z.translation().y(), armbase_to_z.translation().z(), pitch_rad, 0);
@@ -660,11 +663,17 @@ namespace mrover{
 
                 RCLCPP_WARN(this->get_logger(), "Sending Goal");
 
-                float x_delta = 0;
-                float y_delta = 0;
+                double x_delta = 0;
+                double y_delta = 0;
 
-                x_delta = keyboard_offset[launchCode[i]][0];
-                y_delta = keyboard_offset[launchCode[i]][1];
+                double x_raw = keyboard_offset[launchCode[i]][0];
+                double y_raw = keyboard_offset[launchCode[i]][1];
+
+                double c = std::cos(keyboard_roll);
+                double s = std::sin(keyboard_roll);
+
+                x_delta = x_raw * c - y_raw * s;
+                y_delta = x_raw * s + y_raw * c;
 
                 RCLCPP_WARN(this->get_logger(), "X_pos", mMinCodeLength, mMaxCodeLength);
 
