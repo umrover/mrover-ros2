@@ -118,10 +118,10 @@ class Navigation(Node):
             ],
         )
         self.state_machine.add_transitions(
-            BackupState(), 
+            BackupState(),
             [
-                WaypointState(), 
-                DoneState()
+                WaypointState(),
+                DoneState(),
             ],
         )
         self.state_machine.add_transitions(
@@ -135,9 +135,9 @@ class Navigation(Node):
             ],
         )
         self.state_machine.add_transitions(
-            DoneState(), 
+            DoneState(),
             [
-                WaypointState()
+                WaypointState(),
             ],
         )
         self.state_machine.add_transitions(
@@ -161,19 +161,19 @@ class Navigation(Node):
             ],
         )
         self.state_machine.add_transitions(
-            SearchState(), 
+            SearchState(),
             [
-                WaypointState(), 
-                StuckRecoveryState(), 
-                ApproachTargetState(), 
-                LongRangeState()
+                WaypointState(),
+                StuckRecoveryState(),
+                ApproachTargetState(),
+                LongRangeState(),
             ],
         )
         self.state_machine.add_transitions(
-            OffState(), 
+            OffState(),
             [
-                WaypointState(), 
-                DoneState()
+                WaypointState(),
+                DoneState(),
             ],
         )
 
@@ -184,7 +184,14 @@ class Navigation(Node):
         state_pub_topic = self.get_parameter("state_machine.state_pub_topic").value
         state_update_rate_hz = self.get_parameter("state_machine.state_update_rate_hz").value
 
-        self.state_machine_server = StatePublisher(self, self.state_machine, structure_pub_topic, structure_update_rate_hz, state_pub_topic, state_update_rate_hz)
+        self.state_machine_server = StatePublisher(
+            self,
+            self.state_machine,
+            structure_pub_topic,
+            structure_update_rate_hz,
+            state_pub_topic,
+            state_update_rate_hz,
+        )
 
         update_rate = self.get_parameter("update_rate").value
         pub_path_rate = self.get_parameter("pub_path_rate").value
