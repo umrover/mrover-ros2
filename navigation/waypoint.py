@@ -7,7 +7,6 @@ from . import (
 )
 from mrover.msg import WaypointType
 from .context import Context
-from .context import Context
 from navigation.astar import AStar
 from navigation.coordinate_utils import segment_path, is_high_cost_point, d_calc, cartesian_to_ij
 from navigation.trajectory import Trajectory

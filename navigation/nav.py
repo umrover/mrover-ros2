@@ -34,16 +34,21 @@ class Navigation(Node):
             "",
             [
                 # General
-                ("update_rate", Parameter.Type.DOUBLE),
                 ("pub_path_rate", Parameter.Type.DOUBLE),
                 ("path_hist_size", Parameter.Type.INTEGER),
                 ("display_markers", Parameter.Type.BOOL),
+                ("update_rate", Parameter.Type.DOUBLE),
+                ("target_expiration_duration", Parameter.Type.DOUBLE),
                 ("world_frame", Parameter.Type.STRING),
                 ("rover_frame", Parameter.Type.STRING),
+                ("ref_alt", Parameter.Type.DOUBLE),
                 ("ref_lat", Parameter.Type.DOUBLE),
                 ("ref_lon", Parameter.Type.DOUBLE),
-                ("ref_alt", Parameter.Type.DOUBLE),
-                ("target_expiration_duration", Parameter.Type.DOUBLE),
+                # State Machine
+                ("state_machine.structure_pub_topic", Parameter.Type.STRING),
+                ("state_machine.structure_update_rate_hz", Parameter.Type.DOUBLE),
+                ("state_machine.state_pub_topic", Parameter.Type.STRING),
+                ("state_machine.state_update_rate_hz", Parameter.Type.DOUBLE),
                 # Pure Pursuit
                 ("pure_pursuit.min_lookahead_distance", Parameter.Type.DOUBLE),
                 ("pure_pursuit.max_lookahead_distance", Parameter.Type.DOUBLE),
@@ -77,6 +82,7 @@ class Navigation(Node):
                 ("long_range.distance_ahead", Parameter.Type.DOUBLE),
                 ("long_range.bearing_expiration_duration", Parameter.Type.DOUBLE),
                 # Search
+                ("search.object_stop_threshold", Parameter.Type.DOUBLE),
                 ("search.stop_threshold", Parameter.Type.DOUBLE),
                 ("search.drive_forward_threshold", Parameter.Type.DOUBLE),
                 ("search.coverage_radius", Parameter.Type.DOUBLE),
@@ -84,20 +90,14 @@ class Navigation(Node):
                 ("search.distance_between_spirals", Parameter.Type.DOUBLE),
                 ("search.max_segment_length", Parameter.Type.DOUBLE),
                 ("search.traversable_cost", Parameter.Type.DOUBLE),
-                ("search.update_delay", Parameter.Type.DOUBLE),
-                ("search.safe_approach_distance", Parameter.Type.DOUBLE),
                 ("search.angle_thresh", Parameter.Type.DOUBLE),
-                ("search.distance_threshold", Parameter.Type.DOUBLE),
+                ("search.update_delay", Parameter.Type.DOUBLE),
                 # Image Targets
                 ("image_targets.increment_weight", Parameter.Type.INTEGER),
                 ("image_targets.decrement_weight", Parameter.Type.INTEGER),
-                ("image_targets.min_hits", Parameter.Type.INTEGER),
                 ("image_targets.max_hits", Parameter.Type.INTEGER),
                 # Single Tag
                 ("single_tag.stop_threshold", Parameter.Type.DOUBLE),
-                ("single_tag.tag_stop_threshold", Parameter.Type.DOUBLE),
-                ("single_tag.post_avoidance_multiplier", Parameter.Type.DOUBLE),
-                ("single_tag.post_radius", Parameter.Type.DOUBLE),
                 # Recovery
                 ("recovery.stop_threshold", Parameter.Type.DOUBLE),
                 ("recovery.drive_forward_threshold", Parameter.Type.DOUBLE),
@@ -178,8 +178,13 @@ class Navigation(Node):
         )
 
         self.state_machine.configure_off_switch(OffState(), off_check)
-        # TODO(quintin): Make the rates configurable as parameters
-        self.state_machine_server = StatePublisher(self, self.state_machine, "nav_structure", 1, "nav_state", 10)
+
+        structure_pub_topic = self.get_parameter("state_machine.structure_pub_topic").value
+        structure_update_rate_hz = self.get_parameter("state_machine.structure_update_rate_hz").value
+        state_pub_topic = self.get_parameter("state_machine.state_pub_topic").value
+        state_update_rate_hz = self.get_parameter("state_machine.state_update_rate_hz").value
+
+        self.state_machine_server = StatePublisher(self, self.state_machine, structure_pub_topic, structure_update_rate_hz, state_pub_topic, state_update_rate_hz)
 
         update_rate = self.get_parameter("update_rate").value
         pub_path_rate = self.get_parameter("pub_path_rate").value

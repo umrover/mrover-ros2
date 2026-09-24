@@ -151,8 +151,6 @@ class ImageTargetsStore:
 
         increment_weight = self._context.node.get_parameter("image_targets.increment_weight").value
         decrement_weight = self._context.node.get_parameter("image_targets.decrement_weight").value
-        # TODO(quintin): Seems like this was never used in 2024, might have been an oversight
-        min_hits = self._context.node.get_parameter("image_targets.min_hits").value
         max_hits = self._context.node.get_parameter("image_targets.max_hits").value
 
         # Update our current targets
