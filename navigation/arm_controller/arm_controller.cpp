@@ -507,6 +507,25 @@ namespace mrover {
             mPathEndPos.pitch += mVelTarget.angular.y * dt;
             mPathEndPos.roll += mVelTarget.angular.x * dt;
 
+            auto error_x_to_ideal = mPathEndPos.x - mArmPos.x;
+            auto error_y_to_ideal = mPathEndPos.y - mArmPos.y;
+            auto error_z_to_ideal = mPathEndPos.z - mArmPos.z;
+            auto error_to_ideal_mag = std::sqrt((error_x_to_ideal * error_x_to_ideal) +
+                                       (error_y_to_ideal * error_y_to_ideal) +
+                                       (error_z_to_ideal * error_z_to_ideal));
+
+            auto vel_magnitude = std::sqrt((mVelTarget.linear.x * mVelTarget.linear.x) +
+                                           (mVelTarget.linear.y * mVelTarget.linear.y) +
+                                           (mVelTarget.linear.z * mVelTarget.linear.z));
+
+            auto error_x_fin = (error_x_to_ideal / error_to_ideal_mag) * vel_magnitude;
+            auto error_y_fin = (error_x_to_ideal / error_to_ideal_mag) * vel_magnitude;
+            auto error_z_fin = (error_x_to_ideal / error_to_ideal_mag) * vel_magnitude;
+
+            mVelTarget.linear.x = error_x_fin / dt;
+            mVelTarget.linear.y = error_y_fin / dt;
+            mVelTarget.linear.z = error_z_fin / dt;
+
             auto velocities = ikVelCalc(mVelTarget);
             if (velocities &&
                 !(
