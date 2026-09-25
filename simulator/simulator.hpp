@@ -241,7 +241,7 @@ namespace mrover {
         int mArmPitchDownKey = GLFW_KEY_LEFT_BRACKET;
 
         float mFlySpeed = 5.0f;
-        float mRoverLinearSpeed = 1.0f;
+        float mRoverLinearSpeed = 0.5f;
         float mRoverAngularSpeed = 1.5f;
         float mLookSense = 0.004f;
         float mFovDegrees = 60.0f;

@@ -53,7 +53,7 @@ namespace mrover {
         std::unordered_map<std::string, JointWrapper> joints = {
                 {"joint_a", {.limits = {.minPos = 0, .maxPos = 0.37, .minVel = -0.05, .maxVel = 0.05}, .pos = 0}},
                 {"joint_b", {.limits = {.minPos = -1.1, .maxPos = 0.25, .minVel = -0.05, .maxVel = 0.05}, .pos = 0}},
-                {"joint_c", {.limits = {.minPos = -1.0, .maxPos = 3.0, .minVel = -0.03142, .maxVel = 0.03142}, .pos = 0}},
+                {"joint_c", {.limits = {.minPos = -1.0, .maxPos = 3.0, .minVel = -0.3142, .maxVel = 0.3142}, .pos = 0}},
                 {"joint_de_pitch", {.limits = {.minPos = -1.75, .maxPos = 1.1, .minVel = -0.2, .maxVel = 0.2}, // pretty conservative limits atm
                                     .pos = 0}},
                 {"joint_de_roll", {.limits = {.minPos = -3.14, .maxPos = 3.13, .minVel = -1.0, .maxVel = 1.0}, .pos = 0}},
@@ -92,7 +92,7 @@ namespace mrover {
         auto visualize_ee() -> void;
         auto configure_posestamped(geometry_msgs::msg::PoseStamped &p_stamped, 
                                    ArmController::ArmPos &mTargetPos) -> void;
-                                   
+
         auto configure_vis_marker(visualization_msgs::msg::Marker &point,
                                              ArmController::ArmPos &mTargetPos,
                                              float x, float y, float z,
