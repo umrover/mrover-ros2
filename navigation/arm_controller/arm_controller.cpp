@@ -8,6 +8,12 @@ namespace mrover {
         mPosPub = create_publisher<msg::Position>("arm_pos_cmd", 10);
         mVelPub = create_publisher<msg::Velocity>("arm_vel_cmd", 10);
 
+        mEEPathPub = create_publisher<nav_msgs::msg::Path>("ee_path", 10);
+        mEEPointPub = create_publisher<visualization_msgs::msg::Marker>("ee_point", 10);
+
+        mPathEndPointPathPub = create_publisher<nav_msgs::msg::Path>("path_end_path", 10);
+        mPathEndPointPub = create_publisher<visualization_msgs::msg::Marker>("path_end_point", 10);
+
         mIkSub = create_subscription<msg::IK>("ik_pos_cmd", 1, [this](msg::IK::ConstSharedPtr const& msg) {
             posCallback(msg);
         });
@@ -18,6 +24,7 @@ namespace mrover {
 
         mJointSub = create_subscription<msg::ControllerState>("arm_controller_state", 1, [this](msg::ControllerState::ConstSharedPtr const& msg) {
             fkCallback(msg);
+            visualize_ee();
         });
 
         mPusherCli = create_client<srv::Pusher>("pusher");
@@ -165,6 +172,86 @@ namespace mrover {
         return velocities;
     }
 
+    auto ArmController::configure_posestamped(geometry_msgs::msg::PoseStamped &p_stamped,
+                                              ArmController::ArmPos &mTargetPos) -> void {
+        auto const now = get_clock()->now();
+        p_stamped.header.stamp = now;
+        p_stamped.header.frame_id = "arm_base_link";
+        p_stamped.pose.position.x = mTargetPos.x;
+        p_stamped.pose.position.y = mTargetPos.y;
+        p_stamped.pose.position.z = mTargetPos.z;
+    }
+
+    auto ArmController::configure_vis_marker(visualization_msgs::msg::Marker &point,
+                                             ArmController::ArmPos &mTargetPos,
+                                             float x, float y, float z,
+                                             float a, float r, float g, float b) -> void {
+        auto const now = get_clock()->now();
+        point.header.stamp = now;
+        point.header.frame_id = "arm_base_link";
+        point.pose.position.x = mTargetPos.x;
+        point.pose.position.y = mTargetPos.y;
+        point.pose.position.z = mTargetPos.z;
+        point.scale.x = x;
+        point.scale.y = y;
+        point.scale.z = z;
+        point.color.a = a;
+        point.color.r = r;
+        point.color.g = g;
+        point.color.b = b;
+    }
+
+    auto ArmController::visualize_ee() -> void {
+        geometry_msgs::msg::PoseStamped p_stamped;
+        visualization_msgs::msg::Marker ee_point;
+
+        geometry_msgs::msg::PoseStamped path_end_stamped;
+        visualization_msgs::msg::Marker path_end_point;
+
+        auto const now = get_clock()->now();
+
+        configure_posestamped(p_stamped, mArmPos);
+        configure_posestamped(path_end_stamped, mPathEndPos);
+
+        ee_point.ns = "ee_pt";
+        ee_point.id = 0;
+        ee_point.type = visualization_msgs::msg::Marker::SPHERE;
+        ee_point.action = visualization_msgs::msg::Marker::ADD;
+
+        configure_vis_marker(ee_point, mArmPos, 0.05, 0.05, 0.05, 1.0, 1.0, 0.0, 0.0);
+
+        path_end_point.ns = "path_end_pt";
+        path_end_point.id = 0;
+        path_end_point.type = visualization_msgs::msg::Marker::SPHERE;
+        path_end_point.action = visualization_msgs::msg::Marker::ADD;
+
+        configure_vis_marker(path_end_point, mPathEndPos, 0.05, 0.05, 0.05, 1.0, 1.0, 0.0, 0.0);
+
+        mEEPointPub->publish(ee_point);
+        mPathEndPointPub->publish(path_end_point);
+
+        mPathPoses.push_back(p_stamped);
+        mPathEndPoses.push_back(path_end_stamped);
+
+        if (mPathPoses.size() >= 500) {
+            mPathPoses.pop_front();
+        }
+
+        nav_msgs::msg::Path path_msg;
+        path_msg.header.stamp = now;
+        path_msg.header.frame_id = "arm_base_link";
+        path_msg.poses.assign(mPathPoses.begin(), mPathPoses.end());
+
+        mEEPathPub->publish(path_msg);
+
+        nav_msgs::msg::Path path_end_point_msg;
+        path_end_point_msg.header.stamp = now;
+        path_end_point_msg.header.frame_id = "arm_base_link";
+        path_end_point_msg.poses.assign(mPathEndPoses.begin(), mPathEndPoses.end());
+
+        mPathEndPointPathPub->publish(path_end_point_msg);
+    }
+
     void ArmController::velCallback(geometry_msgs::msg::Twist::ConstSharedPtr const& ik_vel) {
         mVelTarget = *ik_vel;
         mVelTarget.linear.x *= MAX_SPEED;
@@ -231,6 +318,14 @@ namespace mrover {
                 mLastUpdate = get_clock()->now();
         else
                 RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "Received position command in velocity mode!");
+    }
+
+    auto ArmController::velZeroCheck() -> bool {
+         return mVelTarget.linear.x == 0 &&
+                mVelTarget.linear.y == 0 &&
+                mVelTarget.linear.z == 0 &&
+                mVelTarget.angular.x == 0 &&
+                mVelTarget.angular.y == 0;
     }
 
     auto ArmController::handleTypingGoal(const rclcpp_action::GoalUUID & uuid, const std::shared_ptr<const action::TypingPosition_Goal> &typingGoal) -> rclcpp_action::GoalResponse {
@@ -369,6 +464,68 @@ namespace mrover {
             }
         } else if (mArmMode == ArmMode::VELOCITY_CONTROL) {
             // TODO: Determine joint velocities that cancels out arm sag
+
+            auto now = get_clock()->now();
+
+            if (velZeroCheck()) {
+                mPathEndPos = mArmPos;
+                carrot_initialized = false;
+                return;
+            }
+            if (!carrot_initialized) {
+                mPathEndPos = mArmPos;
+                carrot_initialized = true;
+                mPrevTime = now;
+            }
+
+            double dt = (now - mPrevTime).seconds();
+            mPrevTime = now;
+
+            auto error_x = mPathEndPos.x - mArmPos.x;
+            auto error_y = mPathEndPos.y - mArmPos.y;
+            auto error_z = mPathEndPos.z - mArmPos.z;
+            auto error_pitch = mPathEndPos.pitch - mArmPos.pitch;
+            auto error_roll = mPathEndPos.roll - mArmPos.roll;
+
+            double error_total = std::sqrt((error_x * error_x) +
+                                           (error_y * error_y) +
+                                           (error_z * error_z));
+
+            double error_ratio = error_total/0.05;
+
+            double gate_factor = 1/(1 + (error_ratio * error_ratio));
+
+            auto mVelGated = mVelTarget;
+
+            mVelGated.linear.x *= gate_factor;
+            mVelGated.linear.y *= gate_factor;
+            mVelGated.linear.z *= gate_factor;
+
+            mPathEndPos.x += mVelGated.linear.x * dt;
+            mPathEndPos.y += mVelGated.linear.y * dt;
+            mPathEndPos.z += mVelGated.linear.z * dt;
+            mPathEndPos.pitch += mVelTarget.angular.y * dt;
+            mPathEndPos.roll += mVelTarget.angular.x * dt;
+
+            auto error_x_to_ideal = mPathEndPos.x - mArmPos.x;
+            auto error_y_to_ideal = mPathEndPos.y - mArmPos.y;
+            auto error_z_to_ideal = mPathEndPos.z - mArmPos.z;
+            auto error_to_ideal_mag = std::sqrt((error_x_to_ideal * error_x_to_ideal) +
+                                       (error_y_to_ideal * error_y_to_ideal) +
+                                       (error_z_to_ideal * error_z_to_ideal));
+
+            auto vel_magnitude = std::sqrt((mVelTarget.linear.x * mVelTarget.linear.x) +
+                                           (mVelTarget.linear.y * mVelTarget.linear.y) +
+                                           (mVelTarget.linear.z * mVelTarget.linear.z));
+
+            auto error_x_fin = (error_x_to_ideal / error_to_ideal_mag) * vel_magnitude;
+            auto error_y_fin = (error_x_to_ideal / error_to_ideal_mag) * vel_magnitude;
+            auto error_z_fin = (error_x_to_ideal / error_to_ideal_mag) * vel_magnitude;
+
+            mVelTarget.linear.x = error_x_fin / dt;
+            mVelTarget.linear.y = error_y_fin / dt;
+            mVelTarget.linear.z = error_z_fin / dt;
+
             auto velocities = ikVelCalc(mVelTarget);
             if (velocities &&
                 !(
