@@ -519,12 +519,12 @@ namespace mrover {
                                            (mVelTarget.linear.z * mVelTarget.linear.z));
 
             auto error_x_fin = (error_x_to_ideal / error_to_ideal_mag) * vel_magnitude;
-            auto error_y_fin = (error_x_to_ideal / error_to_ideal_mag) * vel_magnitude;
-            auto error_z_fin = (error_x_to_ideal / error_to_ideal_mag) * vel_magnitude;
+            auto error_y_fin = (error_y_to_ideal / error_to_ideal_mag) * vel_magnitude;
+            auto error_z_fin = (error_z_to_ideal / error_to_ideal_mag) * vel_magnitude;
 
-            mVelTarget.linear.x = error_x_fin / dt;
-            mVelTarget.linear.y = error_y_fin / dt;
-            mVelTarget.linear.z = error_z_fin / dt;
+            mVelTarget.linear.x = error_x_fin;
+            mVelTarget.linear.y = error_y_fin;
+            mVelTarget.linear.z = error_z_fin;
 
             auto velocities = ikVelCalc(mVelTarget);
             if (velocities &&
