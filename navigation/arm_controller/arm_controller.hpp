@@ -36,6 +36,7 @@ namespace mrover {
         ArmPos mPathEndPos;
         rclcpp::Time mPrevTime;
         bool carrot_initialized = false;
+        double mLastScaleFactor = 1.0;
 
 
         struct JointWrapper {
@@ -118,6 +119,7 @@ namespace mrover {
         static constexpr double LINK_BC = 0.53271;
         static constexpr double LINK_CD = 0.39403;
         static constexpr double END_EFFECTOR_LENGTH = 0.20482814; // from CAD
+        static constexpr double LENGTH_ROLL = 0.04;
         static constexpr double JOINT_C_OFFSET = 0.208954;
         static constexpr double JOINT_VEL_THRESH = 0.05;
         static constexpr double MAX_SPEED = 0.1; // in m/s, this is just an estimate

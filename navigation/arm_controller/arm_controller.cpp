@@ -169,6 +169,7 @@ namespace mrover {
         for (auto& v : velocities.velocities)
             v = static_cast<float>(v / scaleFactor);
 
+        mLastScaleFactor = 1.0/ scaleFactor;
         return velocities;
     }
 
@@ -476,40 +477,42 @@ namespace mrover {
                 mPathEndPos = mArmPos;
                 carrot_initialized = true;
                 mPrevTime = now;
+                mLastScaleFactor = 1.0;
             }
 
             double dt = (now - mPrevTime).seconds();
             mPrevTime = now;
+            if (dt <= 0) {
+                return;
+            }
 
             auto error_x = mPathEndPos.x - mArmPos.x;
             auto error_y = mPathEndPos.y - mArmPos.y;
             auto error_z = mPathEndPos.z - mArmPos.z;
-            auto error_pitch = mPathEndPos.pitch - mArmPos.pitch;
-            auto error_roll = mPathEndPos.roll - mArmPos.roll;
+            auto error_pitch = (mPathEndPos.pitch - mArmPos.pitch) * END_EFFECTOR_LENGTH;
+            auto error_roll = (mPathEndPos.roll - mArmPos.roll) * LENGTH_ROLL;
 
             double error_total = std::sqrt((error_x * error_x) +
                                            (error_y * error_y) +
-                                           (error_z * error_z));
+                                           (error_z * error_z) + 
+                                           (error_pitch * error_pitch) +
+                                           (error_roll * error_roll));
 
             double error_ratio = error_total/0.05;
 
-            double gate_factor = 1/(1 + (error_ratio * error_ratio));
+            double gate_factor = (1/(1 + (error_ratio * error_ratio))) * mLastScaleFactor;
 
-            auto mVelGated = mVelTarget;
-
-            mVelGated.linear.x *= gate_factor;
-            mVelGated.linear.y *= gate_factor;
-            mVelGated.linear.z *= gate_factor;
-
-            mPathEndPos.x += mVelGated.linear.x * dt;
-            mPathEndPos.y += mVelGated.linear.y * dt;
-            mPathEndPos.z += mVelGated.linear.z * dt;
-            mPathEndPos.pitch += mVelTarget.angular.y * dt;
-            mPathEndPos.roll += mVelTarget.angular.x * dt;
+            mPathEndPos.x += mVelTarget.linear.x * gate_factor * dt;
+            mPathEndPos.y += mVelTarget.linear.y * gate_factor * dt;
+            mPathEndPos.z += mVelTarget.linear.z * gate_factor * dt;
+            mPathEndPos.pitch += mVelTarget.angular.y * gate_factor * dt;
+            mPathEndPos.roll += mVelTarget.angular.x * gate_factor * dt;
 
             auto error_x_to_ideal = mPathEndPos.x - mArmPos.x;
             auto error_y_to_ideal = mPathEndPos.y - mArmPos.y;
             auto error_z_to_ideal = mPathEndPos.z - mArmPos.z;
+            auto error_pitch_to_ideal = mPathEndPos.pitch - mArmPos.pitch;
+            auto error_roll_to_ideal = mPathEndPos.roll - mArmPos.roll;
             auto error_to_ideal_mag = std::sqrt((error_x_to_ideal * error_x_to_ideal) +
                                        (error_y_to_ideal * error_y_to_ideal) +
                                        (error_z_to_ideal * error_z_to_ideal));
@@ -522,11 +525,23 @@ namespace mrover {
             auto error_y_fin = (error_y_to_ideal / error_to_ideal_mag) * vel_magnitude;
             auto error_z_fin = (error_z_to_ideal / error_to_ideal_mag) * vel_magnitude;
 
-            mVelTarget.linear.x = error_x_fin;
-            mVelTarget.linear.y = error_y_fin;
-            mVelTarget.linear.z = error_z_fin;
+            double kP_lin = 2;
+            double kP_ang = 0.5;
+            auto mVelAdjustedTarget = mVelTarget;
 
-            auto velocities = ikVelCalc(mVelTarget);
+            // mVelAdjustedTarget.linear.x = error_x_fin + (kP_lin * error_x_to_ideal);
+            // mVelAdjustedTarget.linear.y = error_y_fin + (kP_lin * error_y_to_ideal);
+            // mVelAdjustedTarget.linear.z = error_z_fin + (kP_lin * error_z_to_ideal);
+            // mVelAdjustedTarget.angular.y += error_pitch * kP_ang;
+            // mVelAdjustedTarget.angular.x += error_roll * kP_ang;
+
+            mVelAdjustedTarget.linear.x  = (mVelTarget.linear.x  * gate_factor) + (error_x_to_ideal * kP_lin);
+            mVelAdjustedTarget.linear.y  = (mVelTarget.linear.y  * gate_factor) + (error_y_to_ideal * kP_lin);
+            mVelAdjustedTarget.linear.z  = (mVelTarget.linear.z  * gate_factor) + (error_z_to_ideal * kP_lin);
+            mVelAdjustedTarget.angular.y = (mVelTarget.angular.y * gate_factor) + (error_pitch_to_ideal * kP_ang);
+            mVelAdjustedTarget.angular.x = (mVelTarget.angular.x * gate_factor) + (error_roll_to_ideal * kP_ang);
+
+            auto velocities = ikVelCalc(mVelAdjustedTarget);
             if (velocities &&
                 !(
                     velocities->velocities[0] == 0 &&
