@@ -513,6 +513,7 @@ namespace mrover {
             auto error_z_to_ideal = mPathEndPos.z - mArmPos.z;
             auto error_pitch_to_ideal = mPathEndPos.pitch - mArmPos.pitch;
             auto error_roll_to_ideal = mPathEndPos.roll - mArmPos.roll;
+
             auto error_to_ideal_mag = std::sqrt((error_x_to_ideal * error_x_to_ideal) +
                                        (error_y_to_ideal * error_y_to_ideal) +
                                        (error_z_to_ideal * error_z_to_ideal));
@@ -521,25 +522,25 @@ namespace mrover {
                                            (mVelTarget.linear.y * mVelTarget.linear.y) +
                                            (mVelTarget.linear.z * mVelTarget.linear.z));
 
-            auto error_x_fin = (error_x_to_ideal / error_to_ideal_mag) * vel_magnitude;
-            auto error_y_fin = (error_y_to_ideal / error_to_ideal_mag) * vel_magnitude;
-            auto error_z_fin = (error_z_to_ideal / error_to_ideal_mag) * vel_magnitude;
+            auto error_x_fin = (error_x_to_ideal / error_to_ideal_mag) * vel_magnitude * gate_factor;
+            auto error_y_fin = (error_y_to_ideal / error_to_ideal_mag) * vel_magnitude * gate_factor;
+            auto error_z_fin = (error_z_to_ideal / error_to_ideal_mag) * vel_magnitude * gate_factor;
 
             double kP_lin = 2;
-            double kP_ang = 0.5;
+            double kP_ang = 2.5;
             auto mVelAdjustedTarget = mVelTarget;
 
-            // mVelAdjustedTarget.linear.x = error_x_fin + (kP_lin * error_x_to_ideal);
-            // mVelAdjustedTarget.linear.y = error_y_fin + (kP_lin * error_y_to_ideal);
-            // mVelAdjustedTarget.linear.z = error_z_fin + (kP_lin * error_z_to_ideal);
-            // mVelAdjustedTarget.angular.y += error_pitch * kP_ang;
-            // mVelAdjustedTarget.angular.x += error_roll * kP_ang;
+            mVelAdjustedTarget.linear.x = error_x_fin + (kP_lin * error_x_to_ideal);
+            mVelAdjustedTarget.linear.y = error_y_fin + (kP_lin * error_y_to_ideal);
+            mVelAdjustedTarget.linear.z = error_z_fin + (kP_lin * error_z_to_ideal);
+            mVelAdjustedTarget.angular.y += error_pitch_to_ideal * kP_ang;
+            mVelAdjustedTarget.angular.x += error_roll_to_ideal * kP_ang;
 
-            mVelAdjustedTarget.linear.x  = (mVelTarget.linear.x  * gate_factor) + (error_x_to_ideal * kP_lin);
-            mVelAdjustedTarget.linear.y  = (mVelTarget.linear.y  * gate_factor) + (error_y_to_ideal * kP_lin);
-            mVelAdjustedTarget.linear.z  = (mVelTarget.linear.z  * gate_factor) + (error_z_to_ideal * kP_lin);
-            mVelAdjustedTarget.angular.y = (mVelTarget.angular.y * gate_factor) + (error_pitch_to_ideal * kP_ang);
-            mVelAdjustedTarget.angular.x = (mVelTarget.angular.x * gate_factor) + (error_roll_to_ideal * kP_ang);
+            // mVelAdjustedTarget.linear.x  = (mVelTarget.linear.x  * gate_factor) + (error_x_to_ideal * kP_lin);
+            // mVelAdjustedTarget.linear.y  = (mVelTarget.linear.y  * gate_factor) + (error_y_to_ideal * kP_lin);
+            // mVelAdjustedTarget.linear.z  = (mVelTarget.linear.z  * gate_factor) + (error_z_to_ideal * kP_lin);
+            // mVelAdjustedTarget.angular.y = (mVelTarget.angular.y * gate_factor) + (error_pitch_to_ideal * kP_ang);
+            // mVelAdjustedTarget.angular.x = (mVelTarget.angular.x * gate_factor) + (error_roll_to_ideal * kP_ang);
 
             auto velocities = ikVelCalc(mVelAdjustedTarget);
             if (velocities &&
