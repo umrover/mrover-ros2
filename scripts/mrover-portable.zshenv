@@ -60,6 +60,12 @@ activate_mrover() {
   # ROS's local_setup.zsh sets AMENT_SHELL=zsh without unsetting it
   unset AMENT_SHELL
 
+  if [[ -o interactive ]] && command -v register-python-argcomplete >/dev/null 2>&1; then
+    (( $+functions[compdef] )) || { autoload -Uz compinit && compinit; }
+    eval "$(register-python-argcomplete ros2)"
+    eval "$(register-python-argcomplete colcon)"
+  fi
+
   # Move DYLD_LIBRARY_PATH to fallback so it does not override system libs
   if [[ -n "$DYLD_LIBRARY_PATH" ]]; then
     export DYLD_FALLBACK_LIBRARY_PATH="${DYLD_LIBRARY_PATH}${DYLD_FALLBACK_LIBRARY_PATH:+:$DYLD_FALLBACK_LIBRARY_PATH}"
