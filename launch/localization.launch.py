@@ -65,4 +65,16 @@ def generate_launch_description():
         respawn=True,
     )
 
-    return LaunchDescription([rover_gps_driver_node, gps_linearization_node, heading_filter_node])
+    base_link_to_right_gps = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        arguments=["0.0", "0.47", "0", "0", "0", "0", "1", "gps_frame", "base_link"],
+    )
+
+    base_link_to_zed = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        arguments=["0", "0", "1", "0", "0", "0", "1", "base_link", "zed_left_camera_frame"],
+    )
+
+    return LaunchDescription([rover_gps_driver_node, gps_linearization_node, heading_filter_node, base_link_to_right_gps, base_link_to_zed])
