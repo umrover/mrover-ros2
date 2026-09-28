@@ -48,7 +48,6 @@ readonly MROVER_PATH=~/ros2_ws/src/mrover
 
 if [ ! -d "${MROVER_PATH}" ]; then
     git clone git@github.com:umrover/mrover-ros2 "${MROVER_PATH}"
-    git -C "${MROVER_PATH}" switch skj/portable # TEMPORARY!!! TODO(Kevin)
 fi
 
 exec "${MROVER_PATH}/setup-portable.sh"
