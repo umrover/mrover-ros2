@@ -8,7 +8,7 @@
 set -Eeuo pipefail
 
 readonly RED_BOLD='\033[1;31m'
-readonly GREY_BOLD='\033[1;30m'
+readonly GREY_BOLD='\033[90m'
 readonly NC='\033[0m'
 
 if ! grep -q '^VERSION_CODENAME=noble' /etc/os-release 2>/dev/null; then
