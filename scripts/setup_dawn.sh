@@ -17,13 +17,19 @@ fi
 
 readonly PLATFORM="$(uname -s)/$(uname -m)"
 
-# avoid exiting 0 so other scripts running setup_dawn doesn't fail
-if [ "${PLATFORM}" != "Linux/x86_64" ]; then
-    echo "No prebuilt Dawn published for ${PLATFORM} (only Linux x86_64), skipping. The simulator will not be built."
+# missing linux-arm64, which we dont support anyways
+case "${PLATFORM}" in
+Linux/x86_64) readonly DAWN_ASSET="ubuntu-latest" ;;
+Darwin/x86_64) readonly DAWN_ASSET="macos-15-intel" ;;
+Darwin/arm64) readonly DAWN_ASSET="macos-latest" ;;
+*)
+    # avoid exiting nonzero so other scripts running setup_dawn don't fail
+    echo "No prebuilt Dawn published for ${PLATFORM} (Linux x86_64, macOS Intel/Apple Silicon available), skipping. The simulator will not be built."
     exit 0
-fi
+    ;;
+esac
 
-readonly BINARY_TARBALL="Dawn-${DAWN_SHA}-ubuntu-latest-Release.tar.gz"
+readonly BINARY_TARBALL="Dawn-${DAWN_SHA}-${DAWN_ASSET}-Release.tar.gz"
 
 tmpdir=$(mktemp -d)
 trap 'rm -rf "${tmpdir}"' EXIT
@@ -43,5 +49,5 @@ rm -rf "${DEST}"
 mkdir -p "$(dirname "${DEST}")"
 mv "${tmpdir}/dawn" "${DEST}"
 
-echo "${DAWN_SHA}" > "${VERSION_FILE}"
+echo "${DAWN_SHA}" >"${VERSION_FILE}"
 echo "Dawn ${DAWN_SHA} installed."
