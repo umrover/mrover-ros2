@@ -3,10 +3,7 @@
   tasks:
     - name: Group hosts by setup type
       ansible.builtin.group_by:
-        key: >-
-          {{ 'native' if ansible_facts['distribution'] == 'Ubuntu'
-          and ansible_facts['distribution_release'] == 'noble'
-          else 'portable' }}
+        key: "{{ 'native' if ansible_facts['distribution_release'] == 'noble' else 'portable' }}"
 
 - hosts: native
   vars_files:
