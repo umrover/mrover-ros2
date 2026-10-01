@@ -2,7 +2,7 @@
 readonly MROVER_ROS2_WS_PATH="$HOME/ros2_ws"
 readonly MROVER_REPO="${MROVER_ROS2_WS_PATH}/src/mrover"
 
-[ -f /opt/ros/jazzy/setup.zsh ] && source /opt/ros/jazzy/setup.zsh
+source /opt/ros/jazzy/setup.zsh
 
 export ROS_DOMAIN_ID=5
 export COLCON_TRACE=0
@@ -43,12 +43,6 @@ source_mrover_overlay(){
     if [ -f "${target_file}" ]; then
         source "${target_file}" >> /dev/null
     fi
-
-    if command -v register-python-argcomplete3 &>/dev/null; then
-        command -v colcon &>/dev/null && eval "$(register-python-argcomplete3 colcon)"
-    elif command -v register-python-argcomplete &>/dev/null; then
-        command -v colcon &>/dev/null && eval "$(register-python-argcomplete colcon)"
-    fi
 }
 
 # cuda
@@ -61,17 +55,13 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 [ -s "$BUN_INSTALL/_bun" ] && source "$BUN_INSTALL/_bun"
 
 alias mrover="cd ${MROVER_REPO} && source_mrover_overlay"
-
-build_mrover(){
-    cd "${MROVER_REPO}" && ./build.sh "${1}" && mrover
+function build_mrover() {
+    cd "${MROVER_REPO}" && ./build.sh ${1} && mrover
 }
-
 alias clean_mrover="cd ${MROVER_REPO} && ./clean.sh && mrover"
 
+# ros2 completions
 if command -v register-python-argcomplete3 &>/dev/null; then
     eval "$(register-python-argcomplete3 ros2)"
-    command -v colcon &>/dev/null && eval "$(register-python-argcomplete3 colcon)"
-elif command -v register-python-argcomplete &>/dev/null; then
-    eval "$(register-python-argcomplete ros2)"
-    command -v colcon &>/dev/null && eval "$(register-python-argcomplete colcon)"
+    eval "$(register-python-argcomplete3 colcon)"
 fi

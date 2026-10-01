@@ -1,5 +1,5 @@
 - name: Install platform-specific packages
-  ansible.builtin.include_tasks: "{{ ansible_pkg_mgr }}.yml"
+  ansible.builtin.include_tasks: "{{ ansible_facts['pkg_mgr'] }}.yml"
 
 - name: Locate zsh binary
   ansible.builtin.command: which zsh

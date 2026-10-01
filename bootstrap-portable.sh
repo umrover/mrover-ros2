@@ -6,7 +6,7 @@
 set -Eeuo pipefail
 
 readonly RED_BOLD='\033[1;31m'
-readonly GREY_BOLD='\033[1;30m'
+readonly GREY_BOLD='\033[90m'
 readonly NC='\033[0m'
 
 OS="$(uname -s)"
@@ -48,7 +48,6 @@ readonly MROVER_PATH=~/ros2_ws/src/mrover
 
 if [ ! -d "${MROVER_PATH}" ]; then
     git clone git@github.com:umrover/mrover-ros2 "${MROVER_PATH}"
-    git -C "${MROVER_PATH}" switch skj/portable # TEMPORARY!!! TODO(Kevin)
 fi
 
 exec "${MROVER_PATH}/setup-portable.sh"
