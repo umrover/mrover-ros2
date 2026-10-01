@@ -1,8 +1,21 @@
 version: 7
 platforms:
 - name: linux-64
+  virtual-packages:
+  - __unix=0=0
+  - __linux=4.18
+  - __glibc=2.28
+  - __archspec=0=x86_64
 - name: osx-64
+  virtual-packages:
+  - __unix=0=0
+  - __osx=13.0
+  - __archspec=0=x86_64
 - name: osx-arm64
+  virtual-packages:
+  - __unix=0=0
+  - __osx=13.0
+  - __archspec=0=m1
 environments:
   default:
     channels:
@@ -668,7 +681,7 @@ environments:
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-yaml-cpp-vendor-9.0.1-np2py312h2ed9cc7_16.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros-jazzy-zstd-vendor-0.26.9-np2py312h2ed9cc7_16.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-64/ros2-distro-mutex-0.14.0-jazzy_16.conda
-      - pypi: .
+      - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/04/4b/29cac41a4d98d144bf5f6d33995617b185d14b22401f75ca86f384e87ff1/h11-0.16.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/07/87/aff12fa74cde78c4eb1a622fdb0f7f059c7f6861711b23bb26adc7c0b1c9/pyrtcm-1.2.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/07/bc/587a445451b253b285629263eb51c2d8e9bcea4fc97826266d186f96f558/pyserial-3.5-py2.py3-none-any.whl
@@ -683,6 +696,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/61/07/a2fff88ae09b86cfea037afcef6ba46974ae59c6f0b3def87859005efc3d/pymap3d-3.1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/67/81/4add07e5172b7ac40d8ed5ff580409a7801a4fe26d529bdd915401dabfbe/typing_inspection-0.4.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/76/18/0eea75741ee812e9f598b687619ce2454f6c3a1c5cd21ea990ec6bd26f45/uvicorn-0.53.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/7e/32/a7125fb28c4261a627f999d5fb4afff25b523800faed2c30979949d6facd/pydot-4.0.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/91/4c/e0ce1ef95d4000ebc1c11801f9b944fa5910ecc15b5e351865763d8657f8/graphviz-0.21-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/99/91/8acff4f5e50511b911bbccb72b8628a49c68ce14148cd9f6431094859a90/annotated_types-0.8.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/9f/81/5d931d78d0eb732b95dc3ddaeeb71c8bb572fb01356e9133916cd729ecdd/wrapt-1.17.3-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl
@@ -690,6 +704,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/c8/cb/6a6a47d5b464bd08695d254f3da6e7986cc70c9fa5d778eda57538edfe56/starlette-1.6.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/cb/03/10388a42375ee7e4ac9b94eb2c5c569c8b5795e377e701c9ac3ad63de890/fastapi-0.141.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/cb/c0/a670f7247fd552ea94d02aed37ecaed3198448f01a402a805c12f2a4db76/lark-1.1.2-py2.py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/d2/10/3b618ece6a776e7b7fac3dcfd0f4e2e52006c0e49d0f63fc35c5bfef3566/py_trees-2.6.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/d5/7d/9a57e187cbf2fbbbdfd4044a4f9ce141c8d221f9963750d3b001f0ec080d/shapely-2.0.6-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/df/64/ff35eb9e54894cf471ff4716abd3c81eb0a0626869217ce3e6ba4ccf17d7/scipy-1.18.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/e2/5b/8301c52ca580d3045b6fb87e81af73185f37da976096d80b034d9a3a3975/pynmeagps-1.1.7-py3-none-any.whl
@@ -1309,7 +1324,7 @@ environments:
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-64/ros-jazzy-yaml-cpp-vendor-9.0.1-np2py312h90712bc_18.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-64/ros-jazzy-zstd-vendor-0.26.10-np2py312h90712bc_18.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-64/ros2-distro-mutex-0.15.0-jazzy_18.conda
-      - pypi: .
+      - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/04/4b/29cac41a4d98d144bf5f6d33995617b185d14b22401f75ca86f384e87ff1/h11-0.16.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/07/87/aff12fa74cde78c4eb1a622fdb0f7f059c7f6861711b23bb26adc7c0b1c9/pyrtcm-1.2.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/07/bc/587a445451b253b285629263eb51c2d8e9bcea4fc97826266d186f96f558/pyserial-3.5-py2.py3-none-any.whl
@@ -1328,12 +1343,14 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/61/07/a2fff88ae09b86cfea037afcef6ba46974ae59c6f0b3def87859005efc3d/pymap3d-3.1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/67/81/4add07e5172b7ac40d8ed5ff580409a7801a4fe26d529bdd915401dabfbe/typing_inspection-0.4.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/76/18/0eea75741ee812e9f598b687619ce2454f6c3a1c5cd21ea990ec6bd26f45/uvicorn-0.53.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/7e/32/a7125fb28c4261a627f999d5fb4afff25b523800faed2c30979949d6facd/pydot-4.0.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/82/3f/76358795aa7a8c6d4f36e2cb828ad1c90ee118e1393a9281664f5aade9d4/pydantic_core-2.46.5-cp312-cp312-macosx_10_12_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/91/4c/e0ce1ef95d4000ebc1c11801f9b944fa5910ecc15b5e351865763d8657f8/graphviz-0.21-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/99/91/8acff4f5e50511b911bbccb72b8628a49c68ce14148cd9f6431094859a90/annotated_types-0.8.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/c8/cb/6a6a47d5b464bd08695d254f3da6e7986cc70c9fa5d778eda57538edfe56/starlette-1.6.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/cb/03/10388a42375ee7e4ac9b94eb2c5c569c8b5795e377e701c9ac3ad63de890/fastapi-0.141.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/cb/c0/a670f7247fd552ea94d02aed37ecaed3198448f01a402a805c12f2a4db76/lark-1.1.2-py2.py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/d2/10/3b618ece6a776e7b7fac3dcfd0f4e2e52006c0e49d0f63fc35c5bfef3566/py_trees-2.6.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/e2/5b/8301c52ca580d3045b6fb87e81af73185f37da976096d80b034d9a3a3975/pynmeagps-1.1.7-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/eb/47/c95ffc2009878c7aac0c5e08528022dcb885933252a88b5f170058014464/pydantic-2.13.5-py3-none-any.whl
       osx-arm64:
@@ -1940,7 +1957,7 @@ environments:
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-yaml-cpp-vendor-9.0.1-np2py312hd441986_18.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros-jazzy-zstd-vendor-0.26.10-np2py312hd441986_18.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/osx-arm64/ros2-distro-mutex-0.15.0-jazzy_18.conda
-      - pypi: .
+      - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/04/4b/29cac41a4d98d144bf5f6d33995617b185d14b22401f75ca86f384e87ff1/h11-0.16.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/05/4a/78c6285577c375e7cf27277ea8ee6961224327f1e1a0c44af5f17f23635c/scipy-1.18.1-cp312-cp312-macosx_12_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/07/87/aff12fa74cde78c4eb1a622fdb0f7f059c7f6861711b23bb26adc7c0b1c9/pyrtcm-1.2.0-py3-none-any.whl
@@ -1957,6 +1974,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/67/81/4add07e5172b7ac40d8ed5ff580409a7801a4fe26d529bdd915401dabfbe/typing_inspection-0.4.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/68/53/5efa6e7a4036a94fe6276cf7bbb298afded51ca3396b03981ad680c8cc7d/shapely-2.0.6-cp312-cp312-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/76/18/0eea75741ee812e9f598b687619ce2454f6c3a1c5cd21ea990ec6bd26f45/uvicorn-0.53.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/7e/32/a7125fb28c4261a627f999d5fb4afff25b523800faed2c30979949d6facd/pydot-4.0.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/88/88/c2b6d8e81571da87aa232c0e34a3f3a0e618e6235892065ec82d1d81fc7a/msgpack-1.2.2-cp312-cp312-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/8f/e7/df821761772beaa48c211ee0e234930b35c1473778470773823f56d3911b/websockets-17.1-cp312-cp312-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/91/4c/e0ce1ef95d4000ebc1c11801f9b944fa5910ecc15b5e351865763d8657f8/graphviz-0.21-py3-none-any.whl
@@ -1964,6 +1982,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/c8/cb/6a6a47d5b464bd08695d254f3da6e7986cc70c9fa5d778eda57538edfe56/starlette-1.6.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/cb/03/10388a42375ee7e4ac9b94eb2c5c569c8b5795e377e701c9ac3ad63de890/fastapi-0.141.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/cb/c0/a670f7247fd552ea94d02aed37ecaed3198448f01a402a805c12f2a4db76/lark-1.1.2-py2.py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/d2/10/3b618ece6a776e7b7fac3dcfd0f4e2e52006c0e49d0f63fc35c5bfef3566/py_trees-2.6.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/db/50/26b091836076ce4cb2fac264186936acc069e0595772cfd02a563bc4761a/pydantic_core-2.46.5-cp312-cp312-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/e2/5b/8301c52ca580d3045b6fb87e81af73185f37da976096d80b034d9a3a3975/pynmeagps-1.1.7-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/eb/47/c95ffc2009878c7aac0c5e08528022dcb885933252a88b5f170058014464/pydantic-2.13.5-py3-none-any.whl
@@ -31657,7 +31676,7 @@ packages:
   license: BSD-3-Clause
   size: 2346
   timestamp: 1782298821602
-- pypi: .
+- pypi: ./
   name: mrover
   requires_dist:
   - empy==3.3.4
@@ -31986,6 +32005,25 @@ packages:
   - watchfiles>=0.20 ; extra == 'standard'
   - websockets>=13.0 ; extra == 'standard'
   requires_python: '>=3.10'
+- pypi: https://files.pythonhosted.org/packages/7e/32/a7125fb28c4261a627f999d5fb4afff25b523800faed2c30979949d6facd/pydot-4.0.1-py3-none-any.whl
+  name: pydot
+  version: 4.0.1
+  sha256: 869c0efadd2708c0be1f916eb669f3d664ca684bc57ffb7ecc08e70d5e93fee6
+  requires_dist:
+  - pyparsing>=3.1.0
+  - ruff ; extra == 'lint'
+  - mypy ; extra == 'types'
+  - pydot[lint] ; extra == 'dev'
+  - pydot[types] ; extra == 'dev'
+  - chardet ; extra == 'dev'
+  - parameterized ; extra == 'dev'
+  - pydot[dev] ; extra == 'tests'
+  - tox ; extra == 'tests'
+  - pytest ; extra == 'tests'
+  - pytest-cov ; extra == 'tests'
+  - pytest-xdist[psutil] ; extra == 'tests'
+  - zest-releaser[recommended] ; extra == 'release'
+  requires_python: '>=3.8'
 - pypi: https://files.pythonhosted.org/packages/82/3f/76358795aa7a8c6d4f36e2cb828ad1c90ee118e1393a9281664f5aade9d4/pydantic_core-2.46.5-cp312-cp312-macosx_10_12_x86_64.whl
   name: pydantic-core
   version: 2.46.5
@@ -32100,6 +32138,12 @@ packages:
   - atomicwrites ; extra == 'atomic-cache'
   - js2py ; extra == 'nearley'
   - regex ; extra == 'regex'
+- pypi: https://files.pythonhosted.org/packages/d2/10/3b618ece6a776e7b7fac3dcfd0f4e2e52006c0e49d0f63fc35c5bfef3566/py_trees-2.6.0-py2.py3-none-any.whl
+  name: py-trees
+  version: 2.6.0
+  sha256: 78155ffaf02f49de0c4bfb458488a1f766ded5b35bf1254980d8f49e6fb89837
+  requires_dist:
+  - pydot>=1.4
 - pypi: https://files.pythonhosted.org/packages/d5/7d/9a57e187cbf2fbbbdfd4044a4f9ce141c8d221f9963750d3b001f0ec080d/shapely-2.0.6-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
   name: shapely
   version: 2.0.6
