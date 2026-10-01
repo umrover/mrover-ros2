@@ -300,7 +300,7 @@ namespace mrover {
         double angle = -joint_state->positions[1];
         double x = LINK_BC * std::cos(angle);
         double z = LINK_BC * std::sin(angle);
-        angle += -joint_state->positions[2] - JOINT_C_OFFSET;
+        angle += -joint_state->positions[2] + JOINT_C_OFFSET;
         x += LINK_CD * std::cos(angle);
         z += LINK_CD * std::sin(angle);
         angle -= joint_state->positions[3] + JOINT_C_OFFSET;
@@ -517,7 +517,7 @@ namespace mrover {
 
             double dt = (now - mPrevTime).seconds();
             mPrevTime = now;
-            if (dt <= 0) {
+            if (dt <= 0 || dt > 0.2) {
                 return;
             }
 
@@ -556,21 +556,30 @@ namespace mrover {
             auto vel_magnitude = std::sqrt((mVelTarget.linear.x * mVelTarget.linear.x) +
                                            (mVelTarget.linear.y * mVelTarget.linear.y) +
                                            (mVelTarget.linear.z * mVelTarget.linear.z));
+            double error_x_fin = 0;
+            double error_y_fin = 0;
+            double error_z_fin = 0;
 
-            auto error_x_fin = (error_x_to_ideal / error_to_ideal_mag) * vel_magnitude * gate_factor;
-            auto error_y_fin = (error_y_to_ideal / error_to_ideal_mag) * vel_magnitude * gate_factor;
-            auto error_z_fin = (error_z_to_ideal / error_to_ideal_mag) * vel_magnitude * gate_factor;
+            if (error_to_ideal_mag > 1e-5) {
+                error_x_fin = (error_x_to_ideal / error_to_ideal_mag) * vel_magnitude;
+                error_y_fin = (error_y_to_ideal / error_to_ideal_mag) * vel_magnitude;
+                error_z_fin = (error_z_to_ideal / error_to_ideal_mag) * vel_magnitude;
+            }
 
-            double kP_lin = 2;
-            double kP_ang = 2.5;
+            double kP_lin = 2.0;
+            double kP_ang = 1.5;
             auto mVelAdjustedTarget = mVelTarget;
 
-            mVelAdjustedTarget.linear.x = error_x_fin + (kP_lin * error_x_to_ideal);
-            mVelAdjustedTarget.linear.y = error_y_fin + (kP_lin * error_y_to_ideal);
-            mVelAdjustedTarget.linear.z = error_z_fin + (kP_lin * error_z_to_ideal);
-            mVelAdjustedTarget.angular.y += error_pitch_to_ideal * kP_ang;
-            mVelAdjustedTarget.angular.x += error_roll_to_ideal * kP_ang;
+            double cx = kP_lin * error_x_to_ideal;
+            double cy = kP_lin * error_y_to_ideal;
+            double cz = (kP_lin + 2) * error_z_to_ideal;
+            double cn = std::sqrt(cx * cx + cy * cy + cz * cz);
 
+            mVelAdjustedTarget.linear.x = error_x_fin + cx;
+            mVelAdjustedTarget.linear.y = error_y_fin + cy;
+            mVelAdjustedTarget.linear.z = error_z_fin + cz;
+            mVelAdjustedTarget.angular.y = (mVelTarget.angular.y * gate_factor) + kP_ang * error_pitch_to_ideal;
+            mVelAdjustedTarget.angular.x = (mVelTarget.angular.x * gate_factor) + kP_ang * error_roll_to_ideal;
             // mVelAdjustedTarget.linear.x  = (mVelTarget.linear.x  * gate_factor) + (error_x_to_ideal * kP_lin);
             // mVelAdjustedTarget.linear.y  = (mVelTarget.linear.y  * gate_factor) + (error_y_to_ideal * kP_lin);
             // mVelAdjustedTarget.linear.z  = (mVelTarget.linear.z  * gate_factor) + (error_z_to_ideal * kP_lin);
