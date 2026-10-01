@@ -1,8 +1,10 @@
 #include "arm_controller.hpp"
+#include "geometry_msgs/msg/twist.hpp"
+#include "lie.hpp"
 
 
 namespace mrover {
-    const rclcpp::Duration ArmController::TIMEOUT = rclcpp::Duration(0, 0.3 * 1e9); // 0.3 seconds
+    rclcpp::Duration const ArmController::TIMEOUT = rclcpp::Duration(0, 0.3 * 1e9); // 0.3 seconds
 
     ArmController::ArmController() : Node{"arm_controller"}, mLastUpdate{get_clock()->now() - TIMEOUT} {
         mPosPub = create_publisher<msg::Position>("arm_pos_cmd", 10);
@@ -32,12 +34,11 @@ namespace mrover {
         mTypingGoalID = std::nullopt;
 
         mTypingServer = rclcpp_action::create_server<action::TypingPosition>(
-            this,
-            "typing_pos",
-            [this](auto & uuid, auto typingGoal) { return handleTypingGoal(uuid, typingGoal); },
-            [this](auto typingGoalHandle) { return handleTypingCancel(typingGoalHandle); },
-            [this](auto typingGoalHandle) { return handleTypingAccepted(typingGoalHandle); }
-        );
+                this,
+                "typing_pos",
+                [this](auto& uuid, auto typingGoal) { return handleTypingGoal(uuid, typingGoal); },
+                [this](auto typingGoalHandle) { return handleTypingCancel(typingGoalHandle); },
+                [this](auto typingGoalHandle) { return handleTypingAccepted(typingGoalHandle); });
 
         mTimer = create_wall_timer(std::chrono::milliseconds(33), [this]() {
             timerCallback();
@@ -77,11 +78,11 @@ namespace mrover {
         msg::Position positions;
         positions.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
         positions.positions = {
-            static_cast<float>(y),
-            static_cast<float>(q1),
-            static_cast<float>(q2),
-            static_cast<float>(q3),
-            static_cast<float>(target.roll),
+                static_cast<float>(y),
+                static_cast<float>(q1),
+                static_cast<float>(q2),
+                static_cast<float>(q3),
+                static_cast<float>(target.roll),
         };
 
         for (size_t i = 0; i < positions.names.size(); ++i) {
@@ -97,7 +98,7 @@ namespace mrover {
                 return std::nullopt;
             }
         }
-        
+
         return positions;
     }
 
@@ -140,11 +141,11 @@ namespace mrover {
         msg::Velocity velocities;
         velocities.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
         velocities.velocities = {
-            static_cast<float>(vel.linear.y),
-            static_cast<float>(joint_b_vel),
-            static_cast<float>(joint_c_vel),
-            static_cast<float>(joint_de_pitch_vel),
-            static_cast<float>(vel.angular.x),
+                static_cast<float>(vel.linear.y),
+                static_cast<float>(joint_b_vel),
+                static_cast<float>(joint_c_vel),
+                static_cast<float>(joint_de_pitch_vel),
+                static_cast<float>(vel.angular.x),
         };
 
         double scaleFactor = 1;
@@ -166,14 +167,14 @@ namespace mrover {
         // scale down all velocities so that we don't exceed motor velocity limits
         if (scaleFactor > 1)
             RCLCPP_INFO_STREAM_THROTTLE(get_logger(), *get_clock(), 500, "Commanded velocity too high. Scaling down by factor of " << scaleFactor);
-        for (auto& v : velocities.velocities)
+        for (auto& v: velocities.velocities)
             v = static_cast<float>(v / scaleFactor);
 
         return velocities;
     }
 
-    auto ArmController::configure_posestamped(geometry_msgs::msg::PoseStamped &p_stamped,
-                                              ArmController::ArmPos &mTargetPos) -> void {
+    auto ArmController::configure_posestamped(geometry_msgs::msg::PoseStamped& p_stamped,
+                                              ArmController::ArmPos& mTargetPos) -> void {
         auto const now = get_clock()->now();
         p_stamped.header.stamp = now;
         p_stamped.header.frame_id = "arm_base_link";
@@ -182,8 +183,8 @@ namespace mrover {
         p_stamped.pose.position.z = mTargetPos.z;
     }
 
-    auto ArmController::configure_vis_marker(visualization_msgs::msg::Marker &point,
-                                             ArmController::ArmPos &mTargetPos,
+    auto ArmController::configure_vis_marker(visualization_msgs::msg::Marker& point,
+                                             ArmController::ArmPos& mTargetPos,
                                              float x, float y, float z,
                                              float a, float r, float g, float b) -> void {
         auto const now = get_clock()->now();
@@ -277,64 +278,64 @@ namespace mrover {
             it->second.pos = joint_state->positions[i];
         }
 
-            auto const now = get_clock()->now();
+        auto const now = get_clock()->now();
 
-            double a_pos = joint_state->positions[0];
-            SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_a", "arm_base_link",
-            SE3d{{0, a_pos, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{0, R3d::UnitY()}}}}, now);
+        double a_pos = joint_state->positions[0];
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_a", "arm_base_link",
+                                     SE3d{{0, a_pos, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{0, R3d::UnitY()}}}}, now);
 
-            double joint_b_angle = joint_state->positions[1];
-            SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_b", "arm_joint_a",
-            SE3d{{0, 0, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{joint_b_angle, R3d::UnitY()}}}}, now);
+        double joint_b_angle = joint_state->positions[1];
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_b", "arm_joint_a",
+                                     SE3d{{0, 0, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{joint_b_angle, R3d::UnitY()}}}}, now);
 
-            double joint_c_angle = (joint_state->positions[2] - JOINT_C_OFFSET);
-            SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_c", "arm_joint_b",
-            SE3d{{LINK_BC, 0, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{joint_c_angle, R3d::UnitY()}}}}, now);
+        double joint_c_angle = (joint_state->positions[2] - JOINT_C_OFFSET);
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_c", "arm_joint_b",
+                                     SE3d{{LINK_BC, 0, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{joint_c_angle, R3d::UnitY()}}}}, now);
 
-            double joint_DE_angle = (joint_state->positions[3] + JOINT_C_OFFSET);
-            SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_DE", "arm_joint_c",
-            SE3d{{LINK_CD, 0, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{joint_DE_angle, R3d::UnitY()}}}}, now);
+        double joint_DE_angle = (joint_state->positions[3] + JOINT_C_OFFSET);
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_DE", "arm_joint_c",
+                                     SE3d{{LINK_CD, 0, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{joint_DE_angle, R3d::UnitY()}}}}, now);
 
-            double angle = -joint_state->positions[1];
-            double x = LINK_BC * std::cos(angle);
-            double z = LINK_BC * std::sin(angle);
-            angle += -joint_state->positions[2] - JOINT_C_OFFSET;
-            x += LINK_CD * std::cos(angle);
-            z += LINK_CD * std::sin(angle);
-            angle -= joint_state->positions[3] + JOINT_C_OFFSET;
-            x += END_EFFECTOR_LENGTH * std::cos(angle);
-            z += END_EFFECTOR_LENGTH * std::sin(angle);
-            mArmPos = {x, a_pos, z, -angle, joint_state->positions[4], std::max(joint_state->positions[5], 0.0f)};
+        double angle = -joint_state->positions[1];
+        double x = LINK_BC * std::cos(angle);
+        double z = LINK_BC * std::sin(angle);
+        angle += -joint_state->positions[2] - JOINT_C_OFFSET;
+        x += LINK_CD * std::cos(angle);
+        z += LINK_CD * std::sin(angle);
+        angle -= joint_state->positions[3] + JOINT_C_OFFSET;
+        x += END_EFFECTOR_LENGTH * std::cos(angle);
+        z += END_EFFECTOR_LENGTH * std::sin(angle);
+        mArmPos = {x, a_pos, z, -angle, joint_state->positions[4], std::max(joint_state->positions[5], 0.0f)};
 
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk", "arm_base_link", mArmPos.toSE3(), now);
     }
 
 
-
     void ArmController::posCallback(msg::IK::ConstSharedPtr const& ik_target) {
         mPosTarget = *ik_target;
+        mPosIkOrigin = mArmPos;
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", mPosTarget.toSE3(), get_clock()->now());
         if (mArmMode == ArmMode::POSITION_CONTROL || mArmMode == ArmMode::TYPING)
-                mLastUpdate = get_clock()->now();
+            mLastUpdate = get_clock()->now();
         else
-                RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "Received position command in velocity mode!");
+            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "Received position command in velocity mode!");
     }
 
     auto ArmController::velZeroCheck() -> bool {
-         return mVelTarget.linear.x == 0 &&
-                mVelTarget.linear.y == 0 &&
-                mVelTarget.linear.z == 0 &&
-                mVelTarget.angular.x == 0 &&
-                mVelTarget.angular.y == 0;
+        return mVelTarget.linear.x == 0 &&
+               mVelTarget.linear.y == 0 &&
+               mVelTarget.linear.z == 0 &&
+               mVelTarget.angular.x == 0 &&
+               mVelTarget.angular.y == 0;
     }
 
-    auto ArmController::handleTypingGoal(const rclcpp_action::GoalUUID & uuid, const std::shared_ptr<const action::TypingPosition_Goal> &typingGoal) -> rclcpp_action::GoalResponse {
-        (void)typingGoal;
+    auto ArmController::handleTypingGoal(rclcpp_action::GoalUUID const& uuid, std::shared_ptr<action::TypingPosition_Goal const> const& typingGoal) -> rclcpp_action::GoalResponse {
+        (void) typingGoal;
 
-        if(mArmMode != ArmMode::TYPING) 
+        if (mArmMode != ArmMode::TYPING)
             RCLCPP_WARN(get_logger(), "Rejecting goal: recieved typing goal while not in typing mode!");
 
-        if(mTypingGoalID) {
+        if (mTypingGoalID) {
             RCLCPP_WARN(get_logger(), "Rejecting goal: received new typing goal while there already exists an active goal!");
             return rclcpp_action::GoalResponse::REJECT;
         }
@@ -344,16 +345,16 @@ namespace mrover {
         return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
     }
 
-    auto ArmController::handleTypingCancel(const std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingPosition>> &typingGoalHandle) -> rclcpp_action::CancelResponse {
-        if(!mTypingGoalID || typingGoalHandle->get_goal_id() != mTypingGoalID.value()) {
+    auto ArmController::handleTypingCancel(std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingPosition>> const& typingGoalHandle) -> rclcpp_action::CancelResponse {
+        if (!mTypingGoalID || typingGoalHandle->get_goal_id() != mTypingGoalID.value()) {
             RCLCPP_WARN(get_logger(), "Rejecting cancel: attempted to cancel an invalid typing goal");
             return rclcpp_action::CancelResponse::REJECT;
-        } 
+        }
         RCLCPP_INFO(get_logger(), "Accepting typing goal cancel");
         return rclcpp_action::CancelResponse::ACCEPT;
     }
 
-    auto ArmController::handleTypingAccepted(const std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingPosition>> &typingGoalHandle) -> void {
+    auto ArmController::handleTypingAccepted(std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingPosition>> const& typingGoalHandle) -> void {
         std::thread([this, typingGoalHandle]() {
             auto result = std::make_shared<action::TypingPosition::Result>();
             result->success = false;
@@ -367,12 +368,12 @@ namespace mrover {
 
             // make param
             rclcpp::WallRate loopRate(3);
-            while(get_clock()->now() - startTime < typingTimeout) {
+            while (get_clock()->now() - startTime < typingTimeout) {
                 mLastUpdate = get_clock()->now();
                 mPosTarget.y = mTypingOrigin.y + typingGoalHandle->get_goal()->x;
                 mPosTarget.gripper = mTypingOrigin.gripper + typingGoalHandle->get_goal()->y;
                 RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 100, "Joint A Target: %f, Gripper Target: %f", mPosTarget.y, mPosTarget.gripper);
-                if(typingGoalHandle->is_canceling()) {
+                if (typingGoalHandle->is_canceling()) {
                     result->success = false;
                     typingGoalHandle->canceled(result);
 
@@ -384,21 +385,21 @@ namespace mrover {
 
                 double distRemaining = sqrt(pow(joints["joint_a"].pos - mPosTarget.y, 2) + pow((joints["gripper"].pos - mPosTarget.gripper), 2));
                 // make param
-                if(distRemaining < 0.004) {
+                if (distRemaining < 0.004) {
                     RCLCPP_INFO(get_logger(), "Reached target position.");
                     // make param
                     auto pauseTime = std::chrono::seconds(1);
                     std::this_thread::sleep_for(pauseTime);
 
                     auto pusherTimeout = std::chrono::seconds(3);
-                    if(mPusherCli->wait_for_service(pusherTimeout)) {
+                    if (mPusherCli->wait_for_service(pusherTimeout)) {
                         RCLCPP_INFO(get_logger(), "Calling pusher service.");
 
-                    auto pusherReq = std::make_shared<srv::Pusher::Request>();
-                    pusherReq->start = true;    
-                    auto pusherFuture = mPusherCli->async_send_request(pusherReq);
+                        auto pusherReq = std::make_shared<srv::Pusher::Request>();
+                        pusherReq->start = true;
+                        auto pusherFuture = mPusherCli->async_send_request(pusherReq);
 
-                    if(pusherFuture.wait_for(std::chrono::seconds(5)) == std::future_status::ready) {
+                        if (pusherFuture.wait_for(std::chrono::seconds(5)) == std::future_status::ready) {
                             RCLCPP_INFO(get_logger(), "Pusher service succeeded.");
                             std::this_thread::sleep_for(pauseTime);
                             result->success = true;
@@ -407,13 +408,13 @@ namespace mrover {
                             result->success = false;
                         }
                     } else {
-                        if(!rclcpp::ok()) return;
-                        RCLCPP_WARN(get_logger(), "Pusher service took too long to become available"); 
+                        if (!rclcpp::ok()) return;
+                        RCLCPP_WARN(get_logger(), "Pusher service took too long to become available");
                         result->success = false;
                     }
-                    if(result->success)
+                    if (result->success)
                         RCLCPP_INFO(get_logger(), "Pusher service succeeded.");
-                    else 
+                    else
                         RCLCPP_INFO(get_logger(), "Pusher service failed.");
 
                     mTypingGoalID = std::nullopt;
@@ -434,19 +435,19 @@ namespace mrover {
 
             RCLCPP_INFO(get_logger(), "Aborting goal: typing goal took too long!");
             return;
-
         }).detach();
     }
 
     auto ArmController::timerCallback() -> void {
+
         msg::Position mCurrPos;
         mCurrPos.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
         mCurrPos.positions = {
-            static_cast<float>(joints["joint_a"].pos),
-            static_cast<float>(joints["joint_b"].pos),
-            static_cast<float>(joints["joint_c"].pos),
-            static_cast<float>(joints["joint_de_pitch"].pos),
-            static_cast<float>(joints["joint_de_roll"].pos),
+                static_cast<float>(joints["joint_a"].pos),
+                static_cast<float>(joints["joint_b"].pos),
+                static_cast<float>(joints["joint_c"].pos),
+                static_cast<float>(joints["joint_de_pitch"].pos),
+                static_cast<float>(joints["joint_de_roll"].pos),
         };
 
         if (get_clock()->now() - mLastUpdate > TIMEOUT) {
@@ -456,6 +457,40 @@ namespace mrover {
 
         if (mArmMode == ArmMode::POSITION_CONTROL) {
             auto positions = ikPosCalc(mPosTarget);
+
+            auto transform = mPosTarget;
+            transform.x -= mPosIkOrigin.x;
+            transform.y -= mPosIkOrigin.y;
+            transform.z -= mPosIkOrigin.z;
+            transform.pitch -= mPosIkOrigin.pitch;
+            transform.gripper -= mPosIkOrigin.gripper;
+
+            // Project mArmPos onto transform
+            double progress =
+                    ((mArmPos.x - mPosIkOrigin.x) * transform.x +
+                     (mArmPos.y - mPosIkOrigin.y) * transform.y +
+                     (mArmPos.z - mPosIkOrigin.z) * transform.z) /
+                    (transform.x * transform.x + transform.y * transform.y + transform.z * transform.z);
+
+            ArmPos idealPos;
+            idealPos.x = mPosIkOrigin.x + progress * transform.x;
+            idealPos.y = mPosIkOrigin.y + progress * transform.y;
+            idealPos.z = mPosIkOrigin.z + progress * transform.z;
+
+            // Calculate Progress to generate speed target
+            double maxAccel = 0;
+            double dv = maxAccel * (33.0 / 1000.0);
+            double transformMag = sqrt(transform.x * transform.x + transform.y * transform.y + transform.z * transform.z);
+            double speed = std::min(MAX_SPEED, sqrt(2 * maxAccel * transformMag * (1 - progress)));
+            double currVel = 0;
+            speed = std::clamp(speed, currVel - dv, currVel + dv);
+
+            // Feedback Velocity Generation
+            double kp = 1;
+            mVelTarget.linear.x = speed * (transform.x / transformMag) - kp * (mArmPos.x - idealPos.x);
+            mVelTarget.linear.y = speed * (transform.y / transformMag) - kp * (mArmPos.y - idealPos.y);
+            mVelTarget.linear.z = speed * (transform.z / transformMag) - kp * (mArmPos.z - idealPos.z);
+
             SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_target", "arm_base_link", mPosTarget.toSE3(), get_clock()->now());
             if (positions) {
                 mPosPub->publish(positions.value());
@@ -491,9 +526,9 @@ namespace mrover {
                                            (error_y * error_y) +
                                            (error_z * error_z));
 
-            double error_ratio = error_total/0.05;
+            double error_ratio = error_total / 0.05;
 
-            double gate_factor = 1/(1 + (error_ratio * error_ratio));
+            double gate_factor = 1 / (1 + (error_ratio * error_ratio));
 
             auto mVelGated = mVelTarget;
 
@@ -511,8 +546,8 @@ namespace mrover {
             auto error_y_to_ideal = mPathEndPos.y - mArmPos.y;
             auto error_z_to_ideal = mPathEndPos.z - mArmPos.z;
             auto error_to_ideal_mag = std::sqrt((error_x_to_ideal * error_x_to_ideal) +
-                                       (error_y_to_ideal * error_y_to_ideal) +
-                                       (error_z_to_ideal * error_z_to_ideal));
+                                                (error_y_to_ideal * error_y_to_ideal) +
+                                                (error_z_to_ideal * error_z_to_ideal));
 
             auto vel_magnitude = std::sqrt((mVelTarget.linear.x * mVelTarget.linear.x) +
                                            (mVelTarget.linear.y * mVelTarget.linear.y) +
@@ -529,19 +564,17 @@ namespace mrover {
             auto velocities = ikVelCalc(mVelTarget);
             if (velocities &&
                 !(
-                    velocities->velocities[0] == 0 &&
-                    velocities->velocities[1] == 0 &&
-                    velocities->velocities[2] == 0 &&
-                    velocities->velocities[3] == 0 &&
-                    velocities->velocities[4] == 0
-                )
-            ) {
+                        velocities->velocities[0] == 0 &&
+                        velocities->velocities[1] == 0 &&
+                        velocities->velocities[2] == 0 &&
+                        velocities->velocities[3] == 0 &&
+                        velocities->velocities[4] == 0)) {
                 mVelPub->publish(velocities.value());
             } else {
-                if(!velocities) RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
+                if (!velocities) RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Velocity IK failed!");
             }
         } else { // typing mode
-            if(mTypingGoalID) {
+            if (mTypingGoalID) {
                 msg::Position positions;
                 positions.names = {"joint_a", "gripper"};
                 positions.positions = {
@@ -594,5 +627,5 @@ auto main(int argc, char** argv) -> int {
 }
 
 
-    /*SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_ee", "arm_joint_de",
+/*SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_ee", "arm_joint_de",
     SE3d{{END_EFFECTOR_LENGTH, 0, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{0.0, R3d::UnitY()}}}}, now);*/

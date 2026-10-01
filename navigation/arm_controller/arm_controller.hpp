@@ -1,9 +1,9 @@
 #pragma once
 #include "pch.hpp"
-#include <nav_msgs/msg/path.hpp>
-#include <geometry_msgs/msg/pose_stamped.hpp>
-#include <visualization_msgs/msg/marker.hpp>
 #include <deque>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <nav_msgs/msg/path.hpp>
+#include <visualization_msgs/msg/marker.hpp>
 
 namespace mrover {
 
@@ -66,9 +66,9 @@ namespace mrover {
         rclcpp::Client<srv::Pusher>::SharedPtr mPusherCli;
 
         rclcpp_action::Server<action::TypingPosition>::SharedPtr mTypingServer;
-        auto handleTypingGoal(const rclcpp_action::GoalUUID & uuid, const std::shared_ptr<const action::TypingPosition_Goal> &typingGoal) -> rclcpp_action::GoalResponse;
-        auto handleTypingCancel(const std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingPosition>> &typingGoalHandle) -> rclcpp_action::CancelResponse;
-        auto handleTypingAccepted(const std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingPosition>> &typingGoalHandle) -> void;
+        auto handleTypingGoal(rclcpp_action::GoalUUID const& uuid, std::shared_ptr<action::TypingPosition_Goal const> const& typingGoal) -> rclcpp_action::GoalResponse;
+        auto handleTypingCancel(std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingPosition>> const& typingGoalHandle) -> rclcpp_action::CancelResponse;
+        auto handleTypingAccepted(std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingPosition>> const& typingGoalHandle) -> void;
         std::optional<rclcpp_action::GoalUUID> mTypingGoalID;
 
         rclcpp::Publisher<msg::Position>::SharedPtr mPosPub;
@@ -90,15 +90,15 @@ namespace mrover {
         auto timerCallback() -> void;
         auto velZeroCheck() -> bool;
         auto visualize_ee() -> void;
-        auto configure_posestamped(geometry_msgs::msg::PoseStamped &p_stamped, 
-                                   ArmController::ArmPos &mTargetPos) -> void;
+        auto configure_posestamped(geometry_msgs::msg::PoseStamped& p_stamped,
+                                   ArmController::ArmPos& mTargetPos) -> void;
 
-        auto configure_vis_marker(visualization_msgs::msg::Marker &point,
-                                             ArmController::ArmPos &mTargetPos,
-                                             float x, float y, float z,
-                                             float a, float r, float g, float b) -> void;
+        auto configure_vis_marker(visualization_msgs::msg::Marker& point,
+                                  ArmController::ArmPos& mTargetPos,
+                                  float x, float y, float z,
+                                  float a, float r, float g, float b) -> void;
 
-        ArmPos mArmPos, mTypingOrigin, mPosTarget;
+        ArmPos mArmPos, mTypingOrigin, mPosTarget, mPosIkOrigin;
         geometry_msgs::msg::Twist mVelTarget;
         rclcpp::Time mLastUpdate;
 
