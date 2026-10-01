@@ -36,6 +36,7 @@ namespace mrover {
         ArmPos mPathEndPos;
         rclcpp::Time mPrevTime;
         bool carrot_initialized = false;
+        double mLastScaleFactor = 1.0;
 
 
         struct JointWrapper {
@@ -51,10 +52,19 @@ namespace mrover {
 
         // TODO: update velocity limits to make them real
         std::unordered_map<std::string, JointWrapper> joints = {
-                {"joint_a", {.limits = {.minPos = 0, .maxPos = 0.37, .minVel = -0.05, .maxVel = 0.05}, .pos = 0}},
-                {"joint_b", {.limits = {.minPos = -1.1, .maxPos = 0.25, .minVel = -0.05, .maxVel = 0.05}, .pos = 0}},
-                {"joint_c", {.limits = {.minPos = -1.0, .maxPos = 3.0, .minVel = -0.3142, .maxVel = 0.3142}, .pos = 0}},
-                {"joint_de_pitch", {.limits = {.minPos = -1.75, .maxPos = 1.1, .minVel = -0.2, .maxVel = 0.2}, // pretty conservative limits atm
+                {"joint_a", {
+                .limits = {.minPos = 0, .maxPos = 0.35, .minVel = -0.05, .maxVel = 0.05},
+                .pos = 0
+            }},
+            {"joint_b", {
+                .limits = {.minPos = -0.9, .maxPos = 0, .minVel = -0.05, .maxVel = 0.05},
+                .pos = 0
+            }},
+            {"joint_c", {
+                .limits = {.minPos = -0.959931, .maxPos = 2.87979, .minVel = -0.05 * 2 * std::numbers::pi, .maxVel = 0.05 * 2 * std::numbers::pi},
+                .pos = 0
+            }},    
+            {"joint_de_pitch", {.limits = {.minPos = -1.75, .maxPos = 1.1, .minVel = -0.2, .maxVel = 0.2}, // pretty conservative limits atm
                                     .pos = 0}},
                 {"joint_de_roll", {.limits = {.minPos = -3.14, .maxPos = 3.13, .minVel = -1.0, .maxVel = 1.0}, .pos = 0}},
                 {"gripper", {.limits = {.minPos = 0, .maxPos = 0.1, .minVel = -1, .maxVel = 1}, .pos = 0}},
@@ -118,6 +128,7 @@ namespace mrover {
         static constexpr double LINK_BC = 0.53271;
         static constexpr double LINK_CD = 0.39403;
         static constexpr double END_EFFECTOR_LENGTH = 0.20482814; // from CAD
+        static constexpr double LENGTH_ROLL = 0.04;
         static constexpr double JOINT_C_OFFSET = 0.208954;
         static constexpr double JOINT_VEL_THRESH = 0.05;
         static constexpr double MAX_SPEED = 0.1; // in m/s, this is just an estimate
