@@ -37,6 +37,9 @@ namespace mrover {
         rclcpp::Time mPrevTime;
         bool carrot_initialized = false;
         double mLastScaleFactor = 1.0;
+        double total_error_x = 0.0;
+        double total_error_y = 0.0;
+        double total_error_z = 0.0;
 
 
         struct JointWrapper {

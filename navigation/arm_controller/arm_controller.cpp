@@ -147,6 +147,12 @@ namespace mrover {
             static_cast<float>(vel.angular.x),
         };
 
+        double u_b = (c2 + a2 - b2) / (2 * LINK_BC * std::sqrt(c2));
+        double u_c = (c2 - a2 - b2) / (2 * LINK_BC * LINK_CD);
+        RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 250,
+        "x2 %.3f z2 %.3f | u_b %.3f u_c %.3f | joints b %.3f c %.3f de %.3f",
+        x_2, z_2, u_b, u_c, joint_b_vel, joint_c_vel, joint_de_pitch_vel);
+
         double scaleFactor = 1;
         for (size_t i = 0; i < velocities.names.size(); ++i) {
             auto it = joints.find(velocities.names[i]);
@@ -157,7 +163,9 @@ namespace mrover {
 
             if ((velocities.velocities[i] > 0 && it->second.limits.maxPos - it->second.pos < JOINT_VEL_THRESH) ||
                 (velocities.velocities[i] < 0 && it->second.pos - it->second.limits.minPos < JOINT_VEL_THRESH)) {
-                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Joint " << velocities.names[i] << " too close to limit for velocity command");
+                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000,
+                    "Joint " << velocities.names[i] << " too close to limit, vel " << velocities.velocities[i]
+                    << " pos " << it->second.pos);
                 return std::nullopt;
             }
             scaleFactor = std::max(scaleFactor, velocities.velocities[i] / (velocities.velocities[i] > 0 ? it->second.limits.maxVel : it->second.limits.minVel));
@@ -470,11 +478,17 @@ namespace mrover {
 
             if (velZeroCheck()) {
                 mPathEndPos = mArmPos;
+                total_error_x = 0;
+                total_error_y = 0;
+                total_error_z = 0;
                 carrot_initialized = false;
                 return;
             }
             if (!carrot_initialized) {
                 mPathEndPos = mArmPos;
+                total_error_x = 0;
+                total_error_y = 0;
+                total_error_z = 0;
                 carrot_initialized = true;
                 mPrevTime = now;
                 mLastScaleFactor = 1.0;
@@ -491,6 +505,10 @@ namespace mrover {
             auto error_z = mPathEndPos.z - mArmPos.z;
             auto error_pitch = (mPathEndPos.pitch - mArmPos.pitch) * END_EFFECTOR_LENGTH;
             auto error_roll = (mPathEndPos.roll - mArmPos.roll) * LENGTH_ROLL;
+
+            total_error_x += error_x;
+            total_error_y += error_y;
+            total_error_z += error_z;
 
             double error_total = std::sqrt((error_x * error_x) +
                                            (error_y * error_y) +
@@ -532,19 +550,21 @@ namespace mrover {
             }
 
             double kP_lin = 2.0;
-            double kP_ang = 1.5;
+            double kP_ang = 2.5;
             auto mVelAdjustedTarget = mVelTarget;   
+
+            double iP_lin = 0;
             
-            double cx = kP_lin * error_x_to_ideal;
-            double cy = kP_lin * error_y_to_ideal;
-            double cz = (kP_lin + 2) * error_z_to_ideal;
+            double cx = kP_lin * error_x_to_ideal + total_error_x * iP_lin;
+            double cy = (kP_lin-1) * error_y_to_ideal + total_error_y;
+            double cz = (kP_lin-1) * error_z_to_ideal + total_error_z;
             double cn = std::sqrt(cx*cx + cy*cy + cz*cz);
 
             mVelAdjustedTarget.linear.x = error_x_fin + cx;
             mVelAdjustedTarget.linear.y = error_y_fin + cy;
             mVelAdjustedTarget.linear.z = error_z_fin + cz;
-            mVelAdjustedTarget.angular.y = (mVelTarget.angular.y * gate_factor) + kP_ang * error_pitch_to_ideal;
-            mVelAdjustedTarget.angular.x = (mVelTarget.angular.x * gate_factor) + kP_ang * error_roll_to_ideal;
+            mVelAdjustedTarget.angular.y = (mVelTarget.angular.y) + kP_ang * error_pitch_to_ideal;
+            mVelAdjustedTarget.angular.x = (mVelTarget.angular.x) + kP_ang * error_roll_to_ideal;
             // mVelAdjustedTarget.linear.x  = (mVelTarget.linear.x  * gate_factor) + (error_x_to_ideal * kP_lin);
             // mVelAdjustedTarget.linear.y  = (mVelTarget.linear.y  * gate_factor) + (error_y_to_ideal * kP_lin);
             // mVelAdjustedTarget.linear.z  = (mVelTarget.linear.z  * gate_factor) + (error_z_to_ideal * kP_lin);
