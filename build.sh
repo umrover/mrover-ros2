@@ -27,7 +27,22 @@ if [ -n "${PIXI_PROJECT_ROOT:-}" ]; then
     else
         # conda's pkg-config wrapper runs the GCC-only
         os_cmake_args=("-DPKG_CONFIG_EXECUTABLE=${CONDA_PREFIX}/bin/pkg-config.bin")
-        os_cmake_args+=("-DCMAKE_DISABLE_FIND_PACKAGE_ZED=ON" "-DCMAKE_DISABLE_FIND_PACKAGE_CUDA=ON")
+        if [[ -n "${MROVER_ZED_ROOT:-}" ]]; then
+            # Opt-in: build perception against a system ZED SDK + CUDA
+            trt="${MROVER_TRT_ROOT:-${MROVER_ZED_ROOT}/dependencies/ai_dependencies}"
+            export CUDACXX="${MROVER_CUDA_ROOT:-/opt/cuda}/bin/nvcc"
+            export CUDAHOSTCXX=/usr/bin/g++
+            os_cmake_args+=(
+                "-DCMAKE_DISABLE_FIND_PACKAGE_ZED=OFF"
+                "-DCMAKE_DISABLE_FIND_PACKAGE_CUDA=OFF"
+                "-DCMAKE_CXX_FLAGS=${CXXFLAGS:-} -I${trt}/include"
+                "-DCMAKE_CUDA_FLAGS=${CUDAFLAGS:-} -I${trt}/include"
+                "-DCMAKE_SHARED_LINKER_FLAGS=${LDFLAGS:-} -L${trt}/lib -Wl,-rpath,${trt}/lib"
+                "-DCMAKE_EXE_LINKER_FLAGS=${LDFLAGS:-} -L${trt}/lib -Wl,-rpath,${trt}/lib"
+            )
+        else
+            os_cmake_args+=("-DCMAKE_DISABLE_FIND_PACKAGE_ZED=ON" "-DCMAKE_DISABLE_FIND_PACKAGE_CUDA=ON")
+        fi
         os_cmake_args+=("-DCMAKE_C_COMPILER=${CONDA_PREFIX}/bin/clang" "-DCMAKE_CXX_COMPILER=${CONDA_PREFIX}/bin/clang++")
     fi
 
