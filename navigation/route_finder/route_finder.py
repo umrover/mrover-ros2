@@ -1,0 +1,154 @@
+#!/usr/bin/env python3
+
+import sys
+
+import rclpy
+from geometry_msgs.msg import Pose, PoseStamped, Point
+from navigation.context import Context
+from rclpy import Parameter
+from rclpy.executors import ExternalShutdownException, SingleThreadedExecutor
+from rclpy.node import Node
+from navigation.behavior_tree.behavior_tree import BehaviorTree
+from structure import build_tree
+
+
+class RouteFinder(Node):
+    behavior_tree: BehaviorTree
+    ctx: Context
+
+    def __init__(self, ctx: Context) -> None:
+        super().__init__("navigation")
+
+        self.get_logger().info("Starting...")
+
+        self.ctx = ctx
+
+        self.declare_parameters(
+            "",
+            [
+                # General
+                ("update_rate", Parameter.Type.DOUBLE),
+                ("pub_path_rate", Parameter.Type.DOUBLE),
+                ("path_hist_size", Parameter.Type.INTEGER),
+                ("display_markers", Parameter.Type.BOOL),
+                ("world_frame", Parameter.Type.STRING),
+                ("rover_frame", Parameter.Type.STRING),
+                ("ref_lat", Parameter.Type.DOUBLE),
+                ("ref_lon", Parameter.Type.DOUBLE),
+                ("ref_alt", Parameter.Type.DOUBLE),
+                ("target_expiration_duration", Parameter.Type.DOUBLE),
+                ("zed_fov", Parameter.Type.DOUBLE),
+                # Pure Pursuit
+                ("pure_pursuit.min_lookahead_distance", Parameter.Type.DOUBLE),
+                ("pure_pursuit.max_lookahead_distance", Parameter.Type.DOUBLE),
+                ("pure_pursuit.use_pure_pursuit", Parameter.Type.BOOL),
+                # Costmap
+                ("costmap.custom_costmap", Parameter.Type.BOOL),
+                ("costmap.use_costmap", Parameter.Type.BOOL),
+                ("costmap.costmap_thresh", Parameter.Type.DOUBLE),
+                ("costmap.initial_inflation_radius", Parameter.Type.DOUBLE),
+                # Backup
+                ("backup.stop_threshold", Parameter.Type.DOUBLE),
+                ("backup.drive_forward_threshold", Parameter.Type.DOUBLE),
+                ("backup.backup_distance", Parameter.Type.DOUBLE),
+                ("backup.wait_time", Parameter.Type.DOUBLE),
+                # Drive
+                ("drive.max_driving_effort", Parameter.Type.DOUBLE),
+                ("drive.min_driving_effort", Parameter.Type.DOUBLE),
+                ("drive.max_turning_effort", Parameter.Type.DOUBLE),
+                ("drive.min_turning_effort", Parameter.Type.DOUBLE),
+                ("drive.turning_p", Parameter.Type.DOUBLE),
+                ("drive.driving_p", Parameter.Type.DOUBLE),
+                ("drive.lookahead_distance", Parameter.Type.DOUBLE),
+                # Smoothing,
+                ("smoothing.use_relaxation", Parameter.Type.BOOL),
+                ("smoothing.use_interpolation", Parameter.Type.BOOL),
+                # Waypoint
+                ("waypoint.stop_threshold", Parameter.Type.DOUBLE),
+                ("waypoint.drive_forward_threshold", Parameter.Type.DOUBLE),
+                ("waypoint.no_search_wait_time", Parameter.Type.DOUBLE),
+                # Long Range
+                ("long_range.distance_ahead", Parameter.Type.DOUBLE),
+                ("long_range.bearing_expiration_duration", Parameter.Type.DOUBLE),
+                # Search
+                ("search.stop_threshold", Parameter.Type.DOUBLE),
+                ("search.object_stop_threshold", Parameter.Type.DOUBLE),
+                ("search.drive_forward_threshold", Parameter.Type.DOUBLE),
+                ("search.coverage_radius", Parameter.Type.DOUBLE),
+                ("search.segments_per_rotation", Parameter.Type.INTEGER),
+                ("search.distance_between_spirals", Parameter.Type.DOUBLE),
+                ("search.max_segment_length", Parameter.Type.DOUBLE),
+                ("search.traversable_cost", Parameter.Type.DOUBLE),
+                ("search.update_delay", Parameter.Type.DOUBLE),
+                ("search.safe_approach_distance", Parameter.Type.DOUBLE),
+                ("search.angle_thresh", Parameter.Type.DOUBLE),
+                # Image Targets
+                ("image_targets.increment_weight", Parameter.Type.INTEGER),
+                ("image_targets.decrement_weight", Parameter.Type.INTEGER),
+                ("image_targets.min_hits", Parameter.Type.INTEGER),
+                ("image_targets.max_hits", Parameter.Type.INTEGER),
+                # Single Tag
+                ("single_tag.stop_threshold", Parameter.Type.DOUBLE),
+                ("single_tag.tag_stop_threshold", Parameter.Type.DOUBLE),
+                ("single_tag.post_avoidance_multiplier", Parameter.Type.DOUBLE),
+                ("single_tag.post_radius", Parameter.Type.DOUBLE),
+                # Recovery
+                ("recovery.stop_threshold", Parameter.Type.DOUBLE),
+                ("recovery.drive_forward_threshold", Parameter.Type.DOUBLE),
+                ("recovery.recovery_distance", Parameter.Type.DOUBLE),
+                ("recovery.give_up_time", Parameter.Type.DOUBLE),
+            ],
+        )
+
+        self.behavior_tree = BehaviorTree(self, "route_finder", ctx, build_tree(ctx))
+
+        update_rate = self.get_parameter("update_rate").value
+        pub_path_rate = self.get_parameter("pub_path_rate").value
+        self.create_timer(1 / update_rate, self.behavior_tree.tick)
+        self.create_timer(1 / pub_path_rate, self.publish_path)
+
+        self.get_logger().info("Ready!")
+
+        self.HIST_SIZE = self.get_parameter("path_hist_size").value
+
+    def publish_path(self) -> None:
+        if (rover_pose_in_map := self.ctx.rover.get_pose_in_map()) is not None:
+            x, y, z = rover_pose_in_map.translation()
+            roverPoseStamped = PoseStamped(
+                header=self.ctx.rover.path_history.header, pose=Pose(position=Point(x=x, y=y, z=z))
+            )
+            lastRoverPosition: Point | None = (
+                None
+                if len(self.ctx.rover.path_history.poses) == 0
+                else self.ctx.rover.path_history.poses[-1].pose.position
+            )
+
+            if len(self.ctx.rover.path_history.poses) < self.HIST_SIZE:
+                self.ctx.rover.path_history.poses.append(roverPoseStamped)
+            elif (
+                lastRoverPosition is not None and (x - lastRoverPosition.x) ** 2 + (y - lastRoverPosition.y) ** 2
+            ) ** 0.5 > 0.15:
+                self.ctx.rover.path_history.poses.pop(0)
+                self.ctx.rover.path_history.poses.append(roverPoseStamped)
+
+            self.ctx.path_history_publisher.publish(self.ctx.rover.path_history)
+
+
+if __name__ == "__main__":
+    try:
+        rclpy.init(args=sys.argv)
+
+        context = Context()
+        node = RouteFinder(context)
+        context.setup(node)
+
+        exec = SingleThreadedExecutor()
+        context.exec = exec
+        exec.add_node(node)
+        exec.spin()
+
+        rclpy.shutdown()
+    except KeyboardInterrupt:
+        pass
+    except ExternalShutdownException:
+        sys.exit(1)
