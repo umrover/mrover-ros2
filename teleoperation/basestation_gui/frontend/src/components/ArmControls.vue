@@ -11,42 +11,7 @@
     </div>
     <div class="flex w-full" role="group" aria-label="Arm mode selection" data-testid="pw-arm-mode-buttons">
       <div class="btn-group-connected w-full">
-        <button
-          type="button"
-          class="btn btn-sm flex-1"
-          :class="mode === 'disabled' ? 'btn-danger' : 'btn-outline-danger'"
-          data-testid="pw-arm-mode-disabled"
-          @click="newRAMode('disabled')"
-        >
-          Disabled
-        </button>
-        <button
-          type="button"
-          class="btn btn-sm flex-1"
-          :class="mode === 'throttle' ? 'btn-success' : 'btn-outline-success'"
-          data-testid="pw-arm-mode-throttle"
-          @click="newRAMode('throttle')"
-        >
-          Throttle
-        </button>
-        <button
-          type="button"
-          class="btn btn-sm flex-1"
-          :class="mode === 'ik-pos' ? 'btn-success' : 'btn-outline-success'"
-          data-testid="pw-arm-mode-ik-pos"
-          @click="newRAMode('ik-pos')"
-        >
-          IK Pos
-        </button>
-        <button
-          type="button"
-          class="btn btn-sm flex-1"
-          :class="mode === 'ik-vel' ? 'btn-success' : 'btn-outline-success'"
-          data-testid="pw-arm-mode-ik-vel"
-          @click="newRAMode('ik-vel')"
-        >
-          IK Vel
-        </button>
+        <!-- TODO add buttons -->
       </div>
     </div>
     <GamepadDisplay
@@ -67,7 +32,7 @@ import type { ControllerStateMessage } from '@/types/websocket'
 import GamepadDisplay from './GamepadDisplay.vue'
 import IndicatorDot from './IndicatorDot.vue'
 
-const { onMessage } = useWebsocketStore()
+const { onMessage, sendMessage } = useWebsocketStore()
 
 const mode = ref('disabled')
 const forcing_limit = ref(false)
@@ -78,18 +43,58 @@ const { connected, axes, buttons, vibrationActuator } = useGamepadPolling({
   messageType: 'ra_controller',
 })
 
+let keysPressed = {
+  w: false,
+  a: false,
+  s: false,
+  d: false,
+}
+
+const UPDATE_HZ = 30
+let interval: number | undefined
+
 const keyDown = async (event: { key: string }) => {
-  if (event.key === ' ') {
+  const key = event.key.toLowerCase()
+  
+  if (key === ' ') {
     await newRAMode('disabled')
+  } else if (key in keysPressed) {
+    keysPressed[key as keyof typeof keysPressed] = true
   }
 }
 
+const keyUp = async (event: {key: string}) => {
+  const key = event.key.toLowerCase()
+
+  if (key in keysPressed) {
+    keysPressed[key as keyof typeof keysPressed] = false
+  }
+}
+
+
 onMounted(() => {
   document.addEventListener('keydown', keyDown)
+  document.addEventListener('keyup', keyUp)
+
+  interval = window.setInterval(() => {
+    const axes: number[] = [0, 0, 0, 0]
+    const buttons: boolean[] = []
+    axes[0] = (keysPressed.d ? 1 : 0) - (keysPressed.a ? 1 : 0)
+    axes[1] = (keysPressed.s ? 1 : 0) - (keysPressed.w ? 1 : 0)
+
+    sendMessage('arm', {
+      type: 'ra_controller',
+      axes: axes,
+      buttons: buttons
+    })
+  }, 1000 / UPDATE_HZ)
+
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', keyDown)
+  document.removeEventListener('keyup', keyUp)
+  window.clearInterval(interval)
 })
 
 const newRAMode = async (newMode: string) => {
