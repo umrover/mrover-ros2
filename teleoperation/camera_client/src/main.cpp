@@ -91,7 +91,7 @@ auto main(int argc, char** argv) -> int {
 
     auto configs = node->loadCameraConfigs();
 
-    mainWindow->setConfigs(std::move(configs));
+    mainWindow->setConfigs(configs);
     secondWindow->setConfigs(std::move(configs));
 
     QObject::connect(mainWindow.get(), &mrover::CameraClientMainWindow::closed, []() {

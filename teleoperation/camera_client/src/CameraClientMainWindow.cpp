@@ -104,8 +104,8 @@ namespace mrover {
         }
     }
 
-    auto CameraClientMainWindow::setConfigs(std::unordered_map<std::string, std::vector<std::string>>&& configs) -> void {
-        mConfigs = configs;
+    auto CameraClientMainWindow::setConfigs(std::unordered_map<std::string, std::vector<std::string>> configs) -> void {
+        mConfigs = std::move(configs);
         loadCameraConfigSlot(CAMERA_CONFIGS[CAMERA_CONFIG::ARM]);
     }
 } // namespace mrover

@@ -70,7 +70,12 @@ auto GstVideoWidget::applyPipeline() -> void {
         flipElement = " ! videoflip method=counterclockwise";
     }
 
-    mPlayer->setSource(QUrl(std::format("gst-pipeline: {} ! videoconvert ! xvimagesink name=\"qtvideosink\" sync=false", mBasePipeline, flipElement).c_str()));
+    std::string const pipeline = std::format("gst-pipeline: {}{} ! videoconvert ! qtvideosink", mBasePipeline, flipElement);
+    mPlayer->setSource(QUrl(pipeline.c_str()));
+
+    // // DEBUG
+    // qDebug() << "Pipeline (supposedly) set to: " << pipeline.c_str();
+
     play();
 }
 

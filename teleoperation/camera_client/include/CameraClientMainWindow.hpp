@@ -31,7 +31,7 @@ namespace mrover {
         auto createCamera(std::string const& name, std::string const& pipeline, CameraCallbacks callbacks) -> bool;
         auto getCameraGridWidget() -> GstVideoGridWidget*;
 
-        auto setConfigs(std::unordered_map<std::string, std::vector<std::string>>&& configs) -> void;
+        auto setConfigs(std::unordered_map<std::string, std::vector<std::string>> configs) -> void;
 
     public slots:
         void showImagePreview(QString const& cameraName, QImage const& image);
