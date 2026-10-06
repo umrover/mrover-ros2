@@ -46,6 +46,13 @@ namespace mrover {
         bool mUseBuiltinPosTracking{};
         bool mUsePoseSmoothing{};
         bool mUseAreaMemory{};
+        
+        // body tracking
+        bool mBodyTrackingEnabled{};
+        int mBodyTrackingConfidence{};
+        rclcpp::Publisher<msg::Body>::SharedPtr mBodyPub;
+        sl::Bodies mBodies;
+        sl::BodyTrackingRuntimeParameters mBodyRuntimeParams;
 
         double mDepthMaximumDistance{};
 

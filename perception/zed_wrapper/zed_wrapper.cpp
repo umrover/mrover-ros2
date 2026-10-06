@@ -41,7 +41,8 @@ namespace mrover {
                     {"depth_maximum_distance", mDepthMaximumDistance, 12.0},
                     {"use_builtin_visual_odom", mUseBuiltinPosTracking, false},
                     {"use_pose_smoothing", mUsePoseSmoothing, true},
-                    {"use_area_memory", mUseAreaMemory, true}};
+                    {"use_area_memory", mUseAreaMemory, true},
+                    {"use_body_tracking", mBodyTrackingEnabled, true}};
 
             ParameterWrapper::declareParameters(this, params);
 
@@ -54,6 +55,7 @@ namespace mrover {
             mRightCamInfoPub = create_publisher<mrover::msg::CameraInfo>(std::format("/{}/right/camera_info", mDeviceName), 1);
             mLeftCamInfoPub = create_publisher<mrover::msg::CameraInfo>(std::format("/{}/left/camera_info", mDeviceName), 1);
             mMagHeadingPub = create_publisher<mrover::msg::Heading>(std::format("/{}_imu/mag_heading", mDeviceName), 1);
+            mBodyPub = create_publisher<mrover::msg::Body>(std::format("/{}/body", mDeviceName), 1);
 
             mSvoPath = svoFile.c_str();
 
@@ -110,6 +112,30 @@ namespace mrover {
                 positionalTrackingParameters.enable_pose_smoothing = mUsePoseSmoothing;
                 positionalTrackingParameters.enable_area_memory = mUseAreaMemory;
                 mZed.enablePositionalTracking(positionalTrackingParameters);
+            }
+
+            if (mBodyTrackingEnabled) {
+                if (!mDepthEnabled) {
+                    RCLCPP_WARN(get_logger(), "Body tracking requires depth, disabling it");
+                    mBodyTrackingEnabled = false;
+                } else {
+                    // Body tracking requires positional tracking. TF publishing stays gated on mUseBuiltinPosTracking.
+                    if (!mUseBuiltinPosTracking) {
+                        mZed.enablePositionalTracking(sl::PositionalTrackingParameters{});
+                    }
+
+                    sl::BodyTrackingParameters bodyParams;
+                    bodyParams.detection_model = sl::BODY_TRACKING_MODEL::HUMAN_BODY_FAST;
+                    bodyParams.body_format = sl::BODY_FORMAT::BODY_38;
+                    bodyParams.enable_tracking = true;
+                    bodyParams.enable_body_fitting = true;
+
+                    if (sl::ERROR_CODE err = mZed.enableBodyTracking(bodyParams); err != sl::ERROR_CODE::SUCCESS) {
+                        RCLCPP_WARN_STREAM(get_logger(), std::format("Failed to enable body tracking: {}", sl::toString(err).c_str()));
+                        mBodyTrackingEnabled = false;
+                    }
+                    mBodyRuntimeParams.detection_confidence_threshold = 40;
+                }
             }
 
             cudaDeviceProp prop{};
@@ -196,6 +222,37 @@ namespace mrover {
                 }
 
                 mLoopProfilerGrab.measureEvent("pose_tracking");
+
+                if (mBodyTrackingEnabled && mZed.retrieveBodies(mBodies, mBodyRuntimeParams) == sl::ERROR_CODE::SUCCESS) {
+                    sl::BodyData const* best = nullptr;
+                    for (sl::BodyData const& body : mBodies.body_list) {
+                        if (body.tracking_state == sl::OBJECT_TRACKING_STATE::OK && (!best || body.confidence > best->confidence)) {
+                            best = &body;
+                        }
+                    }
+
+                    mrover::msg::Body bodyMsg;
+                    bodyMsg.header.stamp = mGrabMeasures.time;
+                    bodyMsg.header.frame_id = std::format("{}_left_camera_frame", mDeviceName);
+                    bodyMsg.detected = best != nullptr;
+                    if (best) {
+                        bodyMsg.id = best->id;
+                        bodyMsg.confidence = best->confidence;
+
+                        bodyMsg.keypoints.reserve(best->keypoint.size());
+                        for (sl::float3 const& kp : best->keypoint) {
+                            geometry_msgs::msg::Point p;
+                            p.x = kp.x;
+                            p.y = kp.y;
+                            p.z = kp.z;
+                            bodyMsg.keypoints.push_back(p);
+                        }
+                        bodyMsg.keypoint_confidences.assign(best->keypoint_confidence.begin(), best->keypoint_confidence.end());
+                    }
+                    mBodyPub->publish(bodyMsg);
+                }
+
+                mLoopProfilerGrab.measureEvent("body_tracking");
 
                 if (mZedInfo.camera_model != sl::MODEL::ZED) {
                     sl::SensorsData sensorData;
