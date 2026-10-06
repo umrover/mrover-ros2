@@ -1,10 +1,6 @@
 import numpy as np
 from navigation.context import Context
-from rclpy.duration import Duration
-from rclpy.time import Time
-from std_msgs.msg import Header
 from navigation.trajectory import Trajectory
-from lie import SE3
 
 
 def cartesian_to_ij(context: Context, cart_coord: np.ndarray) -> np.ndarray:
