@@ -254,7 +254,7 @@ namespace mrover {
             // b^2 = a^2 + c^2 - 2ac * cos(beta)
             auto const cos_beta = cos(beta.get());
             auto const b_squared = (a * a) + (c * c) - (2.0 * a * c * cos_beta);
-            auto const b = Meters{fsqrt(std::fmax(0.0, b_squared.get()))};
+            auto const b = Meters{std::sqrt(std::fmax(0.0, b_squared.get()))};
 
             // determine extended length
             return b - mJointBActuatorLength;

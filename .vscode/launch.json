@@ -15,7 +15,7 @@
             "environment": [
                 {
                     "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/../../install/Debug/mrover/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/aarch64-linux-gnu:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib"
+                    "value": "${workspaceFolder}/../../install/Debug/mrover/lib:/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/aarch64-linux-gnu:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/lib"
                 },
                 {
                     "name": "ROS_DOMAIN_ID",
@@ -44,7 +44,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "env": {
-                "LD_LIBRARY_PATH": "${workspaceFolder}/../../install/Debug/mrover/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/aarch64-linux-gnu:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib",
+                "LD_LIBRARY_PATH": "${workspaceFolder}/../../install/Debug/mrover/lib:/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/aarch64-linux-gnu:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/lib",
                 "ROS_DOMAIN_ID": "5"
             }
         }
