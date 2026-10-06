@@ -50,9 +50,24 @@
   args:
     chdir: "{{ mrover_repo }}"
 
+- name: Download Bun installer
+  ansible.builtin.get_url:
+    url: https://bun.sh/install
+    dest: /tmp/bun_install.sh
+    mode: "0755"
+  when: ansible_system == 'Linux'
+
+- name: Install or Upgrade Bun
+  ansible.builtin.shell: /tmp/bun_install.sh
+  args:
+    executable: /bin/bash
+  environment:
+    BUN_INSTALL: "{{ ansible_env.HOME }}/.bun"
+  when: ansible_system == 'Linux'
+
 - name: Install frontend Bun packages
   ansible.builtin.command:
-    cmd: pixi run --manifest-path "{{ mrover_repo }}" bun install
+    cmd: bun install
     chdir: "{{ mrover_repo }}/teleoperation/basestation_gui/frontend"
   environment:
-    PATH: "{{ ansible_env.HOME }}/.pixi/bin:{{ ansible_env.PATH }}"
+    PATH: "{{ ansible_env.HOME }}/.bun/bin:{{ ansible_env.PATH }}"
