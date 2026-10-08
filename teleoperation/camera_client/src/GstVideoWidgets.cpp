@@ -85,12 +85,12 @@ auto GstVideoWidget::applyPipeline() -> void {
 
     // mPlayer->setSource(QUrl(std::format("gst-pipeline: {} ! videoconvert ! xvimagesink name=\"qtvideosink\" sync=false", mBasePipeline, flipElement).c_str()));
 
-    mBasePipeline =  "teleoperation/camera_client/src/example.mp4";
-    auto const path = QFileInfo("teleoperation/camera_client/src/example.mp4").absoluteFilePath();
-    mPlayer->setSource(QUrl::fromLocalFile(path));
-    qDebug() << QUrl::fromLocalFile(path);
+    // mBasePipeline =  "teleoperation/camera_client/src/example.mp4";
+    // auto const path = QFileInfo("teleoperation/camera_client/src/example.mp4").absoluteFilePath();
+    // mPlayer->setSource(QUrl::fromLocalFile(path));
+    // qDebug() << QUrl::fromLocalFile(path);
 
-    // mPlayer->setSource(QUrl(std::format("gst-pipeline: {} ! videoconvert ! xvimagesink name=\"qtvideosink\" sync=false", mBasePipeline, flipElement).c_str()));
+    mPlayer->setSource(QUrl(std::format("gstreamer-pipeline: {} ! videoconvert ! xvimagesink name=\"qtvideosink\" sync=false", mBasePipeline, flipElement).c_str()));
     play();
 }
 
