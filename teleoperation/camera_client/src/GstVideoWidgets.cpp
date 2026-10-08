@@ -1,4 +1,5 @@
 #include "GstVideoWidgets.hpp"
+#include <qwidget.h>
 
 using namespace mrover;
 
@@ -50,9 +51,21 @@ void DraggableVideoFrame::mouseMoveEvent(QMouseEvent* event) {
 // GstVideoWidget
 // --------------------------------------------
 
-GstVideoWidget::GstVideoWidget(QWidget* parent) : QVideoWidget(parent) {
-    mPlayer = new QMediaPlayer(this);
-    mPlayer->setVideoOutput(this);
+GstVideoWidget::GstVideoWidget(QWidget* parent) :  QWidget(parent),
+    mPlayer(new QMediaPlayer(this)),
+    mVideoSink(new QVideoSink(this)) {//QVideoWidget(parent) {
+    
+        // mPlayer = new QMediaPlayer(this);
+    // mPlayer->setVideoOutput(this);
+
+    mPlayer->setVideoSink(mVideoSink);
+
+    connect(mVideoSink, &QVideoSink::videoFrameChanged, this,
+        [this](QVideoFrame const& frame) {
+            mFrame = frame.toImage();
+            update();
+    });
+
 }
 
 auto GstVideoWidget::setGstPipeline(std::string const& pipeline) -> void {
@@ -70,7 +83,14 @@ auto GstVideoWidget::applyPipeline() -> void {
         flipElement = " ! videoflip method=counterclockwise";
     }
 
-    mPlayer->setSource(QUrl(std::format("gst-pipeline: {} ! videoconvert ! xvimagesink name=\"qtvideosink\" sync=false", mBasePipeline, flipElement).c_str()));
+    // mPlayer->setSource(QUrl(std::format("gst-pipeline: {} ! videoconvert ! xvimagesink name=\"qtvideosink\" sync=false", mBasePipeline, flipElement).c_str()));
+
+    mBasePipeline =  "teleoperation/camera_client/src/example.mp4";
+    auto const path = QFileInfo("teleoperation/camera_client/src/example.mp4").absoluteFilePath();
+    mPlayer->setSource(QUrl::fromLocalFile(path));
+    qDebug() << QUrl::fromLocalFile(path);
+
+    // mPlayer->setSource(QUrl(std::format("gst-pipeline: {} ! videoconvert ! xvimagesink name=\"qtvideosink\" sync=false", mBasePipeline, flipElement).c_str()));
     play();
 }
 
@@ -101,6 +121,26 @@ auto GstVideoWidget::pause() -> void {
 
 auto GstVideoWidget::stop() -> void {
     mPlayer->stop();
+}
+
+void GstVideoWidget::paintEvent(QPaintEvent* event) {
+    QWidget::paintEvent(event);
+
+    QPainter painter(this);
+    painter.fillRect(rect(), Qt::black);
+
+    if (mFrame.isNull()) {
+        return;
+    }
+
+    QSize scaledSize = mFrame.size();
+    scaledSize.scale(size(), Qt::KeepAspectRatio);
+
+    QRect target(
+        QPoint((width() - scaledSize.width()) / 2,
+               (height() - scaledSize.height()) / 2),
+        scaledSize);
+    painter.drawImage(target, mFrame);
 }
 
 // --------------------------------------------

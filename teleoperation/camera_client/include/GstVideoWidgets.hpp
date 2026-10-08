@@ -1,6 +1,12 @@
 #pragma once
 
 #include "pch.hpp"
+#include <qvideowidget.h>
+#include <qwidget.h>
+#include <QImage>
+#include <QVideoSink>
+#include <QPainter>
+#include <QVideoFrame>
 
 namespace mrover {
 
@@ -20,10 +26,14 @@ namespace mrover {
         [[nodiscard]] auto cameraName() const -> std::string const& { return mCameraName; }
     };
 
-    class GstVideoWidget : public QVideoWidget {
+    class GstVideoWidget : public QWidget {//QVideoWidget {
         Q_OBJECT
 
         QMediaPlayer* mPlayer;
+        QVideoSink* mVideoSink;
+        QImage mFrame;
+
+        // Q_INVOKABLE QVideoSink *videoSink() const;
 
         int mRotation{0};
         std::string mBasePipeline;
@@ -42,6 +52,8 @@ namespace mrover {
         auto pause() -> void;
         auto stop() -> void;
         auto rotate90() -> void;
+    protected:
+        void paintEvent(QPaintEvent* event) override;
     };
 
     class GstVideoGridWidget : public QWidget {
