@@ -54,16 +54,17 @@ if [[ "$run_coverage" = false ]] ; then
 fi
 
 # Generate C++ coverage
-llvm-profdata merge -sparse build/$build_profile/mrover/*.profraw -o build/$build_profile/mrover/merged.profdata
+llvm-profdata merge -sparse build/"$build_profile"/mrover/*.profraw -o build/"$build_profile"/mrover/merged.profdata
 
-test_binaries=($(find build/$build_profile/mrover -type f -executable -name "test*"))
+mapfile -t test_binaries < <(find build/"$build_profile"/mrover -type f -executable -name "test*")
 PRIMARY="${test_binaries[0]}"
-OBJECTS=""
+OBJECTS=()
 for obj in "${test_binaries[@]:1}"; do
-	OBJECTS="$OBJECTS -object $obj"
+	OBJECTS+=("-object")
+	OBJECTS+=("$obj")
 done
 
-llvm-cov show $PRIMARY $OBJECTS -instr-profile=build/$build_profile/mrover/merged.profdata -format=html -output-dir=build/$build_profile/mrover/coverage_html src/mrover
+llvm-cov show "$PRIMARY" "${OBJECTS[@]}" -instr-profile=build/"$build_profile"/mrover/merged.profdata -format=html -output-dir=build/"$build_profile"/mrover/coverage_html src/mrover
 
 echo "C++ coverage report: file://$PWD/build/$build_profile/mrover/coverage_html/index.html"
 
