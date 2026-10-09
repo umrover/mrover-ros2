@@ -39,7 +39,7 @@ export LLVM_PROFILE_FILE="coverage-%m.profraw"
 export GTEST_COLOR=1
 
 if [[ "$run_coverage" = true ]] ; then
-	export PYTEST_COV=1
+	export PYTEST_ADDOPTS="--cov=$PWD/src/mrover --cov-report=html:$PWD/build/$build_profile/mrover/pytest_cov/"
 fi
 
 # invoke colcon
@@ -67,4 +67,4 @@ llvm-cov show $PRIMARY $OBJECTS -instr-profile=build/$build_profile/mrover/merge
 
 echo "C++ coverage report: file://$PWD/build/$build_profile/mrover/coverage_html/index.html"
 
-echo "Python coverage report: file://$PWD/build/$build_profile/mrover/pytest_cov/navigation_test_suite/coverage.html/index.html"
+echo "Python coverage report: file://$PWD/build/$build_profile/mrover/pytest_cov/index.html"
