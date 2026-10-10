@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pch.hpp"
+#include <string>
 
 namespace mrover {
 
@@ -16,7 +17,14 @@ namespace mrover {
             parser = "! h264parse";
         }
 
-        return std::format("udpsrc port={} ! application/x-rtp,media=video ! rtpjitterbuffer latency={} ! {} {} ! decodebin", port, rtpJitter.count(), getRtpDepayloader(codec), parser);
+        auto encoding = codec == gst::video::Codec::H265 ? "H265" : "H264";
+        std::string caps = std::format(
+            "application/x-rtp,media=video,encoding-name={},payload=96,clock-rate=90000",
+            encoding);
+
+        // return std::format("udpsrc port={} ! application/x-rtp,media=video ! rtpjitterbuffer latency={} ! {} {} ! decodebin", port, rtpJitter.count(), getRtpDepayloader(codec), parser);
+        return std::format("udpsrc port={} ! {} ! rtpjitterbuffer latency={} ! {} {} ! decodebin", port, caps, rtpJitter.count(), getRtpDepayloader(codec), parser);
+        // return R"(udpsrc port=8082 caps="application/x-rtp,media=video,encoding-name=H265,payload=96,clock-rate=90000" \ ! rtpjitterbuffer latency=500 \ ! rtph265depay ! h265parse ! decodebin \ ! videoconvert ! autovideosink)";
     }
 
     /**

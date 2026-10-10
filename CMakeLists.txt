@@ -462,10 +462,12 @@ endif ()
 
 # Teleop Qt6 Camera Client
 find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia MultimediaWidgets)
+pkg_search_module(GstVideo REQUIRED IMPORTED_TARGET gstreamer-video-1.0)
 
 mrover_add_node(camera_client teleoperation/camera_client/*.*pp teleoperation/camera_client/include/pch.hpp)
 target_include_directories(camera_client PRIVATE teleoperation/camera_client/include)
-target_link_libraries(camera_client gst_utils Qt6::Widgets Qt6::Multimedia Qt6::MultimediaWidgets opencv_core opencv_imgcodecs)
+target_link_libraries(camera_client gst_utils PkgConfig::GstVideo Qt6::Widgets Qt6::Multimedia Qt6::MultimediaWidgets opencv_core opencv_imgcodecs)
+# target_link_libraries(camera_client gst_utils Qt6::Widgets Qt6::Multimedia Qt6::MultimediaWidgets opencv_core opencv_imgcodecs)
 ament_target_dependencies(camera_client rclcpp std_srvs sensor_msgs)
 set_target_properties(camera_client PROPERTIES
     AUTOMOC ON

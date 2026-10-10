@@ -4,9 +4,7 @@
 #include <qvideowidget.h>
 #include <qwidget.h>
 #include <QImage>
-#include <QVideoSink>
 #include <QPainter>
-#include <QVideoFrame>
 
 namespace mrover {
 
@@ -29,11 +27,10 @@ namespace mrover {
     class GstVideoWidget : public QWidget {//QVideoWidget {
         Q_OBJECT
 
-        QMediaPlayer* mPlayer;
-        QVideoSink* mVideoSink;
         QImage mFrame;
-
-        // Q_INVOKABLE QVideoSink *videoSink() const;
+        GstElement* mPipeline{nullptr};
+        GstAppSink* mAppSink{nullptr};
+        QString mErrorString;
 
         int mRotation{0};
         std::string mBasePipeline;
@@ -41,11 +38,11 @@ namespace mrover {
 
     public:
         explicit GstVideoWidget(QWidget* parent = nullptr);
+        ~GstVideoWidget() override;
 
         auto setGstPipeline(std::string const& pipeline) -> void;
 
         [[nodiscard]] auto errorString() const -> QString;
-        [[nodiscard]] auto error() const -> QMediaPlayer::Error;
         [[nodiscard]] auto isError() const -> bool;
 
         auto play() -> void;
@@ -54,6 +51,9 @@ namespace mrover {
         auto rotate90() -> void;
     protected:
         void paintEvent(QPaintEvent* event) override;
+
+    private:
+        static auto onNewSample(GstAppSink* sink, gpointer userData) -> GstFlowReturn;
     };
 
     class GstVideoGridWidget : public QWidget {
@@ -63,7 +63,7 @@ namespace mrover {
             NoError,
             NonExistsError,
             ExistsError,
-            MediaPlayerError,
+            MediaPipelineError,
         };
 
     private:
