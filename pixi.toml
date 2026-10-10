@@ -43,7 +43,7 @@ gstreamer = "*"
 gst-plugins-base = "*"
 nodejs = "24.*"
 ipython = "*"
-pytest = "*"
+pytest = "8.0.2"
 pytest-asyncio = "*"
 # Sync with pyproject.toml dev
 black = "==26.5.1"
@@ -52,6 +52,7 @@ clang-format = "18.*"
 shellcheck = "*"
 # macOS /bin/bash is 3.2, missing globstar
 bash = "5.*"
+llvm-tools = "18.*"
 
 [target.linux-64.dependencies]
 tbb = "*"
