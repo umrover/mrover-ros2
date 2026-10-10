@@ -43,7 +43,7 @@ gstreamer = "*"
 gst-plugins-base = "*"
 nodejs = "24.*"
 ipython = "*"
-pytest = "*"
+pytest = "8.0.2"
 pytest-asyncio = "*"
 # Sync with pyproject.toml dev
 black = "==26.5.1"
