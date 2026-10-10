@@ -11,6 +11,11 @@ namespace mrover {
         // something reachable
         auto res = arm_controller.ikPosCalc(ArmController::ArmPos{0.7});
         ASSERT_TRUE(res.has_value());
+
+        // test naming mismatch
+        arm_controller.joints = {};
+        res = arm_controller.ikPosCalc(ArmController::ArmPos{0.7});
+        ASSERT_FALSE(res.has_value());
     }
 
     TEST_F(ArmControllerHarness, ikPosCalc) {
