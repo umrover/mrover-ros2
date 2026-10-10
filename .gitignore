@@ -3,6 +3,9 @@
 /install/
 /log/
 
+# pixi environment
+/.pixi/
+
 # Downloaded prebuilt dependencies
 /deps/dawn-prebuilt/
 /deps/manif-src/
@@ -29,7 +32,7 @@ __pycache__/
 *.egg-info/
 venv/
 
-#Teleop Ignores
+# Teleop Ignores
 *.sqlite3
 *.db
 bun.lock
@@ -42,6 +45,7 @@ bun.lockb
 
 # macOS
 .DS_Store
+
 # nav state log
 state_machine/state_log.txt
 
@@ -55,5 +59,5 @@ data/raw-pano-images
 .catkin_tools/
 .dynamixel_sdk/
 
-# Persistent esw mrover_can FetchContent cache (survives a clean build, not tracked)
-/deps/.fetchcontent/esw/
+# FetchContent cache (esw mrover_can, and CMake's own FetchContent staging dirs)
+/deps/.fetchcontent/

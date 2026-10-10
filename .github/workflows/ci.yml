@@ -31,7 +31,7 @@ jobs:
       - name: Run Style Check
         run: ./style.sh
 
-  build-native:
+  build:
     name: Build (native Ubuntu 24)
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-24.04

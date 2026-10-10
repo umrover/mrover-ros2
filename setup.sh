@@ -9,7 +9,7 @@ readonly RED='\033[1;31m'
 readonly NC='\033[0m'
 
 if ! grep -q '^VERSION_CODENAME=noble' /etc/os-release 2>/dev/null; then
-    echo -e "${RED}This script requires Ubuntu 24.${NC}" >&2
+    echo -e "${RED}This script requires Ubuntu 24.04. For other platforms, use ./setup-portable.sh${NC}" >&2
     exit 1
 fi
 
@@ -39,5 +39,6 @@ echo -e "${CYAN}Running Ansible (${playbook}) ...${NC}"
 echo ""
 echo -e "${GREEN}================================================================${NC}"
 echo -e "${GREEN}  Done! Log out and back in to apply shell changes.${NC}"
+echo -e "${GREEN}  Then open a new terminal and run: mrover${NC}"
 echo -e "${GREEN}================================================================${NC}"
 echo ""
