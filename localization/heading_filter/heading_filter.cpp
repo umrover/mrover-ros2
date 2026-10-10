@@ -224,14 +224,14 @@ namespace mrover {
         // For debugging purposes, calculating raw imu heading outside checks
         R2d uncorrected_forward = uncorrected_orientation.toRotationMatrix().col(0).head(2);
         if (uncorrected_forward.array().isFinite().all()) {
-            double uncorrected_heading = std::atan2(uncorrected_forward.y(), uncorrected_forward.x());
+            double uncorrected_heading = fstd::atan2(uncorrected_forward.y(), uncorrected_forward.x());
             if (std::isfinite(uncorrected_heading)) {
                 mrover::msg::Heading imu_heading_msg;
                 imu_heading_msg.heading = std::fmod(90. - (uncorrected_heading * (180. / M_PI)) + 360., 360.);
                 imu_uncorrected_pub->publish(imu_heading_msg);
             }
         }
-
+        
         if (prev_imu_orientation_norm) {
             double const theta = quat_geodesic_angle_rad(*prev_imu_orientation_norm, uncorrected_orientation);
             if (theta < EPS_STALE) {
