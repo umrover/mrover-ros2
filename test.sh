@@ -64,8 +64,8 @@ for obj in "${test_binaries[@]:1}"; do
 	OBJECTS+=("$obj")
 done
 
-llvm-cov show "$PRIMARY" "${OBJECTS[@]}" -instr-profile=build/"$build_profile"/mrover/merged.profdata -format=html -output-dir=build/"$build_profile"/mrover/coverage_html src/mrover
+llvm-cov show "$PRIMARY" "${OBJECTS[@]}" -instr-profile=build/"$build_profile"/mrover/merged.profdata -format=html -output-dir=build/"$build_profile"/mrover/llvm_cov src/mrover
 
-echo "C++ coverage report: file://$PWD/build/$build_profile/mrover/coverage_html/index.html"
+echo "C++ coverage report: file://$PWD/build/$build_profile/mrover/llvm_cov/index.html"
 
 echo "Python coverage report: file://$PWD/build/$build_profile/mrover/pytest_cov/index.html"

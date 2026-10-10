@@ -77,6 +77,7 @@
       - clang-format-18
       - lld-18
       - lldb-18
+      - llvm-18
       - gcc-13
       - g++-13
       - libbullet-dev
