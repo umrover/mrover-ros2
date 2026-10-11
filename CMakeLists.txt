@@ -182,10 +182,6 @@ if (BUILD_TESTING)
     set(ament_cmake_cpplint_FOUND TRUE)
     ament_lint_auto_find_test_dependencies()
 
-    # to add gtest unit test, use mrover_add_node_gtest and give it the test
-    # sources and node sources
-    mrover_add_node_gtest(test_arm_controller navigation/arm_controller/test/*.cpp navigation/arm_controller/arm_controller.cpp)
-    target_link_libraries(test_arm_controller lie)
     # to add a pytest unit test, use ament_add_pytest_test and pass it a
     # directory with your tests
 endif ()

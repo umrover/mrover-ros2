@@ -1,6 +1,6 @@
 #pragma once
 #include <gtest/gtest.h>
-#include "../arm_controller.hpp"
+#include "navigation/arm_controller/arm_controller.hpp"
 
 namespace mrover {
     class ArmControllerHarness : public ::testing::Test {
