@@ -8,18 +8,26 @@ navigation:
   ros__parameters:
     pub_path_rate: 1.0
     path_hist_size: 100
+    display_markers: true
+
     # How many state machine iterations per second
     update_rate: 60.0
 
     # How long it takes to forget about a target
     # Useful if the rover turns away from the target for a brief moment
     # Or if there was an ephemeral false positive detection
-
     target_expiration_duration: 60.0
-    display_markers: true
 
-    zed_fov: 1.9
+    # location frame references
+    world_frame: "map"
+    rover_frame: "base_link"
     
+    state_machine:
+      structure_pub_topic: "nav_structure"
+      structure_update_rate_hz: 1.0
+      state_pub_topic: "nav_state"
+      state_update_rate_hz: 10.0
+
     pure_pursuit:
       min_lookahead_distance: 0.4
       max_lookahead_distance: 1.5
@@ -36,13 +44,6 @@ navigation:
       drive_forward_threshold: 0.34
       backup_distance: 2.5
       wait_time: 3.0
-      
-
-    image_targets:
-      increment_weight: 5
-      decrement_weight: 1
-      min_hits: 3 # TODO(quintin): This is not used, see corresponding comment in context.py
-      max_hits: 10
 
     drive:
       max_driving_effort: 1.0
@@ -52,15 +53,19 @@ navigation:
       turning_p: 3.0
       driving_p: 20.0
       lookahead_distance: 1.0
-    
-    long_range:
-      distance_ahead: 3.0
-      bearing_expiration_duration: 0.5
+
+    smoothing:
+      use_relaxation: true
+      use_interpolation: true
 
     waypoint:
       stop_threshold: 0.5
       drive_forward_threshold: 0.34
       no_search_wait_time: 10.0
+
+    long_range:
+      distance_ahead: 3.0
+      bearing_expiration_duration: 0.5
 
     search:
       object_stop_threshold: 3.0
@@ -71,29 +76,22 @@ navigation:
       distance_between_spirals: 3.0
       max_segment_length: 1.0
       traversable_cost: 5.0
-      safe_approach_distance: 5.0
       angle_thresh: 0.0872665 #pi/36 radians / 5 degrees
       update_delay: 3.0
+
+    image_targets:
+      increment_weight: 5
+      decrement_weight: 1
+      max_hits: 10
       
     single_tag:
       stop_threshold: 1.0
-      tag_stop_threshold: 1.75
-      post_avoidance_multiplier: 1.42
-      post_radius: 0.7
-
-    ref_alt: 0.0
-    world_frame: "map"
-    rover_frame: "base_link"
     
     recovery:
       stop_threshold: 0.2
       drive_forward_threshold: 0.34
       recovery_distance: 2.0
       give_up_time: 10.0
-
-    smoothing:
-      use_interpolation: true
-      use_relaxation: true
 
 stuck_detector:
   ros__parameters:
