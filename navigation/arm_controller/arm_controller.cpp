@@ -101,85 +101,103 @@ namespace mrover {
         return positions;
     }
 
-    auto ArmController::ikVelCalc(geometry_msgs::msg::Twist vel) -> std::optional<msg::Velocity> {
-        double x_3 = mArmPos.x;
-        double z_3 = mArmPos.z;
+auto ArmController::ikVelCalc(geometry_msgs::msg::Twist vel) -> std::optional<msg::Velocity> {
+    static const std::array<std::string, 5> names =
+        {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
 
-        double x_2 = x_3 - END_EFFECTOR_LENGTH * std::cos(mArmPos.pitch);
-        double x_2_vel = vel.linear.x + END_EFFECTOR_LENGTH * std::sin(mArmPos.pitch) * vel.angular.y; // derivative of x_2
-        double z_2 = z_3 + END_EFFECTOR_LENGTH * std::sin(mArmPos.pitch);
-        double z_2_vel = vel.linear.z + END_EFFECTOR_LENGTH * std::cos(mArmPos.pitch) * vel.angular.y; // derivative of z_2
+    // ---- raw velocity IK: same math as before, made safe at the edges ----
+    auto solve = [&](geometry_msgs::msg::Twist const& v) -> std::optional<std::array<double, 5>> {
+        double x_2 = mArmPos.x - END_EFFECTOR_LENGTH * std::cos(mArmPos.pitch);
+        double z_2 = mArmPos.z + END_EFFECTOR_LENGTH * std::sin(mArmPos.pitch);
+        double x_2_vel = v.linear.x + END_EFFECTOR_LENGTH * std::sin(mArmPos.pitch) * v.angular.y;
+        double z_2_vel = v.linear.z + END_EFFECTOR_LENGTH * std::cos(mArmPos.pitch) * v.angular.y;
+
         double c2 = x_2 * x_2 + z_2 * z_2;
-        double c_vel = (2 * x_2 * x_2_vel + 2 * z_2 * z_2_vel) / (2 * std::sqrt(c2)); // derivative of c
+        if (c2 < 1e-9) return std::nullopt;
+        double c = std::sqrt(c2);
+        double c_vel = (x_2 * x_2_vel + z_2 * z_2_vel) / c;
         double a2 = LINK_BC * LINK_BC;
         double b2 = LINK_CD * LINK_CD;
 
-        double num = c2 + a2 - b2;
-        double denom = 2 * LINK_BC * std::sqrt(c2);
-        double joint_b_vel = 1 / std::sqrt(1 - (num / denom) * (num / denom));
-        num = c2 * c_vel - c_vel * (a2 - b2);
-        denom *= std::sqrt(c2);
-        joint_b_vel *= (num / denom);
-        num = z_2_vel * x_2 - z_2 * x_2_vel;
-        denom = x_2 * x_2;
-        joint_b_vel -= (1 / (1 + (z_2 * z_2) / (x_2 * x_2))) * (num / denom);
+        // joint b: clamp the acos argument (fix 2) and floor the sqrt (fix 1)
+        double ub = std::clamp((c2 + a2 - b2) / (2 * LINK_BC * c), -1.0, 1.0);
+        double dub = c_vel * (c2 - (a2 - b2)) / (2 * LINK_BC * c2);
+        double joint_b_vel = dub / std::max(std::sqrt(1 - ub * ub), 0.2)
+                           - (z_2_vel * x_2 - z_2 * x_2_vel) / c2;            // fix 3
 
-        num = c2 - a2 - b2;
-        denom = 2 * LINK_BC * LINK_CD;
-        double joint_c_vel = -1 / std::sqrt((1 - (num * num) / (denom * denom)));
-        num = 2 * std::sqrt(c2) * c_vel;
-        joint_c_vel *= (num / denom);
+        // joint c: same treatment
+        double uc = std::clamp((c2 - a2 - b2) / (2 * LINK_BC * LINK_CD), -1.0, 1.0);
+        double joint_c_vel = -(c * c_vel / (LINK_BC * LINK_CD))
+                           / std::max(std::sqrt(1 - uc * uc), 0.2);
 
-        double joint_de_pitch_vel = vel.angular.y - joint_b_vel - joint_c_vel;
+        double joint_de_vel = v.angular.y - joint_b_vel - joint_c_vel;
 
-        if (!std::isfinite(joint_b_vel) || !std::isfinite(joint_c_vel) || !std::isfinite(joint_de_pitch_vel)) {
-            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Couldn't solve velocity IK");
+        if (!std::isfinite(joint_b_vel) || !std::isfinite(joint_c_vel) || !std::isfinite(joint_de_vel))
+            return std::nullopt;
+        return std::array<double, 5>{v.linear.y, joint_b_vel, joint_c_vel, joint_de_vel, v.angular.x};
+    };
+
+    // ---- split the command: position first, orientation second (fix 4) ----
+    geometry_msgs::msg::Twist lin = vel;
+    lin.angular.x = 0; lin.angular.y = 0;
+    geometry_msgs::msg::Twist ang;
+    ang.angular.x = vel.angular.x;
+    ang.angular.y = vel.angular.y;
+
+    auto ql = solve(lin);
+    auto qa = solve(ang);
+    if (!ql || !qa) {
+        RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Couldn't solve velocity IK");
+        mLastScaleFactor = 1.0;                                                  // fix 7
+        return std::nullopt;
+    }
+
+    // speed limit per joint as a magnitude (fix 6)
+    std::array<double, 5> lim{};
+    for (size_t i = 0; i < 5; ++i) {
+        auto it = joints.find(names[i]);
+        if (it == joints.end()) {
+            RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown joint \"" << names[i] << "\"");
+            mLastScaleFactor = 1.0;
             return std::nullopt;
         }
-
-        msg::Velocity velocities;
-        velocities.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
-        velocities.velocities = {
-            static_cast<float>(vel.linear.y),
-            static_cast<float>(joint_b_vel),
-            static_cast<float>(joint_c_vel),
-            static_cast<float>(joint_de_pitch_vel),
-            static_cast<float>(vel.angular.x),
-        };
-
-        double u_b = (c2 + a2 - b2) / (2 * LINK_BC * std::sqrt(c2));
-        double u_c = (c2 - a2 - b2) / (2 * LINK_BC * LINK_CD);
-        RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 250,
-        "x2 %.3f z2 %.3f | u_b %.3f u_c %.3f | joints b %.3f c %.3f de %.3f",
-        x_2, z_2, u_b, u_c, joint_b_vel, joint_c_vel, joint_de_pitch_vel);
-
-        double scaleFactor = 1;
-        for (size_t i = 0; i < velocities.names.size(); ++i) {
-            auto it = joints.find(velocities.names[i]);
-            if (it == joints.end()) {
-                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown Joint\"" << velocities.names[i] << "\"");
-                return std::nullopt;
-            }
-
-            if ((velocities.velocities[i] > 0 && it->second.limits.maxPos - it->second.pos < JOINT_VEL_THRESH) ||
-                (velocities.velocities[i] < 0 && it->second.pos - it->second.limits.minPos < JOINT_VEL_THRESH)) {
-                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000,
-                    "Joint " << velocities.names[i] << " too close to limit, vel " << velocities.velocities[i]
-                    << " pos " << it->second.pos);
-                return std::nullopt;
-            }
-            scaleFactor = std::max(scaleFactor, velocities.velocities[i] / (velocities.velocities[i] > 0 ? it->second.limits.maxVel : it->second.limits.minVel));
-        }
-
-        // scale down all velocities so that we don't exceed motor velocity limits
-        if (scaleFactor > 1)
-            RCLCPP_INFO_STREAM_THROTTLE(get_logger(), *get_clock(), 500, "Commanded velocity too high. Scaling down by factor of " << scaleFactor);
-        for (auto& v : velocities.velocities)
-            v = static_cast<float>(v / scaleFactor);
-
-        mLastScaleFactor = 1.0/ scaleFactor;
-        return velocities;
+        lim[i] = std::min(std::abs(it->second.limits.maxVel), std::abs(it->second.limits.minVel));
     }
+
+    // position part must fit on its own; the wrist (3) is left out so it can't throttle b and c
+    double s_lin = 1.0;
+    for (size_t i : {0, 1, 2, 4})
+        if (std::abs((*ql)[i]) > 1e-9) s_lin = std::min(s_lin, lim[i] / std::abs((*ql)[i]));
+
+    // orientation part only gets the speed left over
+    double s_ang = 1.0;
+    for (size_t i = 0; i < 5; ++i) {
+        if (std::abs((*qa)[i]) < 1e-9) continue;
+        double room = std::max(0.0, lim[i] - std::abs(s_lin * (*ql)[i]));
+        s_ang = std::min(s_ang, room / std::abs((*qa)[i]));
+    }
+
+    // ---- combine; clamp each joint; stop only the joint at a position limit (fix 5) ----
+    msg::Velocity velocities;
+    velocities.names = {names.begin(), names.end()};
+    velocities.velocities.resize(5);
+    for (size_t i = 0; i < 5; ++i) {
+        double v = s_lin * (*ql)[i] + s_ang * (*qa)[i];
+        v = std::clamp(v, -lim[i], lim[i]);
+
+        auto const& j = joints.find(names[i])->second;
+        if ((v > 0 && j.limits.maxPos - j.pos < JOINT_VEL_THRESH) ||
+            (v < 0 && j.pos - j.limits.minPos < JOINT_VEL_THRESH)) {
+            RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Joint " << names[i] << " at limit, holding it");
+            v = 0.0;
+        }
+        velocities.velocities[i] = static_cast<float>(v);
+    }
+
+    mLastScaleFactor = s_lin;
+    RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 250, "s_lin %.2f s_ang %.2f", s_lin, s_ang);
+    return velocities;
+}
 
     auto ArmController::configure_posestamped(geometry_msgs::msg::PoseStamped &p_stamped,
                                               ArmController::ArmPos &mTargetPos) -> void {
@@ -499,8 +517,6 @@ namespace mrover {
             if (dt <= 0 || dt > 0.2) {
                 return;
             }
-
-            dt = 0.015;
 
             auto error_x = mPathEndPos.x - mArmPos.x;
             auto error_y = mPathEndPos.y - mArmPos.y;
