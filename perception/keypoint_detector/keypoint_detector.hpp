@@ -1,0 +1,129 @@
+#pragma once
+
+#include "pch.hpp"
+
+namespace mrover {
+
+    class KeypointDetectorBase : public rclcpp::Node {
+    protected:
+        struct Detection {
+            int classId{};
+            std::string className;
+            cv::Scalar fontColor{};
+            float confidence{};
+            cv::Rect box;
+
+            Detection(int _classId, std::string _className, cv::Scalar _fontColor, float _confidence, cv::Rect _box) : classId{_classId}, className{std::move(_className)}, fontColor{std::move(_fontColor)}, confidence{_confidence}, box{std::move(_box)} {}
+        };
+
+        struct Model {
+            std::string modelName;
+
+            std::vector<int> objectHitCounts;
+
+            int hitThreshold{};
+
+            std::vector<std::string> classes;
+
+            std::vector<cv::Scalar> colors;
+
+            std::vector<int64_t> inputTensorSize;
+
+            std::vector<int64_t> outputTensorSize;
+
+            // Converts an rgb image to a blob
+            std::function<void(Model const&, cv::Mat&, cv::Mat&, cv::Mat&)> rgbImageToBlob;
+
+            // Converts an output tensor into a vector of detections
+            std::function<void(Model const&, cv::Mat&, std::vector<Detection>&)> outputTensorToDetections;
+
+            Model() = default;
+
+            Model(std::string _modelName, std::vector<int> _objectHitCounts, int _hitThreshold, std::vector<std::string> _classes, std::vector<cv::Scalar> _colors, std::vector<int64_t> _inputTensorSize, std::vector<int64_t> _outputTensorSize, std::function<void(Model const&, cv::Mat&, cv::Mat&, cv::Mat&)> _rbgImageToBlob, std::function<void(Model const&, cv::Mat&, std::vector<Detection>&)> _outputTensorToDetections) : modelName{std::move(_modelName)}, objectHitCounts(std::move(_objectHitCounts)), hitThreshold(_hitThreshold), classes(std::move(_classes)), colors(std::move(_colors)), inputTensorSize(std::move(_inputTensorSize)), outputTensorSize(std::move(_outputTensorSize)), rgbImageToBlob{std::move(_rbgImageToBlob)}, outputTensorToDetections{std::move(_outputTensorToDetections)} {}
+        };
+
+
+        //static constexpr char const* NODE_NAME = "object_detector";
+
+        std::unique_ptr<tf2_ros::Buffer> mTfBuffer = std::make_unique<tf2_ros::Buffer>(get_clock());
+        std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
+        std::shared_ptr<tf2_ros::TransformListener> mTfListener = std::make_shared<tf2_ros::TransformListener>(*mTfBuffer);
+
+        Model mPickModel;
+
+        std::string mCameraFrame;
+        std::string mWorldFrame;
+
+        cv::Mat mRgbImage, mImageBlob;
+
+        LoopProfiler mLoopProfiler;
+
+        TensortRT mPickTensorRT;
+
+        sensor_msgs::msg::Image mDetectionsImageMessage;
+
+        rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mDebugImgPub;
+
+        int mObjIncrementWeight{};
+        int mObjDecrementWeight{};
+        int mObjMaxHitcount{};
+        float mModelScoreThreshold{};
+        float mPickScoreThreshold{};
+        float mModelNMSThreshold{};
+        float mDistanceDetectionThreshold{};
+        bool mDebug{};
+
+        // nullptr = OFF
+        Model* currentModel = nullptr;
+        TensortRT* currentTensorRT = nullptr;
+
+        // auto spiralSearchForValidPoint(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& cloudPtr,
+        //                                std::size_t u, std::size_t v,
+        //                                std::size_t width, std::size_t height) const -> std::optional<SE3d>;
+
+        // auto updateHitsObject(sensor_msgs::msg::PointCloud2::ConstSharedPtr const& msg,
+        //                       std::span<Detection const> detections,
+        //                       cv::Size const& imageSize = {640, 640}) -> void;
+
+        auto publishDetectedObjects(cv::InputArray const& image) -> void;
+
+        static auto drawDetectionBoxes(cv::InputOutputArray& image, std::span<Detection const> detections) -> void;
+
+        //change when model is decided, using YOLOv26 right now but subject to change
+        //----------------------------------------------------------------------------------------------------------------------------------------
+        auto parseYOLOv8Output(Model const& model,
+                               cv::Mat& output,
+                               std::vector<Detection>& detections) const -> void;
+
+        static auto preprocessYOLOv8Input(Model const& model, cv::Mat const& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) -> void;
+        //----------------------------------------------------------------------------------------------------------------------------------------
+
+        auto resizeBoundingBoxes(cv::Size const& outputSpace, std::vector<Detection>& detections) const -> void;
+
+        // Mode switching server and function
+        rclcpp::Service<mrover::srv::ToggleObjectDetector>::SharedPtr mServer;
+
+        auto toggleMode(mrover::srv::ToggleObjectDetector::Request::ConstSharedPtr& request, mrover::srv::ToggleObjectDetector::Response::SharedPtr& response) -> void;
+
+    public:
+        explicit ObjectDetectorBase(std::string const& name, rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
+
+        ~ObjectDetectorBase() override = default;
+    };
+
+    class ImageKeypointDetector final : public KeypointDetectorBase {
+    private:
+        rclcpp::Publisher<mrover::msg::ImageTargets>::SharedPtr mTargetsPub;
+
+        rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr mSensorSub;
+
+        float mCameraHorizontalFov{};
+
+    public:
+        explicit ImageKeypointDetector(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
+
+        auto getObjectBearing(cv::InputArray const& image, cv::Rect const& box) const -> float;
+
+        auto imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
+    };
+} // namespace mrover
