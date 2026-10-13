@@ -41,8 +41,8 @@
 #include <mrover/msg/keyboard_yaw.hpp>
 #include <mrover/msg/position.hpp>
 
+#include "mrover/action/typing_position.hpp"
 #include "mrover/action/typing_code.hpp"
-#include "mrover/action/typing_deltas.hpp"
 
 #include <tf2_ros/buffer.hpp>
 #include <tf2_ros/transform_listener.hpp>

@@ -151,7 +151,7 @@ namespace mrover{
             SE3d arm_fk_to_tag{arm_fk_pos, transformed_rotation};
 
             // Publish to tf tree
-            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "arm_fk", gripper_to_cam*arm_fk_to_tag, get_clock()->now());
+            SE3Conversions::pushToTfTree(tf_broadcaster, "keyboard_tag", "finger_camera_frame", arm_fk_to_tag, get_clock()->now());
 
             // publish z key transform
             SE3d z_to_tag{mZKeyTransform, Eigen::Quaterniond::Identity()};
@@ -358,11 +358,6 @@ namespace mrover{
             if(key == 't'){
                 align_to_z();
             }
-            if(key == 'h'){
-                SE3d transform = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_gripper_link");
-                RCLCPP_INFO_STREAM(get_logger(), "y: " << transform.translation().y());
-                RCLCPP_INFO_STREAM(get_logger(), "z: " << transform.translation().z());
-            }
             // if(logPose){
             //     outputToCSV(combined_tvec, combined_rvec);
             // }
@@ -428,7 +423,7 @@ namespace mrover{
 
         try {
             gripper_to_tag = SE3Conversions::fromTfTree(tf_buffer, "keyboard_tag", "arm_base_link");
-            armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
+            armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "finger_camera_frame", "arm_base_link");
 
             // Grab pitch from tag transform
             double r00 = gripper_to_tag.transform()(0,0);
@@ -453,7 +448,7 @@ namespace mrover{
 
         try {
             armbase_to_z = SE3Conversions::fromTfTree(tf_buffer, "keyboard_z", "arm_base_link");
-            armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
+            armbase_to_armfk = SE3Conversions::fromTfTree(tf_buffer, "finger_camera_frame", "arm_base_link");
 
             // Grab pitch from tag transform
             double r00 = armbase_to_z.transform()(0,0);
@@ -502,12 +497,12 @@ namespace mrover{
         auto start = clock::now();
         auto duration = std::chrono::duration<double>(10);
 
-        SE3d curarmpos = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
+        SE3d curarmpos = SE3Conversions::fromTfTree(tf_buffer, "finger_camera_frame", "arm_base_link");
 
         double dist =  pow(curarmpos.translation().x()-x, 2) + pow(curarmpos.translation().y()-y,2);
         while (clock::now() - start < duration || dist > 0.007) {
             mIKPub->publish(message);
-            curarmpos = SE3Conversions::fromTfTree(tf_buffer, "arm_fk", "arm_base_link");
+            curarmpos = SE3Conversions::fromTfTree(tf_buffer, "finger_camera_frame", "arm_base_link");
             dist =  pow(curarmpos.translation().x()-x, 2) + pow(curarmpos.translation().y()-y,2);
             RCLCPP_INFO_STREAM(get_logger(), "remaining distance = " << dist);
         }

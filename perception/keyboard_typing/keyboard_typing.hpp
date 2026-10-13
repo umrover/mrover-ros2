@@ -1,6 +1,5 @@
 #pragma once
 
-#include "mrover/action/detail/typing_position__struct.hpp"
 #include "pch.hpp"
 
 // #include "constants.h"

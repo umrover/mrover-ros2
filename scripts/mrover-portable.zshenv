@@ -5,7 +5,7 @@ MROVER_ROS2_WS_PATH="${MROVER_REPO:h:h}"
 [[ -d "$HOME/.pixi/bin" ]] && export PATH="$HOME/.pixi/bin:$PATH"
 
 remove_ros2_ws_from_path(){
-  export ${1}="$(echo ${(P)1} | tr ':' '\n' | grep -v "ros2_ws" | paste -s -d ':')"
+  export ${1}="$(echo ${(P)1} | tr ':' '\n' | grep -v "${MROVER_ROS2_WS_PATH}/install" | paste -s -d ':')"
 }
 
 activate_mrover() {
@@ -45,6 +45,11 @@ activate_mrover() {
       fi
     fi
   done
+
+  if [[ -z "$target_file" && -f "${MROVER_ROS2_WS_PATH}/install/setup.zsh" ]]; then
+    target_file="${MROVER_ROS2_WS_PATH}/install/setup.zsh"
+  fi
+
 
   # clean up current ROS environment
   remove_ros2_ws_from_path LD_LIBRARY_PATH
