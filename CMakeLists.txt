@@ -388,6 +388,14 @@ mrover_link_component(tag_detector lie opencv_core opencv_aruco opencv_imgproc l
 mrover_executable_from_component(stereo_tag_detector perception/executables/stereo_tag_detector.cpp tag_detector_component)
 mrover_executable_from_component(image_tag_detector perception/executables/image_tag_detector.cpp tag_detector_component)
 
+# Gesture Detection
+mrover_add_component(gesture_detection perception/gesture_detection/gesture_detection.cpp perception/gesture_detection/pch.hpp GestureTypingNode)
+mrover_ament_component(gesture_detection rclcpp rclcpp_components)
+mrover_link_component(gesture_detection parameter_utils loop_profiler)
+target_link_libraries(gesture_detection_component Eigen3::Eigen)
+
+mrover_executable_from_component(gesture_detection perception/executables/gesture_detection.cpp gesture_detection_component)
+
 # Cost Map
 mrover_add_component(cost_map perception/cost_map/*.cpp perception/cost_map/pch.hpp CostMapNode)
 mrover_ament_component(cost_map rclcpp rclcpp_components tf2 tf2_ros)

@@ -14,6 +14,12 @@
 // #include <rclcpp_action/server.hpp>
 // #include <rclcpp_action/rclcpp_action.hpp>
 
+#include <Eigen/Core>
+#include <algorithm>
+#include <cmath>
+#include <initializer_list>
+#include <numbers>
+
 #include "loop_profiler.hpp"
 #include "parameter.hpp"
 
