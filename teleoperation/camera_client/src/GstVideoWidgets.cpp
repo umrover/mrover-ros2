@@ -2,6 +2,7 @@
 #include <gst/app/gstappsink.h>
 #include <gst/gstelement.h>
 #include <gst/video/video.h>
+#include <qglobal.h>
 #include <qwidget.h>
 
 using namespace mrover;
@@ -126,7 +127,7 @@ auto GstVideoWidget::onNewSample(GstAppSink* sink, gpointer userData) -> GstFlow
 }
 
 auto GstVideoWidget::applyPipeline() -> void {
-    std::string flipElement = "";
+    std::string flipElement;
     if (mRotation == 1) {
         flipElement = " ! videoflip method=clockwise";
     } else if (mRotation == 2) {
@@ -149,12 +150,7 @@ auto GstVideoWidget::applyPipeline() -> void {
     mFrame = {};
     update();
 
-    std::string const launch =
-        mBasePipeline +
-        flipElement +
-        " ! videoconvert ! video/x-raw,format=RGB "
-        "! appsink name=video_sink emit-signals=true sync=false "
-        "max-buffers=1 drop=true";
+    std::string const launch = std::format("{}{} ! videoconvert ! video/x-raw,format=RGB ! appsink name=video_sink emit-signals=true sync=false max-buffers=1 drop=true", mBasePipeline, flipElement);
 
     GError* error = nullptr;
     mPipeline = gst_parse_launch(launch.c_str(), &error);
@@ -206,14 +202,22 @@ auto GstVideoWidget::isError() const -> bool {
     return !mErrorString.isEmpty();
 }
 
+// TODO Is this useful when called?
+
 auto GstVideoWidget::play() -> void {
+    qDebug() << "Attempted GstVideoWidget::play()";
+
     if (mPipeline && gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
         mErrorString = "Failed to play GStreamer pipeline";
         qWarning() << mErrorString;
     }
 }
 
+// TODO Does this ever get called?
+
 auto GstVideoWidget::pause() -> void {
+    qDebug() << "Attempted GstVideoWidget::stop()";
+    
     if (mPipeline && gst_element_set_state(mPipeline, GST_STATE_PAUSED) == GST_STATE_CHANGE_FAILURE) {
         mErrorString = "Failed to pause GStreamer pipeline";
         qWarning() << mErrorString;
@@ -382,6 +386,8 @@ auto GstVideoGridWidget::getGstVideoWidget(std::string const& name) -> GstVideoW
     return box ? box->gstVideoWidget : nullptr;
 }
 
+// TODO Does this ever get called?
+
 auto GstVideoGridWidget::playVideo(std::string const& name) -> bool {
     auto* box = findVideoBox(name);
     if (!box) return false;
@@ -389,12 +395,16 @@ auto GstVideoGridWidget::playVideo(std::string const& name) -> bool {
     return true;
 }
 
+// TODO Does this ever get called?
+
 auto GstVideoGridWidget::pauseVideo(std::string const& name) -> bool {
     auto* box = findVideoBox(name);
     if (!box) return false;
     box->gstVideoWidget->pause();
     return true;
 }
+
+// TODO Does this ever get called?
 
 auto GstVideoGridWidget::stopVideo(std::string const& name) -> bool {
     auto* box = findVideoBox(name);

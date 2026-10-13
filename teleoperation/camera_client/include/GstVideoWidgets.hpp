@@ -24,13 +24,13 @@ namespace mrover {
         [[nodiscard]] auto cameraName() const -> std::string const& { return mCameraName; }
     };
 
-    class GstVideoWidget : public QWidget {//QVideoWidget {
+    class GstVideoWidget : public QWidget {
         Q_OBJECT
 
-        QImage mFrame;
         GstElement* mPipeline{nullptr};
         GstAppSink* mAppSink{nullptr};
         QString mErrorString;
+        QImage mFrame;
 
         int mRotation{0};
         std::string mBasePipeline;
