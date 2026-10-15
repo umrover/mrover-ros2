@@ -20,9 +20,6 @@ ros-jazzy-rosidl-default-runtime = "*"
 ros-jazzy-magic-enum = "*"
 ros-jazzy-rviz2 = "*"
 ros-jazzy-py-trees = "*"
-ros-jazzy-py-trees-ros-interfaces = "*"
-ros-jazzy-py-trees-ros = "*"
-ros-jazzy-py-trees-ros-viewer = "*"
 
 cmake = "*"
 ninja = "*"
@@ -46,7 +43,7 @@ gstreamer = "*"
 gst-plugins-base = "*"
 nodejs = "24.*"
 ipython = "*"
-pytest = "*"
+pytest = "8.0.2"
 pytest-asyncio = "*"
 # Sync with pyproject.toml dev
 black = "==26.5.1"
@@ -55,6 +52,7 @@ clang-format = "18.*"
 shellcheck = "*"
 # macOS /bin/bash is 3.2, missing globstar
 bash = "5.*"
+llvm-tools = "18.*"
 
 [target.linux-64.dependencies]
 tbb = "*"
@@ -71,7 +69,6 @@ cxx-compiler = "*"
 
 [pypi-dependencies]
 mrover = { path = ".", editable = true }
-py-trees = "*"
 
 [pypi-options]
 dependency-overrides = { numpy = ">=1.26.4", empy = ">=3.3.4", moteus = ">=0.3.72", pybind11-global = ">=3.0" }
