@@ -7,12 +7,12 @@
 namespace mrover {
     class GestureRecognitionNode : public rclcpp::Node {
     private:
-        static constexpr double HOLD_SECONDS = 5.0;                  // how long the pose must be held
-        static constexpr double GRACE_SECONDS = 1.0;                 // dropouts shorter than this don't reset the timer
-        static constexpr float MIN_JOINT_CONFIDENCE = 30.0f;         // joints below this (or NaN) are treated as unseen
-        static constexpr double MAX_ELBOW_BEND_DEG = 45.0;           // 0 = perfectly straight arm
-        static constexpr double MAX_ARM_TILT_DEG = 35.0;             // allowed deviation from perpendicular to the torso
-        static constexpr double MAX_ARM_TO_SHOULDER_LINE_DEG = 50.0; // arms must point out along the shoulder line
+        double HOLD_SECONDS;                  // how long the pose must be held
+        double GRACE_PERIOD;                 // dropouts shorter than this don't reset the timer
+        float MIN_JOINT_CONFIDENCE;         // joints below this (or NaN) are treated as unseen
+        double MAX_ELBOW_BEND_DEG;           // 0 = perfectly straight arm
+        double MAX_ARM_TILT_DEG;             // allowed deviation from perpendicular to the torso
+        double MAX_ARM_TO_SHOULDER_LINE_DEG; // arms must point out along the shoulder line
 
         // BODY_38 keypoint indices
         static constexpr std::size_t PELVIS = 0, NECK = 4;

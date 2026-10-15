@@ -1,0 +1,8 @@
+gesture_recognition_node:
+  ros__parameters:
+    hold_seconds: 5.0                    # how long the pose must be held
+    grace_period: 1.0                    # dropouts shorter than this don't reset the timer
+    min_joint_confidence: 30.0           # joints below this (or NaN) are treated as unseen
+    max_elbow_bend_deg: 45.0             # 0 = perfectly straight arm
+    max_arm_tilt_deg: 35.0               # allowed deviation from perpendicular to the torso
+    max_arm_to_shoulder_line_deg: 50.0   # arms must point out along the shoulder line

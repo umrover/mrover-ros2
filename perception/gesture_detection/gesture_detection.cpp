@@ -5,6 +5,17 @@ namespace mrover {
         : rclcpp::Node("gesture_recognition_node", options), mLoopProfiler{get_logger()} {
         RCLCPP_INFO_STREAM(get_logger(), "GestureRecognitionNode starting up");
 
+        std::vector<ParameterWrapper> params{
+                {"hold_seconds", HOLD_SECONDS, 5.0},
+                {"grace_period", GRACE_PERIOD, 1.0},
+                {"min_joint_confidence", MIN_JOINT_CONFIDENCE, 30.0},
+                {"max_elbow_bend_deg", MAX_ELBOW_BEND_DEG, 45.0},
+                {"max_arm_tilt_deg", MAX_ARM_TILT_DEG, 35.0},
+                {"max_arm_to_shoulder_line_deg", MAX_ARM_TO_SHOULDER_LINE_DEG, 5.0},
+                };
+
+        ParameterWrapper::declareParameters(this, params);
+
         mBodySub = create_subscription<msg::Body>("/zed/body", rclcpp::QoS(1), [this](msg::Body::ConstSharedPtr const& msg) {
             poseCallback(msg);
         });
@@ -58,7 +69,7 @@ namespace mrover {
                 mTriggered = true;
                 RCLCPP_INFO_STREAM(get_logger(), "T-pose detected (held for " << HOLD_SECONDS << " seconds)");
             }
-        } else if (mHoldStart && t - mLastSeen > GRACE_SECONDS) {
+        } else if (mHoldStart && t - mLastSeen > GRACE_PERIOD) {
             if (mTriggered) {
                 RCLCPP_INFO_STREAM(get_logger(), "T-pose released");
             }
