@@ -20,6 +20,9 @@ ros-jazzy-rosidl-default-runtime = "*"
 ros-jazzy-magic-enum = "*"
 ros-jazzy-rviz2 = "*"
 ros-jazzy-py-trees = "*"
+ros-jazzy-py-trees-ros-interfaces = "*"
+ros-jazzy-py-trees-ros = "*"
+ros-jazzy-py-trees-ros-viewer = "*"
 
 cmake = "*"
 ninja = "*"
@@ -68,7 +71,7 @@ cxx-compiler = "*"
 
 [pypi-dependencies]
 mrover = { path = ".", editable = true }
-py-trees = ">=2.6.0, <3"
+py-trees = "*"
 
 [pypi-options]
 dependency-overrides = { numpy = ">=1.26.4", empy = ">=3.3.4", moteus = ">=0.3.72", pybind11-global = ">=3.0" }
