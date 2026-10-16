@@ -100,11 +100,11 @@ auto GstVideoWidget::onNewSample(GstAppSink* sink, gpointer userData) -> GstFlow
     }
 
     QImage image(
-        static_cast<uchar const*>(GST_VIDEO_FRAME_PLANE_DATA(&videoFrame, 0)),
-        static_cast<int>(GST_VIDEO_INFO_WIDTH(&info)),
-        static_cast<int>(GST_VIDEO_INFO_HEIGHT(&info)),
-        GST_VIDEO_FRAME_PLANE_STRIDE(&videoFrame, 0),
-        QImage::Format_RGB888);
+            static_cast<uchar const*>(GST_VIDEO_FRAME_PLANE_DATA(&videoFrame, 0)),
+            static_cast<int>(GST_VIDEO_INFO_WIDTH(&info)),
+            static_cast<int>(GST_VIDEO_INFO_HEIGHT(&info)),
+            GST_VIDEO_FRAME_PLANE_STRIDE(&videoFrame, 0),
+            QImage::Format_RGB888);
     QImage frameCopy = image.copy();
 
     gst_video_frame_unmap(&videoFrame);
@@ -116,12 +116,12 @@ auto GstVideoWidget::onNewSample(GstAppSink* sink, gpointer userData) -> GstFlow
     }
 
     QMetaObject::invokeMethod(
-        widget,
-        [widget, frame = std::move(frameCopy)]() mutable {
-            widget->mFrame = std::move(frame);
-            widget->update();
-        },
-        Qt::QueuedConnection);
+            widget,
+            [widget, frame = std::move(frameCopy)]() mutable {
+                widget->mFrame = std::move(frame);
+                widget->update();
+            },
+            Qt::QueuedConnection);
 
     return GST_FLOW_OK;
 }
@@ -171,7 +171,7 @@ auto GstVideoWidget::applyPipeline() -> void {
     }
 
     mAppSink = GST_APP_SINK(
-        gst_bin_get_by_name(GST_BIN(mPipeline), "video_sink"));
+            gst_bin_get_by_name(GST_BIN(mPipeline), "video_sink"));
     if (!mAppSink) {
         mErrorString = "Pipeline has no video_sink appsink";
         qWarning() << mErrorString;
@@ -181,7 +181,7 @@ auto GstVideoWidget::applyPipeline() -> void {
     }
 
     g_signal_connect(mAppSink, "new-sample",
-                    G_CALLBACK(&GstVideoWidget::onNewSample), this);
+                     G_CALLBACK(&GstVideoWidget::onNewSample), this);
 
     if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
         mErrorString = "Failed to start GStreamer pipeline";
@@ -217,7 +217,7 @@ auto GstVideoWidget::play() -> void {
 
 auto GstVideoWidget::pause() -> void {
     qDebug() << "Attempted GstVideoWidget::stop()";
-    
+
     if (mPipeline && gst_element_set_state(mPipeline, GST_STATE_PAUSED) == GST_STATE_CHANGE_FAILURE) {
         mErrorString = "Failed to pause GStreamer pipeline";
         qWarning() << mErrorString;
@@ -245,9 +245,9 @@ void GstVideoWidget::paintEvent(QPaintEvent* event) {
     scaledSize.scale(size(), Qt::KeepAspectRatio);
 
     QRect target(
-        QPoint((width() - scaledSize.width()) / 2,
-               (height() - scaledSize.height()) / 2),
-        scaledSize);
+            QPoint((width() - scaledSize.width()) / 2,
+                   (height() - scaledSize.height()) / 2),
+            scaledSize);
     painter.drawImage(target, mFrame);
 }
 

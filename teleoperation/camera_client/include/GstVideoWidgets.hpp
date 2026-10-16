@@ -1,10 +1,10 @@
 #pragma once
 
 #include "pch.hpp"
-#include <qvideowidget.h>
-#include <qwidget.h>
 #include <QImage>
 #include <QPainter>
+#include <qvideowidget.h>
+#include <qwidget.h>
 
 namespace mrover {
 
@@ -49,6 +49,7 @@ namespace mrover {
         auto pause() -> void;
         auto stop() -> void;
         auto rotate90() -> void;
+
     protected:
         void paintEvent(QPaintEvent* event) override;
 
