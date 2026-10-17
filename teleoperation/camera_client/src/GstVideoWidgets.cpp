@@ -202,21 +202,16 @@ auto GstVideoWidget::isError() const -> bool {
     return !mErrorString.isEmpty();
 }
 
-// TODO Is this useful when called?
-
 auto GstVideoWidget::play() -> void {
-    qDebug() << "Attempted GstVideoWidget::play()";
+    qDebug() << "Request to play a pipeline";
 
     if (mPipeline && gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
         mErrorString = "Failed to play GStreamer pipeline";
         qWarning() << mErrorString;
     }
 }
-
-// TODO Does this ever get called?
-
 auto GstVideoWidget::pause() -> void {
-    qDebug() << "Attempted GstVideoWidget::stop()";
+    qDebug() << "Request to pause a pipeline";
 
     if (mPipeline && gst_element_set_state(mPipeline, GST_STATE_PAUSED) == GST_STATE_CHANGE_FAILURE) {
         mErrorString = "Failed to pause GStreamer pipeline";
@@ -225,6 +220,8 @@ auto GstVideoWidget::pause() -> void {
 }
 
 auto GstVideoWidget::stop() -> void {
+    qDebug() << "Request to stop a pipeline";
+
     if (mPipeline && gst_element_set_state(mPipeline, GST_STATE_NULL) == GST_STATE_CHANGE_FAILURE) {
         mErrorString = "Failed to stop GStreamer pipeline";
         qWarning() << mErrorString;
@@ -386,8 +383,6 @@ auto GstVideoGridWidget::getGstVideoWidget(std::string const& name) -> GstVideoW
     return box ? box->gstVideoWidget : nullptr;
 }
 
-// TODO Does this ever get called?
-
 auto GstVideoGridWidget::playVideo(std::string const& name) -> bool {
     auto* box = findVideoBox(name);
     if (!box) return false;
@@ -395,16 +390,12 @@ auto GstVideoGridWidget::playVideo(std::string const& name) -> bool {
     return true;
 }
 
-// TODO Does this ever get called?
-
 auto GstVideoGridWidget::pauseVideo(std::string const& name) -> bool {
     auto* box = findVideoBox(name);
     if (!box) return false;
     box->gstVideoWidget->pause();
     return true;
 }
-
-// TODO Does this ever get called?
 
 auto GstVideoGridWidget::stopVideo(std::string const& name) -> bool {
     auto* box = findVideoBox(name);
