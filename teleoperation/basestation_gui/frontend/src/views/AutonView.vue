@@ -8,7 +8,7 @@
       <div class="island p-2 rounded h-full">
         <OdometryReading />
       </div>
-  </template>
+    </template>
 
     <template #nav-status>
       <div class="island p-2 rounded h-full flex flex-col">
@@ -45,6 +45,12 @@
         <DriveStatusIndicator />
       </div>
     </template>
+
+    <template #astronaut-status>
+      <div class="island p-2 rounded">
+        <AstronautStatus />
+      </div>
+    </template>
   </BaseGridView>
 
   <div
@@ -69,6 +75,7 @@ import DriveControls from '@/components/DriveControls.vue'
 import GimbalControls from '@/components/GimbalControls.vue'
 import DriveStatusIndicator from '@/components/DriveStatusIndicator.vue'
 import Rover3D from '@/components/Rover3D.vue'
+import AstronautStatus from '@/components/AstronautStatus.vue'
 import { useAutonomyStore } from '@/stores/autonomy'
 import { storeToRefs } from 'pinia'
 import { ledAPI } from '@/utils/ledAPI'
@@ -84,6 +91,7 @@ const defaultLayout = [
   { x: 0, y: 11, w: 3, h: 1, i: 'drive-data' },
   { x: 5, y: 0, w: 7, h: 7, i: 'map' },
   { x: 6, y: 7, w: 6, h: 5, i: 'waypoints' },
+  { x: 0, y: 14, w: 3, h:1, i: 'astronaut-status'},
 ]
 
 const autonomyStore = useAutonomyStore()
