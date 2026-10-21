@@ -47,7 +47,7 @@
     </template>
 
     <template #astronaut-status>
-      <div class="island p-2 rounded">
+      <div class="island p-2 rounded h-full">
         <AstronautStatus />
       </div>
     </template>
