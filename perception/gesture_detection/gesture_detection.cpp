@@ -11,7 +11,7 @@ namespace mrover {
                 {"min_joint_confidence", MIN_JOINT_CONFIDENCE, 30.0},
                 {"max_elbow_bend_deg", MAX_ELBOW_BEND_DEG, 45.0},
                 {"max_arm_tilt_deg", MAX_ARM_TILT_DEG, 35.0},
-                {"max_arm_to_shoulder_line_deg", MAX_ARM_TO_SHOULDER_LINE_DEG, 5.0},
+                {"max_arm_to_shoulder_line_deg", MAX_ARM_TO_SHOULDER_LINE_DEG, 50.0},
                 };
 
         ParameterWrapper::declareParameters(this, params);
