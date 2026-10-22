@@ -91,7 +91,7 @@ const defaultLayout = [
   { x: 0, y: 9, w: 3, h: 1, i: 'drive-data' },
   { x: 5, y: 0, w: 7, h: 7, i: 'map' },
   { x: 6, y: 7, w: 6, h: 5, i: 'waypoints' },
-  { x: 0, y: 12, w: 3, h:2, i: 'astronaut-status'},
+  { x: 0, y: 10, w: 3, h:2, i: 'astronaut-status'},
 ]
 
 const autonomyStore = useAutonomyStore()
