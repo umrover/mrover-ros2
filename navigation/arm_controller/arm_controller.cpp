@@ -101,103 +101,140 @@ namespace mrover {
         return positions;
     }
 
-auto ArmController::ikVelCalc(geometry_msgs::msg::Twist vel) -> std::optional<msg::Velocity> {
-    static const std::array<std::string, 5> names =
-        {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
+    auto ArmController::ikVelCalc(geometry_msgs::msg::Twist vel) -> std::optional<msg::Velocity> {
+        double x_3 = mArmPos.x;
+        double z_3 = mArmPos.z;
 
-    // ---- raw velocity IK: same math as before, made safe at the edges ----
-    auto solve = [&](geometry_msgs::msg::Twist const& v) -> std::optional<std::array<double, 5>> {
-        double x_2 = mArmPos.x - END_EFFECTOR_LENGTH * std::cos(mArmPos.pitch);
-        double z_2 = mArmPos.z + END_EFFECTOR_LENGTH * std::sin(mArmPos.pitch);
-        double x_2_vel = v.linear.x + END_EFFECTOR_LENGTH * std::sin(mArmPos.pitch) * v.angular.y;
-        double z_2_vel = v.linear.z + END_EFFECTOR_LENGTH * std::cos(mArmPos.pitch) * v.angular.y;
-
+        double x_2 = x_3 - END_EFFECTOR_LENGTH * std::cos(mArmPos.pitch);
+        double x_2_vel = vel.linear.x + END_EFFECTOR_LENGTH * std::sin(mArmPos.pitch) * vel.angular.y; // derivative of x_2
+        double z_2 = z_3 + END_EFFECTOR_LENGTH * std::sin(mArmPos.pitch);
+        double z_2_vel = vel.linear.z + END_EFFECTOR_LENGTH * std::cos(mArmPos.pitch) * vel.angular.y; // derivative of z_2
         double c2 = x_2 * x_2 + z_2 * z_2;
-        if (c2 < 1e-9) return std::nullopt;
-        double c = std::sqrt(c2);
-        double c_vel = (x_2 * x_2_vel + z_2 * z_2_vel) / c;
+        double c_vel = (2 * x_2 * x_2_vel + 2 * z_2 * z_2_vel) / (2 * std::sqrt(c2)); // derivative of c
         double a2 = LINK_BC * LINK_BC;
         double b2 = LINK_CD * LINK_CD;
 
-        // joint b: clamp the acos argument (fix 2) and floor the sqrt (fix 1)
-        double ub = std::clamp((c2 + a2 - b2) / (2 * LINK_BC * c), -1.0, 1.0);
-        double dub = c_vel * (c2 - (a2 - b2)) / (2 * LINK_BC * c2);
-        double joint_b_vel = dub / std::max(std::sqrt(1 - ub * ub), 0.2)
-                           - (z_2_vel * x_2 - z_2 * x_2_vel) / c2;            // fix 3
+        double num = c2 + a2 - b2;
+        double denom = 2 * LINK_BC * std::sqrt(c2);
+        double joint_b_vel = 1 / std::sqrt(1 - (num / denom) * (num / denom));
+        num = c2 * c_vel - c_vel * (a2 - b2);
+        denom *= std::sqrt(c2);
+        joint_b_vel *= (num / denom);
+        num = z_2_vel * x_2 - z_2 * x_2_vel;
+        denom = x_2 * x_2;
+        joint_b_vel -= (1 / (1 + (z_2 * z_2) / (x_2 * x_2))) * (num / denom);
 
-        // joint c: same treatment
-        double uc = std::clamp((c2 - a2 - b2) / (2 * LINK_BC * LINK_CD), -1.0, 1.0);
-        double joint_c_vel = -(c * c_vel / (LINK_BC * LINK_CD))
-                           / std::max(std::sqrt(1 - uc * uc), 0.2);
+        num = c2 - a2 - b2;
+        denom = 2 * LINK_BC * LINK_CD;
+        double joint_c_vel = -1 / std::sqrt((1 - (num * num) / (denom * denom)));
+        num = 2 * std::sqrt(c2) * c_vel;
+        joint_c_vel *= (num / denom);
 
-        double joint_de_vel = v.angular.y - joint_b_vel - joint_c_vel;
+        double joint_de_pitch_vel = vel.angular.y - joint_b_vel - joint_c_vel;
 
-        if (!std::isfinite(joint_b_vel) || !std::isfinite(joint_c_vel) || !std::isfinite(joint_de_vel))
-            return std::nullopt;
-        return std::array<double, 5>{v.linear.y, joint_b_vel, joint_c_vel, joint_de_vel, v.angular.x};
-    };
-
-    // ---- split the command: position first, orientation second (fix 4) ----
-    geometry_msgs::msg::Twist lin = vel;
-    lin.angular.x = 0; lin.angular.y = 0;
-    geometry_msgs::msg::Twist ang;
-    ang.angular.x = vel.angular.x;
-    ang.angular.y = vel.angular.y;
-
-    auto ql = solve(lin);
-    auto qa = solve(ang);
-    if (!ql || !qa) {
-        RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Couldn't solve velocity IK");
-        mLastScaleFactor = 1.0;                                                  // fix 7
-        return std::nullopt;
-    }
-
-    // speed limit per joint as a magnitude (fix 6)
-    std::array<double, 5> lim{};
-    for (size_t i = 0; i < 5; ++i) {
-        auto it = joints.find(names[i]);
-        if (it == joints.end()) {
-            RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown joint \"" << names[i] << "\"");
-            mLastScaleFactor = 1.0;
+        if (!std::isfinite(joint_b_vel) || !std::isfinite(joint_c_vel) || !std::isfinite(joint_de_pitch_vel)) {
+            RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Couldn't solve velocity IK");
             return std::nullopt;
         }
-        lim[i] = std::min(std::abs(it->second.limits.maxVel), std::abs(it->second.limits.minVel));
-    }
 
-    // position part must fit on its own; the wrist (3) is left out so it can't throttle b and c
-    double s_lin = 1.0;
-    for (size_t i : {0, 1, 2, 4})
-        if (std::abs((*ql)[i]) > 1e-9) s_lin = std::min(s_lin, lim[i] / std::abs((*ql)[i]));
+        // ===================================================================
+        // NEW: gravity feedforward
+        //
+        // The motors hold the arm fine at rest, but while moving the gravity
+        // load keeps changing and the motors' own loops lag behind it, so the
+        // arm sags during motion. This looks slightly ahead along the commanded
+        // motion, sees how fast each joint's gravity load is changing, and adds
+        // a matching extra push. It is zero when the arm isn't moving.
+        //
+        // It's added BEFORE the scaling loop below on purpose: if the motion
+        // gets scaled down, the gravity change gets scaled by the same amount,
+        // so the feedforward should be too.
+        // ===================================================================
+        {
+            // Masses (kg) and centre-of-mass distances from each link's joint (m),
+            // matching the sim's URDF. Replace with real values for the real arm.
+            constexpr double G    = 9.81;
+            constexpr double M_BC = 1.0, R_BC = 0.0;      // arm_b_link: mass sits on joint B
+            constexpr double M_CD = 1.0, R_CD = 0.0;      // arm_c_link: mass sits on the elbow
+            constexpr double M_EE = 2.0, R_EE = 0.0225;   // arm_d_link + arm_e_link combined
 
-    // orientation part only gets the speed left over
-    double s_ang = 1.0;
-    for (size_t i = 0; i < 5; ++i) {
-        if (std::abs((*qa)[i]) < 1e-9) continue;
-        double room = std::max(0.0, lim[i] - std::abs(s_lin * (*ql)[i]));
-        s_ang = std::min(s_ang, room / std::abs((*qa)[i]));
-    }
+            constexpr double K_D = 0.15;    // TUNE: start at 0, raise until sag during motion is gone
+            constexpr double H   = 0.02;   // look-ahead time (s), only used to get the slope
 
-    // ---- combine; clamp each joint; stop only the joint at a position limit (fix 5) ----
-    msg::Velocity velocities;
-    velocities.names = {names.begin(), names.end()};
-    velocities.velocities.resize(5);
-    for (size_t i = 0; i < 5; ++i) {
-        double v = s_lin * (*ql)[i] + s_ang * (*qa)[i];
-        v = std::clamp(v, -lim[i], lim[i]);
+            // Potential energy of the arm, using the same angle chain as fkCallback
+            auto potential = [](double q_b, double q_c, double q_de) {
+                double angle = -q_b;
+                double zC = LINK_BC * std::sin(angle);
+                double z1 = R_BC    * std::sin(angle);
+                angle += -q_c + JOINT_C_OFFSET;
+                double zD = zC + LINK_CD * std::sin(angle);
+                double z2 = zC + R_CD    * std::sin(angle);
+                angle -= q_de + JOINT_C_OFFSET;
+                double z3 = zD + R_EE    * std::sin(angle);
+                return G * (M_BC * z1 + M_CD * z2 + M_EE * z3);
+            };
 
-        auto const& j = joints.find(names[i])->second;
-        if ((v > 0 && j.limits.maxPos - j.pos < JOINT_VEL_THRESH) ||
-            (v < 0 && j.pos - j.limits.minPos < JOINT_VEL_THRESH)) {
-            RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Joint " << names[i] << " at limit, holding it");
-            v = 0.0;
+            // Torque each joint needs to hold the arm: slope of the energy
+            auto gravityTorque = [&](double q_b, double q_c, double q_de) {
+                const double h = 1e-5;
+                double U0 = potential(q_b, q_c, q_de);
+                return std::array<double, 3>{
+                    (potential(q_b + h, q_c, q_de) - U0) / h,
+                    (potential(q_b, q_c + h, q_de) - U0) / h,
+                    (potential(q_b, q_c, q_de + h) - U0) / h,
+                };
+            };
+
+            double qb  = joints["joint_b"].pos;
+            double qc  = joints["joint_c"].pos;
+            double qde = joints["joint_de_pitch"].pos;
+
+            auto tg_now  = gravityTorque(qb, qc, qde);
+            auto tg_next = gravityTorque(qb  + joint_b_vel        * H,
+                                        qc  + joint_c_vel        * H,
+                                        qde + joint_de_pitch_vel * H);
+
+            joint_b_vel        += K_D * (tg_next[0] - tg_now[0]) / H;
+            joint_c_vel        += K_D * (tg_next[1] - tg_now[1]) / H;
+            joint_de_pitch_vel += K_D * (tg_next[2] - tg_now[2]) / H;
         }
-        velocities.velocities[i] = static_cast<float>(v);
-    }
+        // ===================== end of NEW block =====================
 
-    mLastScaleFactor = s_lin;
-    RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 250, "s_lin %.2f s_ang %.2f", s_lin, s_ang);
-    return velocities;
-}
+        msg::Velocity velocities;
+        velocities.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
+        velocities.velocities = {
+            static_cast<float>(vel.linear.y),
+            static_cast<float>(joint_b_vel),
+            static_cast<float>(joint_c_vel),
+            static_cast<float>(joint_de_pitch_vel),
+            static_cast<float>(vel.angular.x),
+        };
+
+        double scaleFactor = 1;
+        for (size_t i = 0; i < velocities.names.size(); ++i) {
+            auto it = joints.find(velocities.names[i]);
+            if (it == joints.end()) {
+                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown Joint\"" << velocities.names[i] << "\"");
+                return std::nullopt;
+            }
+
+            if ((velocities.velocities[i] > 0 && it->second.limits.maxPos - it->second.pos < JOINT_VEL_THRESH) ||
+                (velocities.velocities[i] < 0 && it->second.pos - it->second.limits.minPos < JOINT_VEL_THRESH)) {
+                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Joint " << velocities.names[i] << " too close to limit for velocity command");
+                return std::nullopt;
+            }
+            scaleFactor = std::max(scaleFactor, velocities.velocities[i] / (velocities.velocities[i] > 0 ? it->second.limits.maxVel : it->second.limits.minVel));
+        }
+
+        // scale down all velocities so that we don't exceed motor velocity limits
+        if (scaleFactor > 1)
+            RCLCPP_INFO_STREAM_THROTTLE(get_logger(), *get_clock(), 500, "Commanded velocity too high. Scaling down by factor of " << scaleFactor);
+        for (auto& v : velocities.velocities)
+            v = static_cast<float>(v / scaleFactor);
+
+        mLastScaleFactor = 1.0 / scaleFactor;
+        return velocities;
+    }
 
     auto ArmController::configure_posestamped(geometry_msgs::msg::PoseStamped &p_stamped,
                                               ArmController::ArmPos &mTargetPos) -> void {
@@ -567,8 +604,8 @@ auto ArmController::ikVelCalc(geometry_msgs::msg::Twist vel) -> std::optional<ms
                 error_z_fin = (error_z_to_ideal / error_to_ideal_mag) * vel_magnitude;
             }
 
-            double kP_lin = 5;
-            double kP_ang = 2.5;
+            double kP_lin = 20;
+            double kP_ang = 10;
             auto mVelAdjustedTarget = mVelTarget;   
 
             double iP_lin = 0;
@@ -591,19 +628,20 @@ auto ArmController::ikVelCalc(geometry_msgs::msg::Twist vel) -> std::optional<ms
             // double cy = (kP_lin-1) * error_y_to_ideal;
             // double cz = (kP_lin-1) * error_z_to_ideal;
             // double cn = std::sqrt(cx*cx + cy*cy + cz*cz);
-
             mVelAdjustedTarget.linear.x = error_x_fin + cx;
-            mVelAdjustedTarget.linear.y = error_y_fin + cy;
-            mVelAdjustedTarget.linear.z = error_z_fin + cz;
-            mVelAdjustedTarget.angular.y = (mVelTarget.angular.y) + kP_ang * error_pitch_to_ideal;
-            mVelAdjustedTarget.angular.x = (mVelTarget.angular.x) + kP_ang * error_roll_to_ideal;
-            // // mVelAdjustedTarget.linear.x  = (mVelTarget.linear.x  * gate_factor) + (error_x_to_ideal * kP_lin);
-            // // mVelAdjustedTarget.linear.y  = (mVelTarget.linear.y  * gate_factor) + (error_y_to_ideal * kP_lin);
-            // // mVelAdjustedTarget.linear.z  = (mVelTarget.linear.z  * gate_factor) + (error_z_to_ideal * kP_lin);
-            // // mVelAdjustedTarget.angular.y = (mVelTarget.angular.y * gate_factor) + (error_pitch_to_ideal * kP_ang);
-            // // mVelAdjustedTarget.angular.x = (mVelTarget.angular.x * gate_factor) + (error_roll_to_ideal * kP_ang);
 
-            auto velocities = ikVelCalc(mVelAdjustedTarget);
+            // mVelAdjustedTarget.linear.x = error_x_fin + cx;
+            // mVelAdjustedTarget.linear.y = error_y_fin + cy;
+            // mVelAdjustedTarget.linear.z = error_z_fin + cz;
+            // mVelAdjustedTarget.angular.y = (mVelTarget.angular.y) + kP_ang * error_pitch_to_ideal;
+            // mVelAdjustedTarget.angular.x = (mVelTarget.angular.x) + kP_ang * error_roll_to_ideal;
+            mVelAdjustedTarget.linear.x  = (mVelTarget.linear.x  * gate_factor) + (error_x_to_ideal * kP_lin);
+            mVelAdjustedTarget.linear.y  = (mVelTarget.linear.y  * gate_factor) + (error_y_to_ideal * kP_lin);
+            mVelAdjustedTarget.linear.z  = (mVelTarget.linear.z  * gate_factor) + (error_z_to_ideal * kP_lin);
+            mVelAdjustedTarget.angular.y = (mVelTarget.angular.y * gate_factor) + (error_pitch_to_ideal * kP_ang);
+            mVelAdjustedTarget.angular.x = (mVelTarget.angular.x * gate_factor) + (error_roll_to_ideal * kP_ang);
+
+            auto velocities = ikVelCalc(mVelTarget);
             if (velocities &&
                 !(
                     velocities->velocities[0] == 0 &&

@@ -4,6 +4,8 @@
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <visualization_msgs/msg/marker.hpp>
 #include <deque>
+#include <array>
+#include <cmath>
 
 namespace mrover {
 
