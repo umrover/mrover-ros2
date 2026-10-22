@@ -12,8 +12,10 @@ namespace mrover {
             cv::Scalar fontColor{};
             float confidence{};
             cv::Rect box;
+            std::vector<cv::Point2f> keypoints;
+            std::vector<float> keypointConfidences;
 
-            Detection(int _classId, std::string _className, cv::Scalar _fontColor, float _confidence, cv::Rect _box) : classId{_classId}, className{std::move(_className)}, fontColor{std::move(_fontColor)}, confidence{_confidence}, box{std::move(_box)} {}
+            Detection(int _classId, std::string _className, cv::Scalar _fontColor, float _confidence, cv::Rect _box, std::vector<cv::Point2f> _keypoints = {}, std::vector<float> _keypointConfidences = {}) : classId{_classId}, className{std::move(_className)}, fontColor{std::move(_fontColor)}, confidence{_confidence}, box{std::move(_box)}, keypoints{std::move(_keypoints)}, keypointConfidences{std::move(_keypointConfidences)} {}
         };
 
         struct Model {
@@ -49,7 +51,7 @@ namespace mrover {
         std::shared_ptr<tf2_ros::TransformBroadcaster> mTfBroadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(this);
         std::shared_ptr<tf2_ros::TransformListener> mTfListener = std::make_shared<tf2_ros::TransformListener>(*mTfBuffer);
 
-        Model mPickModel;
+        Model mKeypointModel;
 
         std::string mCameraFrame;
         std::string mWorldFrame;
@@ -58,7 +60,7 @@ namespace mrover {
 
         LoopProfiler mLoopProfiler;
 
-        TensortRT mPickTensorRT;
+        TensortRT mKeypointTensorRT;
 
         sensor_msgs::msg::Image mDetectionsImageMessage;
 
@@ -68,7 +70,7 @@ namespace mrover {
         int mObjDecrementWeight{};
         int mObjMaxHitcount{};
         float mModelScoreThreshold{};
-        float mPickScoreThreshold{};
+        float mKeypointScoreThreshold{};
         float mModelNMSThreshold{};
         float mDistanceDetectionThreshold{};
         bool mDebug{};
@@ -87,15 +89,15 @@ namespace mrover {
 
         auto publishDetectedObjects(cv::InputArray const& image) -> void;
 
-        static auto drawDetectionBoxes(cv::InputOutputArray& image, std::span<Detection const> detections) -> void;
+        static auto drawDetectionBoxes(cv::InputOutputArray image, std::span<Detection const> detections) -> void;
 
         //change when model is decided, using YOLOv26 right now but subject to change
         //----------------------------------------------------------------------------------------------------------------------------------------
-        auto parseYOLOv8Output(Model const& model,
-                               cv::Mat& output,
-                               std::vector<Detection>& detections) const -> void;
+        auto parseYOLOv26Output(Model const& model,
+                                cv::Mat& output,
+                                std::vector<Detection>& detections) const -> void;
 
-        static auto preprocessYOLOv8Input(Model const& model, cv::Mat const& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) -> void;
+        static auto preprocessYOLOv26Input(Model const& model, cv::Mat const& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) -> void;
         //----------------------------------------------------------------------------------------------------------------------------------------
 
         auto resizeBoundingBoxes(cv::Size const& outputSpace, std::vector<Detection>& detections) const -> void;
@@ -106,9 +108,9 @@ namespace mrover {
         auto toggleMode(mrover::srv::ToggleObjectDetector::Request::ConstSharedPtr& request, mrover::srv::ToggleObjectDetector::Response::SharedPtr& response) -> void;
 
     public:
-        explicit ObjectDetectorBase(std::string const& name, rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
+        explicit KeypointDetectorBase(std::string const& name, rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
-        ~ObjectDetectorBase() override = default;
+        ~KeypointDetectorBase() override = default;
     };
 
     class ImageKeypointDetector final : public KeypointDetectorBase {

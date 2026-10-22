@@ -1,0 +1,19 @@
+# All units are in SI
+# ===================
+# Time:     second, hz
+# Angle:    radian
+# Distance: meter
+
+image_keypoint_detector:
+  ros__parameters:
+    camera_frame: "zed_left_camera_frame"
+    world_frame: "map"
+    increment_weight: 2
+    decrement_weight: 1
+    hitcount_max: 10
+    keypoint_model_name: "pick-keypoint"
+    keypoint_threshold: 5
+    keypoint_score_threshold: 0.6
+    model_score_threshold: 0.75
+    model_nms_threshold: 0.5
+    auton_arm_camera/fov: 10.0

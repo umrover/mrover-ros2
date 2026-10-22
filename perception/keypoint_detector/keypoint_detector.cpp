@@ -3,40 +3,39 @@
 namespace mrover {
 
     KeypointDetectorBase::KeypointDetectorBase(std::string const& name, rclcpp::NodeOptions const& options) : rclcpp::Node(name, options), mLoopProfiler{get_logger()} {
-        
         std::string keypointModelName;
+
         int keypointThreshold;
 
         std::vector<ParameterWrapper> params{
-            {"camera_frame", mCameraFrame, "zed_left_camera_frame"},
-            {"world_frame", mWorldFrame, "map"},
-            {"increment_weight", mObjIncrementWeight, 2},
-            {"decrement_weight", mObjDecrementWeight, 1},
-            {"hitcount_max", mObjMaxHitcount, 10},
-            {"pick_model_name", pickModelName, "pick-keypoint"},
-            {"pick_threshold", pickThreshold, 5},
-            {"pick_score_threshold", mPickScoreThreshold, 0.75},
-            {"model_score_threshold", mModelScoreThreshold, 0.75},
-            {"model_nms_threshold", mModelNMSThreshold, 0.5},
-            {"object_detector_debug", mDebug, true}
-        };
+                {"camera_frame", mCameraFrame, "zed_left_camera_frame"},
+                {"world_frame", mWorldFrame, "map"},
+                {"increment_weight", mObjIncrementWeight, 2},
+                {"decrement_weight", mObjDecrementWeight, 1},
+                {"hitcount_max", mObjMaxHitcount, 10},
+                {"keypoint_model_name", keypointModelName, "pick-keypoint"},
+                {"keypoint_threshold", keypointThreshold, 5},
+                {"keypoint_score_threshold", mKeypointScoreThreshold, 0.75},
+                {"model_score_threshold", mModelScoreThreshold, 0.75},
+                {"model_nms_threshold", mModelNMSThreshold, 0.5},
+                {"object_detector_debug", mDebug, true}};
 
         ParameterWrapper::declareParameters(this, params);
 
-        std::filesystem::path packagePath = std::filesystem::path{
-            ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover";
+        std::filesystem::path packagePath = std::filesystem::path{ament_index_cpp::get_package_prefix("mrover")} / ".." / ".." / "src" / "mrover";
 
-        RCLCPP_INFO_STREAM(get_logger(), "Opening Model " << pickModelName);
+        RCLCPP_INFO_STREAM(get_logger(), "Opening Model " << keypointModelName);
+
         RCLCPP_INFO_STREAM(get_logger(), "Found package path " << packagePath);
 
         mModelScoreThreshold = 0.75;
 
-        RCLCPP_INFO_STREAM(get_logger(), "Pick Threshold " << mPickScoreThreshold);
-        mPickTensorRT = TensortRT{pickModelName, packagePath.string()};
-        mPickModel = Model(pickModelName, {0}, pickThreshold, {"pick"}, {cv::Scalar{5, 225, 5}}, mPickTensorRT.getInputTensorSize(), mMalletTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv8Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv8Output(model, output, detections); });
-        
-        RCLCPP_INFO_STREAM(get_logger(), std::format("Object detector initialized with models: {}, {}, {} and thresholds: {} and {}", mBottleModel.modelName, mMalletModel.modelName, mPickModel.modelName, mModelScoreThreshold, mModelNMSThreshold));
+        RCLCPP_INFO_STREAM(get_logger(), "Keypoint Threshold " << mKeypointScoreThreshold);
 
+        mKeypointTensorRT = TensortRT{keypointModelName, packagePath.string()};
+        mKeypointModel = Model(keypointModelName, {0}, keypointThreshold, {"keypoint"}, {cv::Scalar{5, 225, 5}}, mKeypointTensorRT.getInputTensorSize(), mKeypointTensorRT.getOutputTensorSize(), [](Model const& model, cv::Mat& rgbImage, cv::Mat& blobSizedImage, cv::Mat& blob) { preprocessYOLOv26Input(model, rgbImage, blobSizedImage, blob); }, [this](Model const& model, cv::Mat& output, std::vector<Detection>& detections) { parseYOLOv26Output(model, output, detections); });
+
+        RCLCPP_INFO_STREAM(get_logger(), std::format("Keypoint detector initialized with model: {} and thresholds: {} and {}", mKeypointModel.modelName, mModelScoreThreshold, mModelNMSThreshold));
     }
 
     ImageKeypointDetector::ImageKeypointDetector(rclcpp::NodeOptions const& options) : KeypointDetectorBase("image_keypoint_detector", options) {
@@ -60,7 +59,8 @@ namespace mrover {
             toggleMode(request, response);
         });
     }
-}
+} // namespace mrover
+
 
 #include "rclcpp_components/register_node_macro.hpp"
 RCLCPP_COMPONENTS_REGISTER_NODE(mrover::ImageKeypointDetector)
