@@ -140,4 +140,9 @@ export interface ThrottleMessage {
   throttles: number[];
 }
 
+export interface StringMessage {
+  type: 'string';
+  data: string;
+}
+
 export type ScienceMessage = OxygenMessage | UVMessage | TemperatureMessage | HumidityMessage | SPHumidityMessage | SPTemperatureMessage | SPOxygenMessage | SPUVMessage | SPOzoneMessage | SPCO2Message | SPPressureMessage | SPSensorStateMessage;
