@@ -3,6 +3,7 @@
 #include "pch.hpp"
 
 #include <optional>
+#include <tf2_ros/tf2_ros/transform_broadcaster.hpp>
 
 namespace mrover {
     class GestureRecognitionNode : public rclcpp::Node {
@@ -39,6 +40,11 @@ namespace mrover {
             std::size_t shoulder, elbow, wrist;
             Eigen::Vector3d outward;
         };
+
+        // tf2 tree handling
+        tf2_ros::Buffer tf_buffer{get_clock()};
+        tf2_ros::TransformListener tf_listener{tf_buffer};
+        tf2_ros::TransformBroadcaster tf_broadcaster{this};
 
     public:
         explicit GestureRecognitionNode(rclcpp::NodeOptions const& options = rclcpp::NodeOptions{});

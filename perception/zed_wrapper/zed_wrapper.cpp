@@ -248,6 +248,13 @@ namespace mrover {
                             bodyMsg.keypoints.push_back(p);
                         }
                         bodyMsg.keypoint_confidences.assign(best->keypoint_confidence.begin(), best->keypoint_confidence.end());
+                        bodyMsg.pose.position.x = best->position.x;
+                        bodyMsg.pose.position.y = best->position.y;
+                        bodyMsg.pose.position.z = best->position.z;
+                        bodyMsg.pose.orientation.x = best->global_root_orientation.x;
+                        bodyMsg.pose.orientation.y = best->global_root_orientation.y;
+                        bodyMsg.pose.orientation.z = best->global_root_orientation.z;
+                        bodyMsg.pose.orientation.w = best->global_root_orientation.w;
                     }
                     mBodyPub->publish(bodyMsg);
                 }
