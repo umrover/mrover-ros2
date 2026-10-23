@@ -4,8 +4,6 @@
 namespace mrover {
 
     class ArmController final : public rclcpp::Node {
-        friend class ArmControllerHarness;
-
         struct ArmPos {
             double x{0}, y{0}, z{0}, pitch{0}, roll{0}, gripper{0};
             [[nodiscard]] auto toSE3() const -> SE3d {
