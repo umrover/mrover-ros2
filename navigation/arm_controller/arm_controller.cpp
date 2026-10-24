@@ -211,7 +211,7 @@ namespace mrover {
             double angle = -joint_state->positions[1];
             double x = LINK_BC * std::cos(angle);
             double z = LINK_BC * std::sin(angle);
-            angle += -joint_state->positions[2] - JOINT_C_OFFSET;
+            angle += -(joint_state->positions[2] - JOINT_C_OFFSET);
             x += LINK_CD * std::cos(angle);
             z += LINK_CD * std::sin(angle);
             angle -= joint_state->positions[3] + JOINT_C_OFFSET;

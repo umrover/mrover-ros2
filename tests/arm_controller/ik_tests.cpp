@@ -18,6 +18,38 @@ namespace mrover {
         EXPECT_FALSE(res.has_value());
     }
 
+    void ArmControllerHarness::testIkFk() {
+        // test feeding ik output through fk
+        ArmPos pos;
+        pos.x = 0.7;
+        pos.y = 0.2;
+        pos.z = 0.1;
+        pos.pitch = 0.1;
+        pos.roll = 1;
+        pos.gripper = 0;
+        auto res = arm_controller.ikPosCalc(pos);
+        ASSERT_TRUE(res.has_value());
+
+        auto msg = std::make_shared<msg::ControllerState>();
+        msg->names = res->names;
+        msg->positions = res->positions;
+
+        arm_controller.fkCallback(msg);
+        checkPos(pos, arm_controller.mArmPos);
+
+        // ideally for the following tests we would check how the ArmController
+        // responds, but for now we do it just for line coverage
+        // test fk with nan position
+        msg->positions[0] = std::numeric_limits<float>::quiet_NaN();
+        arm_controller.fkCallback(msg);
+        msg->positions[0] = 0;
+
+        // test fk with unknown joint
+        msg->names.emplace_back("test");
+        msg->positions.emplace_back(0);
+        arm_controller.fkCallback(msg);
+    }
+
     void ArmControllerHarness::testIkVelCalc() {
         // force failure
         geometry_msgs::msg::Twist vel;
@@ -44,6 +76,10 @@ namespace mrover {
 
     TEST_F(ArmControllerHarness, ikPosCalc) {
         testIkPosCalc();
+    }
+
+    TEST_F(ArmControllerHarness, ikFk) {
+        testIkFk();
     }
 
     TEST_F(ArmControllerHarness, ikVelCalc) {
