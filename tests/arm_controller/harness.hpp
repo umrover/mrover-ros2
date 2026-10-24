@@ -31,10 +31,11 @@ namespace mrover {
             EXPECT_FLOAT_EQ(pos1.gripper, pos2.gripper);
         }
 
+        void testPosCallback();
+        void testVelCallback();
+
         void testIkPosCalc();
-
         void testIkFk();
-
         void testIkVelCalc();
     };
 }

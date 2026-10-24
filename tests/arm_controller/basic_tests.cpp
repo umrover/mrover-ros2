@@ -49,4 +49,59 @@ namespace mrover {
         EXPECT_FALSE(joint.limits.velInBounds(2));
         EXPECT_FALSE(joint.limits.velInBounds(-1.5));
     }
+
+    void ArmControllerHarness::testPosCallback() {
+        auto msg = std::make_shared<msg::IK>();
+        msg->pos.x = 1;
+        msg->pos.y = 2;
+        msg->pos.z = 2;
+        msg->pitch = 4;
+        msg->roll = 5;
+        ArmPos pos;
+        pos = *msg;
+
+        rclcpp::Time old_time = arm_controller.get_clock()->now();
+        arm_controller.posCallback(msg);
+        rclcpp::Time new_time = arm_controller.get_clock()->now();
+        checkPos(pos, arm_controller.mPosTarget);
+        EXPECT_GT(arm_controller.mLastUpdate, old_time);
+        EXPECT_LT(arm_controller.mLastUpdate, new_time);
+
+        // in velocity mode we shouldn't update timestamp
+        arm_controller.mArmMode = ArmController::ArmMode::VELOCITY_CONTROL;
+        arm_controller.posCallback(msg);
+        EXPECT_LT(arm_controller.mLastUpdate, new_time);
+    }
+
+    void ArmControllerHarness::testVelCallback() {
+        auto msg = std::make_shared<geometry_msgs::msg::Twist>();
+
+        // default is in position control mode
+        rclcpp::Time old_time = arm_controller.get_clock()->now();
+        arm_controller.velCallback(msg);
+        EXPECT_EQ(arm_controller.mVelTarget, *msg);
+        EXPECT_LT(arm_controller.mLastUpdate, old_time);
+
+        msg->linear.x = 0.1;
+        msg->linear.y = 0.2;
+        msg->linear.z = 1.0;
+        msg->angular.x = 1;
+        msg->angular.y = 2;
+        msg->angular.z = 3;
+        arm_controller.mArmMode = ArmController::ArmMode::VELOCITY_CONTROL;
+        arm_controller.velCallback(msg);
+        EXPECT_EQ(arm_controller.mVelTarget.angular, msg->angular);
+        EXPECT_FLOAT_EQ(msg->linear.x * ArmController::MAX_SPEED, arm_controller.mVelTarget.linear.x);
+        EXPECT_FLOAT_EQ(msg->linear.y * ArmController::MAX_SPEED, arm_controller.mVelTarget.linear.y);
+        EXPECT_FLOAT_EQ(msg->linear.z * ArmController::MAX_SPEED, arm_controller.mVelTarget.linear.z);
+        EXPECT_GT(arm_controller.mLastUpdate, old_time);
+    }
+
+    TEST_F(ArmControllerHarness, posCallback) {
+        testPosCallback();
+    }
+
+    TEST_F(ArmControllerHarness, velCallback) {
+        testVelCallback();
+    }
 }
