@@ -97,11 +97,58 @@ namespace mrover {
         EXPECT_GT(arm_controller.mLastUpdate, old_time);
     }
 
+    void ArmControllerHarness::testHandleGoal() {
+        rclcpp_action::GoalUUID uuid;
+        auto goal = std::make_shared<action::TypingPosition_Goal>();
+
+        // arm controller starts in position IK mode so we expect rejection
+        auto resp = arm_controller.handleTypingGoal(uuid, goal);
+        EXPECT_EQ(resp, rclcpp_action::GoalResponse::REJECT);
+
+        arm_controller.mArmMode = ArmController::ArmMode::TYPING;
+        resp = arm_controller.handleTypingGoal(uuid, goal);
+        EXPECT_EQ(resp, rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE);
+
+        // repeat request while prior is in flight should fail
+        resp = arm_controller.handleTypingGoal(uuid, goal);
+        EXPECT_EQ(resp, rclcpp_action::GoalResponse::REJECT);
+    }
+
+    void ArmControllerHarness::testModeCallback() {
+        auto req = std::make_shared<srv::IkMode::Request>();
+        auto resp = std::make_shared<srv::IkMode::Response>();
+        req->mode = srv::IkMode::Request::POSITION_CONTROL;
+        arm_controller.modeCallback(req, resp);
+        EXPECT_EQ(arm_controller.mArmMode, ArmController::ArmMode::POSITION_CONTROL);
+        EXPECT_TRUE(resp->success);
+        resp->success = false;
+
+        req->mode = srv::IkMode::Request::VELOCITY_CONTROL;
+        arm_controller.modeCallback(req, resp);
+        EXPECT_EQ(arm_controller.mArmMode, ArmController::ArmMode::VELOCITY_CONTROL);
+        EXPECT_TRUE(resp->success);
+        resp->success = false;
+
+        req->mode = srv::IkMode::Request::TYPING;
+        arm_controller.modeCallback(req, resp);
+        EXPECT_EQ(arm_controller.mArmMode, ArmController::ArmMode::TYPING);
+        EXPECT_TRUE(resp->success);
+        resp->success = false;
+    }
+
     TEST_F(ArmControllerHarness, posCallback) {
         testPosCallback();
     }
 
     TEST_F(ArmControllerHarness, velCallback) {
         testVelCallback();
+    }
+
+    TEST_F(ArmControllerHarness, handleGoal) {
+        testHandleGoal();
+    }
+
+    TEST_F(ArmControllerHarness, modeCallback) {
+        testModeCallback();
     }
 }

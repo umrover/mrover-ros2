@@ -236,8 +236,10 @@ namespace mrover {
     auto ArmController::handleTypingGoal(const rclcpp_action::GoalUUID & uuid, const std::shared_ptr<const action::TypingPosition_Goal> &typingGoal) -> rclcpp_action::GoalResponse {
         (void)typingGoal;
 
-        if(mArmMode != ArmMode::TYPING) 
+        if(mArmMode != ArmMode::TYPING) {
             RCLCPP_WARN(get_logger(), "Rejecting goal: recieved typing goal while not in typing mode!");
+            return rclcpp_action::GoalResponse::REJECT;
+        }
 
         if(mTypingGoalID) {
             RCLCPP_WARN(get_logger(), "Rejecting goal: received new typing goal while there already exists an active goal!");

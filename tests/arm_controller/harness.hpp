@@ -33,6 +33,8 @@ namespace mrover {
 
         void testPosCallback();
         void testVelCallback();
+        void testHandleGoal();
+        void testModeCallback();
 
         void testIkPosCalc();
         void testIkFk();
