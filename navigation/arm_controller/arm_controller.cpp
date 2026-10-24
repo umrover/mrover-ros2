@@ -144,7 +144,7 @@ namespace mrover {
         for (size_t i = 0; i < velocities.names.size(); ++i) {
             auto it = joints.find(velocities.names[i]);
             if (it == joints.end()) {
-                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown Joint\"" << velocities.names[i] << "\"");
+                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown Joint \"" << velocities.names[i] << "\"");
                 return std::nullopt;
             }
 

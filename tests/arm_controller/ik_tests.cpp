@@ -67,6 +67,12 @@ namespace mrover {
         vel.linear.y = -1;
         EXPECT_EQ(arm_controller.ikVelCalc(vel), std::nullopt);
 
+        // something doable
+        vel.linear.y = 0.1;
+        vel.linear.x = -0.1;
+        vel.linear.z = 0.1;
+        EXPECT_TRUE(arm_controller.ikVelCalc(vel).has_value());
+
         // 0 velocity should yield all zeros
         auto res = arm_controller.ikVelCalc(geometry_msgs::msg::Twist{});
         ASSERT_TRUE(res.has_value());
