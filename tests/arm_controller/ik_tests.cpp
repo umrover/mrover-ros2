@@ -37,6 +37,12 @@ namespace mrover {
         arm_controller.fkCallback(msg);
         checkPos(pos, arm_controller.mArmPos);
 
+        // it shouldn't matter which order we pass in the joints
+        std::swap(msg->names[0], msg->names[1]);
+        std::swap(msg->positions[0], msg->positions[1]);
+        arm_controller.fkCallback(msg);
+        checkPos(pos, arm_controller.mArmPos);
+
         // ideally for the following tests we would check how the ArmController
         // responds, but for now we do it just for line coverage
         // test fk with nan position

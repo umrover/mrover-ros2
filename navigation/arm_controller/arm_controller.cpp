@@ -192,32 +192,32 @@ namespace mrover {
 
             auto const now = get_clock()->now();
 
-            double a_pos = joint_state->positions[0];
+            double a_pos = joints["joint_a"].pos;
             SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_a", "arm_base_link",
             SE3d{{0, a_pos, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{0, R3d::UnitY()}}}}, now);
 
-            double joint_b_angle = joint_state->positions[1];
+            double joint_b_angle = joints["joint_b"].pos;
             SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_b", "arm_joint_a",
             SE3d{{0, 0, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{joint_b_angle, R3d::UnitY()}}}}, now);
 
-            double joint_c_angle = (joint_state->positions[2] - JOINT_C_OFFSET);
+            double joint_c_angle = (joints["joint_c"].pos - JOINT_C_OFFSET);
             SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_c", "arm_joint_b",
             SE3d{{LINK_BC, 0, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{joint_c_angle, R3d::UnitY()}}}}, now);
 
-            double joint_DE_angle = (joint_state->positions[3] + JOINT_C_OFFSET);
+            double joint_DE_angle = (joints["joint_de_pitch"].pos + JOINT_C_OFFSET);
             SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_DE", "arm_joint_c",
             SE3d{{LINK_CD, 0, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{joint_DE_angle, R3d::UnitY()}}}}, now);
 
-            double angle = -joint_state->positions[1];
+            double angle = -joints["joint_b"].pos;
             double x = LINK_BC * std::cos(angle);
             double z = LINK_BC * std::sin(angle);
-            angle += -(joint_state->positions[2] - JOINT_C_OFFSET);
+            angle += -(joints["joint_c"].pos - JOINT_C_OFFSET);
             x += LINK_CD * std::cos(angle);
             z += LINK_CD * std::sin(angle);
-            angle -= joint_state->positions[3] + JOINT_C_OFFSET;
+            angle -= joints["joint_de_pitch"].pos + JOINT_C_OFFSET;
             x += END_EFFECTOR_LENGTH * std::cos(angle);
             z += END_EFFECTOR_LENGTH * std::sin(angle);
-            mArmPos = {x, a_pos, z, -angle, joint_state->positions[4], std::max(joint_state->positions[5], 0.0f)};
+            mArmPos = {x, a_pos, z, -angle, joints["joint_de_roll"].pos, std::max(joints["gripper"].pos, 0.0)};
 
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk", "arm_base_link", mArmPos.toSE3(), now);
     }
