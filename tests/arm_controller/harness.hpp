@@ -21,5 +21,9 @@ namespace mrover {
         {
             rclcpp::shutdown();
         }
+
+        void testIkPosCalc();
+
+        void testIkVelCalc();
     };
 }
