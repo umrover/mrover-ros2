@@ -13,7 +13,7 @@ namespace mrover {
                 currentModel = nullptr;
                 currentTensorRT = nullptr;
                 break;
-            case msg::WaypointType::KEY_POINT:
+            case msg::WaypointType::ROCK_PICK:
                 currentModel = &mKeypointModel;
                 currentTensorRT = &mKeypointTensorRT;
                 mModelScoreThreshold = mKeypointScoreThreshold;

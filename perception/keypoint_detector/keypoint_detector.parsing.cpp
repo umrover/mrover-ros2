@@ -7,7 +7,7 @@ namespace mrover {
         }
 
         static constexpr double UCHAR_TO_DOUBLE = 1.0 / 255.0;
-
+    
         cv::Size blobSize{static_cast<int32_t>(model.inputTensorSize[2]), static_cast<int32_t>(model.inputTensorSize[3])};
         cv::resize(rgbImage, blobSizedImage, blobSize);
         cv::dnn::blobFromImage(blobSizedImage, blob, UCHAR_TO_DOUBLE, blobSize, cv::Scalar{}, false, false);
