@@ -42,6 +42,7 @@ namespace mrover {
         double total_error_x = 0.0;
         double total_error_y = 0.0;
         double total_error_z = 0.0;
+        
 
 
         struct JointWrapper {
@@ -105,6 +106,7 @@ namespace mrover {
         auto timerCallback() -> void;
         auto velZeroCheck() -> bool;
         auto visualize_ee() -> void;
+        auto inSafeBubble(ArmPos const& p) -> bool;
         auto configure_posestamped(geometry_msgs::msg::PoseStamped &p_stamped, 
                                    ArmController::ArmPos &mTargetPos) -> void;
 

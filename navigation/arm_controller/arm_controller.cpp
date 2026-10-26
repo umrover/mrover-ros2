@@ -137,69 +137,6 @@ namespace mrover {
             return std::nullopt;
         }
 
-        // ===================================================================
-        // NEW: gravity feedforward
-        //
-        // The motors hold the arm fine at rest, but while moving the gravity
-        // load keeps changing and the motors' own loops lag behind it, so the
-        // arm sags during motion. This looks slightly ahead along the commanded
-        // motion, sees how fast each joint's gravity load is changing, and adds
-        // a matching extra push. It is zero when the arm isn't moving.
-        //
-        // It's added BEFORE the scaling loop below on purpose: if the motion
-        // gets scaled down, the gravity change gets scaled by the same amount,
-        // so the feedforward should be too.
-        // ===================================================================
-        {
-            // Masses (kg) and centre-of-mass distances from each link's joint (m),
-            // matching the sim's URDF. Replace with real values for the real arm.
-            constexpr double G    = 9.81;
-            constexpr double M_BC = 1.0, R_BC = 0.0;      // arm_b_link: mass sits on joint B
-            constexpr double M_CD = 1.0, R_CD = 0.0;      // arm_c_link: mass sits on the elbow
-            constexpr double M_EE = 2.0, R_EE = 0.0225;   // arm_d_link + arm_e_link combined
-
-            constexpr double K_D = 0.15;    // TUNE: start at 0, raise until sag during motion is gone
-            constexpr double H   = 0.02;   // look-ahead time (s), only used to get the slope
-
-            // Potential energy of the arm, using the same angle chain as fkCallback
-            auto potential = [](double q_b, double q_c, double q_de) {
-                double angle = -q_b;
-                double zC = LINK_BC * std::sin(angle);
-                double z1 = R_BC    * std::sin(angle);
-                angle += -q_c + JOINT_C_OFFSET;
-                double zD = zC + LINK_CD * std::sin(angle);
-                double z2 = zC + R_CD    * std::sin(angle);
-                angle -= q_de + JOINT_C_OFFSET;
-                double z3 = zD + R_EE    * std::sin(angle);
-                return G * (M_BC * z1 + M_CD * z2 + M_EE * z3);
-            };
-
-            // Torque each joint needs to hold the arm: slope of the energy
-            auto gravityTorque = [&](double q_b, double q_c, double q_de) {
-                const double h = 1e-5;
-                double U0 = potential(q_b, q_c, q_de);
-                return std::array<double, 3>{
-                    (potential(q_b + h, q_c, q_de) - U0) / h,
-                    (potential(q_b, q_c + h, q_de) - U0) / h,
-                    (potential(q_b, q_c, q_de + h) - U0) / h,
-                };
-            };
-
-            double qb  = joints["joint_b"].pos;
-            double qc  = joints["joint_c"].pos;
-            double qde = joints["joint_de_pitch"].pos;
-
-            auto tg_now  = gravityTorque(qb, qc, qde);
-            auto tg_next = gravityTorque(qb  + joint_b_vel        * H,
-                                        qc  + joint_c_vel        * H,
-                                        qde + joint_de_pitch_vel * H);
-
-            joint_b_vel        += K_D * (tg_next[0] - tg_now[0]) / H;
-            joint_c_vel        += K_D * (tg_next[1] - tg_now[1]) / H;
-            joint_de_pitch_vel += K_D * (tg_next[2] - tg_now[2]) / H;
-        }
-        // ===================== end of NEW block =====================
-
         msg::Velocity velocities;
         velocities.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
         velocities.velocities = {
@@ -234,6 +171,18 @@ namespace mrover {
 
         mLastScaleFactor = 1.0 / scaleFactor;
         return velocities;
+    }
+
+    auto ArmController::inSafeBubble(ArmPos const& p) -> bool {
+        double mReachFrac = 0.85;   // max fraction of full reach
+
+        double x_2 = p.x - END_EFFECTOR_LENGTH * std::cos(p.pitch);
+        double z_2 = p.z + END_EFFECTOR_LENGTH * std::sin(p.pitch);
+
+        double c2 = x_2 * x_2 + z_2 * z_2;
+
+        double max_reach = mReachFrac * (LINK_BC + LINK_CD);
+        return c2 <= max_reach * max_reach;
     }
 
     auto ArmController::configure_posestamped(geometry_msgs::msg::PoseStamped &p_stamped,
@@ -573,13 +522,27 @@ namespace mrover {
 
             double error_ratio = error_total/0.05;
 
-            double gate_factor = (1/(1 + (error_ratio * error_ratio)));
+            double gate_factor = (1/(1 + (error_ratio * error_ratio))) * mLastScaleFactor;
 
-            mPathEndPos.x += mVelTarget.linear.x * gate_factor * dt;
-            mPathEndPos.y += mVelTarget.linear.y * gate_factor * dt;
-            mPathEndPos.z += mVelTarget.linear.z * gate_factor * dt;
-            mPathEndPos.pitch += mVelTarget.angular.y * gate_factor * dt;
-            mPathEndPos.roll += mVelTarget.angular.x * gate_factor * dt;
+            ArmPos mNextPathEndPos = mPathEndPos;
+            mNextPathEndPos.x += mVelTarget.linear.x  * gate_factor * dt;
+            mNextPathEndPos.y += mVelTarget.linear.y  * gate_factor * dt;
+            mNextPathEndPos.z += mVelTarget.linear.z  * gate_factor * dt;
+            mNextPathEndPos.pitch += mVelTarget.angular.y * gate_factor * dt;
+            mNextPathEndPos.roll += mVelTarget.angular.x * gate_factor * dt;
+
+            bool blocked = inSafeBubble(mPathEndPos) && !inSafeBubble(mNextPathEndPos);
+
+            if (blocked) {
+                RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "At edge of movement bubble: move rejected");
+            } else {
+                mPathEndPos = mNextPathEndPos;
+            }
+
+            double ff = 1.0;
+            if (blocked) {
+                ff = 0.0;
+            }
 
             auto error_x_to_ideal = mPathEndPos.x - mArmPos.x;
             auto error_y_to_ideal = mPathEndPos.y - mArmPos.y;
@@ -605,7 +568,7 @@ namespace mrover {
             }
 
             double kP_lin = 20;
-            double kP_ang = 10;
+            double kP_ang = 5;
             auto mVelAdjustedTarget = mVelTarget;   
 
             double iP_lin = 0;
@@ -616,32 +579,19 @@ namespace mrover {
             double cn = std::sqrt(cx*cx + cy*cy + cz*cz);
             if (cn > 0.08) { double s = 0.08 / cn; cx *= s; cy *= s; cz *= s; }
 
-            mVelAdjustedTarget.linear.x  = mVelTarget.linear.x  * gate_factor + cx;
-            mVelAdjustedTarget.linear.y  = mVelTarget.linear.y  * gate_factor + cy;
-            mVelAdjustedTarget.linear.z  = mVelTarget.linear.z  * gate_factor +  cz;
-            mVelAdjustedTarget.angular.y = mVelTarget.angular.y * gate_factor
-                                        + std::clamp(kP_ang * error_pitch_to_ideal, -1.0, 1.0);
-            mVelAdjustedTarget.angular.x = mVelTarget.angular.x * gate_factor
-                                        + std::clamp(kP_ang * error_roll_to_ideal,  -1.0, 1.0);
-            
-            // double cx = kP_lin * error_x_to_ideal;
-            // double cy = (kP_lin-1) * error_y_to_ideal;
-            // double cz = (kP_lin-1) * error_z_to_ideal;
-            // double cn = std::sqrt(cx*cx + cy*cy + cz*cz);
-            mVelAdjustedTarget.linear.x = error_x_fin + cx;
+            mVelAdjustedTarget.linear.x  = mVelTarget.linear.x  * gate_factor * ff + cx;
+            mVelAdjustedTarget.linear.y  = mVelTarget.linear.y  * gate_factor * ff + cy;
+            mVelAdjustedTarget.linear.z  = mVelTarget.linear.z  * gate_factor * ff +  cz;
+            mVelAdjustedTarget.angular.y = mVelTarget.angular.y * gate_factor * ff + std::clamp(kP_ang * error_pitch_to_ideal, -1.0, 1.0);
+            mVelAdjustedTarget.angular.x = mVelTarget.angular.x * gate_factor * ff + std::clamp(kP_ang * error_roll_to_ideal,  -1.0, 1.0);
 
             // mVelAdjustedTarget.linear.x = error_x_fin + cx;
             // mVelAdjustedTarget.linear.y = error_y_fin + cy;
             // mVelAdjustedTarget.linear.z = error_z_fin + cz;
             // mVelAdjustedTarget.angular.y = (mVelTarget.angular.y) + kP_ang * error_pitch_to_ideal;
             // mVelAdjustedTarget.angular.x = (mVelTarget.angular.x) + kP_ang * error_roll_to_ideal;
-            mVelAdjustedTarget.linear.x  = (mVelTarget.linear.x  * gate_factor) + (error_x_to_ideal * kP_lin);
-            mVelAdjustedTarget.linear.y  = (mVelTarget.linear.y  * gate_factor) + (error_y_to_ideal * kP_lin);
-            mVelAdjustedTarget.linear.z  = (mVelTarget.linear.z  * gate_factor) + (error_z_to_ideal * kP_lin);
-            mVelAdjustedTarget.angular.y = (mVelTarget.angular.y * gate_factor) + (error_pitch_to_ideal * kP_ang);
-            mVelAdjustedTarget.angular.x = (mVelTarget.angular.x * gate_factor) + (error_roll_to_ideal * kP_ang);
-
-            auto velocities = ikVelCalc(mVelTarget);
+           
+            auto velocities = ikVelCalc(mVelAdjustedTarget);
             if (velocities &&
                 !(
                     velocities->velocities[0] == 0 &&
