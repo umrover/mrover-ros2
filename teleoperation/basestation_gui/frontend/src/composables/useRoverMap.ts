@@ -98,7 +98,6 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
       }
       const map = getMap()
       if (map && !gridLocked.value) {
-        applyOverlayBounds()
         map.dragging.disable()
       }
       additionalSetup?.()
@@ -132,24 +131,8 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
     if (map) map.setZoom(level)
   }
 
-  const applyOverlayBounds = () => {
-  const map = getMap()
-  if (!map) return
 
-  const bounds = L.latLngBounds(overlayBounds)
-
-  if (online.value) {
-    map.setMaxBounds(undefined)
-    map.setMinZoom(0)
-    return
-  }
-
-  map.setMinZoom(map.getBoundsZoom(bounds, true))
-  map.setMaxBounds(bounds)
-  map.panInsideBounds(bounds, { animate: false })
-  }
   
-  watch(online, applyOverlayBounds)
 
   watch(gridLocked, (locked) => {
     const map = getMap()
