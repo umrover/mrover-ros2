@@ -5,61 +5,50 @@
       <div class="flex items-center gap-2">
         <h1 class="text-theme-primary">{{ title }}</h1>
         <div class="dropdown flex relative">
-          <button
-            class="theme-btn-inline flex items-center justify-center border-2 border-theme rounded"
-            data-testid="pw-theme-dropdown"
-            @click="dropdownOpen = !dropdownOpen"
-          >
+          <button class="theme-btn-inline flex items-center justify-center border-2 border-theme rounded"
+            data-testid="pw-theme-dropdown" @click="dropdownOpen = !dropdownOpen">
             <i :class="themeIcon"></i>
           </button>
           <ul class="dropdown-menu" :class="{ show: dropdownOpen }">
             <li>
-              <button
-                class="dropdown-item flex items-center gap-2"
+              <button class="dropdown-item flex items-center gap-2"
                 :class="{ active: themeStore.currentTheme === 'light' }"
-                @click="themeStore.setTheme('light'); dropdownOpen = false"
-              >
+                @click="themeStore.setTheme('light'); dropdownOpen = false">
                 <i class="bi bi-sun-fill"></i> Light
               </button>
             </li>
             <li>
-              <button
-                class="dropdown-item flex items-center gap-2"
+              <button class="dropdown-item flex items-center gap-2"
                 :class="{ active: themeStore.currentTheme === 'dark' }"
-                @click="themeStore.setTheme('dark'); dropdownOpen = false"
-              >
+                @click="themeStore.setTheme('dark'); dropdownOpen = false">
                 <i class="bi bi-moon-fill"></i> Dark
               </button>
             </li>
           </ul>
         </div>
         <div v-if="showGridControls" class="flex items-center gap-1 border-2 border-theme rounded px-2 py-1">
-          <button
-            class="btn btn-sm btn-icon-sm"
-            :class="gridLayoutStore.locked ? 'btn-danger' : 'btn-success'"
-            data-testid="pw-grid-lock-btn"
-            @click="gridLayoutStore.toggleLock()"
-          >
+          <button class="btn btn-sm btn-icon-sm" :class="gridLayoutStore.locked ? 'btn-danger' : 'btn-success'"
+            data-testid="pw-grid-lock-btn" @click="gridLayoutStore.toggleLock()">
             <i :class="gridLayoutStore.locked ? 'bi bi-lock-fill' : 'bi bi-unlock-fill'"></i>
           </button>
-          <button
-            class="btn btn-sm btn-secondary btn-icon-sm"
-            data-testid="pw-grid-reset-btn"
-            @click="gridLayoutStore.triggerReset()"
-          >
+          <button class="btn btn-sm btn-secondary btn-icon-sm" data-testid="pw-grid-reset-btn"
+            @click="gridLayoutStore.triggerReset()">
             <i class="bi bi-arrow-counterclockwise"></i>
           </button>
           <span class="ml-1 text-sm text-muted">Grid</span>
         </div>
       </div>
+      <label class="switch">
+        <input type="checkbox">
+        <span class="slider round"></span>
+      </label>
       <div class="flex items-stretch gap-2">
-        <div
-          class="border-2 border-theme rounded px-2 flex flex-col justify-center font-mono text-sm"
-          :class="{ 'jetson-high-latency': jetsonLatencyReceived && jetsonLatencyMs !== null && jetsonLatencyMs > 100 }"
-        >
+        <div class="border-2 border-theme rounded px-2 flex flex-col justify-center font-mono text-sm"
+          :class="{ 'jetson-high-latency': jetsonLatencyReceived && jetsonLatencyMs !== null && jetsonLatencyMs > 100 }">
           <span class="text-muted font-semibold">jetson</span>
           <span :class="jetsonLatencyReceived && jetsonLatencyMs === null ? 'text-danger' : ''">
-            <span v-html="formatNumber(jetsonLatencyMs, 4, 0)"></span><span :class="jetsonLatencyReceived && jetsonLatencyMs === null ? '' : 'text-muted'">ms</span>
+            <span v-html="formatNumber(jetsonLatencyMs, 4, 0)"></span><span
+              :class="jetsonLatencyReceived && jetsonLatencyMs === null ? '' : 'text-muted'">ms</span>
           </span>
         </div>
         <div class="border-l border-2 border-start-theme self-center nav-divider"></div>
@@ -140,7 +129,7 @@ export default defineComponent({
         '/AutonTask': 'Autonomy Mission',
         '/DMTask': 'Delivery Mission',
         '/ESTask': 'Equipment Servicing',
-        '/ScienceTask' : "Science Mission",
+        '/ScienceTask': "Science Mission",
       };
 
       return routeTitles[path] || 'Unknown Path';
@@ -179,8 +168,15 @@ h1 {
 }
 
 @keyframes jetson-flash-red {
-  0%, 100% { background-color: transparent; }
-  50% { background-color: rgb(220 53 69 / 40%); }
+
+  0%,
+  100% {
+    background-color: transparent;
+  }
+
+  50% {
+    background-color: rgb(220 53 69 / 40%);
+  }
 }
 
 .jetson-high-latency {
