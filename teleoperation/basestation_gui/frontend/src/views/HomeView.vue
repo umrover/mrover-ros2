@@ -4,7 +4,7 @@
       <div class="p-6">
         <div class="flex items-center flex-wrap mb-4">
           <span class="text-success">rover@basestation</span><span>:</span><span class="text-muted">~</span><span class="mr-2">$</span>
-          <span>./select_mission</span><span class="font-bold">_</span>
+          <span>./choose_mission</span><span class="font-bold">_</span>
         </div>
 
         <div class="flex flex-col gap-1 pl-4">
