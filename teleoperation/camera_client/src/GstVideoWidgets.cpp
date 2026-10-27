@@ -170,8 +170,7 @@ auto GstVideoWidget::applyPipeline() -> void {
         return;
     }
 
-    mAppSink = GST_APP_SINK(
-            gst_bin_get_by_name(GST_BIN(mPipeline), "video_sink"));
+    mAppSink = GST_APP_SINK(gst_bin_get_by_name(GST_BIN(mPipeline), "video_sink"));
     if (!mAppSink) {
         mErrorString = "Pipeline has no video_sink appsink";
         qWarning() << mErrorString;
@@ -180,8 +179,7 @@ auto GstVideoWidget::applyPipeline() -> void {
         return;
     }
 
-    g_signal_connect(mAppSink, "new-sample",
-                     G_CALLBACK(&GstVideoWidget::onNewSample), this);
+    g_signal_connect(mAppSink, "new-sample", G_CALLBACK(&GstVideoWidget::onNewSample), this);
 
     if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
         mErrorString = "Failed to start GStreamer pipeline";
