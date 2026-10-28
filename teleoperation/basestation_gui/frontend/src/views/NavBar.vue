@@ -37,11 +37,19 @@
           </button>
           <span class="ml-1 text-sm text-muted">Grid</span>
         </div>
+        <!-- TODO: fix css alignment -->
+        <div class="flex flex-col items-center justify-between">
+          <p>Route<br>Finding</p>
+          <!-- <div class="flex items-center justify-left"> -->
+          <label class="switch">
+            <!-- TODO: add v-model -->
+            <input type="checkbox">
+            <span class="slider round"></span>
+          </label>
+          <!-- </div> -->
+          <p>Astronaut<br>Assistance</p>
+        </div>
       </div>
-      <label class="switch">
-        <input type="checkbox">
-        <span class="slider round"></span>
-      </label>
       <div class="flex items-stretch gap-2">
         <div class="border-2 border-theme rounded px-2 flex flex-col justify-center font-mono text-sm"
           :class="{ 'jetson-high-latency': jetsonLatencyReceived && jetsonLatencyMs !== null && jetsonLatencyMs > 100 }">
