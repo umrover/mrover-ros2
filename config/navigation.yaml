@@ -30,6 +30,13 @@ navigation:
       use_costmap: false
       costmap_thresh: 0.25
       initial_inflation_radius: 1.0
+    
+    dem_costmap:
+      use_dem: true
+      top_left_lat: 38.425
+      top_left_lon: -110.786
+      dem_csv: "csv"
+      dem_size: 400
 
     backup:
       stop_threshold: 0.2

@@ -55,6 +55,13 @@ class Navigation(Node):
                 ("costmap.use_costmap", Parameter.Type.BOOL),
                 ("costmap.costmap_thresh", Parameter.Type.DOUBLE),
                 ("costmap.initial_inflation_radius", Parameter.Type.DOUBLE),
+
+                # Dem Costmap
+                ("dem_costmap.use_dem", Parameter.Type.BOOL),
+                ("dem_costmap.top_left_lat", Parameter.Type.DOUBLE),
+                ("dem_costmap.top_left_lon", Parameter.Type.DOUBLE),
+                ("dem_costmap.dem_csv", Parameter.Type.STRING),
+                ("dem_costmap.dem_size", Parameter.Type.INTEGER)
                 # Backup
                 ("backup.stop_threshold", Parameter.Type.DOUBLE),
                 ("backup.drive_forward_threshold", Parameter.Type.DOUBLE),

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import pymap3d
+import pandas
 import rclpy
 from scipy import ndimage
 from rclpy.parameter import Parameter
@@ -79,6 +80,8 @@ class Environment:
     ctx: Context
     image_targets: ImageTargetsStore
     cost_map: CostMap
+    dem_cost_map: CostMap
+    dem_pd: pandas.DataFrame
 
     arrived_at_target: bool = False
     arrived_at_waypoint: bool = False
@@ -424,7 +427,7 @@ class Context:
         self.rover_frame = node.get_parameter("rover_frame").value
         self.course = None
         self.rover = Rover(self, False, OffState(), Path(header=Header(frame_id=self.world_frame)))
-        self.env = Environment(self, image_targets=ImageTargetsStore(self), cost_map=CostMap())
+        self.env = Environment(self, image_targets=ImageTargetsStore(self), cost_map=CostMap(), dem_cost_map=CostMap())
         self.disable_requested = False
 
         node.create_service(EnableAuton, "enable_auton", self.enable_auton)
@@ -446,6 +449,8 @@ class Context:
             node.create_subscription(OccupancyGrid, "custom_costmap", self.costmap_callback, 1)
         else:
             node.create_subscription(OccupancyGrid, "costmap", self.costmap_callback, 1)
+        if node.get_parameter("dem_costmap.use_dem").value:
+            self.create_dem_cost_map()
         self.tf_buffer = tf2_ros.Buffer()
         tf2_ros.TransformListener(self.tf_buffer, node)
 
@@ -486,6 +491,30 @@ class Context:
             self.disable_requested = True
         response.success = True
         return response
+
+    #Creates dem cost map from CSV file passed by percep
+    def read_dem_file(self) -> None:
+        #Read DEM csv data into pandas dataframe
+        csv = self.node.get_parameter("dem_costmap.dem_csv").value
+        self.env.dem_pd = pandas.read_csv(csv, header=None)
+
+
+    def update_dem_costmap(self) -> None:
+        #Converts the latitude and longitude of the top left corner of the region to a 2D world frame coordinate
+        x, y, _ = pymap3d.geodetic2enu(
+            self.node.get_parameter("dem_costmap.top_left_lat").value,
+            self.node.get_parameter("dem_costmap.top_left_lon").value, 0,
+            self.node.get_parameter("ref_lat").value,
+            self.node.get_parameter("ref_lon").value,
+            self.node.get_parameter("ref_alt").value, deg=True)
+        rover_pos = self.rover.get_pose_in_map()
+        #Get the position of the rover with respect to the top left coordinate being (0, 0)
+        center_pos_x = abs(rover_pos.translation()[0] - x)
+        center_pos_y = abs(rover_pos.translation()[1] - y)
+        #Get the dem size: this is how big we want the costmap to be
+        dem_size = self.node.get_parameter("dem_costmap.dem_size")
+        dem_costmap = self.env.dem_pd.iloc[center_pos_x-dem_size/2:center_pos_x+dem_size/2, center_pos_y-dem_size/2, center_pos_y+dem_size/2]
+        if(center_pos_x - dem_size < 0):
 
     def toggle_object_detector(self, waypointType: WaypointType.val) -> bool:
         # Ensure the object detector services are still running
