@@ -2,18 +2,21 @@
 
 set -euxo pipefail
 
-PCAN_SOURCE_DIR="/tmp/peak-linux-driver-$1.$2.$3"
+JETSON_SOURCE_DIR="$1"
+UBUNTU_CODENAME="$2"
+PCAN_SOURCE_DIR="${JETSON_SOURCE_DIR}/peak-linux-driver-${3}.${4}.${5}"
+X_TOOLS_NAME="$6"
 
 # Make Variables
-CROSS_COMPILE="/tmp/aarch64--glibc--stable-2022.08-1/bin/aarch64-buildroot-linux-gnu-"
-KERNEL_LOCATION="/tmp/jetson-flash/Linux_for_Tegra/source/kernel/kernel-jammy-src/"
-PATH="$PATH:/tmp/aarch64--glibc--stable-2022.08-1/lib"
+export CROSS_COMPILE="${JETSON_SOURCE_DIR}/x-tools/${X_TOOLS_NAME}/bin/${X_TOOLS_NAME}-"
+export KERNEL_LOCATION="${JETSON_SOURCE_DIR}/Linux_for_Tegra/source/kernel/kernel-${UBUNTU_CODENAME}/"
+export ARCH="arm64"
+export PCAN_BASIC=""
+PATH="$PATH:${JETSON_SOURCE_DIR}/x-tools/"
 
 # Change to the kernel sources directory
 pushd "${PCAN_SOURCE_DIR}/" || exit
 
-sudo make CROSS_COMPILE=${CROSS_COMPILE} KERNEL_LOCATION=${KERNEL_LOCATION} ARCH=arm64 PCAN_BASIC="" DESTDIR="../../jetson-flash/Linux_for_Tegra/rootfs" clean
-
-sudo make CROSS_COMPILE=${CROSS_COMPILE} KERNEL_LOCATION=${KERNEL_LOCATION} ARCH=arm64 PCAN_BASIC="" DESTDIR="../../jetson-flash/Linux_for_Tegra/rootfs" netdev
-
-sudo make CROSS_COMPILE=${CROSS_COMPILE} KERNEL_LOCATION=${KERNEL_LOCATION} ARCH=arm64 PCAN_BASIC="" DESTDIR="../../jetson-flash/Linux_for_Tegra/rootfs" install
+sudo -E make DESTDIR="${JETSON_SOURCE_DIR}/Linux_for_Tegra/rootfs" clean
+sudo -E make DESTDIR="${JETSON_SOURCE_DIR}/Linux_for_Tegra/rootfs" netdev
+sudo -E make DESTDIR="${JETSON_SOURCE_DIR}/Linux_for_Tegra/rootfs" install

@@ -1,7 +1,6 @@
 ---
 - hosts: all
-  vars:
-    ros_distro: humble
-    ubuntu_release: jammy
+  vars_files:
+    - vars/native.yml
   roles:
     - ci

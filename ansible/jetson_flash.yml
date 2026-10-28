@@ -1,11 +1,16 @@
 ---
 - hosts: all
   vars:
-    jetson_linux_version_major: 36
-    jetson_linux_version_minor: 4
-    jetson_linux_version_patch: 4
-    pcan_version_major: 8
-    pcan_version_minor: 20
+    jetson_linux_version_major: 39
+    jetson_linux_version_minor: 2
+    jetson_linux_version_patch: 1 
+    pcan_version_major: 9
+    pcan_version_minor: 2
     pcan_version_patch: 0
+    ubuntu_codename: "noble"
+
+    # This needs a dedicated url since the toolchain supports multiple versions(this supports 7.x)
+    x_tools_url: "https://developer.nvidia.com/downloads/embedded/L4T/r38_Release_v2.0/release/x-tools.tbz2"
+    x_tools_name: "aarch64-none-linux-gnu"
   roles:
     - jetson_flash

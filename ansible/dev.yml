@@ -1,8 +1,23 @@
 ---
 - hosts: all
-  vars:
-    ros_distro: humble
-    ubuntu_release: jammy
+  tasks:
+    - name: Group hosts by setup type
+      ansible.builtin.group_by:
+        key: "{{ 'native' if ansible_facts['distribution_release'] == 'noble' else 'portable' }}"
+
+- hosts: native
+  vars_files:
+    - vars/native.yml
   roles:
-    - build
+    # do not swap order
     - dev
+    - build
+
+- hosts: portable
+  roles:
+    # do not swap order
+    - role: dev
+      vars:
+        mrover_repo: "{{ playbook_dir | dirname }}"
+        mrover_zshenv: scripts/mrover-portable.zshenv
+    - build-portable

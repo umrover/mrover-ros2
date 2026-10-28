@@ -1,7 +1,8 @@
 # MRover ROS
 readonly MROVER_ROS2_WS_PATH="$HOME/ros2_ws"
+readonly MROVER_REPO="${MROVER_ROS2_WS_PATH}/src/mrover"
 
-source /opt/ros/humble/setup.zsh
+source /opt/ros/jazzy/setup.zsh
 
 export ROS_DOMAIN_ID=5
 export COLCON_TRACE=0
@@ -11,7 +12,7 @@ remove_ros2_ws_from_path(){
 }
 
 source_mrover_overlay(){
-    source ~/ros2_ws/src/mrover/venv/bin/activate
+    source "${MROVER_REPO}/venv/bin/activate"
 
     build_profiles=("RelWithDebInfo" "Release" "Debug")
     unset MROVER_BUILD_PROFILE
@@ -53,11 +54,11 @@ export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 [ -s "$BUN_INSTALL/_bun" ] && source "$BUN_INSTALL/_bun"
 
-alias mrover="cd ~/ros2_ws/src/mrover && source_mrover_overlay"
+alias mrover="cd ${MROVER_REPO} && source_mrover_overlay"
 function build_mrover() {
-    ./build.sh ${1} && mrover
+    cd "${MROVER_REPO}" && ./build.sh ${1} && mrover
 }
-alias clean_mrover="./clean.sh && mrover"
+alias clean_mrover="cd ${MROVER_REPO} && ./clean.sh && mrover"
 
 # ros2 completions
 if command -v register-python-argcomplete3 &>/dev/null; then
