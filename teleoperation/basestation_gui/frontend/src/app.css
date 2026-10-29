@@ -916,9 +916,10 @@ html {
 
 /* Switch toggle */
 .switch {
-  position: absolute;
+  position: relative;
   display: flex;
-  align-items: left;
+  align-items: center;
+  justify-content: center;
   width: 60px;
   height: 34px;
 }

@@ -37,17 +37,21 @@
           </button>
           <span class="ml-1 text-sm text-muted">Grid</span>
         </div>
-        <!-- TODO: fix css alignment -->
-        <div class="flex flex-col items-center justify-between">
-          <p>Route<br>Finding</p>
-          <!-- <div class="flex items-center justify-left"> -->
-          <label class="switch">
-            <!-- TODO: add v-model -->
-            <input type="checkbox">
-            <span class="slider round"></span>
-          </label>
-          <!-- </div> -->
-          <p>Astronaut<br>Assistance</p>
+        <div v-if="title === 'Autonomy Mission'">
+          <!-- TODO: fix css alignment -->
+          <div class="flex items-center gap-2">
+            <p>Route<br>Finding</p>
+            <div class="">
+              <label class="switch">
+                <!-- TODO: add v-model -->
+                <input type="checkbox">
+                <span class="slider round"></span>
+              </label>
+            </div>
+            <div>
+              <p>Astronaut<br>Assistance</p>
+            </div>
+          </div>
         </div>
       </div>
       <div class="flex items-stretch gap-2">
