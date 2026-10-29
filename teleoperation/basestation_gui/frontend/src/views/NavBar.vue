@@ -1,7 +1,6 @@
 <template>
   <div class="wrapper bg-theme-card border-b border-theme">
     <div class="pl-4 pr-2 py-2 flex justify-between items-center relative flex-nowrap">
-      <a class="logo absolute" href="/"><img src="/mrover.png" alt="MRover" width="200" /></a>
       <div class="flex items-center gap-2">
         <h1 class="text-theme-primary">{{ title }}</h1>
         <div class="dropdown flex relative">
@@ -54,6 +53,7 @@
           </div>
         </div>
       </div>
+      <a class="logo" href="/"><img src="/mrover.png" alt="MRover" width="200" /></a>
       <div class="flex items-stretch gap-2">
         <div class="border-2 border-theme rounded px-2 flex flex-col justify-center font-mono text-sm"
           :class="{ 'jetson-high-latency': jetsonLatencyReceived && jetsonLatencyMs !== null && jetsonLatencyMs > 100 }">
@@ -152,7 +152,10 @@ export default defineComponent({
 
 <style scoped>
 .logo {
-  left: 48%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-left: 5px;
 }
 
 h1 {
