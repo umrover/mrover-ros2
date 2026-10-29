@@ -7,7 +7,7 @@ from navigation.trajectory import Trajectory
 from lie import SE3
 
 
-def cartesian_to_ij(context: Context, cart_coord: np.ndarray) -> np.ndarray:
+def cartesian_to_ij(context: Context, cart_coord: np.ndarray, use_dem : bool = False) -> np.ndarray:
     """
     Convert real world cartesian coordinates (x, y) to coordinates in the occupancy grid (i, j)
     using formula floor(v - (WP + [-W/2, H/2]) / r) * [1, -1]
@@ -18,10 +18,12 @@ def cartesian_to_ij(context: Context, cart_coord: np.ndarray) -> np.ndarray:
     :param cart_coord: array of x and y cartesian coordinates
     :return: array of i and j coordinates for the occupancy grid
     """
-    return np.floor((cart_coord[0:2] - context.env.cost_map.origin) / context.env.cost_map.resolution).astype(np.int32)
+    if(use_dem):
+        return np.floor((cart_coord[0:2] - context.env.dem_cost_map.origin) / context.env.dem_cost_map.resolution).astype(np.int32)
+    else: 
+        return np.floor((cart_coord[0:2] - context.env.cost_map.origin) / context.env.cost_map.resolution).astype(np.int32)
 
-
-def ij_to_cartesian(context: Context, ij_coords: np.ndarray) -> np.ndarray:
+def ij_to_cartesian(context: Context, ij_coords: np.ndarray, use_dem : bool = False) -> np.ndarray:
     """
     Convert coordinates in the occupancy grid (i, j) to real world cartesian coordinates (x, y)
     using formula (WP - [W/2, H/2]) + [j * r, i * r] + [r/2, -r/2] * [1, -1]
@@ -31,8 +33,12 @@ def ij_to_cartesian(context: Context, ij_coords: np.ndarray) -> np.ndarray:
     :param ij_coords: array of i and j occupancy grid coordinates
     :return: array of x and y coordinates in the real world
     """
-    half_res = np.array([context.env.cost_map.resolution / 2, context.env.cost_map.resolution / 2])
-    return context.env.cost_map.origin + ij_coords * context.env.cost_map.resolution + half_res
+    if(use_dem):
+        half_res = np.array([context.env.dem_cost_map.resolution / 2, context.env.dem_cost_map.resolution / 2])
+        return context.env.dem_cost_map.origin + ij_coords * context.env.dem_cost_map.resolution + half_res 
+    else:
+        half_res = np.array([context.env.cost_map.resolution / 2, context.env.cost_map.resolution / 2])
+        return context.env.cost_map.origin + ij_coords * context.env.cost_map.resolution + half_res
 
 
 def d_calc(start: tuple, end: tuple) -> float:

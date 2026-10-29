@@ -58,6 +58,70 @@ class AStar:
             pos = came_from[pos]
         return path[::-1]  # Reverse the path
 
+    def global_a_star(self, start: np.ndarray, end: np.ndarray, debug: bool = False) -> list | None:
+        """
+        A* Algorithm: Find a path from start to end in the costmap using f(n) = g(n) + h(n).
+        :param start: Rover pose in cartesian coordinates.
+        :param end: Next point in the spiral trajectory in cartesian coordinates.
+        :param debug: If True, returns the path at each step for debugging.
+        :return: List of A* coordinates in occupancy grid (i, j) or None if start equals end.
+        :raises NoPath: If no path to the goal can be found.
+        """
+        dem_cost_map = self.context.env.dem_cost_map.data
+
+        # Convert start and end to occupancy grid coordinates
+        start_ij = tuple(cartesian_to_ij(self.context, start, True))
+        end_ij = tuple(cartesian_to_ij(self.context, end, True))
+
+        if start_ij == end_ij:
+            return [end_ij]
+
+        came_from: dict[tuple, tuple] = {}
+        g_scores: dict[tuple, float] = {start_ij: 0.0}
+        f_scores: dict[tuple, float] = {start_ij: d_calc(start_ij, end_ij)}
+
+        open_set: list[tuple] = []
+        heapq.heappush(open_set, (f_scores[start_ij], start_ij))
+
+        adjacent_squares = np.array([[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [-1, 1], [1, -1], [1, 1]])
+
+        debug_list = []
+
+        while open_set:
+            _, current = heapq.heappop(open_set)
+
+            if debug:
+                debug_list.append(self.return_path(came_from, current))
+
+            if current == end_ij:
+                return debug_list if debug else self.return_path(came_from, current)
+
+            for rel_pos in adjacent_squares:
+                neighbor_pos = tuple(np.array(current) + rel_pos)
+
+                # Ensure within grid bounds
+                if not (0 <= neighbor_pos[0] < dem_cost_map.shape[0] and 0 <= neighbor_pos[1] < dem_cost_map.shape[1]):
+                    #continue
+
+                d = 1.0 if rel_pos[0] == 0 or rel_pos[1] == 0 else np.sqrt(2)
+                cost = max(dem_cost_map[neighbor_pos[0], neighbor_pos[1]], 1)
+
+                # TODO: Decide if we want to perform a mean filter here or in the callback. Probably best to do so in the callback
+
+                tentative_g_score = g_scores[current] + d * cost
+
+                if neighbor_pos not in g_scores or tentative_g_score < g_scores[neighbor_pos]:
+                    came_from[neighbor_pos] = current
+                    g_scores[neighbor_pos] = tentative_g_score
+                    f_scores[neighbor_pos] = tentative_g_score + d_calc(neighbor_pos, end_ij)
+
+                    # Only push to open_set if not already in it
+                    if neighbor_pos not in (pos[1] for pos in open_set):
+                        heapq.heappush(open_set, (f_scores[neighbor_pos], neighbor_pos))
+
+        raise NoPath("No path could be found to the destination.")
+    
+    
     def a_star(self, start: np.ndarray, end: np.ndarray, debug: bool = False) -> list | None:
         """
         A* Algorithm: Find a path from start to end in the costmap using f(n) = g(n) + h(n).

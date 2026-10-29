@@ -513,8 +513,7 @@ class Context:
         center_pos_y = abs(rover_pos.translation()[1] - y)
         #Get the dem size: this is how big we want the costmap to be
         dem_size = self.node.get_parameter("dem_costmap.dem_size")
-        dem_costmap = self.env.dem_pd.iloc[center_pos_x-dem_size/2:center_pos_x+dem_size/2, center_pos_y-dem_size/2, center_pos_y+dem_size/2]
-        if(center_pos_x - dem_size < 0):
+        
 
     def toggle_object_detector(self, waypointType: WaypointType.val) -> bool:
         # Ensure the object detector services are still running
