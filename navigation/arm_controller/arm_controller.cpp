@@ -174,7 +174,7 @@ namespace mrover {
     }
 
     auto ArmController::inSafeBubble(ArmPos const& p) -> bool {
-        double mReachFrac = 0.85;   // max fraction of full reach
+        double mReachFrac = 0.75;   // max fraction of full reach
 
         double x_2 = p.x - END_EFFECTOR_LENGTH * std::cos(p.pitch);
         double z_2 = p.z + END_EFFECTOR_LENGTH * std::sin(p.pitch);
@@ -535,7 +535,9 @@ namespace mrover {
 
             if (blocked) {
                 RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "At edge of movement bubble: move rejected");
-            } else {
+            } 
+            
+            else {
                 mPathEndPos = mNextPathEndPos;
             }
 
@@ -550,25 +552,25 @@ namespace mrover {
             auto error_pitch_to_ideal = mPathEndPos.pitch - mArmPos.pitch;
             auto error_roll_to_ideal = mPathEndPos.roll - mArmPos.roll;
 
-            auto error_to_ideal_mag = std::sqrt((error_x_to_ideal * error_x_to_ideal) +
-                                       (error_y_to_ideal * error_y_to_ideal) +
-                                       (error_z_to_ideal * error_z_to_ideal));
+            // auto error_to_ideal_mag = std::sqrt((error_x_to_ideal * error_x_to_ideal) +
+            //                            (error_y_to_ideal * error_y_to_ideal) +
+            //                            (error_z_to_ideal * error_z_to_ideal));
 
-            auto vel_magnitude = std::sqrt((mVelTarget.linear.x * mVelTarget.linear.x) +
-                                           (mVelTarget.linear.y * mVelTarget.linear.y) +
-                                           (mVelTarget.linear.z * mVelTarget.linear.z));
-            double error_x_fin = 0;
-            double error_y_fin = 0;
-            double error_z_fin = 0;
+            // auto vel_magnitude = std::sqrt((mVelTarget.linear.x * mVelTarget.linear.x) +
+            //                                (mVelTarget.linear.y * mVelTarget.linear.y) +
+            //                                (mVelTarget.linear.z * mVelTarget.linear.z));
+            // double error_x_fin = 0;
+            // double error_y_fin = 0;
+            // double error_z_fin = 0;
 
-            if (error_to_ideal_mag > 1e-5) {
-                error_x_fin = (error_x_to_ideal / error_to_ideal_mag) * vel_magnitude;
-                error_y_fin = (error_y_to_ideal / error_to_ideal_mag) * vel_magnitude;
-                error_z_fin = (error_z_to_ideal / error_to_ideal_mag) * vel_magnitude;
-            }
+            // if (error_to_ideal_mag > 1e-5) {
+            //     error_x_fin = (error_x_to_ideal / error_to_ideal_mag) * vel_magnitude;
+            //     error_y_fin = (error_y_to_ideal / error_to_ideal_mag) * vel_magnitude;
+            //     error_z_fin = (error_z_to_ideal / error_to_ideal_mag) * vel_magnitude;
+            // }
 
-            double kP_lin = 20;
-            double kP_ang = 5;
+            double kP_lin = 30;
+            double kP_ang = 10;
             auto mVelAdjustedTarget = mVelTarget;   
 
             double iP_lin = 0;
@@ -576,8 +578,10 @@ namespace mrover {
             double cx = kP_lin * error_x_to_ideal;
             double cy = kP_lin * error_y_to_ideal;
             double cz = kP_lin * error_z_to_ideal;
-            double cn = std::sqrt(cx*cx + cy*cy + cz*cz);
-            if (cn > 0.08) { double s = 0.08 / cn; cx *= s; cy *= s; cz *= s; }
+            //double cn = std::sqrt(cx*cx + cy*cy + cz*cz);
+            //if (cn > 0.08) { double s = 0.08 / cn; cx *= s; cy *= s; cz *= s; }
+
+            gate_factor = 1;
 
             mVelAdjustedTarget.linear.x  = mVelTarget.linear.x  * gate_factor * ff + cx;
             mVelAdjustedTarget.linear.y  = mVelTarget.linear.y  * gate_factor * ff + cy;
