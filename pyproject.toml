@@ -36,7 +36,7 @@ dev = [
     "ipython==8.27.0",
 ]
 test = [
-    "pytest>=7.0.0",
+    "pytest==9.0.3",
     "pytest-asyncio>=0.21.0",
     "websocket-client>=1.6.0",
     "requests>=2.28.0",
@@ -51,4 +51,7 @@ build-backend = "flit_core.buildapi"
 
 [tool.black]
 line-length = 120
-target-version = ["py310"]
+target-version = ["py312"]
+
+[tool.pytest.ini_options]
+addopts = "--color=yes -v"

@@ -19,8 +19,6 @@ jobs:
         run: pip install black==26.5.1 mypy==1.11.2
       - name: Install clang-format
         run: |
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo add-apt-repository 'deb https://apt.llvm.org/noble/ llvm-toolchain-noble-18 main'
           sudo apt-get update
           sudo apt-get install -y clang-format-18
       - name: Install shellcheck
@@ -31,7 +29,7 @@ jobs:
       - name: Run Style Check
         run: ./style.sh
 
-  build-native:
+  build:
     name: Build (native Ubuntu 24)
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-24.04
