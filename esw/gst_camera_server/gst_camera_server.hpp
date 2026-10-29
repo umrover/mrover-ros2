@@ -39,6 +39,17 @@ namespace mrover {
         GMainLoop* mMainLoop{};
         std::thread mMainLoopThread;
 
+        // V4L2 controls clients may change, add entries here to expose more
+        constexpr static std::array<std::pair<std::uint32_t, std::string_view>, 2> SUPPORTED_CONTROLS{{
+                {V4L2_CID_BRIGHTNESS, "brightness"},
+                {V4L2_CID_CONTRAST, "contrast"},
+        }};
+
+        int mControlFd{-1}; // Separate handle from v4l2src, V4L2 allows control ioctls while another handle streams
+        msg::CameraControls mControls;
+        rclcpp::Publisher<msg::CameraControls>::SharedPtr mControlsPublisher;
+        rclcpp::Service<srv::SetCameraControls>::SharedPtr mSetControlsServer;
+
         [[nodiscard]] auto cropEnabled() const -> bool;
         [[nodiscard]] auto captureIsDev() const -> bool;
         [[nodiscard]] auto captureIsTopic() const -> bool;
@@ -52,6 +63,11 @@ namespace mrover {
 
         auto mediaControlServerCallback(srv::MediaControl::Request::ConstSharedPtr const& req, srv::MediaControl::Response::SharedPtr const& res) -> void;
         auto imageCaptureServerCallback(std_srvs::srv::Trigger::Request::ConstSharedPtr const&, std_srvs::srv::Trigger::Response::SharedPtr const& res) -> void;
+
+        auto initControls(std::string const& cameraName) -> void;
+        auto queryControl(msg::CameraControl& control) const -> bool;
+        auto publishControls() -> void;
+        auto setControlsServerCallback(srv::SetCameraControls::Request::ConstSharedPtr const& req, srv::SetCameraControls::Response::SharedPtr const& res) -> void;
 
         [[nodiscard]] static auto nvHardwareAvailable() -> bool;
 

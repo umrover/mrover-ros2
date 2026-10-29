@@ -320,6 +320,133 @@ namespace mrover {
         res->success = true;
     }
 
+    auto xioctl(int fd, unsigned long request, void* arg) -> int {
+        int r;
+        do r = ioctl(fd, request, arg);
+        while (r == -1 && errno == EINTR);
+        return r;
+    }
+
+    // Refreshes type, range, and flags from the driver, does not read the current value
+    auto GstCameraServer::queryControl(msg::CameraControl& control) const -> bool {
+        v4l2_queryctrl query{.id = control.id};
+        if (xioctl(mControlFd, VIDIOC_QUERYCTRL, &query) == -1 || query.flags & V4L2_CTRL_FLAG_DISABLED) return false;
+
+        control.type = static_cast<std::uint8_t>(query.type);
+        control.minimum = query.minimum;
+        control.maximum = query.maximum;
+        control.step = query.step;
+        control.default_value = query.default_value;
+        control.read_only = query.flags & (V4L2_CTRL_FLAG_READ_ONLY | V4L2_CTRL_FLAG_GRABBED);
+        control.inactive = query.flags & V4L2_CTRL_FLAG_INACTIVE;
+        return true;
+    }
+
+    auto GstCameraServer::publishControls() -> void {
+        mControls.header.stamp = get_clock()->now();
+        mControlsPublisher->publish(mControls);
+    }
+
+    auto GstCameraServer::initControls(std::string const& cameraName) -> void {
+        std::string const setServiceName = std::format("{}_set_controls", cameraName);
+
+        mControls.camera_name = cameraName;
+        mControls.device_node = mDeviceNode;
+        mControls.set_service = get_node_base_interface()->resolve_topic_or_service_name(setServiceName, true);
+
+        if (captureIsDev()) {
+            mControlFd = open(mDeviceNode.c_str(), O_RDWR | O_NONBLOCK | O_CLOEXEC);
+            if (mControlFd == -1) {
+                RCLCPP_WARN_STREAM(get_logger(), std::format("Failed to open {} for controls: {}", mDeviceNode, std::strerror(errno)));
+            } else {
+                if (v4l2_capability capability{}; xioctl(mControlFd, VIDIOC_QUERYCAP, &capability) == 0) {
+                    mControls.card = reinterpret_cast<char const*>(capability.card);
+                }
+                for (auto const& [id, name]: SUPPORTED_CONTROLS) {
+                    msg::CameraControl control;
+                    control.id = id;
+                    control.name = name;
+                    v4l2_control value{.id = id};
+                    if (!queryControl(control) || xioctl(mControlFd, VIDIOC_G_CTRL, &value) == -1) continue;
+                    control.current_value = value.value;
+                    mControls.controls.push_back(std::move(control));
+                }
+                mControls.available = true;
+            }
+        }
+
+        // Every camera node publishes to the same latched topic, so a late subscriber gets one message per camera
+        mControlsPublisher = create_publisher<msg::CameraControls>("/camera_controls", rclcpp::QoS{1}.reliable().transient_local());
+        mSetControlsServer = create_service<srv::SetCameraControls>(
+                setServiceName,
+                [this](srv::SetCameraControls::Request::ConstSharedPtr const& req,
+                       srv::SetCameraControls::Response::SharedPtr const& res) {
+                    setControlsServerCallback(req, res);
+                });
+        publishControls();
+    }
+
+    auto GstCameraServer::setControlsServerCallback(srv::SetCameraControls::Request::ConstSharedPtr const& req, srv::SetCameraControls::Response::SharedPtr const& res) -> void {
+        using Response = srv::SetCameraControls::Response;
+
+        auto fail = [&](std::uint8_t status, std::size_t index, std::string message) {
+            res->status = status;
+            res->failed_index = static_cast<std::uint32_t>(index);
+            res->message = std::move(message);
+            RCLCPP_WARN_STREAM(get_logger(), std::format("Rejected control change: {}", res->message));
+        };
+
+        if (req->values.empty()) return fail(Response::EMPTY_REQUEST, 0, "No values given");
+        if (!mControls.available) return fail(Response::DEVICE_UNAVAILABLE, 0, std::format("{} has no controllable device", mControls.camera_name));
+
+        // Pass 1: static checks on every entry, so an invalid request leaves the camera untouched
+        std::vector<msg::CameraControl*> targets;
+        targets.reserve(req->values.size());
+        for (std::size_t i = 0; i < req->values.size(); ++i) {
+            auto const& [name, value] = req->values[i];
+            auto it = std::ranges::find(mControls.controls, name, &msg::CameraControl::name);
+            if (it == mControls.controls.end()) return fail(Response::UNKNOWN_CONTROL, i, std::format("Unknown control \"{}\"", name));
+            if (it->read_only) return fail(Response::READ_ONLY, i, std::format("{} is read-only", name));
+            if (value < it->minimum || value > it->maximum) return fail(Response::OUT_OF_RANGE, i, std::format("{}={} is outside [{}, {}]", name, value, it->minimum, it->maximum));
+            if (it->step > 1 && (value - it->minimum) % it->step != 0) return fail(Response::BAD_STEP, i, std::format("{}={} is not a multiple of step {} from {}", name, value, it->step, it->minimum));
+            targets.push_back(&*it);
+        }
+
+        // Pass 2: write in order, stopping at the first entry the driver refuses
+        for (std::size_t i = 0; i < targets.size(); ++i) {
+            msg::CameraControl& control = *targets[i];
+            // Earlier entries can change whether this control is active, so the flags are refreshed right before writing
+            if (!queryControl(control)) {
+                fail(Response::DRIVER_REJECTED, i, std::format("Failed to query {}: {}", control.name, std::strerror(errno)));
+                break;
+            }
+            if (control.inactive) {
+                fail(Response::INACTIVE, i, std::format("{} is inactive", control.name));
+                break;
+            }
+            v4l2_control value{.id = control.id, .value = static_cast<std::int32_t>(req->values[i].value)};
+            if (xioctl(mControlFd, VIDIOC_S_CTRL, &value) == -1) {
+                fail(Response::DRIVER_REJECTED, i, std::format("Failed to set {}: {}", control.name, std::strerror(errno)));
+                break;
+            }
+            control.current_value = value.value;
+            ++res->applied_count;
+        }
+
+        if (res->applied_count == 0) return;
+
+        // Drivers may round the written value, so report what the camera actually holds
+        for (std::size_t i = 0; i < res->applied_count; ++i) {
+            msg::CameraControl& control = *targets[i];
+            if (std::ranges::contains(res->controls, control.id, &msg::CameraControl::id)) continue;
+            if (v4l2_control value{.id = control.id}; xioctl(mControlFd, VIDIOC_G_CTRL, &value) == 0) {
+                control.current_value = value.value;
+            }
+            res->controls.push_back(control);
+        }
+        publishControls();
+    }
+
     auto findDeviceNode(std::string_view devicePath) -> std::string {
         udev* udevContext = udev_new();
         if (!udevContext) throw std::runtime_error{"Failed to initialize udev"};
@@ -474,6 +601,8 @@ namespace mrover {
                         mediaControlServerCallback(req, res);
                     });
 
+            initControls(cameraName);
+
             gst_init(nullptr, nullptr);
 
             createStreamPipeline();
@@ -487,6 +616,7 @@ namespace mrover {
     }
 
     GstCameraServer::~GstCameraServer() {
+        if (mControlFd != -1) close(mControlFd);
         if (mMainLoop) {
             g_main_loop_quit(mMainLoop);
             mMainLoopThread.join();
