@@ -30,6 +30,8 @@ namespace mrover {
         double mLastSeen{};               // last time a T-pose frame was seen
         bool mTriggered{};                // true once the hold has been reported
 
+        bool mPoseDetected;
+
         auto poseCallback(msg::Body::ConstSharedPtr const& msg) -> void;
 
         auto isTPose(msg::Body const& body) -> bool;

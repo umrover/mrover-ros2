@@ -14,6 +14,8 @@ namespace mrover {
                 {"max_arm_to_shoulder_line_deg", MAX_ARM_TO_SHOULDER_LINE_DEG, 50.0},
                 };
 
+        mPoseDetected = false;
+
         ParameterWrapper::declareParameters(this, params);
 
         mBodySub = create_subscription<msg::Body>("/zed/body", rclcpp::QoS(1), [this](msg::Body::ConstSharedPtr const& msg) {
@@ -61,20 +63,27 @@ namespace mrover {
 
     auto GestureRecognitionNode::poseCallback(msg::Body::ConstSharedPtr const& msg) -> void {
         double const t = rclcpp::Time{msg->header.stamp}.seconds();
-
-        if (isTPose(*msg)) {
-            if (!mHoldStart) mHoldStart = t;
-            mLastSeen = t;
-            if (!mTriggered && t - *mHoldStart >= HOLD_SECONDS) {
-                mTriggered = true;
-                RCLCPP_INFO_STREAM(get_logger(), "T-pose detected (held for " << HOLD_SECONDS << " seconds)");
+        
+        if (!mPoseDetected) {
+            if (isTPose(*msg)) {
+                if (!mHoldStart) mHoldStart = t;
+                mLastSeen = t;
+                if (!mTriggered && t - *mHoldStart >= HOLD_SECONDS) {
+                    mTriggered = true;
+                    RCLCPP_INFO_STREAM(get_logger(), "T-pose detected (held for " << HOLD_SECONDS << " seconds)");
+                    mPoseDetected = true;
+                }
+            } else if (mHoldStart && t - mLastSeen > GRACE_PERIOD) {
+                if (mTriggered) {
+                    RCLCPP_INFO_STREAM(get_logger(), "T-pose released");
+                }
+                mHoldStart.reset();
+                mTriggered = false;
             }
-        } else if (mHoldStart && t - mLastSeen > GRACE_PERIOD) {
-            if (mTriggered) {
-                RCLCPP_INFO_STREAM(get_logger(), "T-pose released");
-            }
-            mHoldStart.reset();
-            mTriggered = false;
+        } else {
+            // start publishing pose
+            SE3d person = SE3Conversions::fromPose(msg->pose);
+            SE3Conversions::pushToTfTree(tf_broadcaster, "astronaut", "zed_left_camera_frame", person, get_clock()->now());
         }
     }
 } // namespace mrover

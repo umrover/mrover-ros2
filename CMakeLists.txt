@@ -390,8 +390,8 @@ mrover_executable_from_component(image_tag_detector perception/executables/image
 
 # Gesture Detection
 mrover_add_component(gesture_detection perception/gesture_detection/gesture_detection.cpp perception/gesture_detection/pch.hpp GestureTypingNode)
-mrover_ament_component(gesture_detection rclcpp rclcpp_components tf2 tf2_ros)
-mrover_link_component(gesture_detection parameter_utils loop_profiler)
+mrover_ament_component(gesture_detection rclcpp rclcpp_components tf2 tf2_ros geometry_msgs)
+mrover_link_component(gesture_detection parameter_utils loop_profiler lie)
 target_link_libraries(gesture_detection_component Eigen3::Eigen)
 
 mrover_executable_from_component(gesture_detection perception/executables/gesture_detection.cpp gesture_detection_component)

@@ -26,4 +26,6 @@
 #include "loop_profiler.hpp"
 #include "parameter.hpp"
 
+#include <lie.hpp>
+
 #include <mrover/msg/body.hpp>
