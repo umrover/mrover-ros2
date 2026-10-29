@@ -1,59 +1,60 @@
 <template>
   <div class="wrapper bg-theme-card border-b border-theme">
     <div class="pl-4 pr-2 py-2 flex justify-between items-center relative flex-nowrap">
-      <div class="flex items-center gap-2">
-        <h1 class="text-theme-primary">{{ title }}</h1>
-        <div class="dropdown flex relative">
-          <button class="theme-btn-inline flex items-center justify-center border-2 border-theme rounded"
-            data-testid="pw-theme-dropdown" @click="dropdownOpen = !dropdownOpen">
-            <i :class="themeIcon"></i>
-          </button>
-          <ul class="dropdown-menu" :class="{ show: dropdownOpen }">
-            <li>
-              <button class="dropdown-item flex items-center gap-2"
-                :class="{ active: themeStore.currentTheme === 'light' }"
-                @click="themeStore.setTheme('light'); dropdownOpen = false">
-                <i class="bi bi-sun-fill"></i> Light
-              </button>
-            </li>
-            <li>
-              <button class="dropdown-item flex items-center gap-2"
-                :class="{ active: themeStore.currentTheme === 'dark' }"
-                @click="themeStore.setTheme('dark'); dropdownOpen = false">
-                <i class="bi bi-moon-fill"></i> Dark
-              </button>
-            </li>
-          </ul>
-        </div>
-        <div v-if="showGridControls" class="flex items-center gap-1 border-2 border-theme rounded px-2 py-1">
-          <button class="btn btn-sm btn-icon-sm" :class="gridLayoutStore.locked ? 'btn-danger' : 'btn-success'"
-            data-testid="pw-grid-lock-btn" @click="gridLayoutStore.toggleLock()">
-            <i :class="gridLayoutStore.locked ? 'bi bi-lock-fill' : 'bi bi-unlock-fill'"></i>
-          </button>
-          <button class="btn btn-sm btn-secondary btn-icon-sm" data-testid="pw-grid-reset-btn"
-            @click="gridLayoutStore.triggerReset()">
-            <i class="bi bi-arrow-counterclockwise"></i>
-          </button>
-          <span class="ml-1 text-sm text-muted">Grid</span>
-        </div>
-        <div v-if="title === 'Autonomy Mission'">
-          <!-- TODO: fix css alignment -->
-          <div class="flex items-center gap-2">
-            <p>Route<br>Finding</p>
-            <div class="">
-              <label class="switch">
-                <!-- TODO: add v-model -->
-                <input type="checkbox">
-                <span class="slider round"></span>
-              </label>
-            </div>
-            <div>
+      <div class="justify-start flex items-center">
+        <div class="flex items-center gap-4">
+          <a class="logo" href="/"><img src="/mrover.png" alt="MRover" width="200"/></a>
+          <div class="border-l border-2 border-start-theme self-center nav-divider"></div>
+          <h1 class="text-theme-primary">{{ title }}</h1>
+          <div class="dropdown flex relative">
+            <button class="theme-btn-inline flex items-center justify-center border-2 border-theme rounded"
+              data-testid="pw-theme-dropdown" @click="dropdownOpen = !dropdownOpen">
+              <i :class="themeIcon"></i>
+            </button>
+            <ul class="dropdown-menu" :class="{ show: dropdownOpen }">
+              <li>
+                <button class="dropdown-item flex items-center gap-2"
+                  :class="{ active: themeStore.currentTheme === 'light' }"
+                  @click="themeStore.setTheme('light'); dropdownOpen = false">
+                  <i class="bi bi-sun-fill"></i> Light
+                </button>
+              </li>
+              <li>
+                <button class="dropdown-item flex items-center gap-2"
+                  :class="{ active: themeStore.currentTheme === 'dark' }"
+                  @click="themeStore.setTheme('dark'); dropdownOpen = false">
+                  <i class="bi bi-moon-fill"></i> Dark
+                </button>
+              </li>
+            </ul>
+          </div>
+          <div v-if="showGridControls" class="flex items-center gap-1 border-2 border-theme rounded px-2 py-1">
+            <button class="btn btn-sm btn-icon-sm" :class="gridLayoutStore.locked ? 'btn-danger' : 'btn-success'"
+              data-testid="pw-grid-lock-btn" @click="gridLayoutStore.toggleLock()">
+              <i :class="gridLayoutStore.locked ? 'bi bi-lock-fill' : 'bi bi-unlock-fill'"></i>
+            </button>
+            <button class="btn btn-sm btn-secondary btn-icon-sm" data-testid="pw-grid-reset-btn"
+              @click="gridLayoutStore.triggerReset()">
+              <i class="bi bi-arrow-counterclockwise"></i>
+            </button>
+            <span class="ml-1 text-sm text-muted">Grid</span>
+          </div>
+          <div v-if="title === 'Autonomy Mission'">
+            <div class="flex items-center gap-2">
+              <p>Route<br>Finding</p>
+              <div class="">
+                <label class="switch">
+                  <!-- TODO: add v-model -->
+                  <input type="checkbox">
+                  <span class="slider round"></span>
+                </label>
+              </div>
               <p>Astronaut<br>Assistance</p>
             </div>
           </div>
         </div>
       </div>
-      <a class="logo" href="/"><img src="/mrover.png" alt="MRover" width="200" /></a>
+      <!-- <a class="logo" href="/"><img src="/mrover.png" alt="MRover" width="200" /></a> -->
       <div class="flex items-stretch gap-2">
         <div class="border-2 border-theme rounded px-2 flex flex-col justify-center font-mono text-sm"
           :class="{ 'jetson-high-latency': jetsonLatencyReceived && jetsonLatencyMs !== null && jetsonLatencyMs > 100 }">
@@ -153,7 +154,7 @@ export default defineComponent({
 <style scoped>
 .logo {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   padding-left: 5px;
 }
