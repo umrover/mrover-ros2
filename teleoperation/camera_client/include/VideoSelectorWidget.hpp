@@ -31,6 +31,7 @@ namespace mrover {
             QPushButton* screenshotButton;
             QSlider* scaleSlider;
             QPushButton* rotateButton;
+            QPushButton* newWindowButton;
         };
 
         bool mUsingIcons;
@@ -42,6 +43,7 @@ namespace mrover {
         auto createScreenshotButton(Selector& selector, CameraCallbacks const& callbacks) -> void;
         auto createScaleSlider(Selector& selector, CameraCallbacks const& callbacks) -> void;
         auto createRotateButton(Selector& selector, CameraCallbacks const& callbacks) -> void;
+        auto createNewWindowButton(Selector& selector, CameraCallbacks const& callbacks) -> void;
 
     public:
         explicit VideoSelectorWidget(QWidget* parent = nullptr);

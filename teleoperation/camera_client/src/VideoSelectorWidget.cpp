@@ -1,4 +1,7 @@
 #include "VideoSelectorWidget.hpp"
+#include <qglobal.h>
+#include <qicon.h>
+#include <qpushbutton.h>
 
 namespace mrover {
 
@@ -35,6 +38,7 @@ namespace mrover {
         createScreenshotButton(selector, callbacks);
         createRotateButton(selector, callbacks);
         createScaleSlider(selector, callbacks);
+        createNewWindowButton(selector, callbacks);
 
         mSelectors.emplace(name, selector);
 
@@ -134,6 +138,16 @@ namespace mrover {
         });
 
         selector.layout->addWidget(selector.rotateButton);
+    }
+
+    auto VideoSelectorWidget::createNewWindowButton(Selector& selector, CameraCallbacks const& callbacks) -> void {
+        if (mUsingIcons && QIcon::hasThemeIcon("window-new")) { //QIcon::ThemeIcon::WindowNew
+            selector.newWindowButton = new QPushButton(QIcon::fromTheme("window-new"), QString(), selector.widget);
+        } else {
+            selector.newWindowButton = new QPushButton("Move", selector.widget);
+        }
+
+        selector.layout->addWidget(selector.newWindowButton);
     }
 
 } // namespace mrover
