@@ -3,6 +3,7 @@
 #include "pch.hpp"
 #include <qboxlayout.h>
 #include <qdialog.h>
+#include <qpushbutton.h>
 #include <qtmetamacros.h>
 #include <qwidget.h>
 
@@ -14,6 +15,7 @@ namespace mrover {
         QVBoxLayout* layout;
         
         QLabel* nameLabel;
+        
     
     public:
         explicit MoveCameraPopup(QWidget* parent = nullptr);
