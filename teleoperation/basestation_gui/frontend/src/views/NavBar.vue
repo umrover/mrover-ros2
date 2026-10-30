@@ -2,9 +2,11 @@
   <div class="wrapper bg-theme-card border-b border-theme">
     <div class="pl-4 pr-2 py-2 flex justify-between items-center relative flex-nowrap">
       <div class="justify-start flex items-center">
-        <div class="flex items-center gap-4">
-          <a class="logo" href="/"><img src="/mrover.png" alt="MRover" width="200"/></a>
-          <div class="border-l border-2 border-start-theme self-center nav-divider"></div>
+        <div class="flex items-center gap-2">
+          <div class="flex items-center gap-4">
+            <a class="logo" href="/"><img src="/mrover.png" alt="MRover" width="200"/></a>
+            <span class="border-l border-2 border-start-theme self-center nav-divider"></span>
+          </div>
           <h1 class="text-theme-primary">{{ title }}</h1>
           <div class="dropdown flex relative">
             <button class="theme-btn-inline flex items-center justify-center border-2 border-theme rounded"
@@ -41,15 +43,14 @@
           </div>
           <div v-if="title === 'Autonomy Mission'">
             <div class="flex items-center gap-2">
-              <p>Route<br>Finding</p>
-              <div class="">
+              <!-- <p>Route<br>Finding</p> -->
+              <p>Astronaut<br>Assistance</p>
                 <label class="switch">
-                  <!-- TODO: add v-model -->
-                  <input type="checkbox">
+                  <input type="checkbox" v-model="astronautAssistanceEnabled">
                   <span class="slider round"></span>
                 </label>
-              </div>
-              <p>Astronaut<br>Assistance</p>
+              <span v-if="astronautAssistanceEnabled">ON</span>
+              <span v-else>OFF</span>
             </div>
           </div>
         </div>
@@ -90,6 +91,7 @@ export default defineComponent({
     const dropdownOpen = ref(false);
     const jetsonLatencyMs = ref<number | null>(null);
     const jetsonLatencyReceived = ref(false);
+    const astronautAssistanceEnabled = ref(false);
 
     const websocketStore = useWebsocketStore();
     websocketStore.setupWebSocket('latency');
@@ -114,7 +116,7 @@ export default defineComponent({
       websocketStore.closeWebSocket('latency');
     });
 
-    return { gridLayoutStore, themeStore, dropdownOpen, jetsonLatencyMs, jetsonLatencyReceived, formatNumber };
+    return { gridLayoutStore, themeStore, dropdownOpen, jetsonLatencyMs, jetsonLatencyReceived, astronautAssistanceEnabled, formatNumber };
   },
   computed: {
     title(): string {
