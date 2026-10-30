@@ -49,6 +49,9 @@ namespace mrover {
         explicit VideoSelectorWidget(QWidget* parent = nullptr);
 
         auto addCamera(std::string const& name, CameraCallbacks callbacks) -> void;
+    
+    private slots:
+        void openNewWindowPopup();
     };
 
 } // namespace mrover

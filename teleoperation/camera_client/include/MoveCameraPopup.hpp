@@ -1,0 +1,22 @@
+#pragma once
+
+#include "pch.hpp"
+#include <qboxlayout.h>
+#include <qdialog.h>
+#include <qtmetamacros.h>
+#include <qwidget.h>
+
+namespace mrover {
+    class MoveCameraPopup : public QDialog {
+        Q_OBJECT
+
+        QWidget* widget;
+        QVBoxLayout* layout;
+        
+        QLabel* nameLabel;
+    
+    public:
+        explicit MoveCameraPopup(QWidget* parent = nullptr);
+        
+    };    
+} // namespace mrover

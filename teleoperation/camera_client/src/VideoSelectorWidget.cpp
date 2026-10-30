@@ -1,4 +1,5 @@
 #include "VideoSelectorWidget.hpp"
+#include "MoveCameraPopup.hpp"
 #include <qglobal.h>
 #include <qicon.h>
 #include <qpushbutton.h>
@@ -148,6 +149,13 @@ namespace mrover {
         }
 
         selector.layout->addWidget(selector.newWindowButton);
+
+        connect(selector.newWindowButton, &QPushButton::clicked, this, &VideoSelectorWidget::openNewWindowPopup);
+    }
+
+    void VideoSelectorWidget::openNewWindowPopup(){
+        MoveCameraPopup popup(this);
+        popup.exec();
     }
 
 } // namespace mrover
