@@ -1,6 +1,10 @@
 #pragma once
 
 #include "pch.hpp"
+#include <QImage>
+#include <QPainter>
+#include <qvideowidget.h>
+#include <qwidget.h>
 
 namespace mrover {
 
@@ -20,10 +24,13 @@ namespace mrover {
         [[nodiscard]] auto cameraName() const -> std::string const& { return mCameraName; }
     };
 
-    class GstVideoWidget : public QVideoWidget {
+    class GstVideoWidget : public QWidget {
         Q_OBJECT
 
-        QMediaPlayer* mPlayer;
+        GstElement* mPipeline{nullptr};
+        GstAppSink* mAppSink{nullptr};
+        QString mErrorString;
+        QImage mFrame;
 
         int mRotation{0};
         std::string mBasePipeline;
@@ -31,17 +38,23 @@ namespace mrover {
 
     public:
         explicit GstVideoWidget(QWidget* parent = nullptr);
+        ~GstVideoWidget() override;
 
         auto setGstPipeline(std::string const& pipeline) -> void;
 
         [[nodiscard]] auto errorString() const -> QString;
-        [[nodiscard]] auto error() const -> QMediaPlayer::Error;
         [[nodiscard]] auto isError() const -> bool;
 
         auto play() -> void;
         auto pause() -> void;
         auto stop() -> void;
         auto rotate90() -> void;
+
+    protected:
+        void paintEvent(QPaintEvent* event) override;
+
+    private:
+        static auto onNewSample(GstAppSink* sink, gpointer userData) -> GstFlowReturn;
     };
 
     class GstVideoGridWidget : public QWidget {
@@ -51,7 +64,7 @@ namespace mrover {
             NoError,
             NonExistsError,
             ExistsError,
-            MediaPlayerError,
+            MediaPipelineError,
         };
 
     private:

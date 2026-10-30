@@ -7,6 +7,8 @@
 auto main(int argc, char** argv) -> int {
     QApplication app(argc, argv);
 
+    gst_init(nullptr, nullptr);
+
     rclcpp::init(argc, argv);
 
     auto node = std::make_shared<mrover::CameraClientNode>();
