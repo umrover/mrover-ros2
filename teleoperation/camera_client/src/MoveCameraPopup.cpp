@@ -26,8 +26,8 @@ MoveCameraPopup::MoveCameraPopup(QWidget* parent)
     }
 
     // Add buttons for windows
-    for(size_t i = 0; i < mainWindows.size(); ++i){
-        layout->addWidget(new QPushButton(QString::fromStdString(std::format("Button {}", i)), this));
+    for(const auto &window: mainWindows /*size_t i = 0; i < mainWindows.size(); ++i*/){
+        layout->addWidget(new QPushButton(window->windowTitle(), this));
     }
 
     layout->addStretch();
