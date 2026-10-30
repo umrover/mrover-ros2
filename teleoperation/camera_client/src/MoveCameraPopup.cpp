@@ -20,8 +20,6 @@ MoveCameraPopup::MoveCameraPopup(QWidget* parent)
     long numWindows = 0;
 
     for(const auto &widget: QApplication::topLevelWidgets()){
-        qDebug() << QString::fromStdString(typeid(widget).name());
-
         if(auto a = dynamic_cast<CameraClientMainWindow*>(widget)/*typeid(widget) == typeid(CameraClientMainWindow)*/){
             ++numWindows;
         }
