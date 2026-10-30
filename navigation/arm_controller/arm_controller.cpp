@@ -77,21 +77,10 @@ namespace mrover {
             static_cast<float>(target.roll),
         };
 
-        for (size_t i = 0; i < positions.names.size(); ++i) {
-            auto it = joints.find(positions.names[i]);
-            // hopefully this will never happen, but just in case
-            if (it == joints.end()) {
-                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown joint \"" << positions.names[i] << "\"");
-                return std::nullopt;
-            }
-
-            if (!it->second.limits.posInBounds(positions.positions[i])) {
-                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Position for joint " << positions.names[i] << " not within limits!");
-                return std::nullopt;
-            }
-        }
-        
-        return positions;
+        if (positionsInBounds(positions))
+            return positions;
+        else
+            return std::nullopt;
     }
 
     auto ArmController::ikVelCalc(geometry_msgs::msg::Twist vel) -> std::optional<msg::Velocity> {
@@ -394,22 +383,10 @@ namespace mrover {
                         static_cast<float>(mPosTarget.gripper),
                 };
 
-                // bounds checking and such
-                for (size_t i = 0; i < positions.names.size(); ++i) {
-                    auto it = joints.find(positions.names[i]);
-                    // hopefully this will never happen, but just in case
-                    if (it == joints.end()) {
-                        RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown joint \"" << positions.names[i] << "\"");
-                        return;
-                    }
-
-                    if (!it->second.limits.posInBounds(positions.positions[i])) {
-                        RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Position for joint " << positions.names[i] << " not within limits! (" << positions.positions[i] << ")");
-                        RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Typing IK failed");
-                        return;
-                    }
-                }
-                mPosPub->publish(positions);
+                if (positionsInBounds(positions))
+                    mPosPub->publish(positions);
+                else
+                    RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Typing IK failed");
             }
         }
     }
@@ -428,6 +405,23 @@ namespace mrover {
             mTypingOrigin = mArmPos;
         }
         resp->success = true;
+    }
+
+    auto ArmController::positionsInBounds(msg::Position const& positions) -> bool {
+        for (size_t i = 0; i < positions.names.size(); ++i) {
+            auto it = joints.find(positions.names[i]);
+            // hopefully this will never happen, but just in case
+            if (it == joints.end()) {
+                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Unknown joint \"" << positions.names[i] << "\"");
+                return false;
+            }
+
+            if (!it->second.limits.posInBounds(positions.positions[i])) {
+                RCLCPP_WARN_STREAM_THROTTLE(get_logger(), *get_clock(), 1000, "Position for joint " << positions.names[i] << " not within limits! (" << positions.positions[i] << ")");
+                return false;
+            }
+        }
+        return true;
     }
 } // namespace mrover
 

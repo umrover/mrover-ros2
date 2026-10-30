@@ -76,6 +76,7 @@ namespace mrover {
         auto ikPosCalc(ArmPos target) -> std::optional<msg::Position>;
         auto ikVelCalc(geometry_msgs::msg::Twist) -> std::optional<msg::Velocity>;
         auto timerCallback() -> void;
+        auto positionsInBounds(msg::Position const&) -> bool;
 
         ArmPos mArmPos, mTypingOrigin, mPosTarget;
         geometry_msgs::msg::Twist mVelTarget;
