@@ -34,14 +34,16 @@ MoveCameraPopup::MoveCameraPopup(QWidget* parent)
 
     // Add buttons for windows
     for(const auto &window: mainWindows /*size_t i = 0; i < mainWindows.size(); ++i*/){
-        auto * current_button = new QPushButton(window->windowTitle(), this);
+        auto * current_button = new MoveToWindowButton(window->windowTitle(), this);
 
-        connect(current_button, &QPushButton::pressed, this, [this](/*std::string const& name, std::string const& pipeline*/) {
-            sendCreateRequest("test name", "test pipeline");
-        });
+        // connect(current_button, &QPushButton::pressed, this, [this](/*std::string const& name, std::string const& pipeline*/) {
+        //     sendCreateRequest("test name", "test pipeline");
+        // });
 
         layout->addWidget(current_button);
-        mrover::CameraClientMainWindow::connect(this, &MoveCameraPopup::createRequested, firstCam, &CameraClientMainWindow::fullCreateCamera);
+        connect(current_button, &MoveToWindowButton::createRequested, window, &CameraClientMainWindow::fullCreateCamera);
+
+        // mrover::CameraClientMainWindow::connect(this, &MoveCameraPopup::createRequested, firstCam, &CameraClientMainWindow::fullCreateCamera);
     }
 
     layout->addStretch();
