@@ -20,9 +20,16 @@ namespace mrover {
     
     public:
         explicit MoveCameraPopup(QWidget* parent = nullptr);
+
+    signals:
+        void createRequested(std::string name, std::string pipeline);
     
     private:
         std::vector<CameraClientMainWindow*> mainWindows;
+    
+    private slots:
+
+        void sendCreateRequest(std::string name, std::string pipeline);
         
     };    
 } // namespace mrover

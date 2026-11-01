@@ -11,6 +11,11 @@ auto main(int argc, char** argv) -> int {
 
     auto node = std::make_shared<mrover::CameraClientNode>();
 
+    std::vector<std::shared_ptr<mrover::CameraClientMainWindow>> windows;
+    windows.push_back(std::make_shared<mrover::CameraClientMainWindow>());
+    windows[0]->setWindowTitle("Test Window");
+    windows[0]->setMinimumSize(1280, 720);
+
     auto mainWindow = std::make_shared<mrover::CameraClientMainWindow>();
     auto secondWindow = std::make_shared<mrover::CameraClientMainWindow>();
 
@@ -111,6 +116,10 @@ auto main(int argc, char** argv) -> int {
 
     mainWindow->show();
     secondWindow->show();
+
+    for(const auto & window: windows){
+        window->show();
+    }
 
     int const result = QApplication::exec();
 

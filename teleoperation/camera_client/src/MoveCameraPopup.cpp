@@ -1,10 +1,15 @@
 #include "MoveCameraPopup.hpp"
+#include "CameraClientMainWindow.hpp"
 #include <qapplication.h>
 #include <qboxlayout.h>
 #include <qdialog.h>
 #include <qlabel.h>
 #include <qpushbutton.h>
 #include <qwidget.h>
+
+#include <utility>
+
+#include <utility>
 
 using namespace mrover;
 
@@ -25,11 +30,24 @@ MoveCameraPopup::MoveCameraPopup(QWidget* parent)
         }
     }
 
+    CameraClientMainWindow * firstCam = mainWindows.front();
+
     // Add buttons for windows
     for(const auto &window: mainWindows /*size_t i = 0; i < mainWindows.size(); ++i*/){
-        layout->addWidget(new QPushButton(window->windowTitle(), this));
+        auto * current_button = new QPushButton(window->windowTitle(), this);
+
+        connect(current_button, &QPushButton::pressed, this, [this](/*std::string const& name, std::string const& pipeline*/) {
+            sendCreateRequest("test name", "test pipeline");
+        });
+
+        layout->addWidget(current_button);
+        mrover::CameraClientMainWindow::connect(this, &MoveCameraPopup::createRequested, firstCam, &CameraClientMainWindow::fullCreateCamera);
     }
 
     layout->addStretch();
     setLayout(layout);
+}
+
+void MoveCameraPopup::sendCreateRequest(std::string name, std::string pipeline){
+    emit createRequested(std::move(name), std::move(pipeline));
 }

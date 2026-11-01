@@ -36,7 +36,8 @@ namespace mrover {
 
         connect(mGstRtpVideoCreatorWidget, &GstRtpVideoCreatorWidget::createRequested,
                 this, [this](std::string const& name, std::string const& pipeline) {
-                    qDebug() << "Creating camera with name:" << QString::fromStdString(name) << "and pipeline:" << QString::fromStdString(pipeline);
+                    fullCreateCamera(name, pipeline);
+                    /*qDebug() << "Creating camera with name:" << QString::fromStdString(name) << "and pipeline:" << QString::fromStdString(pipeline);
 
                     CameraCallbacks callbacks{
                             .onHide = [this, name]() {
@@ -68,7 +69,7 @@ namespace mrover {
                                                   Qt::QueuedConnection,
                                                   Q_ARG(bool, true));
                     }
-                });
+                */});
     }
 
     auto CameraClientMainWindow::createCamera(std::string const& name, std::string const& pipeline, CameraCallbacks callbacks) -> bool {
@@ -78,6 +79,41 @@ namespace mrover {
         }
         mCameraSelectorWidget->addCamera(name, std::move(callbacks));
         return true;
+    }
+
+    void CameraClientMainWindow::fullCreateCamera(std::string const& name, std::string const& pipeline){
+        qDebug() << "Creating camera with name:" << QString::fromStdString(name) << "and pipeline:" << QString::fromStdString(pipeline);
+
+        CameraCallbacks callbacks{
+                .onHide = [this, name]() {
+                    mCameraGridWidget->hideVideo(name);
+                    if (auto* widget = mCameraGridWidget->getGstVideoWidget(name)) {
+                        widget->stop();
+                    }
+                    return true; },
+                .onShow = [this, name]() {
+                    mCameraGridWidget->showVideo(name);
+                    if (auto* widget = mCameraGridWidget->getGstVideoWidget(name)) {
+                        widget->play();
+                    }
+                    return true; },
+                .onPause = []() { return true; },
+                .onPlay = []() { return true; },
+                .onStop = []() { return true; },
+                .onScreenshot = []() { return true; },
+                .onResize = [this, name](int w, int h) { mCameraGridWidget->resizeCamera(name, w, h); },
+        };
+
+        if (bool success = createCamera(name, pipeline, std::move(callbacks)); !success) {
+            QMetaObject::invokeMethod(mGstRtpVideoCreatorWidget, "onCreateResult",
+                                        Qt::QueuedConnection,
+                                        Q_ARG(bool, false),
+                                        Q_ARG(QString, mCameraGridWidget->errorString()));
+        } else {
+            QMetaObject::invokeMethod(mGstRtpVideoCreatorWidget, "onCreateResult",
+                                        Qt::QueuedConnection,
+                                        Q_ARG(bool, true));
+        }     
     }
 
     auto CameraClientMainWindow::getCameraGridWidget() -> GstVideoGridWidget* {
