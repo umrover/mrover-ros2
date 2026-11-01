@@ -128,7 +128,8 @@ namespace mrover {
                     bodyParams.detection_model = sl::BODY_TRACKING_MODEL::HUMAN_BODY_FAST;
                     bodyParams.body_format = sl::BODY_FORMAT::BODY_38;
                     bodyParams.enable_tracking = true;
-                    bodyParams.enable_body_fitting = true;
+                    bodyParams.enable_body_fitting = false;
+                    bodyParams.allow_reduced_precision_inference = true;
 
                     if (sl::ERROR_CODE err = mZed.enableBodyTracking(bodyParams); err != sl::ERROR_CODE::SUCCESS) {
                         RCLCPP_WARN_STREAM(get_logger(), std::format("Failed to enable body tracking: {}", sl::toString(err).c_str()));
