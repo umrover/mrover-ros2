@@ -1,7 +1,6 @@
 #include "harness.hpp"
 
 namespace mrover {
-    // TODO: think about what happens if we call this multiple times
     void ArmControllerRosHarness::changeIkMode(srv::IkMode_Request::_mode_type req) {
         auto mode_client = test_node->create_client<srv::IkMode>("ik_mode");
         ASSERT_TRUE(mode_client->wait_for_service(std::chrono::seconds(1)));
@@ -59,7 +58,6 @@ namespace mrover {
         pos_pub->publish(pos_msg);
         executor->spin_some();
         // arm controller should publish target position to tf tree
-        // TODO: consider making these checks only look at whether something is published and leave correctness for non-ros tests
         SE3d target = SE3Conversions::fromTfTree(tfBuffer, "arm_target", "arm_base_link");
         EXPECT_EQ(target, SE3d::Identity());
 
@@ -169,7 +167,6 @@ namespace mrover {
         EXPECT_TRUE(goal_handle);
 
         // let it cook for a bit
-        // TODO: should probably check that commands are actually published
         executor->spin_all(std::chrono::milliseconds(50));
 
         // now update arm position so that the action can finish
@@ -320,11 +317,7 @@ namespace mrover {
 
         // this time we should succeed
         goal.x = 100; // something unreachable
-        rclcpp_action::Client<action::TypingPosition>::SendGoalOptions opts;
-        auto done_promise = std::make_shared<std::promise<void>>();
-        auto done_future = done_promise->get_future();
-        opts.result_callback = [done_promise](auto) -> void { done_promise->set_value(); };
-        goal_handle_future = action_client->async_send_goal(goal, opts);
+        goal_handle_future = action_client->async_send_goal(goal);
 
         // if we ask again it should fail
         auto bad_goal_handle_future = action_client->async_send_goal(goal);
@@ -365,11 +358,5 @@ namespace mrover {
         const auto& result = result_future.get();
         EXPECT_EQ(result.code, rclcpp_action::ResultCode::SUCCEEDED);
         EXPECT_FALSE(result.result->success);
-        // // actually check that we got something nonzero
-        // EXPECT_FLOAT_EQ(pos_cmd.positions[0], 0.1);
-        //
-        // // wait until the actual worker thread finishes
-        // status = executor->spin_until_future_complete(done_future, std::chrono::milliseconds(500));
-        // ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
     }
 }
