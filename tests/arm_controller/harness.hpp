@@ -48,6 +48,7 @@ namespace mrover {
     protected:
         rclcpp::Node::SharedPtr test_node;
         std::shared_ptr<rclcpp::executors::SingleThreadedExecutor> executor;
+        std::shared_ptr<rclcpp_action::Client<mrover::action::TypingPosition>> action_client;
 
         void SetUp() override {
             ArmControllerHarness::SetUp();
@@ -56,6 +57,8 @@ namespace mrover {
 
             executor->add_node(test_node);
             executor->add_node(arm_controller);
+
+            action_client = rclcpp_action::create_client<action::TypingPosition>(test_node, "typing_pos");
         }
 
         void changeIkMode(srv::IkMode_Request::_mode_type req);

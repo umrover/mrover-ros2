@@ -149,7 +149,6 @@ namespace mrover {
     }
 
     TEST_F(ArmControllerRosHarness, nominalActionTest) {
-        auto action_client = rclcpp_action::create_client<action::TypingPosition>(test_node, "typing_pos");
         ASSERT_TRUE(action_client->wait_for_action_server());
 
         // switch to typing mode
@@ -171,8 +170,7 @@ namespace mrover {
 
         // let it cook for a bit
         // TODO: should probably check that commands are actually published
-        status = executor->spin_until_future_complete(std::promise<void>().get_future(), std::chrono::milliseconds(50));
-        EXPECT_EQ(status, rclcpp::FutureReturnCode::TIMEOUT);
+        executor->spin_all(std::chrono::milliseconds(50));
 
         // now update arm position so that the action can finish
         auto joint_pub = test_node->create_publisher<msg::ControllerState>("arm_controller_state", 10);
@@ -192,7 +190,6 @@ namespace mrover {
     }
 
     TEST_F(ArmControllerRosHarness, testActionCancel) {
-        auto action_client = rclcpp_action::create_client<action::TypingPosition>(test_node, "typing_pos");
         ASSERT_TRUE(action_client->wait_for_action_server());
 
         // switch to typing mode
@@ -226,7 +223,6 @@ namespace mrover {
     }
 
     TEST_F(ArmControllerRosHarness, actionTimeout) {
-        auto action_client = rclcpp_action::create_client<action::TypingPosition>(test_node, "typing_pos");
         ASSERT_TRUE(action_client->wait_for_action_server());
 
         // switch to typing mode
@@ -253,7 +249,6 @@ namespace mrover {
     }
 
     TEST_F(ArmControllerRosHarness, actionTestNoPusher) {
-        auto action_client = rclcpp_action::create_client<action::TypingPosition>(test_node, "typing_pos");
         ASSERT_TRUE(action_client->wait_for_action_server());
 
         // switch to typing mode
@@ -280,7 +275,6 @@ namespace mrover {
     }
 
     TEST_F(ArmControllerRosHarness, actionTestBadPusher) {
-        auto action_client = rclcpp_action::create_client<action::TypingPosition>(test_node, "typing_pos");
         ASSERT_TRUE(action_client->wait_for_action_server());
 
         // switch to typing mode
@@ -310,7 +304,6 @@ namespace mrover {
     }
 
     TEST_F(ArmControllerRosHarness, actionTestErrors) {
-        auto action_client = rclcpp_action::create_client<action::TypingPosition>(test_node, "typing_pos");
         ASSERT_TRUE(action_client->wait_for_action_server());
 
         auto goal = action::TypingPosition::Goal();
