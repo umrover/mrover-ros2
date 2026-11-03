@@ -1,4 +1,5 @@
 #include "GstVideoWidgets.hpp"
+#include <algorithm>
 
 using namespace mrover;
 
@@ -194,12 +195,19 @@ auto GstVideoGridWidget::findVideoBox(std::string const& name) -> GstVideoBox* {
 }
 
 auto GstVideoGridWidget::deleteVideoBox(std::string const& name) -> bool {
+    // TODO error checking
+
     qDebug() << "Deleteing" << QString::fromStdString(name);
     auto box_it = mGstVideoBoxes.find(name);
+    box_it->second.gstVideoWidget->stop();
+     box_it->second.widget->setVisible(false);
     mMainLayout->removeWidget(box_it->second.widget);
 
+    auto name_it = std::find(mVisibleOrder.begin(), mVisibleOrder.end(), name);
+    mVisibleOrder.erase(name_it);
+
     mGstVideoBoxes.erase(box_it);
-    delete &(box_it->second); // FIXME deletes wrong thing; CRASHES!!!
+    // delete &(box_it->second); // FIXME deletes wrong thing; CRASHES!!!
 
     return true;
 }
