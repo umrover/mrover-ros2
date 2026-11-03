@@ -42,6 +42,8 @@ namespace mrover {
         auto pause() -> void;
         auto stop() -> void;
         auto rotate90() -> void;
+        
+        auto getPipeline() -> std::string;
     };
 
     class GstVideoGridWidget : public QWidget {
@@ -97,6 +99,8 @@ namespace mrover {
         auto resizeCamera(std::string const& name, int width, int height) -> bool;
         auto rotateCamera(std::string const& name) -> bool;
         auto hideAll() -> void;
+
+        auto deleteVideoBox(std::string const& name) -> bool;
 
         [[nodiscard]] auto error() const -> GstVideoGridWidget::Error;
         [[nodiscard]] auto errorString() const -> QString;

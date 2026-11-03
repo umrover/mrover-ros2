@@ -15,6 +15,7 @@ namespace mrover {
         RequestCallback onScreenshot;
         std::function<void(int, int)> onResize;
         std::function<void()> onRotate;
+        RequestCallback onDelete;
     };
 
     class VideoSelectorWidget : public QWidget {
@@ -43,7 +44,7 @@ namespace mrover {
         auto createScreenshotButton(Selector& selector, CameraCallbacks const& callbacks) -> void;
         auto createScaleSlider(Selector& selector, CameraCallbacks const& callbacks) -> void;
         auto createRotateButton(Selector& selector, CameraCallbacks const& callbacks) -> void;
-        auto createNewWindowButton(Selector& selector, CameraCallbacks const& callbacks) -> void;
+        auto createNewWindowButton(Selector& selector, std::string const& cameraName, CameraCallbacks const& callbacks) -> void;
 
     public:
         explicit VideoSelectorWidget(QWidget* parent = nullptr);
@@ -51,7 +52,7 @@ namespace mrover {
         auto addCamera(std::string const& name, CameraCallbacks callbacks) -> void;
     
     private slots:
-        void openNewWindowPopup();
+        void openNewWindowPopup(std::string const& cameraName, CameraCallbacks const& callbacks);
     };
 
 } // namespace mrover

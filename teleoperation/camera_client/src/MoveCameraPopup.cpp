@@ -3,6 +3,7 @@
 #include <qapplication.h>
 #include <qboxlayout.h>
 #include <qdialog.h>
+#include <qglobal.h>
 #include <qlabel.h>
 #include <qpushbutton.h>
 #include <qwidget.h>
@@ -13,7 +14,7 @@
 
 using namespace mrover;
 
-MoveCameraPopup::MoveCameraPopup(QWidget* parent) 
+MoveCameraPopup::MoveCameraPopup(std::string const& cameraName, QWidget* parent) 
 : QDialog(parent) {
     layout = new QVBoxLayout(this);
     widget = new QWidget(this);
@@ -41,6 +42,9 @@ MoveCameraPopup::MoveCameraPopup(QWidget* parent)
         // });
 
         layout->addWidget(current_button);
+        connect(current_button, &MoveToWindowButton::pressed, window, [this, cameraName](){
+            sendPressed(cameraName);
+        });
         connect(current_button, &MoveToWindowButton::createRequested, window, &CameraClientMainWindow::fullCreateCamera);
 
         // mrover::CameraClientMainWindow::connect(this, &MoveCameraPopup::createRequested, firstCam, &CameraClientMainWindow::fullCreateCamera);
@@ -50,6 +54,11 @@ MoveCameraPopup::MoveCameraPopup(QWidget* parent)
     setLayout(layout);
 }
 
-void MoveCameraPopup::sendCreateRequest(std::string name, std::string pipeline){
-    emit createRequested(std::move(name), std::move(pipeline));
+// void MoveCameraPopup::sendCreateRequest(std::string name, std::string pipeline){
+//     emit createRequested(std::move(name), std::move(pipeline));
+// }
+
+void MoveCameraPopup::sendPressed(std::string name){
+    qDebug() << "MoveCameraPopup Sent pressed";
+    emit pressed(std::move(name));
 }

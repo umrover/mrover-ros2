@@ -103,6 +103,10 @@ auto GstVideoWidget::stop() -> void {
     mPlayer->stop();
 }
 
+auto GstVideoWidget::getPipeline() -> std::string {
+    return mBasePipeline;
+}
+
 // --------------------------------------------
 // GstVideoGridWidget
 // --------------------------------------------
@@ -187,6 +191,17 @@ auto GstVideoGridWidget::findVideoBox(std::string const& name) -> GstVideoBox* {
     }
     clearError();
     return &it->second;
+}
+
+auto GstVideoGridWidget::deleteVideoBox(std::string const& name) -> bool {
+    qDebug() << "Deleteing" << QString::fromStdString(name);
+    auto box_it = mGstVideoBoxes.find(name);
+    mMainLayout->removeWidget(box_it->second.widget);
+
+    mGstVideoBoxes.erase(box_it);
+    delete &(box_it->second); // FIXME deletes wrong thing; CRASHES!!!
+
+    return true;
 }
 
 auto GstVideoGridWidget::rebuildGrid() -> void {

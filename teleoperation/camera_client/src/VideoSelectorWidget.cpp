@@ -1,8 +1,10 @@
 #include "VideoSelectorWidget.hpp"
 #include "MoveCameraPopup.hpp"
+#include <qdebug.h>
 #include <qglobal.h>
 #include <qicon.h>
 #include <qpushbutton.h>
+#include <qsharedpointer.h>
 
 namespace mrover {
 
@@ -39,7 +41,7 @@ namespace mrover {
         createScreenshotButton(selector, callbacks);
         createRotateButton(selector, callbacks);
         createScaleSlider(selector, callbacks);
-        createNewWindowButton(selector, callbacks);
+        createNewWindowButton(selector, name, callbacks);
 
         mSelectors.emplace(name, selector);
 
@@ -141,7 +143,7 @@ namespace mrover {
         selector.layout->addWidget(selector.rotateButton);
     }
 
-    auto VideoSelectorWidget::createNewWindowButton(Selector& selector, CameraCallbacks const& callbacks) -> void {
+    auto VideoSelectorWidget::createNewWindowButton(Selector& selector, std::string const& cameraName, CameraCallbacks const& callbacks) -> void {
         if (mUsingIcons && QIcon::hasThemeIcon("window-new")) { //QIcon::ThemeIcon::WindowNew
             selector.newWindowButton = new QPushButton(QIcon::fromTheme("window-new"), QString(), selector.widget);
         } else {
@@ -150,12 +152,31 @@ namespace mrover {
 
         selector.layout->addWidget(selector.newWindowButton);
 
-        connect(selector.newWindowButton, &QPushButton::clicked, this, &VideoSelectorWidget::openNewWindowPopup);
+        connect(selector.newWindowButton, &QPushButton::clicked, this, [this, &cameraName, callbacks](){
+            openNewWindowPopup(cameraName, callbacks);
+        });
     }
 
-    void VideoSelectorWidget::openNewWindowPopup(){
-        MoveCameraPopup popup(this);
-        popup.exec();
+    void VideoSelectorWidget::openNewWindowPopup(std::string const& cameraName, CameraCallbacks const& callbacks){
+        auto* popup = new MoveCameraPopup(cameraName, this); // TODO check for memory leak
+        // auto myWindow = qobject_cast<CameraClientMainWindow*>(this->topLevelWidget());
+
+        // if(!myWindow){
+        //     // TODO this is very bad if code gets here
+        // }
+
+        // qDebug() << myWindow->getCameraGridWidget()->findVideoBox(cameraName);
+
+        auto deleteCallback = callbacks.onDelete;
+        connect(popup, &MoveCameraPopup::pressed, this, [deleteCallback](const std::string& name){
+            qDebug() << "VideoSelectorWidget received pressed";
+            if (deleteCallback) {
+                qDebug() << "VideoSelectorWidget calling callback";
+                deleteCallback();
+            }
+        });
+
+        popup->exec();
     }
 
 } // namespace mrover

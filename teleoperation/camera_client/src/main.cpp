@@ -81,7 +81,24 @@ auto main(int argc, char** argv) -> int {
                                          fun(mainWindow);
                                      }else if(name.ends_with("_second")){
                                          fun(secondWindow);
-                                     } }};
+                                     } },
+
+                                .onDelete = [mainWindow, secondWindow, name]() { 
+                                    auto fun = [name](std::shared_ptr<mrover::CameraClientMainWindow> const& window) {
+                                         window->getCameraGridWidget()->deleteVideoBox(name); 
+                                     };
+
+                                     if(name.ends_with("_main")){
+                                         fun(mainWindow);
+                                     }else if(name.ends_with("_second")){
+                                         fun(secondWindow);
+                                     }
+
+                                        return true;
+                                    },
+                                    
+                                    
+                                    };
 
                          if (name.ends_with("_main")) {
                              mainWindow->createCamera(name, info.pipeline, std::move(callbacks));
