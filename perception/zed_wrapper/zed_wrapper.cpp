@@ -182,7 +182,6 @@ namespace mrover {
                 if (mSwapMutex.try_lock()) {
                     mGrabMeasures.swap(mPcMeasures);
                     // if lock is obtained, the other thread isn't reading from mPcMeasures
-                    // DANTODO: is std::mutex manual lock() unlock() best practice?
 
                     // set condition variable, unlock, and notify potentially waiting pub thread.
                     mIsSwapReady = true;
