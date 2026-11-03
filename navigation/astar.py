@@ -101,7 +101,7 @@ class AStar:
 
                 # Ensure within grid bounds
                 if not (0 <= neighbor_pos[0] < dem_cost_map.shape[0] and 0 <= neighbor_pos[1] < dem_cost_map.shape[1]):
-                    #continue
+                    continue
 
                 d = 1.0 if rel_pos[0] == 0 or rel_pos[1] == 0 else np.sqrt(2)
                 cost = max(dem_cost_map[neighbor_pos[0], neighbor_pos[1]], 1)
@@ -169,8 +169,6 @@ class AStar:
 
                 d = 1.0 if rel_pos[0] == 0 or rel_pos[1] == 0 else np.sqrt(2)
                 cost = max(costmap2d[neighbor_pos[0], neighbor_pos[1]], 1)
-
-                # TODO: Decide if we want to perform a mean filter here or in the callback. Probably best to do so in the callback
 
                 tentative_g_score = g_scores[current] + d * cost
 
