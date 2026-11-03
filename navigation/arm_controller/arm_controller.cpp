@@ -179,34 +179,34 @@ namespace mrover {
             it->second.pos = joint_state->positions[i];
         }
 
-            auto const now = get_clock()->now();
+        auto const now = get_clock()->now();
 
-            double a_pos = joints["joint_a"].pos;
-            SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_a", "arm_base_link",
+        double a_pos = joints["joint_a"].pos;
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_a", "arm_base_link",
             SE3d{{0, a_pos, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{0, R3d::UnitY()}}}}, now);
 
-            double joint_b_angle = joints["joint_b"].pos;
-            SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_b", "arm_joint_a",
+        double joint_b_angle = joints["joint_b"].pos;
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_b", "arm_joint_a",
             SE3d{{0, 0, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{joint_b_angle, R3d::UnitY()}}}}, now);
 
-            double joint_c_angle = (joints["joint_c"].pos - JOINT_C_OFFSET);
-            SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_c", "arm_joint_b",
+        double joint_c_angle = (joints["joint_c"].pos - JOINT_C_OFFSET);
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_c", "arm_joint_b",
             SE3d{{LINK_BC, 0, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{joint_c_angle, R3d::UnitY()}}}}, now);
 
-            double joint_DE_angle = (joints["joint_de_pitch"].pos + JOINT_C_OFFSET);
-            SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_DE", "arm_joint_c",
+        double joint_DE_angle = (joints["joint_de_pitch"].pos + JOINT_C_OFFSET);
+        SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_DE", "arm_joint_c",
             SE3d{{LINK_CD, 0, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{joint_DE_angle, R3d::UnitY()}}}}, now);
 
-            double angle = -joints["joint_b"].pos;
-            double x = LINK_BC * std::cos(angle);
-            double z = LINK_BC * std::sin(angle);
-            angle += -(joints["joint_c"].pos - JOINT_C_OFFSET);
-            x += LINK_CD * std::cos(angle);
-            z += LINK_CD * std::sin(angle);
-            angle -= joints["joint_de_pitch"].pos + JOINT_C_OFFSET;
-            x += END_EFFECTOR_LENGTH * std::cos(angle);
-            z += END_EFFECTOR_LENGTH * std::sin(angle);
-            mArmPos = {x, a_pos, z, -angle, joints["joint_de_roll"].pos, std::max(joints["gripper"].pos, 0.0)};
+        double angle = -joints["joint_b"].pos;
+        double x = LINK_BC * std::cos(angle);
+        double z = LINK_BC * std::sin(angle);
+        angle += -(joints["joint_c"].pos - JOINT_C_OFFSET);
+        x += LINK_CD * std::cos(angle);
+        z += LINK_CD * std::sin(angle);
+        angle -= joints["joint_de_pitch"].pos + JOINT_C_OFFSET;
+        x += END_EFFECTOR_LENGTH * std::cos(angle);
+        z += END_EFFECTOR_LENGTH * std::sin(angle);
+        mArmPos = {x, a_pos, z, -angle, joints["joint_de_roll"].pos, std::max(joints["gripper"].pos, 0.0)};
 
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk", "arm_base_link", mArmPos.toSE3(), now);
     }
@@ -290,11 +290,11 @@ namespace mrover {
                     if(mPusherCli->wait_for_service(pusherTimeout)) {
                         RCLCPP_INFO(get_logger(), "Calling pusher service.");
 
-                    auto pusherReq = std::make_shared<srv::Pusher::Request>();
-                    pusherReq->start = true;    
-                    auto pusherFuture = mPusherCli->async_send_request(pusherReq);
+                        auto pusherReq = std::make_shared<srv::Pusher::Request>();
+                        pusherReq->start = true;
+                        auto pusherFuture = mPusherCli->async_send_request(pusherReq);
 
-                    if(pusherFuture.wait_for(std::chrono::seconds(5)) == std::future_status::ready) {
+                        if(pusherFuture.wait_for(std::chrono::seconds(5)) == std::future_status::ready) {
                             RCLCPP_INFO(get_logger(), "Pusher service succeeded.");
                             std::this_thread::sleep_for(pauseTime);
                             result->success = true;
