@@ -41,6 +41,7 @@ macro(mrover_add_node name sources)
         TARGETS ${name}
         DESTINATION lib/${PROJECT_NAME}
     )
+    mrover_add_node_gtest(${name} ${sources})
 endmacro()
 
 macro(mrover_add_component name sources includes)
@@ -71,3 +72,27 @@ endmacro()
 macro(mrover_ament_component name)
     ament_target_dependencies(${name}_component ${ARGN})
 endmacro()
+
+macro(mrover_add_node_gtest node_name node_sources)
+    file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS "tests/${node_name}/*.cpp")
+    if (TEST_SOURCES)
+        file(GLOB_RECURSE NODE_SOURCES CONFIGURE_DEPENDS ${node_sources})
+        ament_add_gtest(test_${node_name} tests/main.cpp ${TEST_SOURCES} ${NODE_SOURCES})
+        mrover_target(test_${node_name})
+        target_compile_options(test_${node_name} PRIVATE -fprofile-instr-generate -fcoverage-mapping -fprofile-list=${CMAKE_CURRENT_SOURCE_DIR}/tests/coverage_ignore.list)
+        target_link_options(test_${node_name} PRIVATE -fprofile-instr-generate -Wl,--wrap=main)
+        target_include_directories(test_${node_name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+        # use a deferred call here because we need to wait until after
+        # target_link_libraries is called on the main node
+        cmake_language(DEFER CALL link_test_deps ${node_name})
+    else()
+        message("No tests found for node ${node_name}")
+    endif()
+endmacro()
+
+function(link_test_deps node_name)
+    get_target_property(DEPS ${node_name} LINK_LIBRARIES)
+    if (DEPS)
+        target_link_libraries(test_${node_name} ${DEPS})
+    endif()
+endfunction()
