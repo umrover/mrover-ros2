@@ -45,13 +45,13 @@ namespace mrover {
 
         // TODO: update velocity limits to make them real
         std::unordered_map<std::string, JointWrapper> joints = {
-                {"joint_a", {.limits = {.minPos = 0, .maxPos = 0.37, .minVel = -0.05, .maxVel = 0.05}, .pos = 0}},
-                {"joint_b", {.limits = {.minPos = -1.1, .maxPos = 0.25, .minVel = -0.05, .maxVel = 0.05}, .pos = 0}},
-                {"joint_c", {.limits = {.minPos = -1.0, .maxPos = 3.0, .minVel = -0.03142, .maxVel = 0.03142}, .pos = 0}},
-                {"joint_de_pitch", {.limits = {.minPos = -1.75, .maxPos = 1.1, .minVel = -0.2, .maxVel = 0.2}, // pretty conservative limits atm
+                {JOINT_A, {.limits = {.minPos = 0, .maxPos = 0.37, .minVel = -0.05, .maxVel = 0.05}, .pos = 0}},
+                {JOINT_B, {.limits = {.minPos = -1.1, .maxPos = 0.25, .minVel = -0.05, .maxVel = 0.05}, .pos = 0}},
+                {JOINT_C, {.limits = {.minPos = -1.0, .maxPos = 3.0, .minVel = -0.03142, .maxVel = 0.03142}, .pos = 0}},
+                {JOINT_DE_PITCH, {.limits = {.minPos = -1.75, .maxPos = 1.1, .minVel = -0.2, .maxVel = 0.2}, // pretty conservative limits atm
                                     .pos = 0}},
-                {"joint_de_roll", {.limits = {.minPos = -3.14, .maxPos = 3.13, .minVel = -1.0, .maxVel = 1.0}, .pos = 0}},
-                {"gripper", {.limits = {.minPos = 0, .maxPos = 0.1, .minVel = -1, .maxVel = 1}, .pos = 0}},
+                {JOINT_DE_ROLL, {.limits = {.minPos = -3.14, .maxPos = 3.13, .minVel = -1.0, .maxVel = 1.0}, .pos = 0}},
+                {JOINT_GRIPPER, {.limits = {.minPos = 0, .maxPos = 0.1, .minVel = -1, .maxVel = 1}, .pos = 0}},
         };
 
         rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr mVelSub;
@@ -91,6 +91,12 @@ namespace mrover {
         static rclcpp::Duration const TIMEOUT;
 
     public:
+        static constexpr std::string JOINT_A = "joint_a";
+        static constexpr std::string JOINT_B = "joint_b";
+        static constexpr std::string JOINT_C = "joint_c";
+        static constexpr std::string JOINT_DE_PITCH = "joint_de_pitch";
+        static constexpr std::string JOINT_DE_ROLL = "joint_de_roll";
+        static constexpr std::string JOINT_GRIPPER = "gripper";
         // TODO(quintin): Neven, please load these from config YAML files instead of hard coding. Ideally they would even be computed at runtime. This way you can change the xacro without worry.
 
         // From: rover.urdf.xacro

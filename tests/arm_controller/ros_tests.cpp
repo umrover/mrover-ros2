@@ -69,7 +69,7 @@ namespace mrover {
 
         auto joint_pub = test_node->create_publisher<msg::ControllerState>("arm_controller_state", 10);
         msg::ControllerState fk_msg;
-        fk_msg.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "gripper"};
+        fk_msg.names = {ArmController::JOINT_A, ArmController::JOINT_B, ArmController::JOINT_C, ArmController::JOINT_DE_PITCH, ArmController::JOINT_DE_ROLL, ArmController::JOINT_GRIPPER};
         // send 0 for all joint angles
         fk_msg.positions.resize(fk_msg.names.size());
         joint_pub->publish(fk_msg);
@@ -172,7 +172,7 @@ namespace mrover {
         // now update arm position so that the action can finish
         auto joint_pub = test_node->create_publisher<msg::ControllerState>("arm_controller_state", 10);
         msg::ControllerState joint_msg;
-        joint_msg.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "gripper"};
+        joint_msg.names = {ArmController::JOINT_A, ArmController::JOINT_B, ArmController::JOINT_C, ArmController::JOINT_DE_PITCH, ArmController::JOINT_DE_ROLL, ArmController::JOINT_GRIPPER};
         joint_msg.positions.resize(joint_msg.names.size());
         joint_msg.positions[0] = 0.1; // move joint a so that it's in the right spot
         joint_pub->publish(joint_msg);
@@ -346,7 +346,7 @@ namespace mrover {
         // now update arm position so that the action can finish
         auto joint_pub = test_node->create_publisher<msg::ControllerState>("arm_controller_state", 10);
         msg::ControllerState joint_msg;
-        joint_msg.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll", "gripper"};
+        joint_msg.names = {ArmController::JOINT_A, ArmController::JOINT_B, ArmController::JOINT_C, ArmController::JOINT_DE_PITCH, ArmController::JOINT_DE_ROLL, ArmController::JOINT_GRIPPER};
         joint_msg.positions.resize(joint_msg.names.size());
         joint_msg.positions[0] = 100; // move joint a so that it's in the right spot
         joint_pub->publish(joint_msg);

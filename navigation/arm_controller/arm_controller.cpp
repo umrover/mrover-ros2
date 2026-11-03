@@ -68,7 +68,7 @@ namespace mrover {
         }
 
         msg::Position positions;
-        positions.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
+        positions.names = {JOINT_A, JOINT_B, JOINT_C, JOINT_DE_PITCH, JOINT_DE_ROLL};
         positions.positions = {
             static_cast<float>(y),
             static_cast<float>(q1),
@@ -120,7 +120,7 @@ namespace mrover {
         }
 
         msg::Velocity velocities;
-        velocities.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
+        velocities.names = {JOINT_A, JOINT_B, JOINT_C, JOINT_DE_PITCH, JOINT_DE_ROLL};
         velocities.velocities = {
             static_cast<float>(vel.linear.y),
             static_cast<float>(joint_b_vel),
@@ -181,32 +181,32 @@ namespace mrover {
 
         auto const now = get_clock()->now();
 
-        double a_pos = joints["joint_a"].pos;
+        double a_pos = joints[JOINT_A].pos;
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_a", "arm_base_link",
             SE3d{{0, a_pos, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{0, R3d::UnitY()}}}}, now);
 
-        double joint_b_angle = joints["joint_b"].pos;
+        double joint_b_angle = joints[JOINT_B].pos;
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_b", "arm_joint_a",
             SE3d{{0, 0, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{joint_b_angle, R3d::UnitY()}}}}, now);
 
-        double joint_c_angle = (joints["joint_c"].pos - JOINT_C_OFFSET);
+        double joint_c_angle = (joints[JOINT_C].pos - JOINT_C_OFFSET);
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_c", "arm_joint_b",
             SE3d{{LINK_BC, 0, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{joint_c_angle, R3d::UnitY()}}}}, now);
 
-        double joint_DE_angle = (joints["joint_de_pitch"].pos + JOINT_C_OFFSET);
+        double joint_DE_angle = (joints[JOINT_DE_PITCH].pos + JOINT_C_OFFSET);
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_joint_DE", "arm_joint_c",
             SE3d{{LINK_CD, 0, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{joint_DE_angle, R3d::UnitY()}}}}, now);
 
-        double angle = -joints["joint_b"].pos;
+        double angle = -joints[JOINT_B].pos;
         double x = LINK_BC * std::cos(angle);
         double z = LINK_BC * std::sin(angle);
-        angle += -(joints["joint_c"].pos - JOINT_C_OFFSET);
+        angle += -(joints[JOINT_C].pos - JOINT_C_OFFSET);
         x += LINK_CD * std::cos(angle);
         z += LINK_CD * std::sin(angle);
-        angle -= joints["joint_de_pitch"].pos + JOINT_C_OFFSET;
+        angle -= joints[JOINT_DE_PITCH].pos + JOINT_C_OFFSET;
         x += END_EFFECTOR_LENGTH * std::cos(angle);
         z += END_EFFECTOR_LENGTH * std::sin(angle);
-        mArmPos = {x, a_pos, z, -angle, joints["joint_de_roll"].pos, std::max(joints["gripper"].pos, 0.0)};
+        mArmPos = {x, a_pos, z, -angle, joints[JOINT_DE_ROLL].pos, std::max(joints[JOINT_GRIPPER].pos, 0.0)};
 
         SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_fk", "arm_base_link", mArmPos.toSE3(), now);
     }
@@ -254,7 +254,7 @@ namespace mrover {
             auto result = std::make_shared<action::TypingPosition::Result>();
             result->success = false;
             auto feedback = std::make_shared<action::TypingPosition::Feedback>();
-            RCLCPP_INFO(get_logger(), "Joint A Current: %f, Gripper Current: %f", joints["joint_a"].pos, joints["gripper"].pos);
+            RCLCPP_INFO(get_logger(), "Joint A Current: %f, Gripper Current: %f", joints[JOINT_A].pos, joints[JOINT_GRIPPER].pos);
 
 
             // make param
@@ -278,7 +278,7 @@ namespace mrover {
                     return;
                 }
 
-                double distRemaining = sqrt(pow(joints["joint_a"].pos - mPosTarget.y, 2) + pow((joints["gripper"].pos - mPosTarget.gripper), 2));
+                double distRemaining = sqrt(pow(joints[JOINT_A].pos - mPosTarget.y, 2) + pow((joints[JOINT_GRIPPER].pos - mPosTarget.gripper), 2));
                 // make param
                 if(distRemaining < 0.004) {
                     RCLCPP_INFO(get_logger(), "Reached target position.");
@@ -336,13 +336,13 @@ namespace mrover {
 
     auto ArmController::timerCallback() -> void {
         msg::Position mCurrPos;
-        mCurrPos.names = {"joint_a", "joint_b", "joint_c", "joint_de_pitch", "joint_de_roll"};
+        mCurrPos.names = {JOINT_A, JOINT_B, JOINT_C, JOINT_DE_PITCH, JOINT_DE_ROLL};
         mCurrPos.positions = {
-            static_cast<float>(joints["joint_a"].pos),
-            static_cast<float>(joints["joint_b"].pos),
-            static_cast<float>(joints["joint_c"].pos),
-            static_cast<float>(joints["joint_de_pitch"].pos),
-            static_cast<float>(joints["joint_de_roll"].pos),
+            static_cast<float>(joints[JOINT_A].pos),
+            static_cast<float>(joints[JOINT_B].pos),
+            static_cast<float>(joints[JOINT_C].pos),
+            static_cast<float>(joints[JOINT_DE_PITCH].pos),
+            static_cast<float>(joints[JOINT_DE_ROLL].pos),
         };
 
         if (get_clock()->now() - mLastUpdate > TIMEOUT) {
@@ -377,7 +377,7 @@ namespace mrover {
         } else { // typing mode
             if(mTypingGoalID) {
                 msg::Position positions;
-                positions.names = {"joint_a", "gripper"};
+                positions.names = {JOINT_A, JOINT_GRIPPER};
                 positions.positions = {
                         static_cast<float>(mPosTarget.y),
                         static_cast<float>(mPosTarget.gripper),
@@ -431,7 +431,3 @@ auto main(int argc, char** argv) -> int {
     rclcpp::shutdown();
     return EXIT_SUCCESS;
 }
-
-
-    /*SE3Conversions::pushToTfTree(mTfBroadcaster, "arm_ee", "arm_joint_de",
-    SE3d{{END_EFFECTOR_LENGTH, 0, 0}, SO3d{Eigen::Quaterniond{Eigen::AngleAxisd{0.0, R3d::UnitY()}}}}, now);*/
