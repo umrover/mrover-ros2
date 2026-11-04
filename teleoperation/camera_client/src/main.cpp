@@ -7,6 +7,7 @@
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
+#include <vector>
 
 auto main(int argc, char** argv) -> int {
     QApplication app(argc, argv);
@@ -22,15 +23,25 @@ auto main(int argc, char** argv) -> int {
     mainWindow->setMinimumSize(1280, 720);
 
     auto* siteToolbar = mainWindow->addToolBar("Site");
-    auto* siteToolbarSide = secondWindow->addToolBar("Site");
     auto* attributeSiteAction = siteToolbar->addAction("Attribute site");
-    auto* attributeSiteActionSide = siteToolbarSide->addAction("Attribute site");
+    auto* exportSiteTagsAction = siteToolbar->addAction("Export Site Data");
 
+    auto* siteToolbarSide = secondWindow->addToolBar("Site");
+    auto* attributeSiteActionSide = siteToolbarSide->addAction("Attribute site");
+    auto* exportSiteTagsActionSide = siteToolbarSide->addAction("Export Site Data");
+
+    struct SiteTag {
+        QString name;
+        double latitude;
+        double longitude;
+    };
+
+    std::vector<SiteTag> tags;
 
     secondWindow->setWindowTitle("Second MRover Cameras");
     secondWindow->setMinimumSize(1280, 720);
 
-    auto openSiteDialog = [](QWidget* parent) {
+    auto openSiteDialog = [&tags](QWidget* parent) {
     QDialog dialog(parent);
     dialog.setWindowTitle("Attribute Site");
 
@@ -57,16 +68,27 @@ auto main(int argc, char** argv) -> int {
     QObject::connect(buttons, &QDialogButtonBox::rejected,
                      &dialog, &QDialog::reject);
 
+
     auto* layout = new QVBoxLayout(&dialog);
     layout->addLayout(form);
     layout->addWidget(buttons);
 
     if (dialog.exec() == QDialog::Accepted) {
-        qDebug() << "Site:" << site->text()
-                 << "Lat:" << latitude->value()
-                 << "Lon:" << longitude->value();
+        tags.push_back(SiteTag{
+        site->text(),
+        latitude->value(),
+        longitude->value()
+    });
     }
 };
+
+QObject::connect(exportSiteTagsAction, &QAction::triggered, mainWindow.get(), [] {
+qDebug() << "Test";
+});
+
+QObject::connect(exportSiteTagsActionSide, &QAction::triggered, secondWindow.get(), [] {
+    qDebug() << "Test";
+});
 
 QObject::connect(attributeSiteAction, &QAction::triggered,
                  mainWindow.get(),
