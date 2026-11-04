@@ -246,13 +246,18 @@ namespace mrover{
 
             std::vector<cv::Point3f> all_objPoints;
             std::vector<cv::Point2f> all_imgPoints; 
-
+            cv::Point3f top_right_center; //center of top right tag
+            top_right_center.z = -1;
             if (validcnt > 0) {
                 for (int idx : valid_indices) {
                     int id = ids[idx];
                     
                     cv::Point3f tag_center(layout[id][0], layout[id][1], layout[id][2]);
                     
+                    if( tag_center.x != 0 && tag_center.y != 0 ){
+                        top_right_center = tag_center;
+                    }
+                
                     all_objPoints.push_back(tag_center + cv::Point3f(-half_size,  half_size, 0)); // Top-Left
                     all_objPoints.push_back(tag_center + cv::Point3f( half_size,  half_size, 0)); // Top-Right
                     all_objPoints.push_back(tag_center + cv::Point3f( half_size, -half_size, 0)); // Bottom-Right
@@ -320,6 +325,18 @@ namespace mrover{
             finalestimation.position.y = combined_tvec[1];
             finalestimation.position.z = combined_tvec[2];
 
+            //because the coordinates of the top right tag are relative to the bottom left tag. 
+            cv::Point3f keyboard_center(-1,-1,-1);
+            if(top_right_center.z != -1){
+                keyboard_center.x = top_right_center.x/2.0f;
+                keyboard_center.y = top_right_center.y/2.0f;
+                keyboard_center.z = top_right_center.z;
+            }
+
+            double distance_to_bottom_left_from_center = sqrt(keyboard_center.x*keyboard_center.x + keyboard_center.y*keyboard_center.y + keyboard_center.z*keyboard_center.z);
+            double distance_to_bottom_left_from_camera = sqrt(finalestimation.position.x*finalestimation.position.x + finalestimation.position.y*finalestimation.position.y + finalestimation.position.z*finalestimation.position.z);
+            double distance_to_center_from_camera = sqrt(distance_to_bottom_left_from_camera*distance_to_bottom_left_from_camera + distance_to_bottom_left_from_center*distance_to_bottom_left_from_center);
+            RCLCPP_INFO_STREAM(get_logger(), "Distance to center from camera: " << distance_to_center_from_camera);
             double siny = 2.0 * (q.w() * q.y() - q.z() * q.x());
             double yaw_rad;
             if (std::abs(siny) >= 1)
