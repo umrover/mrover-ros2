@@ -88,7 +88,7 @@ namespace mrover {
         static rclcpp::Duration const TIMEOUT;
 
     public:
-        // TODO(Brendan): Load these from pull them from xacro (or config YAML files).
+        // TODO(quintin): Neven, please load these from config YAML files instead of hard coding. Ideally they would even be computed at runtime. This way you can change the xacro without worry.
 
         // From: rover.urdf.xacro
         // A is the prismatic joint, B is the first revolute joint, C is the second revolute joint
