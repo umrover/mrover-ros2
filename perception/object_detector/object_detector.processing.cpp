@@ -43,6 +43,14 @@ namespace mrover {
         assert(msg->height > 0);
         assert(msg->width > 0);
 
+        ++mCloudCount;
+        if (auto const now = std::chrono::steady_clock::now(); now - mCloudWindowStart >= std::chrono::seconds{1}) {
+            double const elapsed = std::chrono::duration<double>(now - mCloudWindowStart).count();
+            RCLCPP_INFO_STREAM(get_logger(), std::format("/zed/left/points rx: {:.1f} Hz", static_cast<double>(mCloudCount) / elapsed));
+            mCloudCount = 0;
+            mCloudWindowStart = now;
+        }
+
         mLoopProfiler.beginLoop();
 
         // Adjust the picture size to be in line with the expected img size from the Point Cloud

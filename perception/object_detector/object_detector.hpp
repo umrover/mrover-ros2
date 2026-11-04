@@ -118,6 +118,10 @@ namespace mrover {
     private:
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr mSensorSub;
 
+        // Received point cloud rate, logged once per second
+        std::size_t mCloudCount{};
+        std::chrono::steady_clock::time_point mCloudWindowStart = std::chrono::steady_clock::now();
+
     public:
         explicit StereoObjectDetector(rclcpp::NodeOptions const& options = rclcpp::NodeOptions());
 
