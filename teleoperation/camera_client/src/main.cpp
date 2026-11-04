@@ -4,6 +4,10 @@
 #include "CameraClientNode.hpp"
 #include "CameraConfigWidget.hpp"
 
+#include <QDialog>
+#include <QDialogButtonBox>
+#include <QDoubleSpinBox>
+
 auto main(int argc, char** argv) -> int {
     QApplication app(argc, argv);
 
@@ -17,8 +21,66 @@ auto main(int argc, char** argv) -> int {
     mainWindow->setWindowTitle("MRover Cameras");
     mainWindow->setMinimumSize(1280, 720);
 
+    auto* siteToolbar = mainWindow->addToolBar("Site");
+    auto* siteToolbarSide = secondWindow->addToolBar("Site");
+    auto* attributeSiteAction = siteToolbar->addAction("Attribute site");
+    auto* attributeSiteActionSide = siteToolbarSide->addAction("Attribute site");
+
+
     secondWindow->setWindowTitle("Second MRover Cameras");
     secondWindow->setMinimumSize(1280, 720);
+
+    auto openSiteDialog = [](QWidget* parent) {
+    QDialog dialog(parent);
+    dialog.setWindowTitle("Attribute Site");
+
+    auto* site = new QLineEdit(&dialog);
+    site->setText("<no site>");
+
+    auto* latitude = new QDoubleSpinBox(&dialog);
+    latitude->setRange(-90.0, 90.0);
+    latitude->setDecimals(7);
+
+    auto* longitude = new QDoubleSpinBox(&dialog);
+    longitude->setRange(-180.0, 180.0);
+    longitude->setDecimals(7);
+
+    auto* form = new QFormLayout;
+    form->addRow("Site", site);
+    form->addRow("Latitude", latitude);
+    form->addRow("Longitude", longitude);
+
+    auto* buttons = new QDialogButtonBox(
+        QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+    QObject::connect(buttons, &QDialogButtonBox::accepted,
+                     &dialog, &QDialog::accept);
+    QObject::connect(buttons, &QDialogButtonBox::rejected,
+                     &dialog, &QDialog::reject);
+
+    auto* layout = new QVBoxLayout(&dialog);
+    layout->addLayout(form);
+    layout->addWidget(buttons);
+
+    if (dialog.exec() == QDialog::Accepted) {
+        qDebug() << "Site:" << site->text()
+                 << "Lat:" << latitude->value()
+                 << "Lon:" << longitude->value();
+    }
+};
+
+QObject::connect(attributeSiteAction, &QAction::triggered,
+                 mainWindow.get(),
+                 [openSiteDialog, parent = mainWindow.get()] {
+                     openSiteDialog(parent);
+                 });
+
+QObject::connect(attributeSiteActionSide, &QAction::triggered,
+                 secondWindow.get(),
+                 [openSiteDialog, parent = secondWindow.get()] {
+                     openSiteDialog(parent);
+                 });
+
+    
 
     QObject::connect(node.get(), &mrover::CameraClientNode::cameraDiscovered,
                      mainWindow.get(), [mainWindow, secondWindow, node](mrover::CameraInfo const& info) {

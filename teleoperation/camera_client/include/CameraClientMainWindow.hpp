@@ -25,6 +25,8 @@ namespace mrover {
 
         std::unordered_map<std::string, std::vector<std::string>> mConfigs;
 
+        
+
     public:
         explicit CameraClientMainWindow(QWidget* parent = nullptr);
 

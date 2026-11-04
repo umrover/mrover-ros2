@@ -135,5 +135,4 @@ namespace mrover {
 
         selector.layout->addWidget(selector.rotateButton);
     }
-
 } // namespace mrover
