@@ -1,4 +1,4 @@
-name: Publish Bootstrap Script
+name: Publish Bootstrap Scripts
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - bootstrap.sh
+      - bootstrap-portable.sh
       - .github/pages/index.html
   workflow_dispatch:
 
@@ -28,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Assemble site
-        run: mkdir -p site && cp bootstrap.sh .github/pages/index.html site/
+        run: mkdir -p site && cp bootstrap.sh bootstrap-portable.sh .github/pages/index.html site/
       - uses: actions/upload-pages-artifact@v5
         with:
           path: site
