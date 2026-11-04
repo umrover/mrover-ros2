@@ -152,7 +152,7 @@ auto GstVideoWidget::applyPipeline() -> void {
 
     std::string const launch = std::format("{}{} ! videoconvert ! video/x-raw,format=RGB ! appsink name=video_sink emit-signals=true sync=false max-buffers=1 drop=true", mBasePipeline, flipElement);
 
-    qDebug() << launch;
+    qDebug() << launch.c_str();
     GError* error = nullptr;
     mPipeline = gst_parse_launch(launch.c_str(), &error);
     if (error) {
