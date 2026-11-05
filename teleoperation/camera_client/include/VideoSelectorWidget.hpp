@@ -33,6 +33,8 @@ namespace mrover {
             QSlider* scaleSlider;
             QPushButton* rotateButton;
             QPushButton* newWindowButton;
+
+            std::string pipeline;
         };
 
         bool mUsingIcons;
@@ -49,10 +51,10 @@ namespace mrover {
     public:
         explicit VideoSelectorWidget(QWidget* parent = nullptr);
 
-        auto addCamera(std::string const& name, CameraCallbacks callbacks) -> void;
+        auto addCamera(std::string const& name, std::string const& pipeline, CameraCallbacks callbacks) -> void;
     
     private slots:
-        void openNewWindowPopup(std::string const& cameraName, CameraCallbacks const& callbacks);
+        void openNewWindowPopup(std::string const& cameraName, std::string const& pipeline, CameraCallbacks const& callbacks);
     };
 
 } // namespace mrover

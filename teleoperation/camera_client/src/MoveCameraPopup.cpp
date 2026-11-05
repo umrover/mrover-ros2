@@ -14,7 +14,7 @@
 
 using namespace mrover;
 
-MoveCameraPopup::MoveCameraPopup(std::string const& cameraName, QWidget* parent) 
+MoveCameraPopup::MoveCameraPopup(std::string const& cameraName, std::string const& pipeline, QWidget* parent) 
 : QDialog(parent) {
     layout = new QVBoxLayout(this);
     widget = new QWidget(this);
@@ -35,7 +35,7 @@ MoveCameraPopup::MoveCameraPopup(std::string const& cameraName, QWidget* parent)
 
     // Add buttons for windows
     for(const auto &window: mainWindows /*size_t i = 0; i < mainWindows.size(); ++i*/){
-        auto * current_button = new MoveToWindowButton(window->windowTitle(), this);
+        auto * current_button = new MoveToWindowButton(window->windowTitle(), cameraName, pipeline, this);
 
         // connect(current_button, &QPushButton::pressed, this, [this](/*std::string const& name, std::string const& pipeline*/) {
         //     sendCreateRequest("test name", "test pipeline");

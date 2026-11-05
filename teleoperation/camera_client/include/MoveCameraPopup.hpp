@@ -4,6 +4,7 @@
 #include "pch.hpp"
 #include <qboxlayout.h>
 #include <qdialog.h>
+#include <qglobal.h>
 #include <qpushbutton.h>
 #include <qtmetamacros.h>
 #include <qwidget.h>
@@ -13,13 +14,14 @@ namespace mrover {
         Q_OBJECT
 
         public:
-            explicit MoveToWindowButton(const QString& title, QWidget* parent = nullptr): QPushButton(title, parent){
-                connect(this, &QPushButton::pressed, this, [this]() {
-                    MoveToWindowButton::createRequested("test name", "test pipeline");
+            explicit MoveToWindowButton(const QString& title, const std::string& cameraName, const std::string& pipeline, QWidget* parent = nullptr): QPushButton(title, parent){
+                connect(this, &QPushButton::pressed, this, [this, cameraName, pipeline]() {
+                    MoveToWindowButton::createRequested(cameraName, pipeline);
                 });
             }
 
             void sendCreateRequest(std::string name, std::string pipeline){
+                qDebug() << "Sending create request";
                 emit createRequested(std::move(name), std::move(pipeline));
             }
 
@@ -36,7 +38,7 @@ namespace mrover {
         
     
     public:
-        explicit MoveCameraPopup(std::string const& cameraName, QWidget* parent = nullptr);
+        explicit MoveCameraPopup(std::string const& cameraName, std::string const& pipeline, QWidget* parent = nullptr);
 
     signals:
         void createRequested(std::string name, std::string pipeline);

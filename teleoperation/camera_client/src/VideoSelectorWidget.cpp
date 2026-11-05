@@ -21,7 +21,7 @@ namespace mrover {
                        QIcon::hasThemeIcon("camera-photo-symbolic"));
     }
 
-    auto VideoSelectorWidget::addCamera(std::string const& name, CameraCallbacks callbacks) -> void {
+    auto VideoSelectorWidget::addCamera(std::string const& name, std::string const& pipeline, CameraCallbacks callbacks) -> void {
         if (mSelectors.contains(name)) {
             qDebug() << "Selector with name" << QString::fromStdString(name) << "already exists.";
             return;
@@ -49,6 +49,8 @@ namespace mrover {
         mSelectorsLayout->takeAt(mSelectorsLayout->count() - 1);
         mSelectorsLayout->addWidget(selector.widget);
         mSelectorsLayout->addStretch();
+
+        selector.pipeline = pipeline;
     }
 
     auto VideoSelectorWidget::createVisibilityCheckBox(Selector& selector, CameraCallbacks const& callbacks) -> void {
@@ -152,13 +154,13 @@ namespace mrover {
 
         selector.layout->addWidget(selector.newWindowButton);
 
-        connect(selector.newWindowButton, &QPushButton::clicked, this, [this, &cameraName, callbacks](){
-            openNewWindowPopup(cameraName, callbacks);
+        connect(selector.newWindowButton, &QPushButton::clicked, this, [this, cameraName, callbacks, selector](){
+            openNewWindowPopup(cameraName, selector.pipeline, callbacks);
         });
     }
 
-    void VideoSelectorWidget::openNewWindowPopup(std::string const& cameraName, CameraCallbacks const& callbacks){
-        auto* popup = new MoveCameraPopup(cameraName, this); // TODO check for memory leak
+    void VideoSelectorWidget::openNewWindowPopup(std::string const& cameraName, std::string const& pipeline, CameraCallbacks const& callbacks){
+        auto* popup = new MoveCameraPopup(cameraName, pipeline, this); // TODO check for memory leak
         // auto myWindow = qobject_cast<CameraClientMainWindow*>(this->topLevelWidget());
 
         // if(!myWindow){

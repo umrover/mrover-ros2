@@ -77,7 +77,7 @@ namespace mrover {
         if (mCameraGridWidget->isError()) {
             return false;
         }
-        mCameraSelectorWidget->addCamera(name, std::move(callbacks));
+        mCameraSelectorWidget->addCamera(name, pipeline, std::move(callbacks));
         return true;
     }
 
