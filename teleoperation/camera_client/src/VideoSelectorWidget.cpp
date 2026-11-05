@@ -28,6 +28,7 @@ namespace mrover {
         }
 
         Selector selector{};
+        selector.pipeline = pipeline;
         selector.widget = new QWidget(this);
         selector.layout = new QHBoxLayout(selector.widget);
         selector.widget->setLayout(selector.layout);
@@ -50,7 +51,6 @@ namespace mrover {
         mSelectorsLayout->addWidget(selector.widget);
         mSelectorsLayout->addStretch();
 
-        selector.pipeline = pipeline;
     }
 
     auto VideoSelectorWidget::createVisibilityCheckBox(Selector& selector, CameraCallbacks const& callbacks) -> void {
