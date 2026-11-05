@@ -49,7 +49,7 @@ namespace mrover {
             struct JointLimits {
                 double minPos, maxPos, minVel, maxVel;
                 [[nodiscard]] auto posInBounds(double pos) const -> bool { return minPos <= pos && pos <= maxPos; }
-                [[nodiscard]] auto velInBounds(double vel) const -> bool { return minPos <= vel && vel <= maxPos; }
+                [[nodiscard]] auto velInBounds(double vel) const -> bool { return minVel <= vel && vel <= maxVel; }
             };
 
             JointLimits limits;
@@ -67,7 +67,7 @@ namespace mrover {
                 .pos = 0
             }},
             {"joint_c", {
-                .limits = {.minPos = -0.959931, .maxPos = 2.87979, .minVel = -0.05 * 2 * std::numbers::pi, .maxVel = 0.05 * 2 * std::numbers::pi},
+                .limits = {.minPos = -0.959931, .maxPos = 2.87979, .minVel = -0.005 * 2 * std::numbers::pi, .maxVel = 0.005 * 2 * std::numbers::pi},
                 .pos = 0
             }},    
             {"joint_de_pitch", {.limits = {.minPos = -1.75, .maxPos = 1.1, .minVel = -0.2, .maxVel = 0.2}, // pretty conservative limits atm
