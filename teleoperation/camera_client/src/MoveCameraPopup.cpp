@@ -8,6 +8,7 @@
 #include <qpushbutton.h>
 #include <qwidget.h>
 
+#include <qwindowdefs.h>
 #include <utility>
 
 #include <utility>
@@ -44,6 +45,7 @@ MoveCameraPopup::MoveCameraPopup(std::string const& cameraName, std::string cons
         layout->addWidget(current_button);
         connect(current_button, &MoveToWindowButton::pressed, window, [this, cameraName](){
             sendPressed(cameraName);
+            accept();
         });
         connect(current_button, &MoveToWindowButton::createRequested, window, &CameraClientMainWindow::fullCreateCamera);
 
