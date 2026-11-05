@@ -477,6 +477,9 @@ mrover_add_node(camera_client teleoperation/camera_client/*.*pp teleoperation/ca
 target_include_directories(camera_client PRIVATE teleoperation/camera_client/include)
 target_link_libraries(camera_client gst_utils Qt6::Widgets Qt6::Multimedia Qt6::MultimediaWidgets opencv_core opencv_imgcodecs)
 ament_target_dependencies(camera_client rclcpp std_srvs sensor_msgs)
+target_compile_definitions(camera_client PRIVATE
+    MROVER_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
 set_target_properties(camera_client PROPERTIES
     AUTOMOC ON
     AUTORCC ON

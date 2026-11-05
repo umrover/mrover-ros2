@@ -5,6 +5,9 @@
 #include "CameraConfigWidget.hpp"
 
 #include <QDialog>
+#include <QFile>
+#include <QTextStream>
+#include <QDir>
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
 #include <vector>
@@ -82,13 +85,47 @@ auto main(int argc, char** argv) -> int {
     }
 };
 
-QObject::connect(exportSiteTagsAction, &QAction::triggered, mainWindow.get(), [] {
-qDebug() << "Test";
-});
+auto writeDataToFile = [&tags]() {
+    QDir siteDir(QString::fromUtf8(MROVER_SOURCE_DIR)
+             + "/teleoperation/camera_client/site");
 
-QObject::connect(exportSiteTagsActionSide, &QAction::triggered, secondWindow.get(), [] {
-    qDebug() << "Test";
-});
+    if (!siteDir.exists() && !siteDir.mkpath(".")) {
+        qWarning() << "Could not create site folder:" << siteDir.path();
+        return;
+    }
+
+    QFile file(siteDir.filePath("site_tags.csv"));
+
+    
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        qWarning() << "Could not write site_tags.csv:" << file.errorString();
+        return;
+    }
+
+    QTextStream out(&file);
+    out << "site,latitude,longitude\n";
+
+    for (auto const& tag : tags) {
+        QString escapedName = tag.name;
+        escapedName.replace("\"", "\"\"");
+
+        out << "\"" << escapedName << "\","
+            << tag.latitude << ","
+            << tag.longitude << "\n";
+    }
+
+    qDebug() << "Saved site tags to" << file.fileName();
+};
+
+QObject::connect(exportSiteTagsAction, &QAction::triggered,
+                 mainWindow.get(), [writeDataToFile] {
+                     writeDataToFile();
+                 });
+
+QObject::connect(exportSiteTagsActionSide, &QAction::triggered,
+                 secondWindow.get(), [writeDataToFile] {
+                     writeDataToFile();
+                 });
 
 QObject::connect(attributeSiteAction, &QAction::triggered,
                  mainWindow.get(),
