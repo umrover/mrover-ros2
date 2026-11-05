@@ -46,7 +46,7 @@ MoveCameraPopup::MoveCameraPopup(std::string const& cameraName, std::string cons
         connect(current_button, &MoveToWindowButton::pressed, window, [this, cameraName](){
             sendPressed(cameraName);
             accept();
-            // deleteLater();
+            deleteLater();
         });
         connect(current_button, &MoveToWindowButton::createRequested, window, &CameraClientMainWindow::fullCreateCamera);
 
