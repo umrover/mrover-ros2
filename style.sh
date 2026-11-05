@@ -56,7 +56,7 @@ function find_executable() {
 
 CLANG_FORMAT_PATH=$(find_executable clang-format-18 18.1)
 readonly CLANG_FORMAT_PATH
-BLACK_PATH=$(find_executable black 26.5.1)
+BLACK_PATH=$(find_executable black 26.10.1)
 readonly BLACK_PATH
 MYPY_PATH=$(find_executable mypy 1.11.2)
 readonly MYPY_PATH
