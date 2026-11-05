@@ -61,12 +61,10 @@ GstVideoWidget::GstVideoWidget(QWidget* parent) : QWidget(parent) {
 GstVideoWidget::~GstVideoWidget() {
     if (mPipeline) {
         gst_element_set_state(mPipeline, GST_STATE_NULL);
+        gst_object_unref(mPipeline);
     }
     if (mAppSink) {
         gst_object_unref(mAppSink);
-    }
-    if (mPipeline) {
-        gst_object_unref(mPipeline);
     }
 }
 
