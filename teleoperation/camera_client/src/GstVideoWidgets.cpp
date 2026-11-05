@@ -1,5 +1,6 @@
 #include "GstVideoWidgets.hpp"
 #include <algorithm>
+#include <qdebug.h>
 
 using namespace mrover;
 
@@ -199,17 +200,26 @@ auto GstVideoGridWidget::deleteVideoBox(std::string const& name) -> bool {
 
     qDebug() << "Deleteing" << QString::fromStdString(name);
     auto box_it = mGstVideoBoxes.find(name);
-    box_it->second.gstVideoWidget->stop();
-     box_it->second.widget->setVisible(false);
-    mMainLayout->removeWidget(box_it->second.widget);
 
-    auto name_it = std::find(mVisibleOrder.begin(), mVisibleOrder.end(), name);
-    mVisibleOrder.erase(name_it);
+    if(box_it != mGstVideoBoxes.end()){
+        box_it->second.gstVideoWidget->stop();
+        box_it->second.widget->setVisible(false);
+        mMainLayout->removeWidget(box_it->second.widget);
 
-    mGstVideoBoxes.erase(box_it);
-    // delete &(box_it->second); // FIXME deletes wrong thing; CRASHES!!!
+        auto name_it = std::find(mVisibleOrder.begin(), mVisibleOrder.end(), name);
+        if(name_it != mVisibleOrder.end()){
+            mVisibleOrder.erase(name_it);
+        }
 
-    return true;
+        box_it->second.widget->deleteLater();
+        mGstVideoBoxes.erase(box_it);
+        return true;
+    } else {
+        qDebug() << "Could not find camera " << QString::fromStdString(name) << "for deletion";
+        return false;
+    }
+    
+
 }
 
 auto GstVideoGridWidget::rebuildGrid() -> void {
