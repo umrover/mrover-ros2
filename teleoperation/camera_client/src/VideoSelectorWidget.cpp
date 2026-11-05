@@ -170,11 +170,17 @@ namespace mrover {
         // qDebug() << myWindow->getCameraGridWidget()->findVideoBox(cameraName);
 
         auto deleteCallback = callbacks.onDelete;
-        connect(popup, &MoveCameraPopup::pressed, this, [deleteCallback](const std::string& name){
+        connect(popup, &MoveCameraPopup::pressed, this, [deleteCallback, this](const std::string& name){
             qDebug() << "VideoSelectorWidget received pressed";
             if (deleteCallback) {
                 qDebug() << "VideoSelectorWidget calling callback";
                 deleteCallback();
+
+                // TODO check error from iterator find?
+                auto curr_selector = mSelectors.find(name);
+                mSelectorsLayout->removeWidget(curr_selector->second.widget);
+                mSelectors.erase(curr_selector);
+                curr_selector->second.widget->deleteLater();
             }
         });
 
