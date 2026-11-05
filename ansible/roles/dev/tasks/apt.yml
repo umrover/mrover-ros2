@@ -1,3 +1,12 @@
+- name: Block snapd via apt preferences
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/apt/preferences.d/nosnap.pref
+    content: |
+      Package: snapd
+      Pin: release a=*
+      Pin-Priority: -10
+
 - name: Install python3-debian
   become: true
   ansible.builtin.apt:
@@ -27,11 +36,23 @@
     signed_by: https://packages.microsoft.com/keys/microsoft.asc
   register: vscode_repo
 
+- name: Add Google Chrome apt repo
+  become: true
+  ansible.builtin.deb822_repository:
+    name: google-chrome
+    types: deb
+    uris: https://dl.google.com/linux/chrome/deb/
+    suites: stable
+    components: main
+    architectures: amd64
+    signed_by: https://dl.google.com/linux/linux_signing_key.pub
+  register: chrome_repo
+
 - name: Update APT Cache if Repos Changed
   become: true
   ansible.builtin.apt:
     update_cache: true
-  when: github_cli_repo.changed or vscode_repo.changed
+  when: github_cli_repo.changed or vscode_repo.changed or chrome_repo.changed
 
 - name: Install apt packages
   become: true
@@ -46,3 +67,9 @@
       - gh
       - code
       - git-lfs
+
+- name: Install Google Chrome
+  become: true
+  ansible.builtin.apt:
+    name: google-chrome-stable
+    state: present
