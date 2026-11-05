@@ -569,8 +569,8 @@ namespace mrover {
             //     error_z_fin = (error_z_to_ideal / error_to_ideal_mag) * vel_magnitude;
             // }
 
-            double kP_lin = 30;
-            double kP_ang = 10;
+            double kP_lin = 5;
+            double kP_ang = 2;
             auto mVelAdjustedTarget = mVelTarget;   
 
             double iP_lin = 0;
