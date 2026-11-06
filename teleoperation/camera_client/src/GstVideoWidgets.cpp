@@ -2,6 +2,7 @@
 #include <gst/app/gstappsink.h>
 #include <gst/gstelement.h>
 #include <gst/video/video.h>
+#include <qdebug.h>
 #include <qglobal.h>
 #include <qwidget.h>
 
@@ -125,15 +126,27 @@ auto GstVideoWidget::onNewSample(GstAppSink* sink, gpointer userData) -> GstFlow
 }
 
 auto GstVideoWidget::applyPipeline() -> void {
-    std::string flipElement;
-    if (mRotation == 1) {
-        flipElement = " ! videoflip method=clockwise";
-    } else if (mRotation == 2) {
-        flipElement = " ! videoflip method=rotate-180";
-    } else if (mRotation == 3) {
-        flipElement = " ! videoflip method=counterclockwise";
+    gst::PipelineBuilder pipeline;
+
+    pipeline.pushBack(mBasePipeline);
+    
+    switch(mRotation){
+        case 1:
+            pipeline.pushBack("videoflip method=clockwise");
+            break;
+        case 2:
+            pipeline.pushBack("videoflip method=rotate-180");
+            break;
+        case 3:
+            pipeline.pushBack("videoflip method=counterclockwise");
+            break;
     }
 
+    pipeline.pushBack("videoconvert");
+    pipeline.pushBack("video/x-raw,format=RGB");
+    pipeline.pushBack("appsink name=video_sink emit-signals=true sync=false max-buffers=1 drop=true");
+    
+    // clear pipeline if already exists
     if (mPipeline) {
         gst_element_set_state(mPipeline, GST_STATE_NULL);
         if (mAppSink) {
@@ -141,27 +154,17 @@ auto GstVideoWidget::applyPipeline() -> void {
             mAppSink = nullptr;
         }
         gst_object_unref(mPipeline);
-        mPipeline = nullptr;
+        mPipeline = nullptr; // TODO memory leak?
     }
 
     mErrorString.clear();
     mFrame = {};
     update();
 
-    std::string const launch = std::format("{}{} ! videoconvert ! video/x-raw,format=RGB ! appsink name=video_sink emit-signals=true sync=false max-buffers=1 drop=true", mBasePipeline, flipElement);
+    mStreamPipelineWrapper = gst::PipelineWrapper(pipeline.str());
+    mStreamPipelineWrapper.init();
+    mPipeline = mStreamPipelineWrapper.getPipelineElement();
 
-    GError* error = nullptr;
-    mPipeline = gst_parse_launch(launch.c_str(), &error);
-    if (error) {
-        qWarning() << "GStreamer pipeline error:" << error->message;
-        mErrorString = QString::fromUtf8(error->message);
-        g_error_free(error);
-        if (mPipeline) {
-            gst_object_unref(mPipeline);
-            mPipeline = nullptr;
-        }
-        return;
-    }
     if (!mPipeline) {
         mErrorString = "Failed to create GStreamer pipeline";
         qWarning() << mErrorString;
@@ -173,7 +176,7 @@ auto GstVideoWidget::applyPipeline() -> void {
         mErrorString = "Pipeline has no video_sink appsink";
         qWarning() << mErrorString;
         gst_object_unref(mPipeline);
-        mPipeline = nullptr;
+        mPipeline = nullptr; // TODO memory leak?
         return;
     }
 
@@ -182,7 +185,10 @@ auto GstVideoWidget::applyPipeline() -> void {
     if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
         mErrorString = "Failed to start GStreamer pipeline";
         qWarning() << mErrorString;
+        return;
     }
+
+    qDebug() << "Pipeline applied: " << mBasePipeline.c_str();
 }
 
 auto GstVideoWidget::rotate90() -> void {

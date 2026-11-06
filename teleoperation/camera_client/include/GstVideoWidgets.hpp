@@ -29,6 +29,7 @@ namespace mrover {
 
         GstElement* mPipeline{nullptr};
         GstAppSink* mAppSink{nullptr};
+        gst::PipelineWrapper mStreamPipelineWrapper;
         QString mErrorString;
         QImage mFrame;
 
