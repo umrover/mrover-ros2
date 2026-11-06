@@ -40,7 +40,8 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
   const odomPath = shallowRef<L.LatLng[]>([])
   const findRover = ref(false)
 
-  const overlay = '/heatmap.png'
+  // Changes what image will be the overlay
+  const overlay = '/URCHeatmap.png'
 
   const overlayBounds: L.LatLngBoundsExpression =  [[37.99944444350717, -111.00055555639324], [39.00055555659458, -109.99944444420515]]
 
