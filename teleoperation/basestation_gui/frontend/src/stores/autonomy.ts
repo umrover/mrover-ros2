@@ -13,6 +13,7 @@ export const useAutonomyStore = defineStore('autonomy', () => {
   const execution = ref<AutonWaypoint[]>([])
   const defaultCostmapEnabled = ref(false)
   const navState = ref('OffState')
+  const astronautAssistanceEnabled = ref(false);
 
   const isNavigating = computed(() =>
     navState.value !== 'OffState' && navState.value !== 'DoneState'
@@ -203,6 +204,10 @@ export const useAutonomyStore = defineStore('autonomy', () => {
     navState.value = state
   }
 
+  function toggleAstronautAssistance() {
+    astronautAssistanceEnabled.value = !astronautAssistanceEnabled.value;
+  }
+
   async function resetAll() {
     await waypointsAPI.resetStore()
     await fetchAll()
@@ -213,6 +218,7 @@ export const useAutonomyStore = defineStore('autonomy', () => {
     execution,
     defaultCostmapEnabled,
     navState,
+    astronautAssistanceEnabled,
     isNavigating,
     highlightedWaypoint,
     autonEnabled,
@@ -243,6 +249,7 @@ export const useAutonomyStore = defineStore('autonomy', () => {
     toggleDefaultCostmap,
     toggleExecutionCostmap,
     setNavState,
+    toggleAstronautAssistance,
     resetAll,
   }
 })

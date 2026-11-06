@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-1 flex">
+  <div class="nav-state-box flex-1 flex">
     <div class="panel nav-state-panel flex-1 flex items-center justify-center" data-testid="pw-nav-state-panel" :class="ledColorClass">
       <div class="flex flex-col items-center gap-1">
         <span class="data-label">Nav State</span>
@@ -33,6 +33,12 @@ websocketStore.onMessage<NavStateMessage>('nav', 'nav_state', (msg) => {
 </script>
 
 <style scoped>
+.nav-state-box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .nav-state-panel {
   min-height: clamp(70px, 5vw, 100px);
   transition: all var(--transition);

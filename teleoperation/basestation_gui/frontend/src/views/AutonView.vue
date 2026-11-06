@@ -10,8 +10,17 @@
       </div>
   </template>
 
+  <!-- <template></template> -->
+    <!-- <template #nav-status-astronaut v-if="autonomyStore.astronautAssistanceEnabled">
+      <div class="nav_status island p-2 rounded h-full flex">
+        <NavigationStatus />
+      </div>
+    </template> -->
     <template #nav-status>
-      <div class="island p-2 rounded h-full flex flex-col">
+      <div class="nav_status island p-2 rounded h-full flex">
+        <NavigationStatus />
+      </div>
+       <div class="nav_status island p-2 rounded h-full flex">
         <NavigationStatus />
       </div>
     </template>
@@ -42,6 +51,9 @@
 
     <template #drive-data>
       <div class="island p-2 rounded h-full">
+        <DriveStatusIndicator />
+      </div>
+      <div class="island p-2 rounded h-full mt-2">
         <DriveStatusIndicator />
       </div>
     </template>
@@ -81,13 +93,24 @@ const defaultLayout = [
   { x: 0, y: 2, w: 5, h: 5, i: 'rover-3d' },
   { x: 3, y: 7, w: 3, h: 5, i: 'controls' },
   { x: 0, y: 7, w: 3, h: 4, i: 'nav-status' },
+  { x: 0, y: 2, w: 3, h: 2, i: 'nav-status-astronaut' },
   { x: 0, y: 11, w: 3, h: 1, i: 'drive-data' },
   { x: 5, y: 0, w: 7, h: 7, i: 'map' },
   { x: 6, y: 7, w: 6, h: 5, i: 'waypoints' },
 ]
+// const astronautDefault = [{ x: 0, y: 7, w: 3, h: 2, i: 'nav-status-astronaut' }]
 
 const autonomyStore = useAutonomyStore()
 const { autonEnabled } = storeToRefs(autonomyStore)
 
 const teleopEnabledCheck = ref(false)
+
 </script>
+
+<style scoped>
+.nav_status {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+</style>

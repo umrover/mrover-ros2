@@ -1,4 +1,17 @@
-<template>
+ <template>
+<!-- new -->
+   <div
+    class="h-full flex flex-col cursor-pointer select-none"
+    @click="modal.show()">
+    <h4 class="component-header flex items-center justify-between">
+      <span class="flex items-center gap-1 hover:underline">
+        Drive Status New
+        <i class="bi bi-box-arrow-up-right text-xs"></i>
+      </span>
+      <IndicatorDot :is-active="allArmed" />
+    </h4>
+  </div>
+
   <div
     class="h-full flex flex-col cursor-pointer select-none"
     @click="modal.show()"

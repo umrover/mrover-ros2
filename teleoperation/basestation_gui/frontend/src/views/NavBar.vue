@@ -43,14 +43,12 @@
           </div>
           <div v-if="title === 'Autonomy Mission'">
             <div class="flex items-center gap-2">
-              <!-- <p>Route<br>Finding</p> -->
               <p>Astronaut<br>Assistance</p>
                 <label class="switch">
-                  <input type="checkbox" v-model="astronautAssistanceEnabled">
+                  <input type="checkbox" @change="autonomyStore.toggleAstronautAssistance">
                   <span class="slider round"></span>
                 </label>
-              <span v-if="astronautAssistanceEnabled">ON</span>
-              <span v-else>OFF</span>
+              <p>{{ autonomyStore.astronautAssistanceEnabled ? 'ON' : 'OFF' }}</p>
             </div>
           </div>
         </div>
@@ -82,6 +80,7 @@ import { useGridLayoutStore } from '@/stores/gridLayout';
 import { useThemeStore } from '@/stores/theme';
 import { useWebsocketStore } from '@/stores/websocket';
 import { formatNumber } from '@/utils/formatNumber';
+import { useAutonomyStore } from '@/stores/autonomy'
 
 export default defineComponent({
   name: 'NavBar',
@@ -91,7 +90,7 @@ export default defineComponent({
     const dropdownOpen = ref(false);
     const jetsonLatencyMs = ref<number | null>(null);
     const jetsonLatencyReceived = ref(false);
-    const astronautAssistanceEnabled = ref(false);
+    const autonomyStore = useAutonomyStore();
 
     const websocketStore = useWebsocketStore();
     websocketStore.setupWebSocket('latency');
@@ -116,7 +115,7 @@ export default defineComponent({
       websocketStore.closeWebSocket('latency');
     });
 
-    return { gridLayoutStore, themeStore, dropdownOpen, jetsonLatencyMs, jetsonLatencyReceived, astronautAssistanceEnabled, formatNumber };
+    return { gridLayoutStore, themeStore, dropdownOpen, jetsonLatencyMs, jetsonLatencyReceived, autonomyStore, formatNumber };
   },
   computed: {
     title(): string {
