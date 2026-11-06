@@ -17,11 +17,13 @@
       </div>
     </template> -->
     <template #nav-status>
-      <div class="nav_status island p-2 rounded h-full flex">
-        <NavigationStatus />
-      </div>
-       <div class="nav_status island p-2 rounded h-full flex">
-        <NavigationStatus />
+      <div class="flex flex-col">
+        <div class="nav_status island p-2 rounded h-full flex">
+          <NavigationStatus />
+        </div>
+        <div class="nav_status island p-2 rounded h-full flex">
+          <NavigationStatus />
+        </div>
       </div>
     </template>
 
@@ -92,9 +94,9 @@ const defaultLayout = [
   { x: 0, y: 0, w: 5, h: 2, i: 'odometry' },
   { x: 0, y: 2, w: 5, h: 5, i: 'rover-3d' },
   { x: 3, y: 7, w: 3, h: 5, i: 'controls' },
-  { x: 0, y: 7, w: 3, h: 4, i: 'nav-status' },
-  { x: 0, y: 2, w: 3, h: 2, i: 'nav-status-astronaut' },
-  { x: 0, y: 11, w: 3, h: 1, i: 'drive-data' },
+  { x: 0, y: 9, w: 3, h: 4, i: 'nav-status' },
+  // { x: 0, y: 2, w: 3, h: 4, i: 'nav-status-astronaut' },
+  { x: 0, y: 13, w: 3, h: 1, i: 'drive-data' },
   { x: 5, y: 0, w: 7, h: 7, i: 'map' },
   { x: 6, y: 7, w: 6, h: 5, i: 'waypoints' },
 ]
