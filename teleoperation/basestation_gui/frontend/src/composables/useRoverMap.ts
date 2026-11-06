@@ -43,6 +43,8 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
   // Changes what image will be the overlay
   const overlay = '/URCHeatmap.png'
 
+  // If you want Ann Arbor, change the bounds to:
+  // [[42.2285833333, -83.8056111111],[42.3185000000, -83.6693888889]]
   const overlayBounds: L.LatLngBoundsExpression =  [[37.99944444350717, -111.00055555639324], [39.00055555659458, -109.99944444420515]]
 
   const onlineUrl = 'http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
