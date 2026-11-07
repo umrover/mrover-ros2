@@ -149,19 +149,23 @@ auto GstVideoWidget::applyPipeline() -> void {
     mFrame = {};
     update();
 
+    // start pipeline
+
     mStreamPipelineWrapper = gst::PipelineWrapper(pipeline.str());
     mStreamPipelineWrapper.init();
     mPipeline = mStreamPipelineWrapper.getPipelineElement();
 
     if (!mPipeline) {
-        mErrorString = "Failed to create GStreamer pipeline";
+        mErrorString = QString::fromStdString("Failed to create GStreamer pipeline '" + mBasePipeline + "'");
         qWarning() << mErrorString;
         return;
     }
 
+    // create sink
+
     mAppSink = GST_APP_SINK(gst_bin_get_by_name(GST_BIN(mPipeline), "video_sink"));
     if (!mAppSink) {
-        mErrorString = "Pipeline has no video_sink appsink";
+        mErrorString = QString::fromStdString("Pipeline '" + mBasePipeline + "' has no video_sink appsink");
         qWarning() << mErrorString;
         gst_object_unref(mPipeline);
         mPipeline = nullptr; // TODO memory leak?
@@ -171,12 +175,10 @@ auto GstVideoWidget::applyPipeline() -> void {
     g_signal_connect(mAppSink, "new-sample", G_CALLBACK(&GstVideoWidget::onNewSample), this);
 
     if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
-        mErrorString = "Failed to start GStreamer pipeline";
+        mErrorString = QString::fromStdString("Failed to start GStreamer pipeline '" + mBasePipeline + "'");
         qWarning() << mErrorString;
         return;
     }
-
-    qDebug() << "Pipeline applied: " << mBasePipeline.c_str();
 }
 
 auto GstVideoWidget::rotate90() -> void {
@@ -222,9 +224,9 @@ void GstVideoWidget::paintEvent(QPaintEvent* event) {
     QWidget::paintEvent(event);
 
     QPainter painter(this);
-    painter.fillRect(rect(), Qt::black);
-
+    
     if (mFrame.isNull()) {
+        painter.fillRect(rect(), Qt::black);
         return;
     }
 
