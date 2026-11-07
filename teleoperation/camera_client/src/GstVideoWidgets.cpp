@@ -129,23 +129,11 @@ auto GstVideoWidget::applyPipeline() -> void {
     gst::PipelineBuilder pipeline;
 
     pipeline.pushBack(mBasePipeline);
-    
-    switch(mRotation){
-        case 1:
-            pipeline.pushBack("videoflip method=clockwise");
-            break;
-        case 2:
-            pipeline.pushBack("videoflip method=rotate-180");
-            break;
-        case 3:
-            pipeline.pushBack("videoflip method=counterclockwise");
-            break;
-    }
 
     pipeline.pushBack("videoconvert");
     pipeline.pushBack("video/x-raw,format=RGB");
     pipeline.pushBack("appsink name=video_sink emit-signals=true sync=false max-buffers=1 drop=true");
-    
+
     // clear pipeline if already exists
     if (mPipeline) {
         gst_element_set_state(mPipeline, GST_STATE_NULL);
@@ -193,7 +181,7 @@ auto GstVideoWidget::applyPipeline() -> void {
 
 auto GstVideoWidget::rotate90() -> void {
     mRotation = (mRotation + 1) % 4;
-    applyPipeline();
+    update();
 }
 
 auto GstVideoWidget::errorString() const -> QString {
@@ -224,7 +212,7 @@ auto GstVideoWidget::pause() -> void {
 auto GstVideoWidget::stop() -> void {
     qDebug() << "Request to stop a pipeline";
 
-    if (mPipeline && gst_element_set_state(mPipeline, GST_STATE_NULL) == GST_STATE_CHANGE_FAILURE) {
+    if (mPipeline && gst_element_set_state(mPipeline, GST_STATE_PAUSED) == GST_STATE_CHANGE_FAILURE) {
         mErrorString = "Failed to stop GStreamer pipeline";
         qWarning() << mErrorString;
     }
@@ -240,13 +228,26 @@ void GstVideoWidget::paintEvent(QPaintEvent* event) {
         return;
     }
 
-    QSize scaledSize = mFrame.size();
-    scaledSize.scale(size(), Qt::KeepAspectRatio);
+    QSize orientedSize = mFrame.size();
+    if (mRotation % 2 != 0) {
+        orientedSize.transpose();
+    }
 
-    QRect target(
-            QPoint((width() - scaledSize.width()) / 2,
-                   (height() - scaledSize.height()) / 2),
-            scaledSize);
+    qreal const scale = std::min(static_cast<qreal>(width()) / orientedSize.width(),
+                                 static_cast<qreal>(height()) / orientedSize.height());
+    int const drawWidth = mFrame.width() * scale;
+    int const drawHeight = mFrame.height() * scale;
+
+    painter.translate(width() / 2.0, height() / 2.0);
+    painter.rotate(mRotation * 90.0);
+
+    QRectF target(
+        -drawWidth / 2.0, 
+        -drawHeight / 2.0, 
+        drawWidth, 
+        drawHeight
+    );
+
     painter.drawImage(target, mFrame);
 }
 
