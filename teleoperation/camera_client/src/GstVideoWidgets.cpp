@@ -1,4 +1,10 @@
 #include "GstVideoWidgets.hpp"
+#include <gst/app/gstappsink.h>
+#include <gst/gstelement.h>
+#include <gst/video/video.h>
+#include <qdebug.h>
+#include <qglobal.h>
+#include <qwidget.h>
 
 using namespace mrover;
 
@@ -50,9 +56,17 @@ void DraggableVideoFrame::mouseMoveEvent(QMouseEvent* event) {
 // GstVideoWidget
 // --------------------------------------------
 
-GstVideoWidget::GstVideoWidget(QWidget* parent) : QVideoWidget(parent) {
-    mPlayer = new QMediaPlayer(this);
-    mPlayer->setVideoOutput(this);
+GstVideoWidget::GstVideoWidget(QWidget* parent) : QWidget(parent) {
+}
+
+GstVideoWidget::~GstVideoWidget() {
+    if (mPipeline) {
+        gst_element_set_state(mPipeline, GST_STATE_NULL);
+        gst_object_unref(mPipeline);
+    }
+    if (mAppSink) {
+        gst_object_unref(mAppSink);
+    }
 }
 
 auto GstVideoWidget::setGstPipeline(std::string const& pipeline) -> void {
@@ -60,47 +74,181 @@ auto GstVideoWidget::setGstPipeline(std::string const& pipeline) -> void {
     applyPipeline();
 }
 
-auto GstVideoWidget::applyPipeline() -> void {
-    std::string flipElement = "";
-    if (mRotation == 1) {
-        flipElement = " ! videoflip method=clockwise";
-    } else if (mRotation == 2) {
-        flipElement = " ! videoflip method=rotate-180";
-    } else if (mRotation == 3) {
-        flipElement = " ! videoflip method=counterclockwise";
+auto GstVideoWidget::onNewSample(GstAppSink* sink, gpointer userData) -> GstFlowReturn {
+    auto* widget = static_cast<GstVideoWidget*>(userData);
+    GstSample* sample = gst_app_sink_pull_sample(sink);
+
+    if (!sample) {
+        return GST_FLOW_EOS;
     }
 
-    mPlayer->setSource(QUrl(std::format("gst-pipeline: {} ! videoconvert ! xvimagesink name=\"qtvideosink\" sync=false", mBasePipeline, flipElement).c_str()));
-    play();
+    GstCaps* caps = gst_sample_get_caps(sample);
+    GstVideoInfo info;
+    gst_video_info_init(&info);
+    if (!caps || !gst_video_info_from_caps(&info, caps)) {
+        qWarning() << "GStreamer appsink received a sample with invalid video caps";
+        gst_sample_unref(sample);
+        return GST_FLOW_ERROR;
+    }
+
+    GstVideoFrame videoFrame;
+    if (!gst_video_frame_map(&videoFrame, &info, gst_sample_get_buffer(sample), GST_MAP_READ)) {
+        qWarning() << "Failed to map GStreamer video frame";
+        gst_sample_unref(sample);
+        return GST_FLOW_ERROR;
+    }
+
+    QImage image(
+            static_cast<uchar const*>(GST_VIDEO_FRAME_PLANE_DATA(&videoFrame, 0)),
+            static_cast<int>(GST_VIDEO_INFO_WIDTH(&info)),
+            static_cast<int>(GST_VIDEO_INFO_HEIGHT(&info)),
+            GST_VIDEO_FRAME_PLANE_STRIDE(&videoFrame, 0),
+            QImage::Format_RGB888);
+    QImage frameCopy = image.copy();
+
+    gst_video_frame_unmap(&videoFrame);
+    gst_sample_unref(sample);
+
+    if (frameCopy.isNull()) {
+        qWarning() << "Failed to copy GStreamer video frame";
+        return GST_FLOW_ERROR;
+    }
+
+    QMetaObject::invokeMethod(
+            widget,
+            [widget, frame = std::move(frameCopy)]() mutable {
+                widget->mFrame = std::move(frame);
+                widget->update();
+            },
+            Qt::QueuedConnection);
+
+    return GST_FLOW_OK;
+}
+
+auto GstVideoWidget::applyPipeline() -> void {
+    gst::PipelineBuilder pipeline;
+
+    pipeline.pushBack(mBasePipeline);
+
+    pipeline.pushBack("videoconvert");
+    pipeline.pushBack("video/x-raw,format=RGB");
+    pipeline.pushBack("appsink name=video_sink emit-signals=true sync=false max-buffers=1 drop=true");
+
+    // clear pipeline if already exists
+    if (mPipeline) {
+        gst_element_set_state(mPipeline, GST_STATE_NULL);
+        if (mAppSink) {
+            gst_object_unref(mAppSink);
+            mAppSink = nullptr;
+        }
+        gst_object_unref(mPipeline);
+        mPipeline = nullptr; // TODO memory leak?
+    }
+
+    mErrorString.clear();
+    mFrame = {};
+    update();
+
+    mStreamPipelineWrapper = gst::PipelineWrapper(pipeline.str());
+    mStreamPipelineWrapper.init();
+    mPipeline = mStreamPipelineWrapper.getPipelineElement();
+
+    if (!mPipeline) {
+        mErrorString = "Failed to create GStreamer pipeline";
+        qWarning() << mErrorString;
+        return;
+    }
+
+    mAppSink = GST_APP_SINK(gst_bin_get_by_name(GST_BIN(mPipeline), "video_sink"));
+    if (!mAppSink) {
+        mErrorString = "Pipeline has no video_sink appsink";
+        qWarning() << mErrorString;
+        gst_object_unref(mPipeline);
+        mPipeline = nullptr; // TODO memory leak?
+        return;
+    }
+
+    g_signal_connect(mAppSink, "new-sample", G_CALLBACK(&GstVideoWidget::onNewSample), this);
+
+    if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
+        mErrorString = "Failed to start GStreamer pipeline";
+        qWarning() << mErrorString;
+        return;
+    }
+
+    qDebug() << "Pipeline applied: " << mBasePipeline.c_str();
 }
 
 auto GstVideoWidget::rotate90() -> void {
     mRotation = (mRotation + 1) % 4;
-    applyPipeline();
+    update();
 }
 
 auto GstVideoWidget::errorString() const -> QString {
-    return mPlayer->errorString();
-}
-
-auto GstVideoWidget::error() const -> QMediaPlayer::Error {
-    return mPlayer->error();
+    return mErrorString;
 }
 
 auto GstVideoWidget::isError() const -> bool {
-    return mPlayer->error() != QMediaPlayer::NoError;
+    return !mErrorString.isEmpty();
 }
 
 auto GstVideoWidget::play() -> void {
-    mPlayer->play();
-}
+    qDebug() << "Request to play a pipeline";
 
+    if (mPipeline && gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
+        mErrorString = "Failed to play GStreamer pipeline";
+        qWarning() << mErrorString;
+    }
+}
 auto GstVideoWidget::pause() -> void {
-    mPlayer->pause();
+    qDebug() << "Request to pause a pipeline";
+
+    if (mPipeline && gst_element_set_state(mPipeline, GST_STATE_PAUSED) == GST_STATE_CHANGE_FAILURE) {
+        mErrorString = "Failed to pause GStreamer pipeline";
+        qWarning() << mErrorString;
+    }
 }
 
 auto GstVideoWidget::stop() -> void {
-    mPlayer->stop();
+    qDebug() << "Request to stop a pipeline";
+
+    if (mPipeline && gst_element_set_state(mPipeline, GST_STATE_PAUSED) == GST_STATE_CHANGE_FAILURE) {
+        mErrorString = "Failed to stop GStreamer pipeline";
+        qWarning() << mErrorString;
+    }
+}
+
+void GstVideoWidget::paintEvent(QPaintEvent* event) {
+    QWidget::paintEvent(event);
+
+    QPainter painter(this);
+    painter.fillRect(rect(), Qt::black);
+
+    if (mFrame.isNull()) {
+        return;
+    }
+
+    QSize orientedSize = mFrame.size();
+    if (mRotation % 2 != 0) {
+        orientedSize.transpose();
+    }
+
+    qreal const scale = std::min(static_cast<qreal>(width()) / orientedSize.width(),
+                                 static_cast<qreal>(height()) / orientedSize.height());
+    int const drawWidth = mFrame.width() * scale;
+    int const drawHeight = mFrame.height() * scale;
+
+    painter.translate(width() / 2.0, height() / 2.0);
+    painter.rotate(mRotation * 90.0);
+
+    QRectF target(
+        -drawWidth / 2.0, 
+        -drawHeight / 2.0, 
+        drawWidth, 
+        drawHeight
+    );
+
+    painter.drawImage(target, mFrame);
 }
 
 // --------------------------------------------
@@ -155,7 +303,7 @@ auto GstVideoGridWidget::addGstVideoWidget(std::string const& name, std::string 
 
     gstVideoBoxGstVideoWidget->setGstPipeline(pipeline);
     if (gstVideoBoxGstVideoWidget->isError()) {
-        mError = MediaPlayerError;
+        mError = MediaPipelineError;
         mErrorString = gstVideoBoxGstVideoWidget->errorString();
         delete gstVideoBoxWidget;
         return false;
