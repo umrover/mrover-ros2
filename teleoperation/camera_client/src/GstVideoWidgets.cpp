@@ -60,10 +60,6 @@ GstVideoWidget::GstVideoWidget(QWidget* parent) : QWidget(parent) {
 }
 
 GstVideoWidget::~GstVideoWidget() {
-    if (mPipeline) {
-        gst_element_set_state(mPipeline, GST_STATE_NULL);
-        gst_object_unref(mPipeline);
-    }
     if (mAppSink) {
         gst_object_unref(mAppSink);
     }
@@ -129,56 +125,35 @@ auto GstVideoWidget::applyPipeline() -> void {
     gst::PipelineBuilder pipeline;
 
     pipeline.pushBack(mBasePipeline);
-
     pipeline.pushBack("videoconvert");
     pipeline.pushBack("video/x-raw,format=RGB");
     pipeline.pushBack("appsink name=video_sink emit-signals=true sync=false max-buffers=1 drop=true");
-
-    // clear pipeline if already exists
-    if (mPipeline) {
-        gst_element_set_state(mPipeline, GST_STATE_NULL);
-        if (mAppSink) {
-            gst_object_unref(mAppSink);
-            mAppSink = nullptr;
-        }
-        gst_object_unref(mPipeline);
-        mPipeline = nullptr; // TODO memory leak?
-    }
-
     mErrorString.clear();
     mFrame = {};
     update();
 
     // start pipeline
-
     mStreamPipelineWrapper = gst::PipelineWrapper(pipeline.str());
-    mStreamPipelineWrapper.init();
-    mPipeline = mStreamPipelineWrapper.getPipelineElement();
-
-    if (!mPipeline) {
-        mErrorString = QString::fromStdString("Failed to create GStreamer pipeline '" + mBasePipeline + "'");
-        qWarning() << mErrorString;
+    try{
+        mStreamPipelineWrapper.init();
+    } catch (std::runtime_error const& e) {
+        qWarning() << QString::fromStdString(std::format("Failed to create GStreamer pipeline: {}", e.what()));
         return;
     }
 
     // create sink
 
-    mAppSink = GST_APP_SINK(gst_bin_get_by_name(GST_BIN(mPipeline), "video_sink"));
+    mAppSink = GST_APP_SINK(gst_bin_get_by_name(GST_BIN(mStreamPipelineWrapper.getPipelineElement()), "video_sink"));
     if (!mAppSink) {
         mErrorString = QString::fromStdString("Pipeline '" + mBasePipeline + "' has no video_sink appsink");
         qWarning() << mErrorString;
-        gst_object_unref(mPipeline);
-        mPipeline = nullptr; // TODO memory leak?
+        mStreamPipelineWrapper.stop();
         return;
     }
 
     g_signal_connect(mAppSink, "new-sample", G_CALLBACK(&GstVideoWidget::onNewSample), this);
 
-    if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
-        mErrorString = QString::fromStdString("Failed to start GStreamer pipeline '" + mBasePipeline + "'");
-        qWarning() << mErrorString;
-        return;
-    }
+    play();
 }
 
 auto GstVideoWidget::rotate90() -> void {
@@ -197,26 +172,33 @@ auto GstVideoWidget::isError() const -> bool {
 auto GstVideoWidget::play() -> void {
     qDebug() << "Request to play a pipeline";
 
-    if (mPipeline && gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
-        mErrorString = "Failed to play GStreamer pipeline";
-        qWarning() << mErrorString;
+    try {
+        mStreamPipelineWrapper.play();
+    } catch (std::runtime_error const& e) {
+        qWarning() << QString::fromStdString(std::format("Failed to play GStreamer pipeline: {}", e.what()));
+        return;
     }
 }
 auto GstVideoWidget::pause() -> void {
     qDebug() << "Request to pause a pipeline";
 
-    if (mPipeline && gst_element_set_state(mPipeline, GST_STATE_PAUSED) == GST_STATE_CHANGE_FAILURE) {
-        mErrorString = "Failed to pause GStreamer pipeline";
-        qWarning() << mErrorString;
+    try {
+        mStreamPipelineWrapper.pause();
+    } catch (std::runtime_error const& e) {
+        qWarning() << QString::fromStdString(std::format("Failed to pause GStreamer pipeline: {}", e.what()));
+        return;
     }
 }
 
+// Technically just pauses the stream for now
 auto GstVideoWidget::stop() -> void {
     qDebug() << "Request to stop a pipeline";
 
-    if (mPipeline && gst_element_set_state(mPipeline, GST_STATE_PAUSED) == GST_STATE_CHANGE_FAILURE) {
-        mErrorString = "Failed to stop GStreamer pipeline";
-        qWarning() << mErrorString;
+    try {
+        mStreamPipelineWrapper.pause();
+    } catch (std::runtime_error const& e) {
+        qWarning() << QString::fromStdString(std::format("Failed to stop GStreamer pipeline: {}", e.what()));
+        return;
     }
 }
 
@@ -224,9 +206,9 @@ void GstVideoWidget::paintEvent(QPaintEvent* event) {
     QWidget::paintEvent(event);
 
     QPainter painter(this);
+    painter.fillRect(rect(), Qt::black);
     
     if (mFrame.isNull()) {
-        painter.fillRect(rect(), Qt::black);
         return;
     }
 
@@ -237,8 +219,8 @@ void GstVideoWidget::paintEvent(QPaintEvent* event) {
 
     qreal const scale = std::min(static_cast<qreal>(width()) / orientedSize.width(),
                                  static_cast<qreal>(height()) / orientedSize.height());
-    int const drawWidth = mFrame.width() * scale;
-    int const drawHeight = mFrame.height() * scale;
+    qreal const drawWidth = mFrame.width() * scale;
+    qreal const drawHeight = mFrame.height() * scale;
 
     painter.translate(width() / 2.0, height() / 2.0);
     painter.rotate(mRotation * 90.0);

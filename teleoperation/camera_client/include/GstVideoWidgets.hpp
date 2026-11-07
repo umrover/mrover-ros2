@@ -27,7 +27,6 @@ namespace mrover {
     class GstVideoWidget : public QWidget {
         Q_OBJECT
 
-        GstElement* mPipeline{nullptr};
         GstAppSink* mAppSink{nullptr};
         gst::PipelineWrapper mStreamPipelineWrapper;
         QString mErrorString;
