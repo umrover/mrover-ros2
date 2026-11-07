@@ -137,7 +137,8 @@ auto GstVideoWidget::applyPipeline() -> void {
     try{
         mStreamPipelineWrapper.init();
     } catch (std::runtime_error const& e) {
-        qWarning() << QString::fromStdString(std::format("Failed to create GStreamer pipeline: {}", e.what()));
+        mErrorString = QString::fromStdString(std::format("Failed to create GStreamer pipeline: {}", e.what()));
+        qWarning() << mErrorString;
         return;
     }
 
@@ -175,7 +176,8 @@ auto GstVideoWidget::play() -> void {
     try {
         mStreamPipelineWrapper.play();
     } catch (std::runtime_error const& e) {
-        qWarning() << QString::fromStdString(std::format("Failed to play GStreamer pipeline: {}", e.what()));
+        mErrorString = QString::fromStdString(std::format("Failed to play GStreamer pipeline: {}", e.what()));
+        qWarning() << mErrorString;
         return;
     }
 }
@@ -185,7 +187,8 @@ auto GstVideoWidget::pause() -> void {
     try {
         mStreamPipelineWrapper.pause();
     } catch (std::runtime_error const& e) {
-        qWarning() << QString::fromStdString(std::format("Failed to pause GStreamer pipeline: {}", e.what()));
+        mErrorString = QString::fromStdString(std::format("Failed to pause GStreamer pipeline: {}", e.what())); 
+        qWarning() << mErrorString;
         return;
     }
 }
@@ -197,7 +200,8 @@ auto GstVideoWidget::stop() -> void {
     try {
         mStreamPipelineWrapper.pause();
     } catch (std::runtime_error const& e) {
-        qWarning() << QString::fromStdString(std::format("Failed to stop GStreamer pipeline: {}", e.what()));
+        mErrorString = QString::fromStdString(std::format("Failed to stop GStreamer pipeline: {}", e.what())); 
+        qWarning() << mErrorString;
         return;
     }
 }
