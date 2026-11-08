@@ -355,15 +355,6 @@ auto GstVideoGridWidget::rotateCamera(std::string const& name) -> bool {
     if (!box) return false;
 
     box->gstVideoWidget->rotate90();
-
-    QSize const currentSize = box->widget->minimumSize();
-    int const newWidth = currentSize.height();
-    int const newHeight = currentSize.width();
-
-    box->widget->setMinimumSize(newWidth, newHeight);
-    box->widget->setMaximumSize(newWidth, newHeight);
-    box->widget->resize(newWidth, newHeight);
-
     rebuildGrid();
 
     return true;
