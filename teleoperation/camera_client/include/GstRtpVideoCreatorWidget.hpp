@@ -35,7 +35,8 @@ namespace mrover {
                 encoding = "MPEG4";
                 break;
             case gst::video::Codec::VP8:
-                // TODO VP8 doesn't use a parser
+                // VP8 does not have a standalone parser
+                parser = "";
                 encoding = "VP8";
                 break;
             case gst::video::Codec::VP9:
