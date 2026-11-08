@@ -134,7 +134,7 @@ auto GstVideoWidget::applyPipeline() -> void {
 
     // start pipeline
     mStreamPipelineWrapper = gst::PipelineWrapper(pipeline.str());
-    try{
+    try {
         mStreamPipelineWrapper.init();
     } catch (std::runtime_error const& e) {
         mErrorString = QString::fromStdString(std::format("Failed to create GStreamer pipeline: {}", e.what()));
@@ -187,7 +187,7 @@ auto GstVideoWidget::pause() -> void {
     try {
         mStreamPipelineWrapper.pause();
     } catch (std::runtime_error const& e) {
-        mErrorString = QString::fromStdString(std::format("Failed to pause GStreamer pipeline: {}", e.what())); 
+        mErrorString = QString::fromStdString(std::format("Failed to pause GStreamer pipeline: {}", e.what()));
         qWarning() << mErrorString;
         return;
     }
@@ -200,7 +200,7 @@ auto GstVideoWidget::stop() -> void {
     try {
         mStreamPipelineWrapper.pause();
     } catch (std::runtime_error const& e) {
-        mErrorString = QString::fromStdString(std::format("Failed to stop GStreamer pipeline: {}", e.what())); 
+        mErrorString = QString::fromStdString(std::format("Failed to stop GStreamer pipeline: {}", e.what()));
         qWarning() << mErrorString;
         return;
     }
@@ -211,7 +211,7 @@ void GstVideoWidget::paintEvent(QPaintEvent* event) {
 
     QPainter painter(this);
     painter.fillRect(rect(), Qt::black);
-    
+
     if (mFrame.isNull()) {
         return;
     }
@@ -230,11 +230,10 @@ void GstVideoWidget::paintEvent(QPaintEvent* event) {
     painter.rotate(mRotation * 90.0);
 
     QRectF target(
-        -drawWidth / 2.0, 
-        -drawHeight / 2.0, 
-        drawWidth, 
-        drawHeight
-    );
+            -drawWidth / 2.0,
+            -drawHeight / 2.0,
+            drawWidth,
+            drawHeight);
 
     painter.drawImage(target, mFrame);
 }
