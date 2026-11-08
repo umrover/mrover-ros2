@@ -88,6 +88,10 @@ auto main(int argc, char** argv) -> int {
     QObject::connect(node.get(), &mrover::CameraClientNode::imageCaptured,
                      mainWindow.get(), &mrover::CameraClientMainWindow::showImagePreview);
     // not sure how to integrate this into the secondary window
+    
+    // window requests -> node (signal through cameraclientmainwindow -> cameraclientnode)
+    QObject::connect(mainWindow.get(), &mrover::CameraClientMainWindow::screenshotAllRequested, node.get(), &mrover::CameraClientNode::requestScreenshotAll);
+    QObject::connect(secondWindow.get(), &mrover::CameraClientMainWindow::screenshotAllRequested, node.get(), &mrover::CameraClientNode::requestScreenshotAll);
 
     auto configs = node->loadCameraConfigs();
 

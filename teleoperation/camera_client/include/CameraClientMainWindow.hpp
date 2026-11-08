@@ -4,6 +4,7 @@
 #include "GstVideoWidgets.hpp"
 #include "ImagePreview.hpp"
 #include "VideoSelectorWidget.hpp"
+#include "CameraScreenshotAllWidget.hpp"
 
 namespace mrover {
     class CameraConfigWidget;
@@ -23,6 +24,9 @@ namespace mrover {
         QDockWidget* mCameraConfigDock;
         CameraConfigWidget* mCameraConfigWidget;
 
+        QDockWidget* mScreenshotAllDock;
+        CameraScreenshotAllWidget* mScreenshotAllWidget;
+
         std::unordered_map<std::string, std::vector<std::string>> mConfigs;
 
     public:
@@ -39,6 +43,7 @@ namespace mrover {
 
     signals:
         void closed();
+        void screenshotAllRequested();
 
     protected:
         auto closeEvent(QCloseEvent* event) -> void override;

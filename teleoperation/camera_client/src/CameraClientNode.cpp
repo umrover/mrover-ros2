@@ -114,6 +114,12 @@ namespace mrover {
         return sendScreenshotRequest(cameraName);
     }
 
+    void CameraClientNode::requestScreenshotAll() {
+        for (auto const& cameraEntry : mImageCaptureClients) {
+            requestScreenshot(cameraEntry.first);
+        }
+    }
+
     auto CameraClientNode::imageCaptureCallback(std::string const& cameraName, sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
         RCLCPP_INFO(get_logger(), "Received image from camera");
         if (msg->encoding != sensor_msgs::image_encodings::BGR8) {
