@@ -11,13 +11,42 @@ namespace mrover {
 
     inline auto createRtpToRawSrc(std::uint16_t port, gst::video::Codec codec, std::chrono::milliseconds rtpJitter = DEFAULT_RTP_JITTER) -> std::string {
         std::string parser;
-        if (codec == gst::video::Codec::H265) {
-            parser = "! h265parse";
-        } else if (codec == gst::video::Codec::H264) {
-            parser = "! h264parse";
-        }
+        std::string encoding;
 
-        auto encoding = codec == gst::video::Codec::H265 ? "H265" : "H264";
+        switch(codec){
+            case gst::video::Codec::H265:
+                parser = "! h265parse";
+                encoding = "H265";
+            break;
+            case gst::video::Codec::H264:
+                parser = "! h264parse";
+                encoding = "H264";
+            break;
+            case gst::video::Codec::AV1 :
+                parser = "! av1parse";
+                encoding = "AV1";
+            break;
+            case gst::video::Codec::JPEG:
+                parser = "! jpegparse";
+                encoding = "JPEG";
+            break;
+            case gst::video::Codec::MPEG4:
+                parser = "! mpeg4videoparse";
+                encoding = "MPEG4";
+            break;
+            case gst::video::Codec::VP8 :
+                // TODO VP8 doesn't use a parser
+                encoding = "VP8";
+            break;
+            case gst::video::Codec::VP9:
+                parser = "! vp9parse";
+                encoding = "VP9";
+            break;
+            
+            default:
+
+        }
+        
         std::string caps = std::format("application/x-rtp,media=video,encoding-name={},payload=96,clock-rate=90000", encoding);
 
         return std::format("udpsrc port={} ! {} ! rtpjitterbuffer latency={} ! {} {} ! decodebin", port, caps, rtpJitter.count(), getRtpDepayloader(codec), parser);
