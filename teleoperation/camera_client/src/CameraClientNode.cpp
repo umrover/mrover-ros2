@@ -115,7 +115,7 @@ namespace mrover {
     }
 
     void CameraClientNode::requestScreenshotAll() {
-        for (auto const& cameraEntry : mImageCaptureClients) {
+        for (auto const& cameraEntry: mImageCaptureClients) {
             requestScreenshot(cameraEntry.first);
         }
     }

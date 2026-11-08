@@ -1,10 +1,10 @@
 #pragma once
 
+#include "CameraScreenshotAllWidget.hpp"
 #include "GstRtpVideoCreatorWidget.hpp"
 #include "GstVideoWidgets.hpp"
 #include "ImagePreview.hpp"
 #include "VideoSelectorWidget.hpp"
-#include "CameraScreenshotAllWidget.hpp"
 
 namespace mrover {
     class CameraConfigWidget;
