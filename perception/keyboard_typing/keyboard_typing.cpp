@@ -229,6 +229,8 @@ namespace mrover{
 
         size_t nMarkers = markerCorners.size();
 
+        cv::Point3f top_right_center; //center of top right tag
+
         // Estimate pose
         cv::Vec3d combined_tvec, combined_rvec;
         if (!ids.empty()) {
@@ -246,7 +248,6 @@ namespace mrover{
 
             std::vector<cv::Point3f> all_objPoints;
             std::vector<cv::Point2f> all_imgPoints; 
-            cv::Point3f top_right_center; //center of top right tag
             top_right_center.z = -1;
             if (validcnt > 0) {
                 for (int idx : valid_indices) {
