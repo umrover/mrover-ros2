@@ -1,0 +1,38 @@
+objects:
+  rover:
+    type: urdf
+    uri: package://mrover/urdf/rover/rover.urdf.xacro
+    position: [ 0.0, 0.0, 0.1 ]
+  world:
+    type: urdf
+    uri: package://mrover/urdf/world/world.urdf.xacro
+  bottle:
+    type: urdf
+    uri: package://mrover/urdf/world/bottle.urdf.xacro
+    position: [9.0, 10.0, 0.5]
+
+  # Auto-generated rocks from the grid
+  rock_1:
+    type: urdf
+    uri: package://mrover/urdf/world/large_rock.urdf.xacro
+    position: [ 7.00, -1.00, 1.0 ]
+
+  rock_2:
+    type: urdf
+    uri: package://mrover/urdf/world/large_rock.urdf.xacro
+    position: [ 3.00, -6.00, 1.0 ]
+
+  rock_3:
+    type: urdf
+    uri: package://mrover/urdf/world/large_rock.urdf.xacro
+    position: [ -10.00, -8.00, 1.0 ]
+
+  rock_4:
+    type: urdf
+    uri: package://mrover/urdf/world/large_rock.urdf.xacro
+    position: [ -6.00, -8.00, 1.0 ]
+
+  rock_5:
+    type: urdf
+    uri: package://mrover/urdf/world/large_rock.urdf.xacro
+    position: [ -1.00, -8.00, 1.0 ]
