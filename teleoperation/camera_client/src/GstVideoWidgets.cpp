@@ -70,11 +70,11 @@ auto GstVideoWidget::setGstPipeline(std::string const& pipeline) -> void {
     applyPipeline();
 }
 
-auto GstVideoWidget::onNewSample(GstAppSink* sink, gpointer userData) -> GstFlowReturn {
-    auto* widget = static_cast<GstVideoWidget*>(userData);
+auto GstVideoWidget::onNewSample(GstAppSink* sink, GstVideoWidget* userData) -> GstFlowReturn {
     GstSample* sample = gst_app_sink_pull_sample(sink);
 
     if (!sample) {
+        qInfo() << "A stream ended";
         return GST_FLOW_EOS;
     }
 
@@ -89,7 +89,7 @@ auto GstVideoWidget::onNewSample(GstAppSink* sink, gpointer userData) -> GstFlow
 
     GstVideoFrame videoFrame;
     if (!gst_video_frame_map(&videoFrame, &info, gst_sample_get_buffer(sample), GST_MAP_READ)) {
-        qWarning() << "Failed to map GStreamer video frame";
+        qWarning() << "Failed to map a GStreamer video frame";
         gst_sample_unref(sample);
         return GST_FLOW_ERROR;
     }
@@ -100,21 +100,20 @@ auto GstVideoWidget::onNewSample(GstAppSink* sink, gpointer userData) -> GstFlow
             static_cast<int>(GST_VIDEO_INFO_HEIGHT(&info)),
             GST_VIDEO_FRAME_PLANE_STRIDE(&videoFrame, 0),
             QImage::Format_RGB888);
-    QImage frameCopy = image.copy();
 
     gst_video_frame_unmap(&videoFrame);
     gst_sample_unref(sample);
 
-    if (frameCopy.isNull()) {
-        qWarning() << "Failed to copy GStreamer video frame";
+    if (image.isNull()) {
+        qWarning() << "Failed to copy a GStreamer video frame";
         return GST_FLOW_ERROR;
     }
 
     QMetaObject::invokeMethod(
-            widget,
-            [widget, frame = std::move(frameCopy)]() mutable {
-                widget->mFrame = std::move(frame);
-                widget->update();
+            userData,
+            [userData, frame = std::move(image)]() mutable {
+                userData->mFrame = std::move(frame);
+                userData->update();
             },
             Qt::QueuedConnection);
 
