@@ -1,5 +1,5 @@
 import heapq
-
+import pymap3d
 import numpy as np
 from geometry_msgs.msg import Twist
 from navigation.context import Context
@@ -59,7 +59,7 @@ class AStar:
         return path[::-1]  # Reverse the path 
     
     
-    def a_star(self, start: np.ndarray, end: np.ndarray, debug: bool = False) -> list | None:
+    def a_star(self, start: np.ndarray, end: np.ndarray, use_dem: bool = False, global_astar: bool = False, debug: bool = False) -> list | None:
         """
         A* Algorithm: Find a path from start to end in the costmap using f(n) = g(n) + h(n).
         :param start: Rover pose in cartesian coordinates.
@@ -68,11 +68,22 @@ class AStar:
         :return: List of A* coordinates in occupancy grid (i, j) or None if start equals end.
         :raises NoPath: If no path to the goal can be found.
         """
-        costmap2d = self.context.env.cost_map.data
+        costmap2d = self.context.env.dem_cost_map.data if global_astar else self.context.env.cost_map.data
+        x, y, _ = pymap3d.geodetic2enu(
+            self.node.get_parameter("dem_costmap.top_left_lat").value,
+            self.node.get_parameter("dem_costmap.top_left_lon").value, 0,
+            self.node.get_parameter("ref_lat").value,
+            self.node.get_parameter("ref_lon").value,
+            self.node.get_parameter("ref_alt").value, deg=True)
+        #Get the position of the rover with respect to the top left coordinate being (0, 0)
+        row_bottom = int(round(self.context.env.cost_map.origin[0] - x))
+        column_left = int(round(y - self.context.env.cost_map.origin[1]))
+        #Splice the global astar array, so it covers the same area as the local astar
+        global_astar_array: np.ndarray = self.context.env.dem_pd.iloc[row_bottom:row_bottom + costmap2d.shape[0], column_left - costmap2d.shape[1]:column_left].to_numpy()
 
         # Convert start and end to occupancy grid coordinates
-        start_ij = tuple(cartesian_to_ij(self.context, start))
-        end_ij = tuple(cartesian_to_ij(self.context, end))
+        start_ij = tuple(cartesian_to_ij(self.context, start, global_astar))
+        end_ij = tuple(cartesian_to_ij(self.context, end, global_astar))
 
         if start_ij == end_ij:
             return [end_ij]
