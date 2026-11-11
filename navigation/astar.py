@@ -57,9 +57,58 @@ class AStar:
                 break
             pos = came_from[pos]
         return path[::-1]  # Reverse the path 
-    
-    
-    def a_star(self, start: np.ndarray, end: np.ndarray, use_dem: bool = False, global_astar: bool = False, debug: bool = False) -> list | None:
+
+    @staticmethod
+    def astar_helper(self, start_ij: tuple, end_ij: tuple, costmap: np.ndarray) -> list | None:
+        """
+        General use A* Algorithm: Find a path from start to end on a cost map.
+        :param start_ij: Starting cell in grid indicies (i, j)
+        :param end_ij: Ending cell in grid indicies (i, j)
+        :param costmap: Costmap grid
+        :return: List of A* coordinates in occupancy grid (i, j) or None if no path can be found
+        """
+
+        if start_ij == end_ij:
+            return [end_ij]
+
+        came_from: dict[tuple, tuple] = {}
+        g_scores: dict[tuple, float] = {start_ij: 0.0}
+        f_scores: dict[tuple, float] = {start_ij: d_calc(start_ij, end_ij)}
+
+        open_set: list[tuple] = []
+        heapq.heappush(open_set, (f_scores[start_ij], start_ij))
+        adjacent_squares = np.array([[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [-1, 1], [1, -1], [1, 1]])
+
+
+        while open_set:
+            _, current = heapq.heappop(open_set)
+
+            if current == end_ij:
+                return self.return_path(came_from, current)
+
+            for rel_pos in adjacent_squares:
+                neighbor_pos = tuple(np.array(current) + rel_pos)
+
+                # Ensure within grid bounds
+                if not (0 <= neighbor_pos[0] < costmap.shape[0] and 0 <= neighbor_pos[1] < costmap.shape[1]):
+                    continue
+
+                d = 1.0 if rel_pos[0] == 0 or rel_pos[1] == 0 else np.sqrt(2)
+                cost = max(costmap[neighbor_pos[0], neighbor_pos[1]], 1)
+
+                tentative_g_score = g_scores[current] + d * cost
+
+                if neighbor_pos not in g_scores or tentative_g_score < g_scores[neighbor_pos]:
+                    came_from[neighbor_pos] = current
+                    g_scores[neighbor_pos] = tentative_g_score
+                    f_scores[neighbor_pos] = tentative_g_score + d_calc(neighbor_pos, end_ij)
+
+                    # Only push to open_set if not already in it
+                    if neighbor_pos not in (pos[1] for pos in open_set):
+                        heapq.heappush(open_set, (f_scores[neighbor_pos], neighbor_pos))
+        return None
+
+    def a_star(self, start: np.ndarray, end: np.ndarray, debug: bool = False) -> list | None:
         """
         A* Algorithm: Find a path from start to end in the costmap using f(n) = g(n) + h(n).
         :param start: Rover pose in cartesian coordinates.
