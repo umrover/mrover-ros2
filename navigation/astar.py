@@ -57,7 +57,8 @@ class AStar:
                 break
             pos = came_from[pos]
         return path[::-1]  # Reverse the path 
-    
+
+    @staticmethod
     def astar_helper(self, start_ij: tuple, end_ij: tuple, costmap: np.ndarray) -> list | None:
         """
         General use A* Algorithm: Find a path from start to end on a cost map.
