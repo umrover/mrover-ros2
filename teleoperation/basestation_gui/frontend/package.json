@@ -49,7 +49,7 @@
     "eslint": "^10.1.0",
     "eslint-plugin-vue": "^10.8.0",
     "prettier": "^3.8.1",
-    "stylelint": "^17.4.0",
+    "stylelint": "^18.0.0",
     "stylelint-config-recess-order": "^7.6.1",
     "stylelint-config-standard-vue": "^2.0.0",
     "tailwindcss": "^4.2.1",
