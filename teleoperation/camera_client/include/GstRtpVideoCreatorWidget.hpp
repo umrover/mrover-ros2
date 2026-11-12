@@ -1,6 +1,7 @@
 #pragma once
 
 #include "pch.hpp"
+#include <qglobal.h>
 #include <string>
 
 namespace mrover {
@@ -13,6 +14,7 @@ namespace mrover {
         std::string parser;
         std::string encoding;
 
+        // TODO test AV1 and handle all codecs
         switch (codec) {
             case gst::video::Codec::H265:
                 parser = "! h265parse";
@@ -26,25 +28,8 @@ namespace mrover {
                 parser = "! av1parse";
                 encoding = "AV1";
                 break;
-            case gst::video::Codec::JPEG:
-                parser = "! jpegparse";
-                encoding = "JPEG";
-                break;
-            case gst::video::Codec::MPEG4:
-                parser = "! mpeg4videoparse";
-                encoding = "MPEG4";
-                break;
-            case gst::video::Codec::VP8:
-                // VP8 does not have a standalone parser
-                parser = "";
-                encoding = "VP8";
-                break;
-            case gst::video::Codec::VP9:
-                parser = "! vp9parse";
-                encoding = "VP9";
-                break;
-
             default:
+                qWarning() << "Unsupported codec";
         }
 
         std::string caps = std::format("application/x-rtp,media=video,encoding-name={},payload=96,clock-rate=90000", encoding);
