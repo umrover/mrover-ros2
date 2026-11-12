@@ -196,13 +196,8 @@ auto GstVideoWidget::pause() -> void {
 auto GstVideoWidget::stop() -> void {
     qDebug() << "Request to stop a pipeline";
 
-    try {
-        mStreamPipelineWrapper.pause();
-    } catch (std::runtime_error const& e) {
-        mErrorString = QString::fromStdString(std::format("Failed to stop GStreamer pipeline: {}", e.what()));
-        qWarning() << mErrorString;
-        return;
-    }
+    // TODO actually stop pipeline
+    pause();
 }
 
 void GstVideoWidget::paintEvent(QPaintEvent* event) {
