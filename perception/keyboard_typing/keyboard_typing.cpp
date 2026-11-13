@@ -332,12 +332,14 @@ namespace mrover{
                 keyboard_center.x = top_right_center.x/2.0f;
                 keyboard_center.y = top_right_center.y/2.0f;
                 keyboard_center.z = top_right_center.z;
+
+                double distance_to_bottom_left_from_center = sqrt(keyboard_center.x*keyboard_center.x + keyboard_center.y*keyboard_center.y + keyboard_center.z*keyboard_center.z);
+                double distance_to_bottom_left_from_camera = sqrt(finalestimation.position.x*finalestimation.position.x + finalestimation.position.y*finalestimation.position.y + finalestimation.position.z*finalestimation.position.z);
+                double distance_to_center_from_camera = sqrt(distance_to_bottom_left_from_camera*distance_to_bottom_left_from_camera + distance_to_bottom_left_from_center*distance_to_bottom_left_from_center);
+                RCLCPP_INFO_STREAM(get_logger(), "Distance to center from camera: " << distance_to_center_from_camera);
             }
 
-            double distance_to_bottom_left_from_center = sqrt(keyboard_center.x*keyboard_center.x + keyboard_center.y*keyboard_center.y + keyboard_center.z*keyboard_center.z);
-            double distance_to_bottom_left_from_camera = sqrt(finalestimation.position.x*finalestimation.position.x + finalestimation.position.y*finalestimation.position.y + finalestimation.position.z*finalestimation.position.z);
-            double distance_to_center_from_camera = sqrt(distance_to_bottom_left_from_camera*distance_to_bottom_left_from_camera + distance_to_bottom_left_from_center*distance_to_bottom_left_from_center);
-            RCLCPP_INFO_STREAM(get_logger(), "Distance to center from camera: " << distance_to_center_from_camera);
+            
             double siny = 2.0 * (q.w() * q.y() - q.z() * q.x());
             double yaw_rad;
             if (std::abs(siny) >= 1)
