@@ -4,6 +4,8 @@
 namespace mrover {
 
     class ArmController final : public rclcpp::Node {
+        friend class ArmControllerHarness;
+
         struct ArmPos {
             double x{0}, y{0}, z{0}, pitch{0}, roll{0}, gripper{0};
             [[nodiscard]] auto toSE3() const -> SE3d {
@@ -34,7 +36,7 @@ namespace mrover {
             struct JointLimits {
                 double minPos, maxPos, minVel, maxVel;
                 [[nodiscard]] auto posInBounds(double pos) const -> bool { return minPos <= pos && pos <= maxPos; }
-                [[nodiscard]] auto velInBounds(double vel) const -> bool { return minPos <= vel && vel <= maxPos; }
+                [[nodiscard]] auto velInBounds(double vel) const -> bool { return minVel <= vel && vel <= maxVel; }
             };
 
             JointLimits limits;
@@ -43,13 +45,13 @@ namespace mrover {
 
         // TODO: update velocity limits to make them real
         std::unordered_map<std::string, JointWrapper> joints = {
-                {"joint_a", {.limits = {.minPos = 0, .maxPos = 0.37, .minVel = -0.05, .maxVel = 0.05}, .pos = 0}},
-                {"joint_b", {.limits = {.minPos = -1.1, .maxPos = 0.25, .minVel = -0.05, .maxVel = 0.05}, .pos = 0}},
-                {"joint_c", {.limits = {.minPos = -1.0, .maxPos = 3.0, .minVel = -0.03142, .maxVel = 0.03142}, .pos = 0}},
-                {"joint_de_pitch", {.limits = {.minPos = -1.75, .maxPos = 1.1, .minVel = -0.2, .maxVel = 0.2}, // pretty conservative limits atm
+                {JOINT_A, {.limits = {.minPos = 0, .maxPos = 0.37, .minVel = -0.05, .maxVel = 0.05}, .pos = 0}},
+                {JOINT_B, {.limits = {.minPos = -1.1, .maxPos = 0.25, .minVel = -0.05, .maxVel = 0.05}, .pos = 0}},
+                {JOINT_C, {.limits = {.minPos = -1.0, .maxPos = 3.0, .minVel = -0.03142, .maxVel = 0.03142}, .pos = 0}},
+                {JOINT_DE_PITCH, {.limits = {.minPos = -1.75, .maxPos = 1.1, .minVel = -0.2, .maxVel = 0.2}, // pretty conservative limits atm
                                     .pos = 0}},
-                {"joint_de_roll", {.limits = {.minPos = -3.14, .maxPos = 3.13, .minVel = -1.0, .maxVel = 1.0}, .pos = 0}},
-                {"gripper", {.limits = {.minPos = 0, .maxPos = 0.1, .minVel = -1, .maxVel = 1}, .pos = 0}},
+                {JOINT_DE_ROLL, {.limits = {.minPos = -3.14, .maxPos = 3.13, .minVel = -1.0, .maxVel = 1.0}, .pos = 0}},
+                {JOINT_GRIPPER, {.limits = {.minPos = 0, .maxPos = 0.1, .minVel = -1, .maxVel = 1}, .pos = 0}},
         };
 
         rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr mVelSub;
@@ -74,6 +76,7 @@ namespace mrover {
         auto ikPosCalc(ArmPos target) -> std::optional<msg::Position>;
         auto ikVelCalc(geometry_msgs::msg::Twist) -> std::optional<msg::Velocity>;
         auto timerCallback() -> void;
+        auto positionsInBounds(msg::Position const&) -> bool;
 
         ArmPos mArmPos, mTypingOrigin, mPosTarget;
         geometry_msgs::msg::Twist mVelTarget;
@@ -88,6 +91,12 @@ namespace mrover {
         static rclcpp::Duration const TIMEOUT;
 
     public:
+        static constexpr std::string JOINT_A = "joint_a";
+        static constexpr std::string JOINT_B = "joint_b";
+        static constexpr std::string JOINT_C = "joint_c";
+        static constexpr std::string JOINT_DE_PITCH = "joint_de_pitch";
+        static constexpr std::string JOINT_DE_ROLL = "joint_de_roll";
+        static constexpr std::string JOINT_GRIPPER = "gripper";
         // TODO(quintin): Neven, please load these from config YAML files instead of hard coding. Ideally they would even be computed at runtime. This way you can change the xacro without worry.
 
         // From: rover.urdf.xacro
