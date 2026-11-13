@@ -44,6 +44,7 @@ namespace mrover {
         bool requestPlay(std::string const& cameraName);
         bool requestStop(std::string const& cameraName);
         bool requestScreenshot(std::string const& cameraName);
+        void requestScreenshotAll(); //or bool if needed for debugging success/failure
     };
 
 } // namespace mrover
