@@ -126,7 +126,8 @@ namespace mrover {
 
                     sl::BodyTrackingParameters bodyParams;
                     bodyParams.detection_model = sl::BODY_TRACKING_MODEL::HUMAN_BODY_FAST;
-                    bodyParams.body_format = sl::BODY_FORMAT::BODY_38;
+                    // BODY_18 is the smallest skeleton. It has no root orientation output, so consumers derive it from keypoints.
+                    bodyParams.body_format = sl::BODY_FORMAT::BODY_18;
                     bodyParams.enable_tracking = true;
                     bodyParams.enable_body_fitting = false;
                     bodyParams.allow_reduced_precision_inference = true;
@@ -191,6 +192,8 @@ namespace mrover {
                 assert(mGrabMeasures.leftImage.timestamp == mGrabMeasures.leftPoints.timestamp);
 
                 mGrabMeasures.time = mSvoPath.c_str() ? now() : slTime2Ros(mZed.getTimestamp(sl::TIME_REFERENCE::IMAGE));
+                // Captured before the swap below, after which mGrabMeasures holds an older frame
+                rclcpp::Time const grabTime = mGrabMeasures.time;
 
                 // If the processing thread is busy skip
                 // We want this thread to run as fast as possible for grab and positional tracking
@@ -233,7 +236,7 @@ namespace mrover {
                     }
 
                     mrover::msg::Body bodyMsg;
-                    bodyMsg.header.stamp = mGrabMeasures.time;
+                    bodyMsg.header.stamp = grabTime;
                     bodyMsg.header.frame_id = std::format("{}_left_camera_frame", mDeviceName);
                     bodyMsg.detected = best != nullptr;
                     if (best) {
@@ -248,14 +251,23 @@ namespace mrover {
                             p.z = kp.z;
                             bodyMsg.keypoints.push_back(p);
                         }
+
+                        // keypoint_2d is in the grab resolution; scale to the published image resolution
+                        sl::Resolution const grabRes = mZedInfo.camera_configuration.resolution;
+                        double const sx = static_cast<double>(mImageResolution.width) / static_cast<double>(grabRes.width);
+                        double const sy = static_cast<double>(mImageResolution.height) / static_cast<double>(grabRes.height);
+                        bodyMsg.keypoints_2d.reserve(best->keypoint_2d.size());
+                        for (sl::float2 const& kp : best->keypoint_2d) {
+                            geometry_msgs::msg::Point p;
+                            // Negative means undetected; keep it negative regardless of scale
+                            p.x = kp.x < 0 ? -1.0 : kp.x * sx;
+                            p.y = kp.y < 0 ? -1.0 : kp.y * sy;
+                            bodyMsg.keypoints_2d.push_back(p);
+                        }
                         bodyMsg.keypoint_confidences.assign(best->keypoint_confidence.begin(), best->keypoint_confidence.end());
-                        bodyMsg.pose.position.x = best->position.x;
-                        bodyMsg.pose.position.y = best->position.y;
-                        bodyMsg.pose.position.z = best->position.z;
-                        bodyMsg.pose.orientation.x = best->global_root_orientation.x;
-                        bodyMsg.pose.orientation.y = best->global_root_orientation.y;
-                        bodyMsg.pose.orientation.z = best->global_root_orientation.z;
-                        bodyMsg.pose.orientation.w = best->global_root_orientation.w;
+                        bodyMsg.position.x = best->position.x;
+                        bodyMsg.position.y = best->position.y;
+                        bodyMsg.position.z = best->position.z;
                     }
                     mBodyPub->publish(bodyMsg);
                 }

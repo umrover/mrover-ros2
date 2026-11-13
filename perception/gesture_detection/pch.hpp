@@ -29,3 +29,13 @@
 #include <lie.hpp>
 
 #include <mrover/msg/body.hpp>
+
+#include <sensor_msgs/image_encodings.hpp>
+#include <sensor_msgs/msg/image.hpp>
+
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+
+#include <array>
+#include <format>
+#include <utility>

@@ -56,6 +56,14 @@ def generate_launch_description():
         extra_arguments=[{"use_intra_process_comms": True}],
     )
 
+    gesture_detection_composable_node = ComposableNode(
+        package="mrover",
+        plugin="mrover::GestureRecognitionNode",
+        name="gesture_detection",
+        parameters=[Path(get_package_share_directory("mrover"), "config", "gesture_recognition.yaml")],
+        extra_arguments=[{"use_intra_process_comms": True}],
+    )
+
     zed_streamer_annotated_composable_node = ComposableNode(
         package="mrover",
         plugin="mrover::GstCameraServer",
@@ -71,6 +79,7 @@ def generate_launch_description():
             stereo_tag_detector_composable_node,
             stereo_object_detector_composable_node,
             cost_map_composable_node,
+            gesture_detection_composable_node,
             zed_streamer_annotated_composable_node,
         ],
     )
