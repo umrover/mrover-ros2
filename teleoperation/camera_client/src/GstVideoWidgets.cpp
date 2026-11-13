@@ -179,7 +179,7 @@ auto GstVideoGridWidget::addGstVideoWidget(std::string const& name, std::string 
     mVisibleOrder.push_back(name);
     rebuildGrid();
 
-    hideAll();
+    showVideo(name);
 
     clearError();
     return true;
@@ -196,8 +196,6 @@ auto GstVideoGridWidget::findVideoBox(std::string const& name) -> GstVideoBox* {
 }
 
 auto GstVideoGridWidget::deleteVideoBox(std::string const& name) -> bool {
-    // TODO error checking
-
     qDebug() << "Deleting" << QString::fromStdString(name);
     auto box_it = mGstVideoBoxes.find(name);
 
@@ -213,13 +211,13 @@ auto GstVideoGridWidget::deleteVideoBox(std::string const& name) -> bool {
 
         box_it->second.widget->deleteLater();
         mGstVideoBoxes.erase(box_it);
+
+        rebuildGrid();
         return true;
     } else {
-        qDebug() << "Could not find camera " << QString::fromStdString(name) << "for deletion";
+        qWarning() << "Could not find camera " << QString::fromStdString(name) << "for deletion";
         return false;
     }
-    
-
 }
 
 auto GstVideoGridWidget::rebuildGrid() -> void {

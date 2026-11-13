@@ -1,5 +1,6 @@
 #include "MoveCameraPopup.hpp"
 #include "CameraClientMainWindow.hpp"
+#include <format>
 #include <qapplication.h>
 #include <qboxlayout.h>
 #include <qdialog.h>
@@ -19,7 +20,8 @@ MoveCameraPopup::MoveCameraPopup(std::string const& cameraName, std::string cons
 : QDialog(parent) {
     layout = new QVBoxLayout(this);
     widget = new QWidget(this);
-    nameLabel = new QLabel("test text", this);
+    std::string const labelString = std::format("Move '{}' to...", cameraName);
+    nameLabel = new QLabel(QString::fromStdString(labelString), this);
 
     layout->addWidget(nameLabel);
 
@@ -31,8 +33,6 @@ MoveCameraPopup::MoveCameraPopup(std::string const& cameraName, std::string cons
             // ++numWindows;
         }
     }
-
-    CameraClientMainWindow * firstCam = mainWindows.front();
 
     // Add buttons for windows
     for(const auto &window: mainWindows /*size_t i = 0; i < mainWindows.size(); ++i*/){
@@ -56,10 +56,6 @@ MoveCameraPopup::MoveCameraPopup(std::string const& cameraName, std::string cons
     layout->addStretch();
     setLayout(layout);
 }
-
-// void MoveCameraPopup::sendCreateRequest(std::string name, std::string pipeline){
-//     emit createRequested(std::move(name), std::move(pipeline));
-// }
 
 void MoveCameraPopup::sendPressed(std::string name){
     qDebug() << "MoveCameraPopup Sent pressed";
