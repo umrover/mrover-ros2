@@ -102,6 +102,7 @@ namespace mrover {
                 .onStop = []() { return true; },
                 .onScreenshot = []() { return true; },
                 .onResize = [this, name](int w, int h) { mCameraGridWidget->resizeCamera(name, w, h); },
+                .onRotate = [this, name]() {mCameraGridWidget->rotateCamera(name); },
                 .onDelete = [this, name]() { 
                     return mCameraGridWidget->deleteVideoBox(name);
                 },
