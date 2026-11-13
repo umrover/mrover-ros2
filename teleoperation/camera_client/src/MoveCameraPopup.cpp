@@ -25,22 +25,18 @@ MoveCameraPopup::MoveCameraPopup(std::string const& cameraName, std::string cons
 
     layout->addWidget(nameLabel);
 
-    // Get number of main windows
-    // long numWindows = 0;
+    // Get main windows (excluding calling window)
     for(const auto &widget: QApplication::topLevelWidgets()){
-        if(auto a = dynamic_cast<CameraClientMainWindow*>(widget)/*typeid(widget) == typeid(CameraClientMainWindow)*/){
-            mainWindows.push_back(dynamic_cast<CameraClientMainWindow*>(widget));
-            // ++numWindows;
+        if(auto a = dynamic_cast<CameraClientMainWindow*>(widget)){
+            if(widget != parent->window()){
+                mainWindows.push_back(dynamic_cast<CameraClientMainWindow*>(widget));
+            }
         }
     }
 
     // Add buttons for windows
-    for(const auto &window: mainWindows /*size_t i = 0; i < mainWindows.size(); ++i*/){
+    for(const auto &window: mainWindows){
         auto * current_button = new MoveToWindowButton(window->windowTitle(), cameraName, pipeline, this);
-
-        // connect(current_button, &QPushButton::pressed, this, [this](/*std::string const& name, std::string const& pipeline*/) {
-        //     sendCreateRequest("test name", "test pipeline");
-        // });
 
         layout->addWidget(current_button);
         connect(current_button, &MoveToWindowButton::pressed, window, [this, cameraName](){
@@ -49,8 +45,6 @@ MoveCameraPopup::MoveCameraPopup(std::string const& cameraName, std::string cons
             deleteLater();
         });
         connect(current_button, &MoveToWindowButton::createRequested, window, &CameraClientMainWindow::fullCreateCamera);
-
-        // mrover::CameraClientMainWindow::connect(this, &MoveCameraPopup::createRequested, firstCam, &CameraClientMainWindow::fullCreateCamera);
     }
 
     layout->addStretch();
