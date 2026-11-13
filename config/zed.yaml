@@ -23,3 +23,4 @@
     use_pose_smoothing: true
     use_area_memory: true
     use_body_tracking: true
+    use_right_image: true

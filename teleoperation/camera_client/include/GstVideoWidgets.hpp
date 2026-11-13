@@ -27,8 +27,8 @@ namespace mrover {
     class GstVideoWidget : public QWidget {
         Q_OBJECT
 
-        GstElement* mPipeline{nullptr};
         GstAppSink* mAppSink{nullptr};
+        gst::PipelineWrapper mStreamPipelineWrapper;
         QString mErrorString;
         QImage mFrame;
 
@@ -54,7 +54,7 @@ namespace mrover {
         void paintEvent(QPaintEvent* event) override;
 
     private:
-        static auto onNewSample(GstAppSink* sink, gpointer userData) -> GstFlowReturn;
+        static auto onNewSample(GstAppSink* sink, GstVideoWidget* userData) -> GstFlowReturn;
     };
 
     class GstVideoGridWidget : public QWidget {

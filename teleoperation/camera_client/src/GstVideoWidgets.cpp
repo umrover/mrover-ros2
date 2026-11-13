@@ -2,6 +2,7 @@
 #include <gst/app/gstappsink.h>
 #include <gst/gstelement.h>
 #include <gst/video/video.h>
+#include <qdebug.h>
 #include <qglobal.h>
 #include <qwidget.h>
 
@@ -59,14 +60,8 @@ GstVideoWidget::GstVideoWidget(QWidget* parent) : QWidget(parent) {
 }
 
 GstVideoWidget::~GstVideoWidget() {
-    if (mPipeline) {
-        gst_element_set_state(mPipeline, GST_STATE_NULL);
-    }
     if (mAppSink) {
         gst_object_unref(mAppSink);
-    }
-    if (mPipeline) {
-        gst_object_unref(mPipeline);
     }
 }
 
@@ -75,11 +70,11 @@ auto GstVideoWidget::setGstPipeline(std::string const& pipeline) -> void {
     applyPipeline();
 }
 
-auto GstVideoWidget::onNewSample(GstAppSink* sink, gpointer userData) -> GstFlowReturn {
-    auto* widget = static_cast<GstVideoWidget*>(userData);
+auto GstVideoWidget::onNewSample(GstAppSink* sink, GstVideoWidget* userData) -> GstFlowReturn {
     GstSample* sample = gst_app_sink_pull_sample(sink);
 
     if (!sample) {
+        qInfo() << "A stream ended";
         return GST_FLOW_EOS;
     }
 
@@ -94,7 +89,7 @@ auto GstVideoWidget::onNewSample(GstAppSink* sink, gpointer userData) -> GstFlow
 
     GstVideoFrame videoFrame;
     if (!gst_video_frame_map(&videoFrame, &info, gst_sample_get_buffer(sample), GST_MAP_READ)) {
-        qWarning() << "Failed to map GStreamer video frame";
+        qWarning() << "Failed to map a GStreamer video frame";
         gst_sample_unref(sample);
         return GST_FLOW_ERROR;
     }
@@ -105,21 +100,20 @@ auto GstVideoWidget::onNewSample(GstAppSink* sink, gpointer userData) -> GstFlow
             static_cast<int>(GST_VIDEO_INFO_HEIGHT(&info)),
             GST_VIDEO_FRAME_PLANE_STRIDE(&videoFrame, 0),
             QImage::Format_RGB888);
-    QImage frameCopy = image.copy();
 
     gst_video_frame_unmap(&videoFrame);
     gst_sample_unref(sample);
 
-    if (frameCopy.isNull()) {
-        qWarning() << "Failed to copy GStreamer video frame";
+    if (image.isNull()) {
+        qWarning() << "Failed to copy a GStreamer video frame";
         return GST_FLOW_ERROR;
     }
 
     QMetaObject::invokeMethod(
-            widget,
-            [widget, frame = std::move(frameCopy)]() mutable {
-                widget->mFrame = std::move(frame);
-                widget->update();
+            userData,
+            [userData, frame = std::move(image)]() mutable {
+                userData->mFrame = std::move(frame);
+                userData->update();
             },
             Qt::QueuedConnection);
 
@@ -127,70 +121,44 @@ auto GstVideoWidget::onNewSample(GstAppSink* sink, gpointer userData) -> GstFlow
 }
 
 auto GstVideoWidget::applyPipeline() -> void {
-    std::string flipElement;
-    if (mRotation == 1) {
-        flipElement = " ! videoflip method=clockwise";
-    } else if (mRotation == 2) {
-        flipElement = " ! videoflip method=rotate-180";
-    } else if (mRotation == 3) {
-        flipElement = " ! videoflip method=counterclockwise";
-    }
+    gst::PipelineBuilder pipeline;
 
-    if (mPipeline) {
-        gst_element_set_state(mPipeline, GST_STATE_NULL);
-        if (mAppSink) {
-            gst_object_unref(mAppSink);
-            mAppSink = nullptr;
-        }
-        gst_object_unref(mPipeline);
-        mPipeline = nullptr;
-    }
-
+    pipeline.pushBack(mBasePipeline);
+    pipeline.pushBack("videoconvert");
+    pipeline.pushBack("video/x-raw,format=RGB");
+    pipeline.pushBack("appsink name=video_sink emit-signals=true sync=false max-buffers=1 drop=true");
     mErrorString.clear();
     mFrame = {};
     update();
 
-    std::string const launch = std::format("{}{} ! videoconvert ! video/x-raw,format=RGB ! appsink name=video_sink emit-signals=true sync=false max-buffers=1 drop=true", mBasePipeline, flipElement);
-
-    qDebug() << launch.c_str();
-    GError* error = nullptr;
-    mPipeline = gst_parse_launch(launch.c_str(), &error);
-    if (error) {
-        qWarning() << "GStreamer pipeline error:" << error->message;
-        mErrorString = QString::fromUtf8(error->message);
-        g_error_free(error);
-        if (mPipeline) {
-            gst_object_unref(mPipeline);
-            mPipeline = nullptr;
-        }
-        return;
-    }
-    if (!mPipeline) {
-        mErrorString = "Failed to create GStreamer pipeline";
+    // start pipeline
+    mStreamPipelineWrapper = gst::PipelineWrapper(pipeline.str());
+    try {
+        mStreamPipelineWrapper.init();
+    } catch (std::runtime_error const& e) {
+        mErrorString = QString::fromStdString(std::format("Failed to create GStreamer pipeline: {}", e.what()));
         qWarning() << mErrorString;
         return;
     }
 
-    mAppSink = GST_APP_SINK(gst_bin_get_by_name(GST_BIN(mPipeline), "video_sink"));
+    // create sink
+
+    mAppSink = GST_APP_SINK(gst_bin_get_by_name(GST_BIN(mStreamPipelineWrapper.getPipelineElement()), "video_sink"));
     if (!mAppSink) {
-        mErrorString = "Pipeline has no video_sink appsink";
+        mErrorString = QString::fromStdString("Pipeline '" + mBasePipeline + "' has no video_sink appsink");
         qWarning() << mErrorString;
-        gst_object_unref(mPipeline);
-        mPipeline = nullptr;
+        mStreamPipelineWrapper.stop();
         return;
     }
 
     g_signal_connect(mAppSink, "new-sample", G_CALLBACK(&GstVideoWidget::onNewSample), this);
 
-    if (gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
-        mErrorString = "Failed to start GStreamer pipeline";
-        qWarning() << mErrorString;
-    }
+    play();
 }
 
 auto GstVideoWidget::rotate90() -> void {
     mRotation = (mRotation + 1) % 4;
-    applyPipeline();
+    update();
 }
 
 auto GstVideoWidget::errorString() const -> QString {
@@ -204,27 +172,32 @@ auto GstVideoWidget::isError() const -> bool {
 auto GstVideoWidget::play() -> void {
     qDebug() << "Request to play a pipeline";
 
-    if (mPipeline && gst_element_set_state(mPipeline, GST_STATE_PLAYING) == GST_STATE_CHANGE_FAILURE) {
-        mErrorString = "Failed to play GStreamer pipeline";
+    try {
+        mStreamPipelineWrapper.play();
+    } catch (std::runtime_error const& e) {
+        mErrorString = QString::fromStdString(std::format("Failed to play GStreamer pipeline: {}", e.what()));
         qWarning() << mErrorString;
+        return;
     }
 }
 auto GstVideoWidget::pause() -> void {
     qDebug() << "Request to pause a pipeline";
 
-    if (mPipeline && gst_element_set_state(mPipeline, GST_STATE_PAUSED) == GST_STATE_CHANGE_FAILURE) {
-        mErrorString = "Failed to pause GStreamer pipeline";
+    try {
+        mStreamPipelineWrapper.pause();
+    } catch (std::runtime_error const& e) {
+        mErrorString = QString::fromStdString(std::format("Failed to pause GStreamer pipeline: {}", e.what()));
         qWarning() << mErrorString;
+        return;
     }
 }
 
+// Technically just pauses the stream for now
 auto GstVideoWidget::stop() -> void {
     qDebug() << "Request to stop a pipeline";
 
-    if (mPipeline && gst_element_set_state(mPipeline, GST_STATE_NULL) == GST_STATE_CHANGE_FAILURE) {
-        mErrorString = "Failed to stop GStreamer pipeline";
-        qWarning() << mErrorString;
-    }
+    // TODO actually stop pipeline
+    pause();
 }
 
 void GstVideoWidget::paintEvent(QPaintEvent* event) {
@@ -237,13 +210,25 @@ void GstVideoWidget::paintEvent(QPaintEvent* event) {
         return;
     }
 
-    QSize scaledSize = mFrame.size();
-    scaledSize.scale(size(), Qt::KeepAspectRatio);
+    QSize orientedSize = mFrame.size();
+    if (mRotation % 2 != 0) {
+        orientedSize.transpose();
+    }
 
-    QRect target(
-            QPoint((width() - scaledSize.width()) / 2,
-                   (height() - scaledSize.height()) / 2),
-            scaledSize);
+    qreal const scale = std::min(static_cast<qreal>(width()) / orientedSize.width(),
+                                 static_cast<qreal>(height()) / orientedSize.height());
+    qreal const drawWidth = mFrame.width() * scale;
+    qreal const drawHeight = mFrame.height() * scale;
+
+    painter.translate(width() / 2.0, height() / 2.0);
+    painter.rotate(mRotation * 90.0);
+
+    QRectF target(
+            -drawWidth / 2.0,
+            -drawHeight / 2.0,
+            drawWidth,
+            drawHeight);
+
     painter.drawImage(target, mFrame);
 }
 
@@ -363,15 +348,6 @@ auto GstVideoGridWidget::rotateCamera(std::string const& name) -> bool {
     if (!box) return false;
 
     box->gstVideoWidget->rotate90();
-
-    QSize const currentSize = box->widget->minimumSize();
-    int const newWidth = currentSize.height();
-    int const newHeight = currentSize.width();
-
-    box->widget->setMinimumSize(newWidth, newHeight);
-    box->widget->setMaximumSize(newWidth, newHeight);
-    box->widget->resize(newWidth, newHeight);
-
     rebuildGrid();
 
     return true;

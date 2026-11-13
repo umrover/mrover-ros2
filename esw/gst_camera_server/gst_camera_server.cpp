@@ -64,13 +64,12 @@ namespace mrover {
         if (captureIsTopic()) {
             pipeline.pushBack("appsrc",
                               gst::addProperty("name", "streamImageSource"),
-                              gst::addProperty("is-live", true),
                               gst::addProperty("format", "time"),
                               gst::addProperty("do-timestamp", true));
             pipeline.pushBack(std::format("video/x-raw,format={},width={},height={},framerate={}/1", gst::video::v4l2::toStringGstType(pixelFormat), imageWidth, imageHeight, imageFramerate));
             pipeline.pushBack("queue");
         } else if (captureIsDev()) {
-            pipeline.pushBack(gst::video::v4l2::createSrc(mDeviceNode, mStreamCaptureFormat, gst::addProperty("is-live", true)));
+            pipeline.pushBack(gst::video::v4l2::createSrc(mDeviceNode, mStreamCaptureFormat));
         } else {
             pixelFormat = gst::video::v4l2::PixelFormat::YUYV;
             pipeline.pushBack("videotestsrc");
