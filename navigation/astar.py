@@ -1,7 +1,9 @@
 import heapq
 import pymap3d
 import numpy as np
+import math
 from geometry_msgs.msg import Twist
+from scipy import ndimage
 from navigation.context import Context
 from navigation.trajectory import Trajectory
 from navigation.coordinate_utils import ij_to_cartesian, cartesian_to_ij, d_calc, segment_path, is_high_cost_point
@@ -59,7 +61,7 @@ class AStar:
         return path[::-1]  # Reverse the path 
 
     @staticmethod
-    def astar_helper(self, start_ij: tuple, end_ij: tuple, costmap: np.ndarray) -> list | None:
+    def astar_helper(start_ij: tuple, end_ij: tuple, costmap: np.ndarray, debug: bool) -> list | None:
         """
         General use A* Algorithm: Find a path from start to end on a cost map.
         :param start_ij: Starting cell in grid indicies (i, j)
@@ -78,13 +80,16 @@ class AStar:
         open_set: list[tuple] = []
         heapq.heappush(open_set, (f_scores[start_ij], start_ij))
         adjacent_squares = np.array([[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [-1, 1], [1, -1], [1, 1]])
-
+        debug_list = []
 
         while open_set:
             _, current = heapq.heappop(open_set)
 
             if current == end_ij:
-                return self.return_path(came_from, current)
+                return AStar.return_path(came_from, current)
+
+            if debug:
+                debug_list.append(AStar.return_path(came_from, current))
 
             for rel_pos in adjacent_squares:
                 neighbor_pos = tuple(np.array(current) + rel_pos)
@@ -106,9 +111,10 @@ class AStar:
                     # Only push to open_set if not already in it
                     if neighbor_pos not in (pos[1] for pos in open_set):
                         heapq.heappush(open_set, (f_scores[neighbor_pos], neighbor_pos))
-        return None
 
-    def a_star(self, start: np.ndarray, end: np.ndarray, debug: bool = False) -> list | None:
+        raise NoPath("No path could be found to the destination.")
+
+    def a_star(self, start: np.ndarray, end: np.ndarray, debug: bool = False, global_astar: bool = False, use_global_data: bool = False) -> list | None:
         """
         A* Algorithm: Find a path from start to end in the costmap using f(n) = g(n) + h(n).
         :param start: Rover pose in cartesian coordinates.
@@ -117,68 +123,50 @@ class AStar:
         :return: List of A* coordinates in occupancy grid (i, j) or None if start equals end.
         :raises NoPath: If no path to the goal can be found.
         """
-        costmap2d = self.context.env.dem_cost_map.data if global_astar else self.context.env.cost_map.data
-        x, y, _ = pymap3d.geodetic2enu(
-            self.node.get_parameter("dem_costmap.top_left_lat").value,
-            self.node.get_parameter("dem_costmap.top_left_lon").value, 0,
-            self.node.get_parameter("ref_lat").value,
-            self.node.get_parameter("ref_lon").value,
-            self.node.get_parameter("ref_alt").value, deg=True)
-        #Get the position of the rover with respect to the top left coordinate being (0, 0)
-        row_bottom = int(round(self.context.env.cost_map.origin[0] - x))
-        column_left = int(round(y - self.context.env.cost_map.origin[1]))
-        #Splice the global astar array, so it covers the same area as the local astar
-        global_astar_array: np.ndarray = self.context.env.dem_pd.iloc[row_bottom:row_bottom + costmap2d.shape[0], column_left - costmap2d.shape[1]:column_left].to_numpy()
+        if global_astar and use_global_data:
+            raise ValueError("global_astar and use_global_data cannot both be True")
+        costmap = self.context.env.dem_cost_map if global_astar else self.context.env.cost_map
+        costmap2d = costmap.data
+        if use_global_data:
+            x, y, _ = pymap3d.geodetic2enu(
+                self.context.node.get_parameter("dem_costmap.top_left_lat").value,
+                self.context.node.get_parameter("dem_costmap.top_left_lon").value,
+                0,
+                self.context.node.get_parameter("ref_lat").value,
+                self.context.node.get_parameter("ref_lon").value,
+                self.context.node.get_parameter("ref_alt").value,
+                deg=True
+            )
 
+            dem_resolution = self.context.env.dem_cost_map.resolution
+            local_resolution = costmap.resolution
+
+            # Position of local costmap's bottom-left corner in DEM coordinates.
+            column_left = math.floor((costmap.origin[0] - x) / dem_resolution)
+            row_bottom = math.floor((y - costmap.origin[1]) / dem_resolution)
+
+            # Calculate how many DEM cells cover the local costmap.
+            dem_width = math.ceil(costmap.width * local_resolution / dem_resolution)
+            dem_height = math.ceil(costmap.height * local_resolution / dem_resolution)
+
+            # Extract the corresponding DEM region.
+            global_astar_array = self.context.env.dem_pd.iloc[row_bottom - dem_height + 1 : row_bottom + 1,
+                column_left : column_left + dem_width].to_numpy()
+
+            # Upsample DEM to local costmap resolution.
+            upsample_factor = round(dem_resolution / local_resolution)
+            upsampled_cost_map = np.kron(global_astar_array, np.ones((upsample_factor, upsample_factor), dtype=np.float32))
+
+            # Smooth the upsampled DEM.
+            filter_size = 5
+            filtered_cost_map = ndimage.uniform_filter(upsampled_cost_map, filter_size, mode="nearest")
+
+            # Combine local and global costmaps.
+            costmap2d = np.maximum(costmap2d, filtered_cost_map)
         # Convert start and end to occupancy grid coordinates
         start_ij = tuple(cartesian_to_ij(self.context, start, global_astar))
         end_ij = tuple(cartesian_to_ij(self.context, end, global_astar))
-
-        if start_ij == end_ij:
-            return [end_ij]
-
-        came_from: dict[tuple, tuple] = {}
-        g_scores: dict[tuple, float] = {start_ij: 0.0}
-        f_scores: dict[tuple, float] = {start_ij: d_calc(start_ij, end_ij)}
-
-        open_set: list[tuple] = []
-        heapq.heappush(open_set, (f_scores[start_ij], start_ij))
-
-        adjacent_squares = np.array([[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [-1, 1], [1, -1], [1, 1]])
-
-        debug_list = []
-
-        while open_set:
-            _, current = heapq.heappop(open_set)
-
-            if debug:
-                debug_list.append(self.return_path(came_from, current))
-
-            if current == end_ij:
-                return debug_list if debug else self.return_path(came_from, current)
-
-            for rel_pos in adjacent_squares:
-                neighbor_pos = tuple(np.array(current) + rel_pos)
-
-                # Ensure within grid bounds
-                if not (0 <= neighbor_pos[0] < costmap2d.shape[0] and 0 <= neighbor_pos[1] < costmap2d.shape[1]):
-                    continue
-
-                d = 1.0 if rel_pos[0] == 0 or rel_pos[1] == 0 else np.sqrt(2)
-                cost = max(costmap2d[neighbor_pos[0], neighbor_pos[1]], 1)
-
-                tentative_g_score = g_scores[current] + d * cost
-
-                if neighbor_pos not in g_scores or tentative_g_score < g_scores[neighbor_pos]:
-                    came_from[neighbor_pos] = current
-                    g_scores[neighbor_pos] = tentative_g_score
-                    f_scores[neighbor_pos] = tentative_g_score + d_calc(neighbor_pos, end_ij)
-
-                    # Only push to open_set if not already in it
-                    if neighbor_pos not in (pos[1] for pos in open_set):
-                        heapq.heappush(open_set, (f_scores[neighbor_pos], neighbor_pos))
-
-        raise NoPath("No path could be found to the destination.")
+        self.astar_helper(start_ij, end_ij, costmap2d, debug)
 
     def use_astar(self, dest: np.ndarray) -> bool:
         rover_in_map = self.context.rover.get_pose_in_map()
