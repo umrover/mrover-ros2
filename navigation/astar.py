@@ -83,7 +83,10 @@ class AStar:
         debug_list = []
 
         while open_set:
-            _, current = heapq.heappop(open_set)
+            current_f, current = heapq.heappop(open_set)
+            #Check to see if the f score of the top value on the heap is actually the fastest way to get to that cell
+            if(current_f > f_scores[current]):
+                continue
 
             if current == end_ij:
                 return AStar.return_path(came_from, current)
@@ -107,14 +110,12 @@ class AStar:
                     came_from[neighbor_pos] = current
                     g_scores[neighbor_pos] = tentative_g_score
                     f_scores[neighbor_pos] = tentative_g_score + d_calc(neighbor_pos, end_ij)
-
-                    # Only push to open_set if not already in it
-                    if neighbor_pos not in (pos[1] for pos in open_set):
-                        heapq.heappush(open_set, (f_scores[neighbor_pos], neighbor_pos))
+                    #Want to push new value in regardless, we will skip it if the f-score is too high
+                    heapq.heappush(open_set, (f_scores[neighbor_pos], neighbor_pos))
 
         raise NoPath("No path could be found to the destination.")
 
-    def a_star(self, start: np.ndarray, end: np.ndarray, debug: bool = False, global_astar: bool = False, use_global_data: bool = False) -> list | None:
+    def a_star(self, start: np.ndarray, end: np.ndarray, global_astar: bool = False, use_global_data: bool = False, debug: bool = False) -> list | None:
         """
         A* Algorithm: Find a path from start to end in the costmap using f(n) = g(n) + h(n).
         :param start: Rover pose in cartesian coordinates.
@@ -150,8 +151,7 @@ class AStar:
             dem_height = math.ceil(costmap.height * local_resolution / dem_resolution)
 
             # Extract the corresponding DEM region.
-            global_astar_array = self.context.env.dem_pd.iloc[row_bottom - dem_height + 1 : row_bottom + 1,
-                column_left : column_left + dem_width].to_numpy()
+            global_astar_array = self.context.env.dem_cost_map.data[row_bottom - dem_height + 1 : row_bottom + 1, column_left : column_left + dem_width]
 
             # Upsample DEM to local costmap resolution.
             upsample_factor = round(dem_resolution / local_resolution)

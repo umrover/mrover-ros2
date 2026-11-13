@@ -81,7 +81,6 @@ class Environment:
     image_targets: ImageTargetsStore
     cost_map: CostMap
     dem_cost_map: CostMap
-    dem_pd: pandas.DataFrame
 
     arrived_at_target: bool = False
     arrived_at_waypoint: bool = False
@@ -496,23 +495,23 @@ class Context:
     def read_dem_file(self) -> None:
         #Read DEM csv data into pandas dataframe
         csv = self.node.get_parameter("dem_costmap.dem_csv").value
-        self.env.dem_pd = pandas.read_csv(csv, header=None)
+        self.env.dem_cost_map.data = pandas.read_csv(csv, header=None).to_numpy()
 
 
     def update_dem_costmap(self) -> None:
         #Converts the latitude and longitude of the top left corner of the region to a 2D world frame coordinate
+        self.env.dem_cost_map.height = self.env.dem_cost_map.shape[0]
+        self.env.dem_cost_map.width = self.env.dem_cost_map.shape[1]
+        self.env.dem_cost_map.resolution = 1
         x, y, _ = pymap3d.geodetic2enu(
-            self.node.get_parameter("dem_costmap.top_left_lat").value,
-            self.node.get_parameter("dem_costmap.top_left_lon").value, 0,
-            self.node.get_parameter("ref_lat").value,
-            self.node.get_parameter("ref_lon").value,
-            self.node.get_parameter("ref_alt").value, deg=True)
-        rover_pos = self.rover.get_pose_in_map()
-        #Get the position of the rover with respect to the top left coordinate being (0, 0)
-        center_pos_x = abs(rover_pos.translation()[0] - x)
-        center_pos_y = abs(rover_pos.translation()[1] - y)
-        #Get the dem size: this is how big we want the costmap to be
-        dem_size = self.node.get_parameter("dem_costmap.dem_size")
+        self.node.get_parameter("dem_costmap.top_left_lat").value,
+        self.node.get_parameter("dem_costmap.top_left_lon").value,
+        0,
+        self.node.get_parameter("ref_lat").value,
+        self.node.get_parameter("ref_lon").value,
+        self.node.get_parameter("ref_alt").value,
+        deg=True)
+        self.env.dem_cost_map.origin = np.array([x, y])
         
 
     def toggle_object_detector(self, waypointType: WaypointType.val) -> bool:
