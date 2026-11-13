@@ -198,7 +198,7 @@ auto GstVideoGridWidget::findVideoBox(std::string const& name) -> GstVideoBox* {
 auto GstVideoGridWidget::deleteVideoBox(std::string const& name) -> bool {
     // TODO error checking
 
-    qDebug() << "Deleteing" << QString::fromStdString(name);
+    qDebug() << "Deleting" << QString::fromStdString(name);
     auto box_it = mGstVideoBoxes.find(name);
 
     if(box_it != mGstVideoBoxes.end()){
