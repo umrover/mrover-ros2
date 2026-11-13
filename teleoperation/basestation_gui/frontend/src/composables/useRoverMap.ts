@@ -31,6 +31,7 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
   const rover_bearing_deg = ref(0)
   const center = ref<[number, number]>(initialCenter)
   const online = ref(true)
+  const heatmap = ref(false)
   const followRover = ref(false)
   const mapRef = ref<{ leafletObject: L.Map } | null>(null)
   const roverRef = ref<{ leafletObject: L.Marker } | null>(null)
@@ -38,6 +39,13 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
   const odomCount = ref(0)
   const odomPath = shallowRef<L.LatLng[]>([])
   const findRover = ref(false)
+
+  // Changes what image will be the overlay
+  const overlay = '/URCHeatmap.png'
+
+  // If you want Ann Arbor, change the bounds to:
+  // [[42.2285833333, -83.8056111111],[42.3185000000, -83.6693888889]]
+  const overlayBounds: L.LatLngBoundsExpression =  [[37.99944444350717, -111.00055555639324], [39.00055555659458, -109.99944444420515]]
 
   const onlineUrl = 'http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
   const onlineTileOptions = {
@@ -82,6 +90,7 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
     return mapRef.value?.leafletObject as L.Map | null
   }
 
+  
   const onMapReady = (additionalSetup?: () => void) => {
     nextTick(() => {
       if (roverRef.value) {
@@ -95,8 +104,12 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
         map.dragging.disable()
       }
       additionalSetup?.()
+
     })
   }
+
+  
+
 
   const centerOnRover = () => {
     const map = getMap()
@@ -121,9 +134,13 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
     if (map) map.setZoom(level)
   }
 
+
+  
+
   watch(gridLocked, (locked) => {
     const map = getMap()
     if (!map) return
+
     if (locked) {
       map.dragging.enable()
     } else {
@@ -220,5 +237,8 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
     zoomLevels,
     setZoom,
     getMap,
+    overlay, 
+    overlayBounds,
+    heatmap,
   }
 }
