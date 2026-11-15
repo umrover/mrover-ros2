@@ -11,19 +11,22 @@ readonly RED='\033[0;31m'
 readonly NC='\033[0m'
 readonly YELLOW_BOLD='\033[1;33m'
 
-BLACK_ARGS=(
-  "--line-length=120"
-  "--color"
-)
 CLANG_FORMAT_ARGS=(
   "-style=file"
+)
+RUFF_FORMAT_ARGS=(
+  "--line-length=120"
+)
+RUFF_CHECK_ARGS=(
+  "--line-length=120"
 )
 
 # Just do a dry run if the "fix" argument is not passed
 if [ $# -eq 0 ] || [ "$1" != "--fix" ]; then
-  BLACK_ARGS+=("--diff") # Show difference
-  BLACK_ARGS+=("--check") # Exit with non-zero code if changes are required (for CI)
+  RUFF_FORMAT_ARGS+=("--diff" "--check") # Show difference and Exit with non-zero code if changes are required (for CI)
   CLANG_FORMAT_ARGS+=("--dry-run" "--Werror") # Don't modify, exit with non-zero code if changes are required
+else
+  RUFF_CHECK_ARGS+=("--fix") # automatically fix lint issues
 fi
 
 function print_update_error() {
@@ -56,7 +59,7 @@ function find_executable() {
 
 CLANG_FORMAT_PATH=$(find_executable clang-format-18 18.1)
 readonly CLANG_FORMAT_PATH
-BLACK_PATH=$(find_executable black 26.5.1)
+RUFF_PATH=$(find_executable ruff 0.17.5)
 readonly BLACK_PATH
 MYPY_PATH=$(find_executable mypy 1.11.2)
 readonly MYPY_PATH
@@ -87,8 +90,12 @@ readonly PYTHON_STYLE_DIRS=(
 )
 
 echo
-echo "Style checking Python with black ..."
-"${BLACK_PATH}" "${BLACK_ARGS[@]}" "${PYTHON_STYLE_DIRS[@]}"
+echo "Style checking Python formatting with ruff format ..."
+"${RUFF_PATH}" format "${RUFF_FORMAT_ARGS[@]}" "${PYTHON_STYLE_DIRS[@]}"
+
+echo
+echo "Linting Python with ruff check ..."
+"${RUFF_PATH}" check "${RUFF_CHECK_ARGS[@]}" "${PYTHON_LINT_DIRS[@]}"
 
 echo
 echo "Linting Python with mypy ..."

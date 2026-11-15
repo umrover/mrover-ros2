@@ -31,7 +31,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     # If you update these, be sure to update the correspondig version checkers in style.sh
-    "black==26.5.1",
+    "ruff==0.17.5",
     "mypy==1.11.2",
     "ipython==8.27.0",
 ]
@@ -49,9 +49,8 @@ build-backend = "flit_core.buildapi"
 [project.urls]
 "Homepage" = "https://mrover.org"
 
-[tool.black]
+[tool.ruff]
 line-length = 120
-target-version = ["py312"]
 
 [tool.pytest.ini_options]
 addopts = "--color=yes -v"
