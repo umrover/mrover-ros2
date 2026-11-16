@@ -101,19 +101,19 @@ auto GstVideoWidget::onNewSample(GstAppSink* sink, GstVideoWidget* userData) -> 
             GST_VIDEO_FRAME_PLANE_STRIDE(&videoFrame, 0),
             QImage::Format_RGB888);
 
-    QImage frame = image.copy();
+    QImage imageCopy = image.copy();
 
     gst_video_frame_unmap(&videoFrame);
     gst_sample_unref(sample);
 
-    if (frame.isNull()) {
+    if (imageCopy.isNull()) {
         qWarning() << "Failed to copy a GStreamer video frame";
         return GST_FLOW_ERROR;
     }
 
     QMetaObject::invokeMethod(
             userData,
-            [userData, frame = std::move(frame)]() mutable {
+            [userData, frame = std::move(imageCopy)]() mutable {
                 userData->mFrame = std::move(frame);
                 userData->update();
             },
