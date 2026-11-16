@@ -114,7 +114,7 @@ class GUI(QWidget):  # type: ignore
         with self.state_machine.mutex:
             if self.graph is None or self.state_machine.needs_redraw:
                 self.graph = graphviz.Digraph(comment="State Machine Diagram", format="svg")
-                for state_name in self.state_machine.states.keys():
+                for state_name in self.state_machine.states:
                     color = "red" if self.state_machine.cur_active == state_name else "black"
                     self.graph.node(state_name, color=color)
 

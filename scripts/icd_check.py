@@ -51,7 +51,9 @@ def normalize_definition(definition: str) -> str:
 
 
 def parse_icd(path: Path) -> list[Entry]:
-    rows = list(csv.reader(open(path)))
+    with open(path) as f:
+        rows = list(csv.reader(f))
+
     header_idx = next((i for i, r in enumerate(rows) if r and r[0] == "Subsystem"), None)
     if header_idx is None:
         return []

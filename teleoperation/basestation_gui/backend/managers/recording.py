@@ -78,7 +78,7 @@ class RecordingManager:
             )
             conn.commit()
             self.recording_sequence += 1
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             get_logger().error(f"Failed to save waypoint: {e}")
         finally:
             if conn:

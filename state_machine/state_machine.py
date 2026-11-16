@@ -58,7 +58,7 @@ class StateMachine(Generic[ContextType]):
             next_state = current_state.on_loop(self.context)
 
         if type(next_state) not in self.state_transitions[type(current_state)]:
-            raise Exception(f"Invalid transition from {current_state} to {next_state}")
+            raise Exception(f"Invalid transition from {current_state} to {next_state}")  # noqa: TRY002
         if type(next_state) is not type(current_state):
             # TODO: Make sure no exceptions
             try:
@@ -67,7 +67,7 @@ class StateMachine(Generic[ContextType]):
                 self.transition_log.append(TransitionRecord(time.time(), str(current_state), str(next_state)))
                 self.current_state = next_state
                 self.current_state.on_enter(self.context)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 self.logger.warning(f"Error in {current_state!s}: {e}")
 
     def add_transition(self, state_from: State, state_to: State) -> None:
@@ -82,9 +82,9 @@ class StateMachine(Generic[ContextType]):
 
     def configure_off_switch(self, off_state: State, off_lambda: Callable[[ContextType], bool]):
         if type(off_state) not in self.state_transitions:
-            raise Exception("Attempted to configure an off state that does not exist")
+            raise Exception("Attempted to configure an off state that does not exist")  # noqa: TRY002
 
         self.off_state = off_state
         self.off_lambda = off_lambda
-        for _, to_states in self.state_transitions.items():
+        for to_states in self.state_transitions.values():
             to_states.add(type(off_state))

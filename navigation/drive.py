@@ -477,7 +477,6 @@ class DriveController:
 
         return target_pos
 
-    @staticmethod
     def set_farthest_path_point(
         self,
         waypoints: Trajectory,

@@ -28,6 +28,6 @@ async def funnel_servo_position(data: ServoPositionCommand):
 
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         get_logger().error(f"funnel_servo_position error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

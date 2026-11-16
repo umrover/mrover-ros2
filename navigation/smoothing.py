@@ -255,7 +255,7 @@ class SplineInterpolation:
         # Attempts to generate the spline
         try:
             spline, u = splprep([trajectory.coordinates[:, 0], trajectory.coordinates[:, 1]], s=0, k=2)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             ctx.node.get_logger().error(f"{e} - spline could not be generated, returning original trajectory")
             return trajectory
 

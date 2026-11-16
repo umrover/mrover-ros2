@@ -32,7 +32,7 @@ def create_recording(data: RecordingCreateRequest):
         return {"status": "success", "recording_id": rec_id}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=f"Failed to start recording: {e!s}")
 
 
@@ -44,7 +44,7 @@ def stop_recording():
         return {"status": "success", "recording_id": result["recording_id"], "waypoint_count": result["waypoint_count"]}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=f"Failed to stop recording: {e!s}")
 
 

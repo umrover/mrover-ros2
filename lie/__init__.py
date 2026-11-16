@@ -1,5 +1,5 @@
 import numpy as np
-from manifpy import SE2, SE3, SO2, SO3, SE2Tangent, SE3Tangent, SO2Tangent, SO3Tangent
+from manifpy import SE3
 
 from lie.conversions import from_position_orientation, from_tf_tree, from_tf_tree_with_time, to_tf_tree
 

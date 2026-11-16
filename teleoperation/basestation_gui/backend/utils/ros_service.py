@@ -23,7 +23,7 @@ async def call_service_async(client, request, timeout=10.0) -> tuple:
         try:
             result = fut.result()
             logger.info(f"Service {client.srv_name} call completed successfully")
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             error = f"Service call to {client.srv_name} failed: {exc}"
             logger.error(error)
         loop.call_soon_threadsafe(event.set)

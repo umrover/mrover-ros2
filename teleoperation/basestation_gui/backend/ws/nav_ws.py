@@ -57,7 +57,7 @@ class NavHandler(WebSocketHandler):
             self.schedule_send(data_to_send)
         except (LookupException, ConnectivityException, ExtrapolationException):
             pass
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             get_logger().error(f"NavHandler localization error: {e}")
 
     def nav_state_callback(self, msg):

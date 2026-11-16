@@ -47,7 +47,7 @@ class WebSocketHandler:
         try:
             packed = msgpack.packb(sanitize_floats(data), use_bin_type=True)
             await self.websocket.send_bytes(packed)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             get_logger().debug(f"Send failed on {self.endpoint}: {exc}")
 
     def schedule_send(self, data):

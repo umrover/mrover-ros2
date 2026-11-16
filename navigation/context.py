@@ -20,7 +20,6 @@ from mrover.msg import (
 )
 from mrover.srv import DilateCostMap, EnableAuton, MoveCostMap, ToggleObjectDetector
 from nav_msgs.msg import OccupancyGrid, Path
-from rclpy import Parameter
 from rclpy.client import Client
 from rclpy.duration import Duration
 from rclpy.executors import SingleThreadedExecutor
@@ -154,7 +153,7 @@ class ImageTargetsStore:
         increment_weight = self._context.node.get_parameter("image_targets.increment_weight").value
         decrement_weight = self._context.node.get_parameter("image_targets.decrement_weight").value
         # TODO(quintin): Seems like this was never used in 2024, might have been an oversight
-        min_hits = self._context.node.get_parameter("image_targets.min_hits").value
+        # min_hits = self._context.node.get_parameter("image_targets.min_hits").value
         max_hits = self._context.node.get_parameter("image_targets.max_hits").value
 
         # Update our current targets

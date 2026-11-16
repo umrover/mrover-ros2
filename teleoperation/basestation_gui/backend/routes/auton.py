@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import traceback
 
 from backend.managers.led import set_teleop_enabled
@@ -56,13 +57,12 @@ async def enable_auton(data: AutonEnableRequest):
 
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         error_details = traceback.format_exc()
-        try:
+        with contextlib.supress(Exception):
             node = get_node()
             node.get_logger().error(f"Error in enable_auton: {e!s}\n{error_details}")
-        except:
-            pass
+
         raise HTTPException(status_code=500, detail=str(e))
 
 

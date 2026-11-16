@@ -80,7 +80,6 @@ def init_ros():
 
 
 def shutdown_ros():
-    global context, node
     logger.info("Shutting down ROS Manager...")
     if context and rclpy.ok(context=context):
         if node:

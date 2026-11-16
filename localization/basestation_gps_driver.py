@@ -45,12 +45,12 @@ class BaseStationDriverNode(Node):
         self.reader = UBXReader(self.serial, protfilter=UBX_PROTOCOL | RTCM3_PROTOCOL)
 
         self.satellite_signals = dict[str, list]()
-        self.satellite_signals["GPS"] = list()
-        self.satellite_signals["SBAS"] = list()
-        self.satellite_signals["Galileo"] = list()
-        self.satellite_signals["BeiDou"] = list()
-        self.satellite_signals["QZSS"] = list()
-        self.satellite_signals["GLONASS"] = list()
+        self.satellite_signals["GPS"] = []
+        self.satellite_signals["SBAS"] = []
+        self.satellite_signals["Galileo"] = []
+        self.satellite_signals["BeiDou"] = []
+        self.satellite_signals["QZSS"] = []
+        self.satellite_signals["GLONASS"] = []
 
         self.gnssId_to_constellation = {
             0: "GPS",

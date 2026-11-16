@@ -189,7 +189,7 @@ class ApproachTargetState(State):
         if self.astar_traj.empty() and not self.target_traj.done():
             try:
                 self.astar_traj = self.astar.generate_trajectory(self.target_traj.get_current_point())
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 context.node.get_logger().info(str(e))
                 return self
 
@@ -199,20 +199,19 @@ class ApproachTargetState(State):
         if self.target_traj.done():
             self.target_traj.clear()
             context.node.get_logger().info("Target unreachable, calculating nearest low-cost point")
-            if self.low_cost_point(context=context):
+            if self.low_cost_point(context=context) and (
+                not isinstance(self, LongRangeState) and not self.point_in_stop_threshold(context, self.target_position)
+            ):
                 # If we are approaching a target and it is not within the distance threshold, dilate the cost map and
                 # recalculate for a low-cost point
-                if not isinstance(self, LongRangeState) and not self.point_in_stop_threshold(
-                    context, self.target_position
-                ):
-                    # If we fail to find a low-cost point, consider the target unreachable and give up
-                    if not context.shrink_dilation():
-                        context.node.get_logger().info("Low-cost point not found, giving up")
-                        return self.next_state(context=context, is_finished=True)
+                # If we fail to find a low-cost point, consider the target unreachable and give up
+                if not context.shrink_dilation():
+                    context.node.get_logger().info("Low-cost point not found, giving up")
+                    return self.next_state(context=context, is_finished=True)
 
-                    else:
-                        context.node.get_logger().info("Found low-cost point")
-                        return self
+                else:
+                    context.node.get_logger().info("Found low-cost point")
+                    return self
 
         arrived = False
         cmd_vel = Twist()

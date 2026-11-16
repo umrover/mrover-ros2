@@ -72,7 +72,7 @@ async def handle_websocket(websocket: WebSocket, ConsumerClass):
             await handler.handle_message(unpacked)
     except WebSocketDisconnect:
         pass
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         get_logger().error(f"Error in {handler.endpoint} handler: {e}\n{traceback.format_exc()}")
     finally:
         await handler.cleanup()
