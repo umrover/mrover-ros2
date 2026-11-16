@@ -1,11 +1,12 @@
 from enum import Enum
 
 import numpy as np
-
-from lie import SO2
 from rclpy.duration import Duration
 from rclpy.time import Time
+
+from lie import SO2
 from state_machine.state import State
+
 from .context import Context
 
 

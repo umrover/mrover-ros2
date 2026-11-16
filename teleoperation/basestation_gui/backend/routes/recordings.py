@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException
 from backend.database import get_recordings_db
-from backend.models_pydantic import RecordingCreateRequest, RecordingWaypointRequest
 from backend.managers.recording import get_recording_manager
+from backend.models_pydantic import RecordingCreateRequest, RecordingWaypointRequest
+from fastapi import APIRouter, HTTPException
 
 router = APIRouter(prefix="/api/recordings", tags=["recordings"])
 
@@ -33,7 +33,7 @@ def create_recording(data: RecordingCreateRequest):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to start recording: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to start recording: {e!s}")
 
 
 @router.post("/stop/")
@@ -45,7 +45,7 @@ def stop_recording():
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to stop recording: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to stop recording: {e!s}")
 
 
 @router.post("/{rec_id}/waypoints/")

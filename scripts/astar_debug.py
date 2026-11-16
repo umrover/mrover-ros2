@@ -6,14 +6,16 @@ You can add waypoints with and without tags and these will get published to navi
 """
 
 import sys
+import tkinter as tk
+
+import numpy as np
 import rclpy
-from navigation.context import Context, CostMap, Environment, ImageTargetsStore
-from navigation.astar import AStar
 from rclpy import Parameter
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-import tkinter as tk
-import numpy as np
+
+from navigation.astar import AStar
+from navigation.context import Context, CostMap, Environment, ImageTargetsStore
 
 
 class SimWindow:

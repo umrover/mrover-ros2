@@ -1,8 +1,7 @@
-from fastapi import APIRouter, HTTPException
-
-from backend.managers.ros import get_node, get_logger, get_service_client
+from backend.managers.ros import get_logger, get_node, get_service_client
 from backend.models_pydantic import ServoPositionCommand
 from backend.utils.ros_service import call_service_async
+from fastapi import APIRouter, HTTPException
 from mrover.srv import ServoPosition
 
 router = APIRouter(prefix="/api", tags=["science"])

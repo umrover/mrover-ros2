@@ -1,6 +1,6 @@
-from fastapi import APIRouter, HTTPException
-from backend.ra_controls import set_ra_mode as update_ra_mode
 from backend.models_pydantic import RAModeRequest
+from backend.ra_controls import set_ra_mode as update_ra_mode
+from fastapi import APIRouter, HTTPException
 
 router = APIRouter(prefix="/api/arm", tags=["arm"])
 

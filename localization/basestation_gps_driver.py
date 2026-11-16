@@ -6,18 +6,17 @@ TODO(quintin): Document
 
 import sys
 
-from pyubx2 import UBXReader, UBX_PROTOCOL, RTCM3_PROTOCOL, protocol
-from pyrtcm import RTCMReader
-from serial import Serial
-from pymap3d.ecef import ecef2geodetic
-
 import rclpy
+from mrover.msg import SatelliteSignal
+from pymap3d.ecef import ecef2geodetic
+from pyrtcm import RTCMReader
+from pyubx2 import RTCM3_PROTOCOL, UBX_PROTOCOL, UBXReader, protocol
 from rclpy import Parameter
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rtcm_msgs.msg import Message as RTCMMessage
-from mrover.msg import SatelliteSignal
 from sensor_msgs.msg import NavSatFix
+from serial import Serial
 from std_msgs.msg import Header
 
 
@@ -102,8 +101,8 @@ class BaseStationDriverNode(Node):
                     )
                 elif msg.identity == "NAV-SAT":
                     for i in range(msg.numSvs):
-                        gnssId = getattr(msg, f"gnssId_{i+1:02d}")
-                        cno = getattr(msg, f"cno_{i+1:02d}")
+                        gnssId = getattr(msg, f"gnssId_{i + 1:02d}")
+                        cno = getattr(msg, f"cno_{i + 1:02d}")
 
                         if gnssId in self.gnssId_to_constellation:
                             self.satellite_signals[self.gnssId_to_constellation[gnssId]].append(cno)

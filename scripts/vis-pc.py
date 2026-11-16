@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
-import open3d as o3d
-
-import sys
 import os
+import sys
+
+import open3d as o3d
 
 if len(sys.argv) == 1:
     print("Usage: vis-pc.py <path>")

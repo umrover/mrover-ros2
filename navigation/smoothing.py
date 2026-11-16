@@ -1,10 +1,12 @@
-from navigation.trajectory import Trajectory
+import math
+import sys
+
+import numpy as np
+from scipy.interpolate import splev, splprep
+
 from navigation.context import Context
 from navigation.coordinate_utils import cartesian_to_ij, ij_to_cartesian
-
-from scipy.interpolate import splev, splprep
-import numpy as np
-import math, sys
+from navigation.trajectory import Trajectory
 
 
 def smoothing(trajectory: Trajectory, context: Context, should_relax: bool, should_interpolate: bool) -> Trajectory:

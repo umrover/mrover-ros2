@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException
 from backend.database import get_db_connection
-from backend.models_pydantic import ScienceWaypoint
 from backend.managers.recording import get_recording_manager
+from backend.models_pydantic import ScienceWaypoint
+from fastapi import APIRouter, HTTPException
 
 router = APIRouter(prefix="/api/science-waypoints", tags=["science-waypoints"])
 

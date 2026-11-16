@@ -12,17 +12,15 @@ At competition, it should be moved from the Wilson Center to MDRS, or better yet
 
 import sys
 
-import numpy as np
-from pymap3d.enu import geodetic2enu
-
 import rclpy
-from geometry_msgs.msg import Vector3Stamped, Vector3
+from geometry_msgs.msg import Vector3, Vector3Stamped
+from message_filters import Subscriber, TimeSynchronizer
+from mrover.msg import FixStatus, FixType
+from pymap3d.enu import geodetic2enu
 from rclpy import Parameter
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from sensor_msgs.msg import NavSatFix
-from mrover.msg import FixStatus, FixType
-from message_filters import TimeSynchronizer, Subscriber
 
 
 class GPSLinearization(Node):

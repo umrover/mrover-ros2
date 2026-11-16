@@ -1,37 +1,38 @@
 import argparse
 import sys
+import traceback
 from pathlib import Path
+
+import msgpack
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-import msgpack
-import traceback
+from fastapi.staticfiles import StaticFiles
 
 # Import Singleton ROS Manager
 sys.path.insert(0, str(Path(__file__).parent))
-from backend.managers.ros import get_node, get_logger
 from backend.logging_config import LOGGING_CONFIG
+from backend.managers.ros import get_logger, get_node
+from backend.routes.arm import router as arm_router
+from backend.routes.auton import router as auton_router
+from backend.routes.chassis import router as chassis_router
+from backend.routes.led import router as led_router
+from backend.routes.recordings import router as recordings_router
+from backend.routes.science import router as science_router
+from backend.routes.science_waypoints import router as science_waypoints_router
 
 # API Routers
 from backend.routes.waypoints import router as waypoints_router
-from backend.routes.science_waypoints import router as science_waypoints_router
-from backend.routes.recordings import router as recordings_router
-from backend.routes.auton import router as auton_router
-from backend.routes.chassis import router as chassis_router
-from backend.routes.science import router as science_router
-from backend.routes.arm import router as arm_router
-from backend.routes.led import router as led_router
 
 # Websocket Handlers
 from backend.ws.arm_ws import ArmHandler
-from backend.ws.drive_ws import DriveHandler
+from backend.ws.auton_ws import AutonHandler
 from backend.ws.chassis_ws import ChassisHandler
+from backend.ws.drive_ws import DriveHandler
+from backend.ws.latency_ws import LatencyHandler
 from backend.ws.nav_ws import NavHandler
 from backend.ws.science_ws import ScienceHandler
-from backend.ws.latency_ws import LatencyHandler
-from backend.ws.auton_ws import AutonHandler
 
 app = FastAPI()
 

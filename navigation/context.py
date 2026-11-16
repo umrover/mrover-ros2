@@ -1,43 +1,44 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass
 
 import numpy as np
 import pymap3d
-import rclpy
-from scipy import ndimage
-from rclpy.parameter import Parameter
-
 import tf2_ros
-from geometry_msgs.msg import Twist, Point
-from lie import SE3
+from geometry_msgs.msg import Point, Twist
 from mrover.msg import (
-    Waypoint,
-    GPSWaypoint,
-    WaypointType,
-    GPSPointList,
     Course as CourseMsg,
+)
+from mrover.msg import (
+    GPSPointList,
+    GPSWaypoint,
     ImageTarget,
     ImageTargets,
+    Waypoint,
+    WaypointType,
 )
-from mrover.srv import MoveCostMap, DilateCostMap, EnableAuton, ToggleObjectDetector
-from nav_msgs.msg import Path, OccupancyGrid
-from visualization_msgs.msg import Marker
-from std_srvs.srv import SetBool
+from mrover.srv import DilateCostMap, EnableAuton, MoveCostMap, ToggleObjectDetector
+from nav_msgs.msg import OccupancyGrid, Path
 from rclpy import Parameter
+from rclpy.client import Client
 from rclpy.duration import Duration
+from rclpy.executors import SingleThreadedExecutor
 from rclpy.node import Node
+from rclpy.parameter import Parameter
 from rclpy.publisher import Publisher
 from rclpy.subscription import Subscription
-from rclpy.time import Time
 from rclpy.task import Future
-from rclpy.client import Client
-from rclpy.executors import SingleThreadedExecutor
-from state_machine.state import State
+from rclpy.time import Time
+from scipy import ndimage
 from std_msgs.msg import Bool, Header
-from .drive import DriveController
-from copy import deepcopy
+from std_srvs.srv import SetBool
 from visualization_msgs.msg import Marker
+
+from lie import SE3
+from state_machine.state import State
+
+from .drive import DriveController
 
 NO_TAG: int = -1
 
@@ -163,8 +164,7 @@ class ImageTargetsStore:
             # If we do see one of our targets in the new message, increment its hit count
             if stored_tag.target.name in target_names:
                 stored_tag.hit_count += increment_weight
-                if stored_tag.hit_count > max_hits:
-                    stored_tag.hit_count = max_hits
+                stored_tag.hit_count = min(stored_tag.hit_count, max_hits)
             # If we do not see one of our targets in the new message, decrement its hit count
             else:
                 stored_tag.hit_count -= decrement_weight
@@ -286,7 +286,7 @@ class Course:
         :return: One of the approach states (ApproachTargetState or LongRangeState)
                  if we are looking for a post or object, and we see it in one of the cameras (ZED or long range)
         """
-        from . import long_range, approach_target
+        from . import approach_target, long_range
 
         # If we see the target in the ZED, go to ApproachTargetState
         zed_pos = self.ctx.env.current_target_pos()

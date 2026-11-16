@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 
-import rclpy
-from rclpy.node import Node
-from sensor_msgs.msg._image import Image
-from ament_index_python import get_package_share_directory
-
-import numpy as np
+import datetime
 import sys
 from pathlib import Path
-import datetime
 
 import cv2
-
+import numpy as np
+import rclpy
+from ament_index_python import get_package_share_directory
 from rclpy.executors import ExternalShutdownException
+from rclpy.node import Node
+from sensor_msgs.msg._image import Image
 
 
 class ImageCapture(Node):
@@ -23,7 +21,7 @@ class ImageCapture(Node):
 
     def save_image(self, msg: Image):
         img = np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, -1)
-        unique_id = "{date:%Y-%m-%d_%H:%M:%S:%f}".format(date=datetime.datetime.now())
+        unique_id = f"{datetime.datetime.now():%Y-%m-%d_%H:%M:%S:%f}"
 
         path = (
             Path(get_package_share_directory("mrover"))
@@ -46,7 +44,6 @@ class ImageCapture(Node):
         cv2.imwrite(str(path), img)
 
         self.get_logger().info(f"Saved image_{unique_id}.jpg")
-        pass
 
 
 def main() -> None:

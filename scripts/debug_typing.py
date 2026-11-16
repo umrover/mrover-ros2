@@ -1,20 +1,17 @@
 #!/usr/bin/env python3
 
 import sys
+import tkinter as tk
+from typing import Any
+
 import rclpy
 from mrover.action import TypingPosition
-from rclpy.node import Node
-from rclpy.action import ActionClient
-from rclpy.executors import ExternalShutdownException
-from rclpy.action.client import ClientGoalHandle
-from rclpy.client import Client
-from rclpy.task import Future
-from rclpy.time import Time
-from rclpy.duration import Duration
-from typing import Any
-import tkinter as tk
 from mrover.srv import IkMode
-import time
+from rclpy.action import ActionClient
+from rclpy.client import Client
+from rclpy.duration import Duration
+from rclpy.executors import ExternalShutdownException
+from rclpy.node import Node
 
 
 class DebugTyping(Node):

@@ -1,30 +1,23 @@
-from state_machine.state import State
-from . import (
-    backup,
-    state,
-    costmap_search,
-    stuck_recovery,
-)
+import numpy as np
+from geometry_msgs.msg import Twist
 from mrover.msg import WaypointType
-from mrover.srv import MoveCostMap
-from .context import Context
-import rclpy
-from .context import Context
-from navigation.astar import AStar, SpiralEnd, NoPath, OutOfBounds
-from navigation.coordinate_utils import segment_path, is_high_cost_point, d_calc, cartesian_to_ij
-from navigation.trajectory import Trajectory, SearchTrajectory
-from typing import Optional
-from rclpy.publisher import Publisher
+from rclpy.duration import Duration
 from rclpy.time import Time
 from rclpy.timer import Timer
-import time
-from rclpy.duration import Duration
-from geometry_msgs.msg import Pose, PoseStamped, Point, Quaternion, Twist
-from nav_msgs.msg import Path
-from std_msgs.msg import Header
-from visualization_msgs.msg import Marker
-import numpy as np
+
+from navigation.astar import AStar
+from navigation.coordinate_utils import cartesian_to_ij, d_calc, is_high_cost_point, segment_path
 from navigation.smoothing import smoothing
+from navigation.trajectory import Trajectory
+from state_machine.state import State
+
+from . import (
+    backup,
+    costmap_search,
+    state,
+    stuck_recovery,
+)
+from .context import Context
 
 
 class WaypointState(State):
@@ -34,9 +27,9 @@ class WaypointState(State):
     # NO_TAG: int = -1
     astar_traj: Trajectory
     waypoint_traj: Trajectory
-    prev_target_pos_in_map: Optional[np.ndarray] = None
+    prev_target_pos_in_map: np.ndarray | None = None
     is_recovering: bool = False
-    time_no_search_wait: Optional[Time] = None
+    time_no_search_wait: Time | None = None
     time_begin: Time
     start_time: Time
     marker_timer: Timer
@@ -114,7 +107,7 @@ class WaypointState(State):
 
         # charlie beck helped me debug this
         if not hasattr(context.env.cost_map, "data") and self.USE_COSTMAP:
-            context.node.get_logger().warn(f"No costmap found, waiting...")
+            context.node.get_logger().warn("No costmap found, waiting...")
             self.start_time = context.node.get_clock().now()
             return self
 
@@ -193,7 +186,7 @@ class WaypointState(State):
             self.astar_traj.increment_point()
             if self.astar_traj.done():
                 self.astar_traj.clear()
-                context.node.get_logger().info(f"Arrived at segment point")
+                context.node.get_logger().info("Arrived at segment point")
                 self.waypoint_traj.increment_point()
                 if self.waypoint_traj.done():
                     return self.next_state(context=context)

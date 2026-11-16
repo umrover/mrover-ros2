@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 import sys
 import tkinter as tk
-import rclpy
-from rclpy.node import Node
-from rclpy import Parameter
-from nav_msgs.msg import OccupancyGrid
-from nav_msgs.msg import MapMetaData
-from std_msgs.msg import Header
-from geometry_msgs.msg import Pose
+
 import numpy as np
+import rclpy
+from geometry_msgs.msg import Pose
+from nav_msgs.msg import MapMetaData, OccupancyGrid
+from rclpy.node import Node
+from std_msgs.msg import Header
 
 
 class GridUI:

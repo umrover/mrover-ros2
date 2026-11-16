@@ -1,18 +1,16 @@
 import numpy as np
-from typing import Any
-from navigation.trajectory import Trajectory
-from navigation.astar import AStar, NoPath, OutOfBounds
-from . import costmap_search, stuck_recovery, waypoint, backup, state
-from .context import Context
-from state_machine.state import State
 from geometry_msgs.msg import Twist
-from nav_msgs.msg import Path
-from visualization_msgs.msg import Marker
-from rclpy.publisher import Publisher
+from rclpy.duration import Duration
 from rclpy.time import Time
 from rclpy.timer import Timer
-from rclpy.duration import Duration
-from navigation.coordinate_utils import is_high_cost_point, d_calc, segment_path, cartesian_to_ij
+
+from navigation.astar import AStar
+from navigation.coordinate_utils import cartesian_to_ij, d_calc, is_high_cost_point, segment_path
+from navigation.trajectory import Trajectory
+from state_machine.state import State
+
+from . import costmap_search, state, stuck_recovery, waypoint
+from .context import Context
 
 
 class ApproachTargetState(State):
@@ -171,7 +169,7 @@ class ApproachTargetState(State):
         while self.target_traj.get_current_point() is not None and is_high_cost_point(
             context=context, point=self.target_traj.get_current_point()
         ):
-            context.node.get_logger().info(f"Skipped high cost point")
+            context.node.get_logger().info("Skipped high cost point")
             self.target_traj.increment_point()
 
             if self.target_traj.done():

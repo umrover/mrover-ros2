@@ -9,14 +9,14 @@ import sys
 
 import numpy as np
 import pymap3d
-
 import rclpy
-from lie import SE3
-from mrover.msg import Waypoint, WaypointType, GPSWaypoint
+from mrover.msg import GPSWaypoint, Waypoint, WaypointType
 from mrover.srv import EnableAuton
 from rclpy import Parameter
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
+
+from lie import SE3
 
 
 def publish_waypoints(node: Node, waypoints: list[GPSWaypoint]):

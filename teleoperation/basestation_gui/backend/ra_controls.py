@@ -1,16 +1,15 @@
-import asyncio
-from enum import Enum
 import threading
+from enum import Enum
 
+from geometry_msgs.msg import Twist
+from mrover.msg import IK, Throttle
+from mrover.srv import IkMode
 from rclpy.publisher import Publisher
 
-from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
-from backend.mappings import ControllerAxis, ControllerButton
+from backend.input import DeviceInputs, filter_input, safe_index, simulated_axis
 from backend.managers.ros import get_service_client
+from backend.mappings import ControllerAxis, ControllerButton
 from backend.utils.ros_service import call_service_async
-from mrover.msg import Throttle, IK
-from mrover.srv import IkMode
-from geometry_msgs.msg import Twist
 
 ra_mode = "disabled"
 ra_mode_lock = threading.Lock()

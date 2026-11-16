@@ -1,9 +1,9 @@
 import numpy as np
-from visualization_msgs.msg import Marker
+from geometry_msgs.msg import Point
 from rclpy.duration import Duration
 from rclpy.time import Time
 from std_msgs.msg import Header
-from geometry_msgs.msg import Point
+from visualization_msgs.msg import Marker
 
 
 def gen_marker(time: Time, point=[0.0, 0.0], color=[1.0, 1.0, 1.0], size=0.2, lifetime=5, id=0, delete=False) -> Marker:

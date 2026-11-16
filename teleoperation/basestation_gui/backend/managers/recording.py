@@ -1,10 +1,11 @@
 import threading
-from typing import Optional
-from backend.managers.ros import get_node, get_logger
-from backend.database import get_recordings_db
-from sensor_msgs.msg import NavSatFix
+
 from rclpy.qos import qos_profile_sensor_data
 from rclpy.subscription import Subscription
+from sensor_msgs.msg import NavSatFix
+
+from backend.database import get_recordings_db
+from backend.managers.ros import get_logger, get_node
 
 RECORDING_RATE_HZ = 5
 
@@ -13,7 +14,7 @@ class RecordingManager:
     def __init__(self):
         self.node = get_node()
         self.is_recording = False
-        self.current_recording_id: Optional[int] = None
+        self.current_recording_id: int | None = None
         self.recording_sequence = 0
         self.is_drone_recording = False
         self.timer = None

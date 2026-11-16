@@ -2,9 +2,10 @@ import heapq
 
 import numpy as np
 from geometry_msgs.msg import Twist
+
 from navigation.context import Context
+from navigation.coordinate_utils import cartesian_to_ij, d_calc, ij_to_cartesian, is_high_cost_point, segment_path
 from navigation.trajectory import Trajectory
-from navigation.coordinate_utils import ij_to_cartesian, cartesian_to_ij, d_calc, segment_path, is_high_cost_point
 
 
 class SpiralEnd(Exception):
@@ -12,23 +13,17 @@ class SpiralEnd(Exception):
     Raised when there are no more points left in the search spiral.
     """
 
-    pass
-
 
 class NoPath(Exception):
     """
     Raised when an A* path cannot be found.
     """
 
-    pass
-
 
 class OutOfBounds(Exception):
     """
     Raised when the rover or its destination is out of bounds of the costmap
     """
-
-    pass
 
 
 class AStar:

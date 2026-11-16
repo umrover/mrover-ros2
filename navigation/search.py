@@ -1,9 +1,10 @@
 import numpy as np
-
 from mrover.msg import GPSPointList, WaypointType
+
 from state_machine.state import State
+
 from . import recovery, waypoint
-from .context import convert_cartesian_to_gps, Context
+from .context import Context, convert_cartesian_to_gps
 from .trajectory import SearchTrajectory
 
 

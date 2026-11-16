@@ -1,14 +1,13 @@
 import numpy as np
-
-from lie import SO2
+from geometry_msgs.msg import PoseStamped, Twist
 from rclpy.duration import Duration
 from rclpy.time import Time
+
 from state_machine.state import State
+
 from . import state, waypoint
 from .context import Context
 from .trajectory import Trajectory
-from .coordinate_utils import is_high_cost_point
-from geometry_msgs.msg import Twist, PoseStamped, Point
 
 
 class BackupState(State):
