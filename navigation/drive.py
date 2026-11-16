@@ -343,7 +343,7 @@ class DriveController:
         rover_pos[2] = 0
 
         # Check and set if there is a new farther found point in the path
-        self.set_farthest_path_point(self, waypoints, rover_pos)
+        self.set_farthest_path_point(waypoints, rover_pos)
 
         # If we are at the end of the traj, return a zero command
         if waypoints.done():

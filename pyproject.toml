@@ -52,5 +52,9 @@ build-backend = "flit_core.buildapi"
 [tool.ruff]
 line-length = 120
 
+[tool.ruff.lint.per-file-ignores]
+# don't flag unused imports in __init__.py files
+"**/__init__.py" = ["F401"]
+
 [tool.pytest.ini_options]
 addopts = "--color=yes -v"

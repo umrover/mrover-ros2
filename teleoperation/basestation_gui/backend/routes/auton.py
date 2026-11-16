@@ -59,7 +59,7 @@ async def enable_auton(data: AutonEnableRequest):
         raise
     except Exception as e:  # noqa: BLE001
         error_details = traceback.format_exc()
-        with contextlib.supress(Exception):
+        with contextlib.suppress(Exception):
             node = get_node()
             node.get_logger().error(f"Error in enable_auton: {e!s}\n{error_details}")
 
