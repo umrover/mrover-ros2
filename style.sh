@@ -60,7 +60,7 @@ function find_executable() {
 CLANG_FORMAT_PATH=$(find_executable clang-format-18 18.1)
 readonly CLANG_FORMAT_PATH
 RUFF_PATH=$(find_executable ruff 0.17.5)
-readonly BLACK_PATH
+readonly RUFF_PATH
 MYPY_PATH=$(find_executable mypy 1.11.2)
 readonly MYPY_PATH
 
