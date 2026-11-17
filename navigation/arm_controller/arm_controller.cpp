@@ -262,7 +262,7 @@ namespace mrover {
             rclcpp::Time startTime = get_clock()->now();
 
             // make param
-            rclcpp::WallRate loopRate(3);
+            rclcpp::WallRate loopRate(4);
             while(get_clock()->now() - startTime < typingTimeout) {
                 mLastUpdate = get_clock()->now();
                 mPosTarget.y = mTypingOrigin.y + typingGoalHandle->get_goal()->x;
