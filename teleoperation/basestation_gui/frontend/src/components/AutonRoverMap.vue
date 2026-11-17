@@ -15,9 +15,11 @@
         :options="online ? onlineTileOptions : offlineTileOptions"
       />
       <l-image-overlay
+        v-for="overlay in overlays"
         v-if="heatmap"
-        :url="overlay"
-        :bounds="overlayBounds"
+        :key="overlay.url"
+        :url="overlay.url"
+        :bounds="overlay.bounds"
       />
       <l-marker ref="roverRef" :lat-lng="odomLatLng" :icon="locationIcon" />
       <l-marker
@@ -133,8 +135,7 @@ const {
   zoomLevels,
   setZoom,
   getMap,
-  overlay,
-  overlayBounds,
+  overlays,
   heatmap
 } = useRoverMap({
   maxOdomCount: 100000000,
