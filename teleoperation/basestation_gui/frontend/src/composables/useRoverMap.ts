@@ -40,12 +40,22 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
   const odomPath = shallowRef<L.LatLng[]>([])
   const findRover = ref(false)
 
-  // Changes what image will be the overlay
-  const overlay = '/URCHeatmap.png'
-
-  // If you want Ann Arbor, change the bounds to:
-  // [[42.2285833333, -83.8056111111],[42.3185000000, -83.6693888889]]
-  const overlayBounds: L.LatLngBoundsExpression =  [[37.99944444350717, -111.00055555639324], [39.00055555659458, -109.99944444420515]]
+  const overlays = [
+  {
+    url: '/URCHeatmap.png',
+    bounds: [
+      [37.99944444350717, -111.00055555639324],
+      [39.00055555659458, -109.99944444420515],
+    ] as L.LatLngBoundsExpression,
+  },
+  {
+    url: '/AnnArborHeatmap.png',
+    bounds: [
+      [42.2285833333, -83.8056111111],
+      [42.3185000000, -83.6693888889],
+    ] as L.LatLngBoundsExpression,
+  },
+]
 
   const onlineUrl = 'http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
   const onlineTileOptions = {
@@ -237,8 +247,7 @@ export function useRoverMap(options: UseRoverMapOptions = {}) {
     zoomLevels,
     setZoom,
     getMap,
-    overlay, 
-    overlayBounds,
+    overlays, 
     heatmap,
   }
 }
