@@ -15,6 +15,9 @@ namespace mrover {
         RequestCallback onScreenshot;
         std::function<void(int, int)> onResize;
         std::function<void()> onRotate;
+        // Only set for feeds that can show the body overlay; no toggle is shown otherwise
+        RequestCallback onShowOverlay;
+        RequestCallback onHideOverlay;
     };
 
     class VideoSelectorWidget : public QWidget {
@@ -31,6 +34,7 @@ namespace mrover {
             QPushButton* screenshotButton;
             QSlider* scaleSlider;
             QPushButton* rotateButton;
+            CallbackCheckBox* overlayCheckBox;
         };
 
         bool mUsingIcons;
@@ -42,6 +46,7 @@ namespace mrover {
         auto createScreenshotButton(Selector& selector, CameraCallbacks const& callbacks) -> void;
         auto createScaleSlider(Selector& selector, CameraCallbacks const& callbacks) -> void;
         auto createRotateButton(Selector& selector, CameraCallbacks const& callbacks) -> void;
+        auto createOverlayCheckBox(Selector& selector, CameraCallbacks const& callbacks) -> void;
 
     public:
         explicit VideoSelectorWidget(QWidget* parent = nullptr);

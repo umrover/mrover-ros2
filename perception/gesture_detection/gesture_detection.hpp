@@ -25,10 +25,8 @@ namespace mrover {
 
         rclcpp::Subscription<msg::Body>::SharedPtr mBodySub;
 
-        // Debug overlay: draws the latest body's 2D keypoints on the left image
-        rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr mImageSub;
-        rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr mDebugImgPub;
-        msg::Body::ConstSharedPtr mLatestBody;
+        // Joints + gesture state for the camera client to draw on the ZED stream
+        rclcpp::Publisher<msg::BodyOverlay>::SharedPtr mOverlayPub;
 
         // T-pose hold timer state
         std::optional<double> mHoldStart; // time the current T-pose started, unset if not posing
@@ -45,7 +43,7 @@ namespace mrover {
 
         auto jointsValid(msg::Body const& body, std::initializer_list<std::size_t> joints) const -> bool;
 
-        auto imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void;
+        auto publishOverlay(msg::Body const& body, double t) -> void;
 
         static auto angleDeg(Eigen::Vector3d const& u, Eigen::Vector3d const& v) -> double;
 

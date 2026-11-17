@@ -230,6 +230,28 @@ void GstVideoWidget::paintEvent(QPaintEvent* event) {
             drawHeight);
 
     painter.drawImage(target, mFrame);
+
+    if (mBodyOverlayEnabled && mBodyOverlay) {
+        msg::BodyOverlay::ConstSharedPtr const overlay = mBodyOverlay->delayed();
+        // Skeleton in frame coordinates: the painter is still rotated, so it turns with the picture
+        if (overlay) {
+            drawBodySkeleton(painter, target, *overlay);
+        }
+        // Status badge upright, in the corner of where the (rotated) frame is shown
+        QRectF const shown = painter.transform().mapRect(target);
+        painter.resetTransform();
+        drawBodyStatus(painter, shown, overlay.get());
+    }
+}
+
+auto GstVideoWidget::setBodyOverlay(std::shared_ptr<BodyOverlayBuffer> overlay) -> void {
+    mBodyOverlay = std::move(overlay);
+    update();
+}
+
+auto GstVideoWidget::setBodyOverlayEnabled(bool enabled) -> void {
+    mBodyOverlayEnabled = enabled;
+    update();
 }
 
 // --------------------------------------------

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "pch.hpp"
+
+#include "BodyOverlay.hpp"
 #include <QImage>
 #include <QPainter>
 #include <qvideowidget.h>
@@ -36,6 +38,9 @@ namespace mrover {
         std::string mBasePipeline;
         auto applyPipeline() -> void;
 
+        std::shared_ptr<BodyOverlayBuffer> mBodyOverlay;
+        bool mBodyOverlayEnabled{false};
+
     public:
         explicit GstVideoWidget(QWidget* parent = nullptr);
         ~GstVideoWidget() override;
@@ -49,6 +54,10 @@ namespace mrover {
         auto pause() -> void;
         auto stop() -> void;
         auto rotate90() -> void;
+
+        // Draw the tracked person's skeleton and gesture state on top of this feed
+        auto setBodyOverlay(std::shared_ptr<BodyOverlayBuffer> overlay) -> void;
+        auto setBodyOverlayEnabled(bool enabled) -> void;
 
     protected:
         void paintEvent(QPaintEvent* event) override;

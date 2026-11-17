@@ -22,10 +22,39 @@ namespace mrover {
             poseCallback(msg);
         });
 
-        mDebugImgPub = create_publisher<sensor_msgs::msg::Image>("/gesture_detection/debug_image", 1);
-        mImageSub = create_subscription<sensor_msgs::msg::Image>("/zed/left/image", rclcpp::QoS(1), [this](sensor_msgs::msg::Image::ConstSharedPtr const& msg) {
-            imageCallback(msg);
-        });
+        // Drawn by the camera client on top of the ZED stream
+        mOverlayPub = create_publisher<msg::BodyOverlay>("/gesture_detection/body_overlay", rclcpp::QoS(1));
+    }
+
+    auto GestureRecognitionNode::publishOverlay(msg::Body const& body, double t) -> void {
+        msg::BodyOverlay overlay;
+        overlay.header = body.header;
+        overlay.hold_required = static_cast<float>(HOLD_SECONDS);
+
+        if (mPoseDetected) {
+            overlay.state = msg::BodyOverlay::LOCKED;
+        } else if (mHoldStart) {
+            overlay.state = msg::BodyOverlay::HOLDING;
+            overlay.hold_elapsed = static_cast<float>(std::max(0.0, t - *mHoldStart));
+        } else if (body.detected) {
+            overlay.state = msg::BodyOverlay::TRACKING;
+        } else {
+            overlay.state = msg::BodyOverlay::NO_BODY;
+        }
+
+        if (body.detected) {
+            std::size_t const n = body.keypoints_2d.size();
+            overlay.joints_u.reserve(n);
+            overlay.joints_v.reserve(n);
+            overlay.joints_confident.reserve(n);
+            for (std::size_t i = 0; i < n; ++i) {
+                overlay.joints_u.push_back(static_cast<float>(body.keypoints_2d[i].x));
+                overlay.joints_v.push_back(static_cast<float>(body.keypoints_2d[i].y));
+                overlay.joints_confident.push_back(jointValid(body, i));
+            }
+        }
+
+        mOverlayPub->publish(overlay);
     }
 
     auto GestureRecognitionNode::angleDeg(Eigen::Vector3d const& u, Eigen::Vector3d const& v) -> double {
@@ -43,58 +72,6 @@ namespace mrover {
 
     auto GestureRecognitionNode::jointsValid(msg::Body const& body, std::initializer_list<std::size_t> joints) const -> bool {
         return std::ranges::all_of(joints, [&](std::size_t i) { return jointValid(body, i); });
-    }
-
-    auto GestureRecognitionNode::imageCallback(sensor_msgs::msg::Image::ConstSharedPtr const& msg) -> void {
-        if (mDebugImgPub->get_subscription_count() == 0) return;
-        if (msg->encoding != sensor_msgs::image_encodings::BGRA8) {
-            RCLCPP_WARN_STREAM_ONCE(get_logger(), "Debug overlay expects bgra8, got " << msg->encoding);
-            return;
-        }
-
-        auto out = std::make_unique<sensor_msgs::msg::Image>(*msg);
-        cv::Mat image{static_cast<int>(out->height), static_cast<int>(out->width), CV_8UC4, out->data.data(), out->step};
-
-        double const scale = image.cols / 1280.0;
-        int const thickness = std::max(1, static_cast<int>(std::lround(2 * scale)));
-        cv::Scalar const good{0, 255, 0, 255}, bad{0, 0, 255, 255}, bone{255, 200, 0, 255}, text{255, 255, 255, 255};
-
-        std::string status = "no body";
-        if (mLatestBody && mLatestBody->detected) {
-            msg::Body const& body = *mLatestBody;
-            auto const& kp2d = body.keypoints_2d;
-            auto visible = [&](std::size_t i) { return i < kp2d.size() && kp2d[i].x >= 0 && kp2d[i].y >= 0; };
-            auto pixel = [&](std::size_t i) { return cv::Point{static_cast<int>(std::lround(kp2d[i].x)), static_cast<int>(std::lround(kp2d[i].y))}; };
-
-            // BODY_18 skeleton (sl::BODY_18_PARTS)
-            static constexpr std::array<std::pair<std::size_t, std::size_t>, 13> BONES{{
-                    {0, 1},                   // nose - neck
-                    {1, 2}, {2, 3}, {3, 4},   // right arm
-                    {1, 5}, {5, 6}, {6, 7},   // left arm
-                    {1, 8}, {8, 9}, {9, 10},  // right leg
-                    {1, 11}, {11, 12}, {12, 13}, // left leg
-            }};
-            for (auto const& [a, b]: BONES) {
-                if (visible(a) && visible(b)) cv::line(image, pixel(a), pixel(b), bone, thickness, cv::LINE_AA);
-            }
-            for (std::size_t i = 0; i < kp2d.size(); ++i) {
-                if (!visible(i)) continue;
-                cv::circle(image, pixel(i), 3 * thickness, jointValid(body, i) ? good : bad, cv::FILLED, cv::LINE_AA);
-            }
-
-            if (mPoseDetected) {
-                status = "ASTRONAUT LOCKED";
-            } else if (mHoldStart) {
-                double const held = rclcpp::Time{body.header.stamp}.seconds() - *mHoldStart;
-                status = std::format("T-pose {:.1f}/{:.1f}s", std::max(0.0, held), HOLD_SECONDS);
-            } else {
-                status = std::format("tracking id {} ({:.0f}%)", body.id, body.confidence);
-            }
-        }
-        cv::putText(image, status, cv::Point{static_cast<int>(20 * scale), static_cast<int>(40 * scale)},
-                    cv::FONT_HERSHEY_SIMPLEX, scale, text, thickness, cv::LINE_AA);
-
-        mDebugImgPub->publish(std::move(out));
     }
 
     auto GestureRecognitionNode::isTPose(msg::Body const& body) -> bool {
@@ -125,7 +102,6 @@ namespace mrover {
 
     auto GestureRecognitionNode::poseCallback(msg::Body::ConstSharedPtr const& msg) -> void {
         double const t = rclcpp::Time{msg->header.stamp}.seconds();
-        mLatestBody = msg;
 
         if (!mPoseDetected) {
             if (isTPose(*msg)) {
@@ -151,6 +127,8 @@ namespace mrover {
                 SE3Conversions::pushToTfTree(tf_broadcaster, "astronaut", msg->header.frame_id, person, msg->header.stamp);
             }
         }
+
+        publishOverlay(*msg, t);
     }
 } // namespace mrover
 

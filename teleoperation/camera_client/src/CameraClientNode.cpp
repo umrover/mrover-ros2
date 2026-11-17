@@ -7,6 +7,17 @@ namespace mrover {
     CameraClientNode::CameraClientNode()
         : QObject(nullptr),
           Node("camera_client") {
+        // Feeds (camera names without _main/_second) that show the ZED left image the joints are relative to
+        mBodyOverlayCameras = declare_parameter<std::vector<std::string>>("body_overlay.cameras", {"zed"});
+        auto const overlayTopic = declare_parameter<std::string>("body_overlay.topic", "/gesture_detection/body_overlay");
+        // How long the video lags behind the joints (encode + RTP jitter buffer + decode); tune by eye
+        auto const overlayDelay = std::chrono::milliseconds{declare_parameter<int>("body_overlay.delay_ms", 100)};
+
+        mBodyOverlayBuffer = std::make_shared<BodyOverlayBuffer>(overlayDelay);
+        // Best effort: a lost message is replaced by the next one, no point retransmitting over the radio
+        mBodyOverlaySubscriber = create_subscription<msg::BodyOverlay>(
+                overlayTopic, rclcpp::QoS{5}.best_effort(),
+                [this](msg::BodyOverlay::ConstSharedPtr const& msg) { mBodyOverlayBuffer->push(msg); });
     }
 
     auto CameraClientNode::loadCameraConfigs() -> std::unordered_map<std::string, std::vector<std::string>> {
@@ -63,8 +74,10 @@ namespace mrover {
                                                                          imageCaptureCallback(cameraName, msg);
                                                                      }));
 
+                bool const bodyOverlay = std::ranges::find(mBodyOverlayCameras, sanitize(cameraName)) != mBodyOverlayCameras.end();
+
                 // emit signal for GUI to handle camera setup
-                emit cameraDiscovered(CameraInfo{.name = cameraName, .pipeline = pipeline});
+                emit cameraDiscovered(CameraInfo{.name = cameraName, .pipeline = pipeline, .bodyOverlay = bodyOverlay});
             }
         }
 

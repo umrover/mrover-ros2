@@ -3,6 +3,6 @@ bool detected                        # false = no person this frame; other field
 int32 id
 float32 confidence
 geometry_msgs/Point[] keypoints      # sl::BODY_FORMAT::BODY_18 order, in header.frame_id; NaN when not detected
-geometry_msgs/Point[] keypoints_2d   # pixel (x=u, y=v, z unused) in the published left image; negative = not detected
+geometry_msgs/Point[] keypoints_2d   # normalized image coords [0, 1] of the left image (x=u, y=v, z unused); negative = not detected
 float32[] keypoint_confidences
 geometry_msgs/Point position         # body centroid from the ZED (no orientation: unavailable without body fitting / BODY_18)

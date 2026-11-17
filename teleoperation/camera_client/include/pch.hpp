@@ -1,10 +1,14 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cstdint>
+#include <deque>
 #include <format>
 #include <memory>
+#include <mutex>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -31,6 +35,7 @@
 #include <QMimeData>
 #include <QMouseEvent>
 #include <QObject>
+#include <QPainter>
 #include <QPixmap>
 #include <QPushButton>
 #include <QResizeEvent>
@@ -44,6 +49,7 @@
 
 #include <opencv2/core.hpp>
 
+#include <mrover/msg/body_overlay.hpp>
 #include <mrover/srv/media_control.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/image_encodings.hpp>

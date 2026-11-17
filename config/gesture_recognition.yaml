@@ -1,4 +1,4 @@
-gesture_recognition_node:
+gesture_detection: # must match the node name set in launch/gesture_detection.launch.py
   ros__parameters:
     hold_seconds: 5.0                    # how long the pose must be held
     grace_period: 1.0                    # dropouts shorter than this don't reset the timer

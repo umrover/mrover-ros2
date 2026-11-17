@@ -267,16 +267,17 @@ namespace mrover {
                             bodyMsg.keypoints.push_back(p);
                         }
 
-                        // keypoint_2d is in the grab resolution; scale to the published image resolution
+                        // keypoint_2d is in pixels of the grab resolution; normalize to [0, 1] so consumers don't
+                        // depend on any image size (published image, stream resolution, client widget)
                         sl::Resolution const grabRes = mZedInfo.camera_configuration.resolution;
-                        double const sx = static_cast<double>(mImageResolution.width) / static_cast<double>(grabRes.width);
-                        double const sy = static_cast<double>(mImageResolution.height) / static_cast<double>(grabRes.height);
+                        double const invW = 1.0 / static_cast<double>(grabRes.width);
+                        double const invH = 1.0 / static_cast<double>(grabRes.height);
                         bodyMsg.keypoints_2d.reserve(best->keypoint_2d.size());
                         for (sl::float2 const& kp : best->keypoint_2d) {
                             geometry_msgs::msg::Point p;
-                            // Negative means undetected; keep it negative regardless of scale
-                            p.x = kp.x < 0 ? -1.0 : kp.x * sx;
-                            p.y = kp.y < 0 ? -1.0 : kp.y * sy;
+                            // Negative means undetected; keep it negative
+                            p.x = kp.x < 0 ? -1.0 : kp.x * invW;
+                            p.y = kp.y < 0 ? -1.0 : kp.y * invH;
                             bodyMsg.keypoints_2d.push_back(p);
                         }
                         bodyMsg.keypoint_confidences.assign(best->keypoint_confidence.begin(), best->keypoint_confidence.end());

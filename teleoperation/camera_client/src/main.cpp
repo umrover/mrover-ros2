@@ -80,10 +80,33 @@ auto main(int argc, char** argv) -> int {
                                          fun(secondWindow);
                                      } }};
 
+                         // Body overlay: skeleton + T-pose state drawn on feeds of the ZED left image
+                         auto overlayWidget = [mainWindow, secondWindow, name]() -> mrover::GstVideoWidget* {
+                             auto const& window = name.ends_with("_second") ? secondWindow : mainWindow;
+                             return window->getCameraGridWidget()->getGstVideoWidget(name);
+                         };
+                         if (info.bodyOverlay) {
+                             callbacks.onShowOverlay = [overlayWidget]() {
+                                 if (auto* widget = overlayWidget()) widget->setBodyOverlayEnabled(true);
+                                 return true;
+                             };
+                             callbacks.onHideOverlay = [overlayWidget]() {
+                                 if (auto* widget = overlayWidget()) widget->setBodyOverlayEnabled(false);
+                                 return true;
+                             };
+                         }
+
                          if (name.ends_with("_main")) {
                              mainWindow->createCamera(name, info.pipeline, std::move(callbacks));
                          } else if (name.ends_with("_second")) {
                              secondWindow->createCamera(name, info.pipeline, std::move(callbacks));
+                         }
+
+                         if (info.bodyOverlay) {
+                             if (auto* widget = overlayWidget()) {
+                                 widget->setBodyOverlay(node->bodyOverlayBuffer());
+                                 widget->setBodyOverlayEnabled(true);
+                             }
                          }
                      });
 

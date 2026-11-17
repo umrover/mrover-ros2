@@ -34,6 +34,7 @@ namespace mrover {
         createMediaControls(selector, name, callbacks);
         createScreenshotButton(selector, callbacks);
         createRotateButton(selector, callbacks);
+        createOverlayCheckBox(selector, callbacks);
         createScaleSlider(selector, callbacks);
 
         mSelectors.emplace(name, selector);
@@ -134,6 +135,22 @@ namespace mrover {
         });
 
         selector.layout->addWidget(selector.rotateButton);
+    }
+
+    auto VideoSelectorWidget::createOverlayCheckBox(Selector& selector, CameraCallbacks const& callbacks) -> void {
+        if (!callbacks.onShowOverlay || !callbacks.onHideOverlay) {
+            selector.overlayCheckBox = nullptr;
+            return;
+        }
+
+        // Text is the action a click performs, like the Show/Hide checkbox
+        selector.overlayCheckBox = new CallbackCheckBox("Show Body", "Hide Body", selector.widget);
+        selector.overlayCheckBox->setToolTip("Draw the tracked person's joints and T-pose state on this feed");
+        selector.overlayCheckBox->setOnCheckCallback(callbacks.onShowOverlay);
+        selector.overlayCheckBox->setOnUncheckCallback(callbacks.onHideOverlay);
+        selector.overlayCheckBox->setChecked(true); // overlay starts enabled
+
+        selector.layout->addWidget(selector.overlayCheckBox);
     }
 
 } // namespace mrover
