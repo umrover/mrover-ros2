@@ -1,7 +1,10 @@
 #pragma once
+#include <action_msgs/srv/cancel_goal.hpp>
 #include <gtest/gtest.h>
 #include <rclcpp/executors.hpp>
 #include <rclcpp/node.hpp>
+#include <rclcpp_action/client.hpp>
+#include <rclcpp_action/create_client.hpp>
 
 namespace mrover {
     // so that we can use nice time literals like 50ms
@@ -79,6 +82,7 @@ namespace mrover {
             return std::nullopt;
         }
 
+        // TODO: think about making this return a shared pointer that can be null rather than wrapping in an optional
         template<typename SrvT, typename TimeRep = int64_t, typename TimePeriod = std::milli>
         auto sendRequest(std::shared_ptr<typename SrvT::Request> req, const std::string& name, std::chrono::duration<TimeRep, TimePeriod> timeout = 50ms) -> std::optional<typename SrvT::Response> {
             auto cli = getOrCreate(client_map, name, [&]() -> auto {
@@ -92,9 +96,56 @@ namespace mrover {
             return *response_future.get();
         }
 
+        template<typename ActionT, typename TimeRep = int64_t, typename TimePeriod = std::milli>
+        auto sendGoalSync(ActionT::Goal goal, const std::string& name, std::chrono::duration<TimeRep, TimePeriod> timeout = 50ms) -> std::shared_ptr<rclcpp_action::ClientGoalHandle<ActionT>> {
+            auto cli = getOrCreate(action_client_map, name, [&]() -> auto {
+                return rclcpp_action::create_client<ActionT>(harness_node, name);
+            });
+            if (!cli->wait_for_action_server(1s)) return nullptr;
+
+            auto goal_handle_future = cli->async_send_goal(goal);
+            auto status = executor->spin_until_future_complete(goal_handle_future, timeout);
+            if (status != rclcpp::FutureReturnCode::SUCCESS) return nullptr;
+            return goal_handle_future.get();
+        }
+
+        // TODO: this feels like a lot of code duplication...
+        template<typename ActionT, typename TimeRep, typename TimePeriod>
+        auto getResult(std::shared_ptr<rclcpp_action::ClientGoalHandle<ActionT>> goal, const std::string& name, std::chrono::duration<TimeRep, TimePeriod> timeout) -> std::optional<typename rclcpp_action::ClientGoalHandle<ActionT>::WrappedResult> {
+            // TODO: this should like not fail...
+            // TODO: think about maybe moving these helper functions so I don't duplicate them
+            auto cli = getOrCreate(action_client_map, name, [&]() -> auto {
+                return rclcpp_action::create_client<ActionT>(harness_node, name);
+            });
+            if (!cli->wait_for_action_server(1s)) return std::nullopt;
+
+            auto result_future = cli->async_get_result(goal);
+            auto status = executor->spin_until_future_complete(result_future, timeout);
+            if (status != rclcpp::FutureReturnCode::SUCCESS) return std::nullopt;
+            return result_future.get();
+        }
+
+        // TODO: this feels like a lot of code duplication...
+        template<typename ActionT, typename TimeRep, typename TimePeriod>
+        auto cancelGoal(std::shared_ptr<rclcpp_action::ClientGoalHandle<ActionT>> goal, const std::string& name, std::chrono::duration<TimeRep, TimePeriod> timeout) -> std::shared_ptr<action_msgs::srv::CancelGoal_Response> {
+            // TODO: this should like not fail...
+            // TODO: think about maybe moving these helper functions so I don't duplicate them
+            auto cli = getOrCreate(action_client_map, name, [&]() -> auto {
+                return rclcpp_action::create_client<ActionT>(harness_node, name);
+            });
+            if (!cli->wait_for_action_server(1s)) return nullptr;
+
+            auto cancel_future = cli->async_cancel_goal(goal);
+            auto status = executor->spin_until_future_complete(cancel_future, timeout);
+
+            if (status != rclcpp::FutureReturnCode::SUCCESS) return nullptr;
+            return cancel_future.get();
+        }
+
     private:
         std::unordered_map<std::string, std::shared_ptr<rclcpp::PublisherBase>> publisher_map;
         std::unordered_map<std::string, std::shared_ptr<rclcpp::ClientBase>> client_map;
+        std::unordered_map<std::string, std::shared_ptr<rclcpp_action::ClientBase>> action_client_map;
 
         struct SubBase {
             virtual ~SubBase() = default;

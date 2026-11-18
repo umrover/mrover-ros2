@@ -31,13 +31,6 @@ namespace mrover {
 
     class ArmControllerRosHarness : public NodeRosHarness<ArmControllerHarness> {
     protected:
-        std::shared_ptr<rclcpp_action::Client<mrover::action::TypingPosition>> action_client;
-
-        void SetUp() override {
-            NodeRosHarness<ArmControllerHarness>::SetUp();
-            action_client = rclcpp_action::create_client<action::TypingPosition>(harness_node, "typing_pos");
-        }
-
         void changeIkMode(srv::IkMode_Request::_mode_type req);
     };
 }

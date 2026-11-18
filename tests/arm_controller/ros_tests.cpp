@@ -122,8 +122,6 @@ namespace mrover {
     }
 
     TEST_F(ArmControllerRosHarness, nominalActionTest) {
-        ASSERT_TRUE(action_client->wait_for_action_server());
-
         // switch to typing mode
         changeIkMode(srv::IkMode::Request::TYPING);
 
@@ -133,13 +131,9 @@ namespace mrover {
         // send goal
         auto goal = action::TypingPosition::Goal();
         goal.x = 0.1; // something reasonable (this is joint a)
-        auto goal_handle_future = action_client->async_send_goal(goal);
-        auto status = executor->spin_until_future_complete(goal_handle_future, 50ms);
-        ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
-
+        const auto& goal_handle = sendGoalSync<action::TypingPosition>(goal, "typing_pos");
         // check that the goal was accepted
-        const auto& goal_handle = goal_handle_future.get();
-        EXPECT_TRUE(goal_handle);
+        ASSERT_TRUE(goal_handle);
 
         // let it cook for a bit
         executor->spin_all(50ms);
@@ -152,102 +146,69 @@ namespace mrover {
         publish(joint_msg, "arm_controller_state");
 
         // spin until the goal finishes
-        auto result_future = action_client->async_get_result(goal_handle);
-        status = executor->spin_until_future_complete(result_future, 5s);
-        ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
-        const auto& result = result_future.get();
-        EXPECT_EQ(result.code, rclcpp_action::ResultCode::SUCCEEDED);
-        EXPECT_TRUE(result.result->success);
+        const auto& result = getResult<action::TypingPosition>(goal_handle, "typing_pos", 5s);
+        ASSERT_TRUE(result);
+        EXPECT_EQ(result->code, rclcpp_action::ResultCode::SUCCEEDED);
+        EXPECT_TRUE(result->result->success);
     }
 
     TEST_F(ArmControllerRosHarness, testActionCancel) {
-        ASSERT_TRUE(action_client->wait_for_action_server());
-
         // switch to typing mode
         changeIkMode(srv::IkMode::Request::TYPING);
 
         auto goal = action::TypingPosition::Goal();
         goal.x = 0.2; // prevent action from finishing
-        auto goal_handle_future = action_client->async_send_goal(goal);
-
-        auto status = executor->spin_until_future_complete(goal_handle_future, 50ms);
-        ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
-
+        const auto& goal_handle = sendGoalSync<action::TypingPosition>(goal, "typing_pos");
         // check results
-        const auto& goal_handle = goal_handle_future.get();
-        EXPECT_TRUE(goal_handle);
+        ASSERT_TRUE(goal_handle);
 
         // cancel normally
-        auto cancel_future = action_client->async_cancel_goal(goal_handle);
-
-        status = executor->spin_until_future_complete(cancel_future, 50ms);
-        ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
-        EXPECT_TRUE(cancel_future.get());
+        EXPECT_TRUE(cancelGoal<action::TypingPosition>(goal_handle, "typing_pos", 50ms));
 
         // spin until the goal cancels
-        auto result_future = action_client->async_get_result(goal_handle);
-        status = executor->spin_until_future_complete(result_future, 500ms);
-        ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
-        const auto& result = result_future.get();
-        EXPECT_EQ(result.code, rclcpp_action::ResultCode::CANCELED);
-        EXPECT_FALSE(result.result->success);
+        const auto& result = getResult<action::TypingPosition>(goal_handle, "typing_pos", 500ms);
+        ASSERT_TRUE(result);
+        EXPECT_EQ(result->code, rclcpp_action::ResultCode::CANCELED);
+        EXPECT_FALSE(result->result->success);
     }
 
     TEST_F(ArmControllerRosHarness, actionTimeout) {
-        ASSERT_TRUE(action_client->wait_for_action_server());
-
         // switch to typing mode
         changeIkMode(srv::IkMode::Request::TYPING);
 
         // send goal
         auto goal = action::TypingPosition::Goal();
         goal.x = 0.2; // something reasonable (this is joint a)
-        auto goal_handle_future = action_client->async_send_goal(goal);
-        auto status = executor->spin_until_future_complete(goal_handle_future, 50ms);
-        ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
-
+        const auto& goal_handle = sendGoalSync<action::TypingPosition>(goal, "typing_pos");
         // check that the goal was accepted
-        const auto& goal_handle = goal_handle_future.get();
-        EXPECT_TRUE(goal_handle);
+        ASSERT_TRUE(goal_handle);
 
         // spin until the goal finishes
-        auto result_future = action_client->async_get_result(goal_handle);
-        status = executor->spin_until_future_complete(result_future, 16s);
-        ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
-        const auto& result = result_future.get();
-        EXPECT_EQ(result.code, rclcpp_action::ResultCode::ABORTED);
-        EXPECT_FALSE(result.result->success);
+        const auto& result = getResult<action::TypingPosition>(goal_handle, "typing_pos", 16s);
+        ASSERT_TRUE(result);
+        EXPECT_EQ(result->code, rclcpp_action::ResultCode::ABORTED);
+        EXPECT_FALSE(result->result->success);
     }
 
     TEST_F(ArmControllerRosHarness, actionTestNoPusher) {
-        ASSERT_TRUE(action_client->wait_for_action_server());
-
         // switch to typing mode
         changeIkMode(srv::IkMode::Request::TYPING);
 
         // send goal
         auto goal = action::TypingPosition::Goal();
-        auto goal_handle_future = action_client->async_send_goal(goal);
-        auto status = executor->spin_until_future_complete(goal_handle_future, 50ms);
-        ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
-
+        const auto& goal_handle = sendGoalSync<action::TypingPosition>(goal, "typing_pos");
         // check that the goal was accepted
-        const auto& goal_handle = goal_handle_future.get();
-        EXPECT_TRUE(goal_handle);
+        ASSERT_TRUE(goal_handle);
 
         // spin until the goal finishes
-        auto result_future = action_client->async_get_result(goal_handle);
-        status = executor->spin_until_future_complete(result_future, 5s);
-        ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
-        const auto& result = result_future.get();
-        EXPECT_EQ(result.code, rclcpp_action::ResultCode::SUCCEEDED);
+        const auto& result = getResult<action::TypingPosition>(goal_handle, "typing_pos", 5s);
+        ASSERT_TRUE(result);
+        EXPECT_EQ(result->code, rclcpp_action::ResultCode::SUCCEEDED);
         // should not suceed because no pusher
-        EXPECT_FALSE(result.result->success);
+        EXPECT_FALSE(result->result->success);
     }
 
     TEST_F(ArmControllerRosHarness, actionTestBadPusher) {
-        ASSERT_TRUE(action_client->wait_for_action_server());
-
         // switch to typing mode
         changeIkMode(srv::IkMode::Request::TYPING);
 
@@ -256,34 +217,23 @@ namespace mrover {
 
         // send goal
         auto goal = action::TypingPosition::Goal();
-        auto goal_handle_future = action_client->async_send_goal(goal);
-        auto status = executor->spin_until_future_complete(goal_handle_future, 50ms);
-        ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
-
+        const auto& goal_handle = sendGoalSync<action::TypingPosition>(goal, "typing_pos");
         // check that the goal was accepted
-        const auto& goal_handle = goal_handle_future.get();
-        EXPECT_TRUE(goal_handle);
+        ASSERT_TRUE(goal_handle);
 
         // spin until the goal finishes
-        auto result_future = action_client->async_get_result(goal_handle);
-        status = executor->spin_until_future_complete(result_future, 10s);
-        ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
-        const auto& result = result_future.get();
-        EXPECT_EQ(result.code, rclcpp_action::ResultCode::SUCCEEDED);
+        const auto& result = getResult<action::TypingPosition>(goal_handle, "typing_pos", 10s);
+        ASSERT_TRUE(result);
+        EXPECT_EQ(result->code, rclcpp_action::ResultCode::SUCCEEDED);
         // should not suceed because no pusher
-        EXPECT_FALSE(result.result->success);
+        EXPECT_FALSE(result->result->success);
     }
 
     TEST_F(ArmControllerRosHarness, actionTestErrors) {
-        ASSERT_TRUE(action_client->wait_for_action_server());
-
         auto goal = action::TypingPosition::Goal();
-        // future should succeed, but server should reject because we are not
+        // request should succeed, but server should reject because we are not
         // in typing mode
-        auto goal_handle_future = action_client->async_send_goal(goal);
-        auto status = executor->spin_until_future_complete(goal_handle_future, 50ms);
-        ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
-        auto goal_handle = goal_handle_future.get();
+        auto goal_handle = sendGoalSync<action::TypingPosition>(goal, "typing_pos");
         EXPECT_FALSE(goal_handle);
 
         // switch to typing mode
@@ -291,21 +241,12 @@ namespace mrover {
 
         // this time we should succeed
         goal.x = 100; // something unreachable
-        goal_handle_future = action_client->async_send_goal(goal);
+        goal_handle = sendGoalSync<action::TypingPosition>(goal, "typing_pos");
+        ASSERT_TRUE(goal_handle);
 
         // if we ask again it should fail
-        auto bad_goal_handle_future = action_client->async_send_goal(goal);
-
-        // complete both futures
-        status = executor->spin_until_future_complete(goal_handle_future, 50ms);
-        ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
-        status = executor->spin_until_future_complete(bad_goal_handle_future, 50ms);
-        ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
-
-        // check results
-        goal_handle = goal_handle_future.get();
-        EXPECT_TRUE(goal_handle);
-        EXPECT_FALSE(bad_goal_handle_future.get());
+        auto bad_goal_handle = sendGoalSync<action::TypingPosition>(goal, "typing_pos");
+        EXPECT_FALSE(bad_goal_handle);
 
         // make sure nothing is published since we are out of bounds
         // spin for more than a timer cycle
@@ -320,11 +261,9 @@ namespace mrover {
         publish(joint_msg, "arm_controller_state");
 
         // spin until the goal finishes - it should fail because no pusher
-        auto result_future = action_client->async_get_result(goal_handle);
-        status = executor->spin_until_future_complete(result_future, 5s);
-        ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
-        const auto& result = result_future.get();
-        EXPECT_EQ(result.code, rclcpp_action::ResultCode::SUCCEEDED);
-        EXPECT_FALSE(result.result->success);
+        const auto& result = getResult<action::TypingPosition>(goal_handle, "typing_pos", 5s);
+        ASSERT_TRUE(result);
+        EXPECT_EQ(result->code, rclcpp_action::ResultCode::SUCCEEDED);
+        EXPECT_FALSE(result->result->success);
     }
 }
