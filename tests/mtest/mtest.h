@@ -4,6 +4,9 @@
 #include <rclcpp/node.hpp>
 
 namespace mrover {
+	// so that we can use nice time literals like 50ms
+	using namespace std::chrono_literals;
+
 	template<class node_t>
 	class NodeHarness : public ::testing::Test {
 	protected:

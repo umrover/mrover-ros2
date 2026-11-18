@@ -3,13 +3,13 @@
 namespace mrover {
     void ArmControllerRosHarness::changeIkMode(srv::IkMode_Request::_mode_type req) {
         auto mode_client = harness_node->create_client<srv::IkMode>("ik_mode");
-        ASSERT_TRUE(mode_client->wait_for_service(std::chrono::seconds(1)));
+        ASSERT_TRUE(mode_client->wait_for_service(1s));
 
         auto request = std::make_shared<srv::IkMode::Request>();
         request->mode = req;
 
         auto response_future = mode_client->async_send_request(request);
-        auto status = executor->spin_until_future_complete(response_future, std::chrono::milliseconds(50));
+        auto status = executor->spin_until_future_complete(response_future, 50ms);
         ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
         auto resp = response_future.get();
         ASSERT_TRUE(resp->success);
@@ -89,7 +89,7 @@ namespace mrover {
 
         // since we haven't sent a command, the arm controller shouldn't
         // publish anything
-        auto status = executor->spin_until_future_complete(msg_future, std::chrono::milliseconds(50));
+        auto status = executor->spin_until_future_complete(msg_future, 50ms);
         EXPECT_EQ(status, rclcpp::FutureReturnCode::TIMEOUT);
 
         auto ik_pub = harness_node->create_publisher<msg::IK>("ik_pos_cmd", 10);
@@ -99,14 +99,14 @@ namespace mrover {
         ik_pub->publish(ik_msg);
 
         // shouldn't publish when we are out of bounds
-        status = executor->spin_until_future_complete(msg_future, std::chrono::milliseconds(50));
+        status = executor->spin_until_future_complete(msg_future, 50ms);
         EXPECT_EQ(status, rclcpp::FutureReturnCode::TIMEOUT);
 
         // something reachable
         ik_msg.pos.x = 0.7;
         ik_pub->publish(ik_msg);
 
-        status = executor->spin_until_future_complete(msg_future, std::chrono::milliseconds(50));
+        status = executor->spin_until_future_complete(msg_future, 50ms);
         EXPECT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
         EXPECT_FLOAT_EQ(msg_future.get().positions[0], 0);
     }
@@ -122,7 +122,7 @@ namespace mrover {
         });
 
         // haven't sent any commands yet so nothing should be published
-        auto status = executor->spin_until_future_complete(msg_future, std::chrono::milliseconds(50));
+        auto status = executor->spin_until_future_complete(msg_future, 50ms);
         EXPECT_EQ(status, rclcpp::FutureReturnCode::TIMEOUT);
 
         // send a velocity of 0 (nothing should be sent to prevent sag)
@@ -130,19 +130,19 @@ namespace mrover {
         geometry_msgs::msg::Twist vel_msg;
         ik_vel_pub->publish(vel_msg);
 
-        status = executor->spin_until_future_complete(msg_future, std::chrono::milliseconds(50));
+        status = executor->spin_until_future_complete(msg_future, 50ms);
         EXPECT_EQ(status, rclcpp::FutureReturnCode::TIMEOUT);
 
         // send a nonzero velocity, but it's not achievable
         vel_msg.linear.x = std::numeric_limits<double>::infinity();
         ik_vel_pub->publish(vel_msg);
-        status = executor->spin_until_future_complete(msg_future, std::chrono::milliseconds(50));
+        status = executor->spin_until_future_complete(msg_future, 50ms);
         EXPECT_EQ(status, rclcpp::FutureReturnCode::TIMEOUT);
 
         // send a real velocity
         vel_msg.linear.x = 0.1;
         ik_vel_pub->publish(vel_msg);
-        status = executor->spin_until_future_complete(msg_future, std::chrono::milliseconds(50));
+        status = executor->spin_until_future_complete(msg_future, 50ms);
         EXPECT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
     }
 
@@ -159,7 +159,7 @@ namespace mrover {
         auto goal = action::TypingPosition::Goal();
         goal.x = 0.1; // something reasonable (this is joint a)
         auto goal_handle_future = action_client->async_send_goal(goal);
-        auto status = executor->spin_until_future_complete(goal_handle_future, std::chrono::milliseconds(50));
+        auto status = executor->spin_until_future_complete(goal_handle_future, 50ms);
         ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
 
         // check that the goal was accepted
@@ -167,7 +167,7 @@ namespace mrover {
         EXPECT_TRUE(goal_handle);
 
         // let it cook for a bit
-        executor->spin_all(std::chrono::milliseconds(50));
+        executor->spin_all(50ms);
 
         // now update arm position so that the action can finish
         auto joint_pub = harness_node->create_publisher<msg::ControllerState>("arm_controller_state", 10);
@@ -179,7 +179,7 @@ namespace mrover {
 
         // spin until the goal finishes
         auto result_future = action_client->async_get_result(goal_handle);
-        status = executor->spin_until_future_complete(result_future, std::chrono::milliseconds(5000));
+        status = executor->spin_until_future_complete(result_future, 5s);
         ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
         const auto& result = result_future.get();
         EXPECT_EQ(result.code, rclcpp_action::ResultCode::SUCCEEDED);
@@ -196,7 +196,7 @@ namespace mrover {
         goal.x = 0.2; // prevent action from finishing
         auto goal_handle_future = action_client->async_send_goal(goal);
 
-        auto status = executor->spin_until_future_complete(goal_handle_future, std::chrono::milliseconds(50));
+        auto status = executor->spin_until_future_complete(goal_handle_future, 50ms);
         ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
 
         // check results
@@ -206,13 +206,13 @@ namespace mrover {
         // cancel normally
         auto cancel_future = action_client->async_cancel_goal(goal_handle);
 
-        status = executor->spin_until_future_complete(cancel_future, std::chrono::milliseconds(50));
+        status = executor->spin_until_future_complete(cancel_future, 50ms);
         ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
         EXPECT_TRUE(cancel_future.get());
 
         // spin until the goal cancels
         auto result_future = action_client->async_get_result(goal_handle);
-        status = executor->spin_until_future_complete(result_future, std::chrono::milliseconds(500));
+        status = executor->spin_until_future_complete(result_future, 500ms);
         ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
         const auto& result = result_future.get();
         EXPECT_EQ(result.code, rclcpp_action::ResultCode::CANCELED);
@@ -229,7 +229,7 @@ namespace mrover {
         auto goal = action::TypingPosition::Goal();
         goal.x = 0.2; // something reasonable (this is joint a)
         auto goal_handle_future = action_client->async_send_goal(goal);
-        auto status = executor->spin_until_future_complete(goal_handle_future, std::chrono::milliseconds(50));
+        auto status = executor->spin_until_future_complete(goal_handle_future, 50ms);
         ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
 
         // check that the goal was accepted
@@ -238,7 +238,7 @@ namespace mrover {
 
         // spin until the goal finishes
         auto result_future = action_client->async_get_result(goal_handle);
-        status = executor->spin_until_future_complete(result_future, std::chrono::milliseconds(16000));
+        status = executor->spin_until_future_complete(result_future, 16s);
         ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
         const auto& result = result_future.get();
         EXPECT_EQ(result.code, rclcpp_action::ResultCode::ABORTED);
@@ -254,7 +254,7 @@ namespace mrover {
         // send goal
         auto goal = action::TypingPosition::Goal();
         auto goal_handle_future = action_client->async_send_goal(goal);
-        auto status = executor->spin_until_future_complete(goal_handle_future, std::chrono::milliseconds(50));
+        auto status = executor->spin_until_future_complete(goal_handle_future, 50ms);
         ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
 
         // check that the goal was accepted
@@ -263,7 +263,7 @@ namespace mrover {
 
         // spin until the goal finishes
         auto result_future = action_client->async_get_result(goal_handle);
-        status = executor->spin_until_future_complete(result_future, std::chrono::milliseconds(5000));
+        status = executor->spin_until_future_complete(result_future, 5s);
         ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
         const auto& result = result_future.get();
         EXPECT_EQ(result.code, rclcpp_action::ResultCode::SUCCEEDED);
@@ -278,12 +278,12 @@ namespace mrover {
         changeIkMode(srv::IkMode::Request::TYPING);
 
         // simulate pusher failure
-        auto pusher_serv = harness_node->create_service<srv::Pusher>("pusher", [](srv::Pusher::Request::ConstSharedPtr const&, srv::Pusher::Response::SharedPtr const&) -> void { std::this_thread::sleep_for(std::chrono::seconds(6)); });
+        auto pusher_serv = harness_node->create_service<srv::Pusher>("pusher", [](srv::Pusher::Request::ConstSharedPtr const&, srv::Pusher::Response::SharedPtr const&) -> void { std::this_thread::sleep_for(6s); });
 
         // send goal
         auto goal = action::TypingPosition::Goal();
         auto goal_handle_future = action_client->async_send_goal(goal);
-        auto status = executor->spin_until_future_complete(goal_handle_future, std::chrono::milliseconds(50));
+        auto status = executor->spin_until_future_complete(goal_handle_future, 50ms);
         ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
 
         // check that the goal was accepted
@@ -292,7 +292,7 @@ namespace mrover {
 
         // spin until the goal finishes
         auto result_future = action_client->async_get_result(goal_handle);
-        status = executor->spin_until_future_complete(result_future, std::chrono::milliseconds(10000));
+        status = executor->spin_until_future_complete(result_future, 10s);
         ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
         const auto& result = result_future.get();
         EXPECT_EQ(result.code, rclcpp_action::ResultCode::SUCCEEDED);
@@ -307,7 +307,7 @@ namespace mrover {
         // future should succeed, but server should reject because we are not
         // in typing mode
         auto goal_handle_future = action_client->async_send_goal(goal);
-        auto status = executor->spin_until_future_complete(goal_handle_future, std::chrono::milliseconds(50));
+        auto status = executor->spin_until_future_complete(goal_handle_future, 50ms);
         ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
         auto goal_handle = goal_handle_future.get();
         EXPECT_FALSE(goal_handle);
@@ -323,9 +323,9 @@ namespace mrover {
         auto bad_goal_handle_future = action_client->async_send_goal(goal);
 
         // complete both futures
-        status = executor->spin_until_future_complete(goal_handle_future, std::chrono::milliseconds(50));
+        status = executor->spin_until_future_complete(goal_handle_future, 50ms);
         ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
-        status = executor->spin_until_future_complete(bad_goal_handle_future, std::chrono::milliseconds(50));
+        status = executor->spin_until_future_complete(bad_goal_handle_future, 50ms);
         ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
 
         // check results
@@ -340,7 +340,7 @@ namespace mrover {
         msg_promise = std::promise<msg::Position>(); // reset the promise
         auto pos_sub = harness_node->create_subscription<msg::Position>("arm_pos_cmd", 1, func);
         // spin for more than a timer cycle
-        status = executor->spin_until_future_complete(msg_promise.get_future(), std::chrono::milliseconds(50));
+        status = executor->spin_until_future_complete(msg_promise.get_future(), 50ms);
         EXPECT_EQ(status, rclcpp::FutureReturnCode::TIMEOUT);
 
         // now update arm position so that the action can finish
@@ -353,7 +353,7 @@ namespace mrover {
 
         // spin until the goal finishes - it should fail because no pusher
         auto result_future = action_client->async_get_result(goal_handle);
-        status = executor->spin_until_future_complete(result_future, std::chrono::milliseconds(5000));
+        status = executor->spin_until_future_complete(result_future, 5s);
         ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
         const auto& result = result_future.get();
         EXPECT_EQ(result.code, rclcpp_action::ResultCode::SUCCEEDED);
