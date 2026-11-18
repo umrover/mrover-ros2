@@ -28,6 +28,15 @@ class Trajectory:
         self.cur_pt = max(0, self.cur_pt - 1)
         return self.cur_pt <= 0
 
+    def get_point(self, index: int) -> np.ndarray:
+        return self.coordinates[index]
+
+    def size(self) -> int:
+        return self.coordinates.shape[0]
+
+    def get_last_point(self) -> np.ndarray:
+        return self.coordinates[self.size() - 1]
+
     def done(self) -> bool:
         return self.cur_pt >= len(self.coordinates)
 

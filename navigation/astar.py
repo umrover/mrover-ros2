@@ -166,7 +166,7 @@ class AStar:
         # Convert start and end to occupancy grid coordinates
         start_ij = tuple(cartesian_to_ij(self.context, start, global_astar))
         end_ij = tuple(cartesian_to_ij(self.context, end, global_astar))
-        self.astar_helper(start_ij, end_ij, costmap2d, debug)
+        return self.astar_helper(start_ij, end_ij, costmap2d, debug)
 
     def use_astar(self, dest: np.ndarray) -> bool:
         rover_in_map = self.context.rover.get_pose_in_map()
@@ -181,7 +181,7 @@ class AStar:
                 return True
         return False
 
-    def generate_trajectory(self, dest: np.ndarray) -> Trajectory:
+    def generate_trajectory(self, dest: np.ndarray, use_dem: bool = False) -> Trajectory:
         """
         Generates a Trajectory object for the path from the rover's current position to the destination.
         :param context: Context object.
@@ -224,7 +224,7 @@ class AStar:
             # raise NoPath
 
         if occupancy_list is not None:
-            cartesian_coords = ij_to_cartesian(self.context, np.array(occupancy_list))
+            cartesian_coords = ij_to_cartesian(self.context, np.array(occupancy_list), use_dem)
             # Exclude the first point since it should be the rover's starting position
             if len(cartesian_coords) >= 1:
                 trajectory = Trajectory(np.hstack((cartesian_coords, np.zeros((cartesian_coords.shape[0], 1)))))

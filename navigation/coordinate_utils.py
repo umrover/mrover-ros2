@@ -4,6 +4,7 @@ from rclpy.duration import Duration
 from rclpy.time import Time
 from std_msgs.msg import Header
 from navigation.trajectory import Trajectory
+from navigation.smoothing import smoothing
 from lie import SE3
 
 
@@ -106,6 +107,16 @@ def segment_path(context: Context, dest: np.ndarray, seg_len: float = 2.0):
     # Create a Trajectory object from the segmented path
     segmented_trajectory = Trajectory(np.hstack((traj_path, np.zeros((traj_path.shape[0], 1))))[1:])
     return segmented_trajectory
+
+def segment_global_path(context: Context, list: Trajectory, seg_len = 1):
+    smooth_traj = smoothing(list, context, True, True)
+    output_traj = []
+    for i in range(0, smooth_traj.size(), seg_len):
+        output_traj.append(smooth_traj.get_point(i))
+    if(output_traj[len(output_traj) - 1] != smooth_traj.get_last_point):
+        output_traj.append(smooth_traj.get_last_point())
+    return Trajectory(output_traj)
+
 
 
 def is_high_cost_point(point: np.ndarray, context: Context) -> bool:
