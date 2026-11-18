@@ -14,13 +14,14 @@
       :attribution="attribution"
       :options="online ? onlineTileOptions : offlineTileOptions"
       />
+      <template v-if="heatmap">
       <l-image-overlay
         v-for="overlay in overlays"
-        v-if="heatmap"
         :key="overlay.url"
         :url="overlay.url"
         :bounds="overlay.bounds"
       />
+    </template>
 
       <l-marker ref="roverRef" :lat-lng="odomLatLng" :icon="locationIcon" />
       <l-marker ref="droneRef" :lat-lng="droneLatLng" :icon="droneIcon" />
