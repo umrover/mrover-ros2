@@ -1,6 +1,10 @@
 #pragma once
 
 #include "pch.hpp"
+#include <QImage>
+#include <QPainter>
+#include <qvideowidget.h>
+#include <qwidget.h>
 
 #include "BodyOverlay.hpp"
 #include <QImage>
