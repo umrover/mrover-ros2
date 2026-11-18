@@ -332,16 +332,6 @@ namespace mrover {
     }
 
     auto ArmController::timerCallback() -> void {
-        msg::Position mCurrPos;
-        mCurrPos.names = {JOINT_A, JOINT_B, JOINT_C, JOINT_DE_PITCH, JOINT_DE_ROLL};
-        mCurrPos.positions = {
-            static_cast<float>(joints[JOINT_A].pos),
-            static_cast<float>(joints[JOINT_B].pos),
-            static_cast<float>(joints[JOINT_C].pos),
-            static_cast<float>(joints[JOINT_DE_PITCH].pos),
-            static_cast<float>(joints[JOINT_DE_ROLL].pos),
-        };
-
         if (get_clock()->now() - mLastUpdate > TIMEOUT) {
             RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 100, "IK Timed Out");
             return;
