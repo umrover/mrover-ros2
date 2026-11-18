@@ -53,26 +53,21 @@ namespace mrover {
         tf2_ros::Buffer tfBuffer{harness_node->get_clock()};
         tf2_ros::TransformListener tfListener{tfBuffer};
 
-        auto pos_pub = harness_node->create_publisher<msg::IK>("ik_pos_cmd", 10);
-        msg::IK pos_msg;
-        pos_pub->publish(pos_msg);
+        publish(msg::IK{}, "ik_pos_cmd");
         executor->spin_some();
         // arm controller should publish target position to tf tree
         SE3d target = SE3Conversions::fromTfTree(tfBuffer, "arm_target", "arm_base_link");
         EXPECT_EQ(target, SE3d::Identity());
 
         // there's nothing we can publicly check for velocity
-        auto vel_pub = harness_node->create_publisher<geometry_msgs::msg::Twist>("ik_vel_cmd", 10);
-        geometry_msgs::msg::Twist vel_msg;
-        vel_pub->publish(vel_msg);
+        publish(geometry_msgs::msg::Twist{}, "ik_vel_cmd");
         executor->spin_some();
 
-        auto joint_pub = harness_node->create_publisher<msg::ControllerState>("arm_controller_state", 10);
         msg::ControllerState fk_msg;
         fk_msg.names = {ArmController::JOINT_A, ArmController::JOINT_B, ArmController::JOINT_C, ArmController::JOINT_DE_PITCH, ArmController::JOINT_DE_ROLL, ArmController::JOINT_GRIPPER};
         // send 0 for all joint angles
         fk_msg.positions.resize(fk_msg.names.size());
-        joint_pub->publish(fk_msg);
+        publish(fk_msg, "arm_controller_state");
         executor->spin_some();
         SE3d joint_a_pos = SE3Conversions::fromTfTree(tfBuffer, "arm_joint_a", "arm_base_link");
         EXPECT_EQ(joint_a_pos, SE3d::Identity());
@@ -81,69 +76,56 @@ namespace mrover {
     }
 
     TEST_F(ArmControllerRosHarness, timerPosTest) {
-        auto msg_promise = std::make_shared<std::promise<msg::Position>>();
-        std::future<msg::Position> msg_future = msg_promise->get_future();
-        auto pos_sub = harness_node->create_subscription<msg::Position>("arm_pos_cmd", 1, [msg_promise](msg::Position::ConstSharedPtr const& msg) -> void {
-                msg_promise->set_value(*msg);
-        });
+        std::string arm_cmd_topic = "arm_pos_cmd";
+        auto msg = subOne<msg::Position>(arm_cmd_topic, 50ms);
+        EXPECT_FALSE(msg);
 
-        // since we haven't sent a command, the arm controller shouldn't
-        // publish anything
-        auto status = executor->spin_until_future_complete(msg_future, 50ms);
-        EXPECT_EQ(status, rclcpp::FutureReturnCode::TIMEOUT);
-
-        auto ik_pub = harness_node->create_publisher<msg::IK>("ik_pos_cmd", 10);
+        std::string topic = "ik_pos_cmd";
         msg::IK ik_msg;
         // something unreachable
         ik_msg.pos.x = 10000;
-        ik_pub->publish(ik_msg);
+        publish(ik_msg, topic);
 
         // shouldn't publish when we are out of bounds
-        status = executor->spin_until_future_complete(msg_future, 50ms);
-        EXPECT_EQ(status, rclcpp::FutureReturnCode::TIMEOUT);
+        msg = subOne<msg::Position>(arm_cmd_topic, 50ms);
+        EXPECT_FALSE(msg);
 
         // something reachable
         ik_msg.pos.x = 0.7;
-        ik_pub->publish(ik_msg);
+        publish(ik_msg, topic);
 
-        status = executor->spin_until_future_complete(msg_future, 50ms);
-        EXPECT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
-        EXPECT_FLOAT_EQ(msg_future.get().positions[0], 0);
+        msg = subOne<msg::Position>(arm_cmd_topic, 50ms);
+        ASSERT_TRUE(msg);
+        EXPECT_FLOAT_EQ(msg->positions[0], 0);
     }
 
     TEST_F(ArmControllerRosHarness, timerVelTest) {
         // switch to velocity mode
         changeIkMode(srv::IkMode::Request::VELOCITY_CONTROL);
 
-        auto msg_promise = std::make_shared<std::promise<msg::Velocity>>();
-        std::future<msg::Velocity> msg_future = msg_promise->get_future();
-        auto pos_sub = harness_node->create_subscription<msg::Velocity>("arm_vel_cmd", 1, [msg_promise](msg::Velocity::ConstSharedPtr const& msg) -> void {
-                msg_promise->set_value(*msg);
-        });
-
-        // haven't sent any commands yet so nothing should be published
-        auto status = executor->spin_until_future_complete(msg_future, 50ms);
-        EXPECT_EQ(status, rclcpp::FutureReturnCode::TIMEOUT);
+        std::string arm_cmd_topic = "arm_vel_cmd";
+        auto msg = subOne<msg::Velocity>(arm_cmd_topic, 50ms);
+        EXPECT_FALSE(msg);
 
         // send a velocity of 0 (nothing should be sent to prevent sag)
-        auto ik_vel_pub = harness_node->create_publisher<geometry_msgs::msg::Twist>("ik_vel_cmd", 10);
+        std::string topic = "ik_vel_cmd";
         geometry_msgs::msg::Twist vel_msg;
-        ik_vel_pub->publish(vel_msg);
+        publish(vel_msg, topic);
 
-        status = executor->spin_until_future_complete(msg_future, 50ms);
-        EXPECT_EQ(status, rclcpp::FutureReturnCode::TIMEOUT);
+        msg = subOne<msg::Velocity>(arm_cmd_topic, 50ms);
+        EXPECT_FALSE(msg);
 
         // send a nonzero velocity, but it's not achievable
         vel_msg.linear.x = std::numeric_limits<double>::infinity();
-        ik_vel_pub->publish(vel_msg);
-        status = executor->spin_until_future_complete(msg_future, 50ms);
-        EXPECT_EQ(status, rclcpp::FutureReturnCode::TIMEOUT);
+        publish(vel_msg, topic);
+        msg = subOne<msg::Velocity>(arm_cmd_topic, 50ms);
+        EXPECT_FALSE(msg);
 
         // send a real velocity
         vel_msg.linear.x = 0.1;
-        ik_vel_pub->publish(vel_msg);
-        status = executor->spin_until_future_complete(msg_future, 50ms);
-        EXPECT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
+        publish(vel_msg, topic);
+        msg = subOne<msg::Velocity>(arm_cmd_topic, 50ms);
+        EXPECT_TRUE(msg);
     }
 
     TEST_F(ArmControllerRosHarness, nominalActionTest) {
@@ -170,12 +152,11 @@ namespace mrover {
         executor->spin_all(50ms);
 
         // now update arm position so that the action can finish
-        auto joint_pub = harness_node->create_publisher<msg::ControllerState>("arm_controller_state", 10);
         msg::ControllerState joint_msg;
         joint_msg.names = {ArmController::JOINT_A, ArmController::JOINT_B, ArmController::JOINT_C, ArmController::JOINT_DE_PITCH, ArmController::JOINT_DE_ROLL, ArmController::JOINT_GRIPPER};
         joint_msg.positions.resize(joint_msg.names.size());
         joint_msg.positions[0] = 0.1; // move joint a so that it's in the right spot
-        joint_pub->publish(joint_msg);
+        publish(joint_msg, "arm_controller_state");
 
         // spin until the goal finishes
         auto result_future = action_client->async_get_result(goal_handle);
@@ -334,22 +315,16 @@ namespace mrover {
         EXPECT_FALSE(bad_goal_handle_future.get());
 
         // make sure nothing is published since we are out of bounds
-        auto msg_promise = std::promise<msg::Position>();
-        auto func = [&msg_promise](msg::Position::ConstSharedPtr const& msg) -> void { msg_promise.set_value(*msg); };
-        func(std::make_shared<msg::Position>()); // do this to satisfy coverage checks
-        msg_promise = std::promise<msg::Position>(); // reset the promise
-        auto pos_sub = harness_node->create_subscription<msg::Position>("arm_pos_cmd", 1, func);
         // spin for more than a timer cycle
-        status = executor->spin_until_future_complete(msg_promise.get_future(), 50ms);
-        EXPECT_EQ(status, rclcpp::FutureReturnCode::TIMEOUT);
+        auto msg = subOne<msg::Position>("arm_pos_cmd", 50ms);
+        EXPECT_FALSE(msg);
 
         // now update arm position so that the action can finish
-        auto joint_pub = harness_node->create_publisher<msg::ControllerState>("arm_controller_state", 10);
         msg::ControllerState joint_msg;
         joint_msg.names = {ArmController::JOINT_A, ArmController::JOINT_B, ArmController::JOINT_C, ArmController::JOINT_DE_PITCH, ArmController::JOINT_DE_ROLL, ArmController::JOINT_GRIPPER};
         joint_msg.positions.resize(joint_msg.names.size());
         joint_msg.positions[0] = 100; // move joint a so that it's in the right spot
-        joint_pub->publish(joint_msg);
+        publish(joint_msg, "arm_controller_state");
 
         // spin until the goal finishes - it should fail because no pusher
         auto result_future = action_client->async_get_result(goal_handle);
