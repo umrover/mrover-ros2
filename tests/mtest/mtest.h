@@ -79,8 +79,22 @@ namespace mrover {
             return std::nullopt;
         }
 
+        template<typename SrvT, typename TimeRep = int64_t, typename TimePeriod = std::milli>
+        auto sendRequest(std::shared_ptr<typename SrvT::Request> req, const std::string& name, std::chrono::duration<TimeRep, TimePeriod> timeout = 50ms) -> std::optional<typename SrvT::Response> {
+            auto cli = getOrCreate(client_map, name, [&]() -> auto {
+                return harness_node->create_client<SrvT>(name);
+            });
+            if (!cli->wait_for_service(1s)) return std::nullopt;
+
+            auto response_future = cli->async_send_request(req);
+            auto status = executor->spin_until_future_complete(response_future, timeout);
+            if (status != rclcpp::FutureReturnCode::SUCCESS) return std::nullopt;
+            return *response_future.get();
+        }
+
     private:
         std::unordered_map<std::string, std::shared_ptr<rclcpp::PublisherBase>> publisher_map;
+        std::unordered_map<std::string, std::shared_ptr<rclcpp::ClientBase>> client_map;
 
         struct SubBase {
             virtual ~SubBase() = default;

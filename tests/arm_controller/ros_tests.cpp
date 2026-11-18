@@ -1,19 +1,12 @@
 #include "harness.hpp"
 
 namespace mrover {
-    void ArmControllerRosHarness::changeIkMode(srv::IkMode_Request::_mode_type req) {
-        auto mode_client = harness_node->create_client<srv::IkMode>("ik_mode");
-        ASSERT_TRUE(mode_client->wait_for_service(1s));
-
+    void ArmControllerRosHarness::changeIkMode(srv::IkMode::Request::_mode_type req) {
         auto request = std::make_shared<srv::IkMode::Request>();
         request->mode = req;
-
-        auto response_future = mode_client->async_send_request(request);
-        auto status = executor->spin_until_future_complete(response_future, 50ms);
-        ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
-        auto resp = response_future.get();
+        auto resp = sendRequest<srv::IkMode>(request, "ik_mode");
+        ASSERT_TRUE(resp);
         ASSERT_TRUE(resp->success);
-
     }
 
     TEST_F(ArmControllerRosHarness, topicTest) {
