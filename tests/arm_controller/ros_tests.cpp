@@ -2,7 +2,7 @@
 
 namespace mrover {
     void ArmControllerRosHarness::changeIkMode(srv::IkMode_Request::_mode_type req) {
-        auto mode_client = test_node->create_client<srv::IkMode>("ik_mode");
+        auto mode_client = harness_node->create_client<srv::IkMode>("ik_mode");
         ASSERT_TRUE(mode_client->wait_for_service(std::chrono::seconds(1)));
 
         auto request = std::make_shared<srv::IkMode::Request>();
@@ -17,7 +17,7 @@ namespace mrover {
     }
 
     TEST_F(ArmControllerRosHarness, topicTest) {
-        const auto topic_map = arm_controller->get_topic_names_and_types();
+        const auto topic_map = node->get_topic_names_and_types();
         std::vector<std::pair<std::string, std::string>> expected = {
             {"/arm_pos_cmd", "mrover/msg/Position"},
             {"/arm_vel_cmd", "mrover/msg/Velocity"},
@@ -35,7 +35,7 @@ namespace mrover {
     }
 
     TEST_F(ArmControllerRosHarness, serviceTest) {
-        const auto service_map = arm_controller->get_service_names_and_types();
+        const auto service_map = node->get_service_names_and_types();
         std::vector<std::pair<std::string, std::string>> expected = {
             {"/ik_mode", "mrover/srv/IkMode"},
             {"/pusher", "mrover/srv/Pusher"},
@@ -50,10 +50,10 @@ namespace mrover {
     }
 
     TEST_F(ArmControllerRosHarness, subscriptionTest) {
-        tf2_ros::Buffer tfBuffer{test_node->get_clock()};
+        tf2_ros::Buffer tfBuffer{harness_node->get_clock()};
         tf2_ros::TransformListener tfListener{tfBuffer};
 
-        auto pos_pub = test_node->create_publisher<msg::IK>("ik_pos_cmd", 10);
+        auto pos_pub = harness_node->create_publisher<msg::IK>("ik_pos_cmd", 10);
         msg::IK pos_msg;
         pos_pub->publish(pos_msg);
         executor->spin_some();
@@ -62,12 +62,12 @@ namespace mrover {
         EXPECT_EQ(target, SE3d::Identity());
 
         // there's nothing we can publicly check for velocity
-        auto vel_pub = test_node->create_publisher<geometry_msgs::msg::Twist>("ik_vel_cmd", 10);
+        auto vel_pub = harness_node->create_publisher<geometry_msgs::msg::Twist>("ik_vel_cmd", 10);
         geometry_msgs::msg::Twist vel_msg;
         vel_pub->publish(vel_msg);
         executor->spin_some();
 
-        auto joint_pub = test_node->create_publisher<msg::ControllerState>("arm_controller_state", 10);
+        auto joint_pub = harness_node->create_publisher<msg::ControllerState>("arm_controller_state", 10);
         msg::ControllerState fk_msg;
         fk_msg.names = {ArmController::JOINT_A, ArmController::JOINT_B, ArmController::JOINT_C, ArmController::JOINT_DE_PITCH, ArmController::JOINT_DE_ROLL, ArmController::JOINT_GRIPPER};
         // send 0 for all joint angles
@@ -83,7 +83,7 @@ namespace mrover {
     TEST_F(ArmControllerRosHarness, timerPosTest) {
         auto msg_promise = std::make_shared<std::promise<msg::Position>>();
         std::future<msg::Position> msg_future = msg_promise->get_future();
-        auto pos_sub = test_node->create_subscription<msg::Position>("arm_pos_cmd", 1, [msg_promise](msg::Position::ConstSharedPtr const& msg) -> void {
+        auto pos_sub = harness_node->create_subscription<msg::Position>("arm_pos_cmd", 1, [msg_promise](msg::Position::ConstSharedPtr const& msg) -> void {
                 msg_promise->set_value(*msg);
         });
 
@@ -92,7 +92,7 @@ namespace mrover {
         auto status = executor->spin_until_future_complete(msg_future, std::chrono::milliseconds(50));
         EXPECT_EQ(status, rclcpp::FutureReturnCode::TIMEOUT);
 
-        auto ik_pub = test_node->create_publisher<msg::IK>("ik_pos_cmd", 10);
+        auto ik_pub = harness_node->create_publisher<msg::IK>("ik_pos_cmd", 10);
         msg::IK ik_msg;
         // something unreachable
         ik_msg.pos.x = 10000;
@@ -117,7 +117,7 @@ namespace mrover {
 
         auto msg_promise = std::make_shared<std::promise<msg::Velocity>>();
         std::future<msg::Velocity> msg_future = msg_promise->get_future();
-        auto pos_sub = test_node->create_subscription<msg::Velocity>("arm_vel_cmd", 1, [msg_promise](msg::Velocity::ConstSharedPtr const& msg) -> void {
+        auto pos_sub = harness_node->create_subscription<msg::Velocity>("arm_vel_cmd", 1, [msg_promise](msg::Velocity::ConstSharedPtr const& msg) -> void {
                 msg_promise->set_value(*msg);
         });
 
@@ -126,7 +126,7 @@ namespace mrover {
         EXPECT_EQ(status, rclcpp::FutureReturnCode::TIMEOUT);
 
         // send a velocity of 0 (nothing should be sent to prevent sag)
-        auto ik_vel_pub = test_node->create_publisher<geometry_msgs::msg::Twist>("ik_vel_cmd", 10);
+        auto ik_vel_pub = harness_node->create_publisher<geometry_msgs::msg::Twist>("ik_vel_cmd", 10);
         geometry_msgs::msg::Twist vel_msg;
         ik_vel_pub->publish(vel_msg);
 
@@ -153,7 +153,7 @@ namespace mrover {
         changeIkMode(srv::IkMode::Request::TYPING);
 
         // we need to create a service to simulate the pusher
-        auto pusher_serv = test_node->create_service<srv::Pusher>("pusher", [](srv::Pusher::Request::ConstSharedPtr const&, srv::Pusher::Response::SharedPtr const& resp) -> void { resp->finished = true; });
+        auto pusher_serv = harness_node->create_service<srv::Pusher>("pusher", [](srv::Pusher::Request::ConstSharedPtr const&, srv::Pusher::Response::SharedPtr const& resp) -> void { resp->finished = true; });
 
         // send goal
         auto goal = action::TypingPosition::Goal();
@@ -170,7 +170,7 @@ namespace mrover {
         executor->spin_all(std::chrono::milliseconds(50));
 
         // now update arm position so that the action can finish
-        auto joint_pub = test_node->create_publisher<msg::ControllerState>("arm_controller_state", 10);
+        auto joint_pub = harness_node->create_publisher<msg::ControllerState>("arm_controller_state", 10);
         msg::ControllerState joint_msg;
         joint_msg.names = {ArmController::JOINT_A, ArmController::JOINT_B, ArmController::JOINT_C, ArmController::JOINT_DE_PITCH, ArmController::JOINT_DE_ROLL, ArmController::JOINT_GRIPPER};
         joint_msg.positions.resize(joint_msg.names.size());
@@ -278,7 +278,7 @@ namespace mrover {
         changeIkMode(srv::IkMode::Request::TYPING);
 
         // simulate pusher failure
-        auto pusher_serv = test_node->create_service<srv::Pusher>("pusher", [](srv::Pusher::Request::ConstSharedPtr const&, srv::Pusher::Response::SharedPtr const&) -> void { std::this_thread::sleep_for(std::chrono::seconds(6)); });
+        auto pusher_serv = harness_node->create_service<srv::Pusher>("pusher", [](srv::Pusher::Request::ConstSharedPtr const&, srv::Pusher::Response::SharedPtr const&) -> void { std::this_thread::sleep_for(std::chrono::seconds(6)); });
 
         // send goal
         auto goal = action::TypingPosition::Goal();
@@ -338,13 +338,13 @@ namespace mrover {
         auto func = [&msg_promise](msg::Position::ConstSharedPtr const& msg) -> void { msg_promise.set_value(*msg); };
         func(std::make_shared<msg::Position>()); // do this to satisfy coverage checks
         msg_promise = std::promise<msg::Position>(); // reset the promise
-        auto pos_sub = test_node->create_subscription<msg::Position>("arm_pos_cmd", 1, func);
+        auto pos_sub = harness_node->create_subscription<msg::Position>("arm_pos_cmd", 1, func);
         // spin for more than a timer cycle
         status = executor->spin_until_future_complete(msg_promise.get_future(), std::chrono::milliseconds(50));
         EXPECT_EQ(status, rclcpp::FutureReturnCode::TIMEOUT);
 
         // now update arm position so that the action can finish
-        auto joint_pub = test_node->create_publisher<msg::ControllerState>("arm_controller_state", 10);
+        auto joint_pub = harness_node->create_publisher<msg::ControllerState>("arm_controller_state", 10);
         msg::ControllerState joint_msg;
         joint_msg.names = {ArmController::JOINT_A, ArmController::JOINT_B, ArmController::JOINT_C, ArmController::JOINT_DE_PITCH, ArmController::JOINT_DE_ROLL, ArmController::JOINT_GRIPPER};
         joint_msg.positions.resize(joint_msg.names.size());
