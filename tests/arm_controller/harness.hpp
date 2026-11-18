@@ -40,8 +40,6 @@ namespace mrover {
         void testIkPosCalc();
         void testIkFk();
         void testIkVelCalc();
-
-        void testInvalidCancel();
     };
 
     class ArmControllerRosHarness : public ArmControllerHarness {

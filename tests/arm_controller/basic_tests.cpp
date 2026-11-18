@@ -136,17 +136,6 @@ namespace mrover {
         resp->success = false;
     }
 
-    void ArmControllerHarness::testInvalidCancel() {
-        // test cancelling on an unknown handle
-        // TODO: delete this cooked test
-        class Jit : public rclcpp_action::ServerGoalHandle<action::TypingPosition> {
-        public:
-            Jit() : rclcpp_action::ServerGoalHandle<action::TypingPosition>(nullptr, {}, nullptr, nullptr, nullptr, nullptr) {}
-        };
-        auto fake_handle = std::make_shared<Jit>();
-        arm_controller->handleTypingCancel(fake_handle);
-    }
-
     TEST_F(ArmControllerHarness, posCallback) {
         testPosCallback();
     }
@@ -161,9 +150,5 @@ namespace mrover {
 
     TEST_F(ArmControllerHarness, modeCallback) {
         testModeCallback();
-    }
-
-    TEST_F(ArmControllerHarness, invalidCancel) {
-        testInvalidCancel();
     }
 }

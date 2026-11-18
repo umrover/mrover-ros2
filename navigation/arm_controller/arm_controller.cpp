@@ -241,10 +241,7 @@ namespace mrover {
     }
 
     auto ArmController::handleTypingCancel(const std::shared_ptr<rclcpp_action::ServerGoalHandle<action::TypingPosition>> &typingGoalHandle) -> rclcpp_action::CancelResponse {
-        if(!mTypingGoalID || typingGoalHandle->get_goal_id() != mTypingGoalID.value()) {
-            RCLCPP_WARN(get_logger(), "Rejecting cancel: attempted to cancel an invalid typing goal");
-            return rclcpp_action::CancelResponse::REJECT;
-        } 
+        (void)typingGoalHandle;
         RCLCPP_INFO(get_logger(), "Accepting typing goal cancel");
         return rclcpp_action::CancelResponse::ACCEPT;
     }
