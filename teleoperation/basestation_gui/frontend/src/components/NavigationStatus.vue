@@ -1,6 +1,6 @@
 <template>
-  <div class="nav-state-box flex-1 flex">
-    <div class="panel nav-state-panel flex-1 flex items-center justify-center" data-testid="pw-nav-state-panel" :class="ledColorClass">
+  <div class="nav-state-box h-full flex-1 flex">
+    <div class="panel nav-state-panel flex-1 h-full flex items-center justify-center" data-testid="pw-nav-state-panel" :class="ledColorClass">
       <div class="flex flex-col items-center gap-1">
         <span class="data-label">Nav State</span>
         <span class="nav-state-value" data-testid="pw-nav-state-value">{{ navState }}</span>

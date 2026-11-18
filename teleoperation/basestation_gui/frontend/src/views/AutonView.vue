@@ -1,7 +1,7 @@
 <template>
   <BaseGridView
     layout-key="autonView_gridLayout"
-    :default-layout="defaultLayout"
+    :default-layout=" defaultLayout"
     :topics="['arm', 'drive', 'nav', 'science', 'chassis']"
   >
     <template #odometry>
@@ -10,19 +10,28 @@
       </div>
   </template>
 
-  <!-- <template></template> -->
-    <!-- <template #nav-status-astronaut v-if="autonomyStore.astronautAssistanceEnabled">
-      <div class="nav_status island p-2 rounded h-full flex">
-        <NavigationStatus />
-      </div>
-    </template> -->
-    <template #nav-status>
-      <div class="flex flex-col">
+    
+    <template #status-panel>
+      <div class="flex flex-col"  v-if="autonomyStore.astronautAssistanceEnabled">
         <div class="nav_status island p-2 rounded h-full flex">
           <NavigationStatus />
         </div>
+        <div class="drive_status island p-2 rounded mt-2">
+          <DriveStatusIndicator />
+        </div>
+        <div class="drive_status island p-2 rounded h-full mt-2">
+          <PayloadStatusIndicator />
+        </div>
+        <div class="drive_status island p-2 rounded h-full mt-2">
+          <DriveStatusIndicator />
+        </div>
+      </div>
+      <div class="flex flex-col" v-else>
         <div class="nav_status island p-2 rounded h-full flex">
           <NavigationStatus />
+        </div>
+        <div class="drive_status island p-2 rounded mt-2">
+          <DriveStatusIndicator />
         </div>
       </div>
     </template>
@@ -55,9 +64,6 @@
       <div class="island p-2 rounded h-full">
         <DriveStatusIndicator />
       </div>
-      <div class="island p-2 rounded h-full mt-2">
-        <DriveStatusIndicator />
-      </div>
     </template>
   </BaseGridView>
 
@@ -86,6 +92,7 @@ import Rover3D from '@/components/Rover3D.vue'
 import { useAutonomyStore } from '@/stores/autonomy'
 import { storeToRefs } from 'pinia'
 import { ledAPI } from '@/utils/ledAPI'
+import PayloadStatusIndicator from '@/components/PayloadStatusIndicator.vue'
 
 onMounted(() => ledAPI.setMission('auton'))
 onUnmounted(() => ledAPI.setMission('home'))
@@ -94,13 +101,10 @@ const defaultLayout = [
   { x: 0, y: 0, w: 5, h: 2, i: 'odometry' },
   { x: 0, y: 2, w: 5, h: 5, i: 'rover-3d' },
   { x: 3, y: 7, w: 3, h: 5, i: 'controls' },
-  { x: 0, y: 9, w: 3, h: 4, i: 'nav-status' },
-  // { x: 0, y: 2, w: 3, h: 4, i: 'nav-status-astronaut' },
-  { x: 0, y: 13, w: 3, h: 1, i: 'drive-data' },
+  { x: 0, y: 9, w: 3, h: 5, i: 'status-panel' },
   { x: 5, y: 0, w: 7, h: 7, i: 'map' },
   { x: 6, y: 7, w: 6, h: 5, i: 'waypoints' },
 ]
-// const astronautDefault = [{ x: 0, y: 7, w: 3, h: 2, i: 'nav-status-astronaut' }]
 
 const autonomyStore = useAutonomyStore()
 const { autonEnabled } = storeToRefs(autonomyStore)
@@ -114,5 +118,9 @@ const teleopEnabledCheck = ref(false)
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.drive_status {
+  min-height: clamp(70px, 5vw, 100px);
 }
 </style>
