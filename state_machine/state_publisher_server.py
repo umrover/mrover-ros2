@@ -1,10 +1,13 @@
 from __future__ import annotations
+
 from typing import TextIO
-from mrover.msg import StateMachineStructure, StateMachineTransition, StateMachineStateUpdate
+
+from mrover.msg import StateMachineStateUpdate, StateMachineStructure, StateMachineTransition
 from rclpy.node import Node
 from rclpy.publisher import Publisher
-from state_machine.state_machine import StateMachine
+
 from state_machine.state import State
+from state_machine.state_machine import StateMachine
 
 
 class StatePublisher:

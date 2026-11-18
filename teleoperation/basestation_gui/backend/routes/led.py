@@ -1,6 +1,6 @@
+from backend.managers.led import set_mission
 from fastapi import APIRouter
 from pydantic import BaseModel
-from backend.managers.led import set_mission
 
 router = APIRouter(prefix="/api", tags=["led"])
 

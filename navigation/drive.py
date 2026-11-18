@@ -3,15 +3,14 @@ from __future__ import annotations
 from enum import Enum
 
 import numpy as np
-
-from lie import SE3, normalized, angle_to_rotate_2d
 from geometry_msgs.msg import Twist, Vector3
-from navigation.marker_utils import gen_marker, ring_marker
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.publisher import Publisher
 from trajectory import Trajectory
-from visualization_msgs.msg import Marker
+
+from lie import SE3, angle_to_rotate_2d, normalized
+from navigation.marker_utils import gen_marker, ring_marker
 
 
 class DriveController:
@@ -83,13 +82,11 @@ class DriveController:
         elif self._driver_state == self.DriveMode.TURN_IN_PLACE:
             # if we are in the TURN_IN_PLACE state, we need to turn to face the target
             # if we are within the turn threshold to face the target, we can start driving straight towards it
-            if abs(angular_error) < turn_in_place_thresh:
-                self._driver_state = self.DriveMode.DRIVE_FORWARD
-                return Twist(), False
-
-            # IVT (Intermediate Value Theorem) check. If the sign of the angular error has changed, this means we've crossed through 0 error
-            # in order to prevent oscillation, we 'give up' and just switch to the drive forward state
-            elif self._last_angular_error is not None and np.sign(self._last_angular_error) != np.sign(angular_error):
+            if (
+                abs(angular_error) < turn_in_place_thresh
+                or self._last_angular_error is not None
+                and np.sign(self._last_angular_error) != np.sign(angular_error)
+            ):
                 self._driver_state = self.DriveMode.DRIVE_FORWARD
                 return Twist(), False
 
@@ -346,7 +343,7 @@ class DriveController:
         rover_pos[2] = 0
 
         # Check and set if there is a new farther found point in the path
-        self.set_farthest_path_point(self, waypoints, rover_pos)
+        self.set_farthest_path_point(waypoints, rover_pos)
 
         # If we are at the end of the traj, return a zero command
         if waypoints.done():
@@ -480,7 +477,6 @@ class DriveController:
 
         return target_pos
 
-    @staticmethod
     def set_farthest_path_point(
         self,
         waypoints: Trajectory,

@@ -1,16 +1,15 @@
-import asyncio
-from enum import Enum
 import threading
+from enum import Enum
 
+from geometry_msgs.msg import Twist
+from mrover.msg import IK, Throttle
+from mrover.srv import IkMode
 from rclpy.publisher import Publisher
 
-from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
-from backend.mappings import ControllerAxis, ControllerButton
+from backend.input import DeviceInputs, filter_input, safe_index, simulated_axis
 from backend.managers.ros import get_service_client
+from backend.mappings import ControllerAxis, ControllerButton
 from backend.utils.ros_service import call_service_async
-from mrover.msg import Throttle, IK
-from mrover.srv import IkMode
-from geometry_msgs.msg import Twist
 
 ra_mode = "disabled"
 ra_mode_lock = threading.Lock()
@@ -26,9 +25,8 @@ async def set_ra_mode(new_ra_mode: str) -> bool:
     if new_ra_mode == "ik-pos":
         if not await call_ik_mode_service(IK_MODE_POSITION_CONTROL):
             return False
-    elif new_ra_mode == "ik-vel":
-        if not await call_ik_mode_service(IK_MODE_VELOCITY_CONTROL):
-            return False
+    elif new_ra_mode == "ik-vel" and not await call_ik_mode_service(IK_MODE_VELOCITY_CONTROL):
+        return False
 
     with ra_mode_lock:
         ra_mode = new_ra_mode

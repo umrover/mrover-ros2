@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-import sys
 import math
+import sys
+
 import rclpy
-from rclpy.node import Node
-from rclpy.executors import ExternalShutdownException
 from geometry_msgs.msg import Twist
+from rclpy.executors import ExternalShutdownException
+from rclpy.node import Node
 
 
 class CirclePublisher(Node):

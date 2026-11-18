@@ -1,8 +1,8 @@
-from backend.input import filter_input, simulated_axis, safe_index, remap, DeviceInputs
-from backend.mappings import JoystickAxis, ControllerButton
 from geometry_msgs.msg import Twist, Vector3
-
 from rclpy.publisher import Publisher
+
+from backend.input import DeviceInputs, filter_input, remap, safe_index, simulated_axis
+from backend.mappings import ControllerButton, JoystickAxis
 
 JOYSTICK_MICRO_LINEAR = -0.05
 JOYSTICK_MICRO_ANGULAR = -0.1

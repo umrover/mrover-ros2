@@ -1,8 +1,8 @@
-from backend.ws.base_ws import WebSocketHandler
-from backend.managers.ros import get_logger
 from backend.input import DeviceInputs
+from backend.managers.ros import get_logger
 from backend.sp_controls import send_sp_controls
-from mrover.msg import Throttle, ControllerState, Humidity, Temperature, Oxygen, UV, Ozone, CO2, Pressure, SensorStates
+from backend.ws.base_ws import WebSocketHandler
+from mrover.msg import CO2, UV, ControllerState, Humidity, Oxygen, Ozone, Pressure, SensorStates, Temperature, Throttle
 
 
 class ScienceHandler(WebSocketHandler):

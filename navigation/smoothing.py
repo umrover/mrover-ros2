@@ -1,10 +1,12 @@
-from navigation.trajectory import Trajectory
+import math
+import sys
+
+import numpy as np
+from scipy.interpolate import splev, splprep
+
 from navigation.context import Context
 from navigation.coordinate_utils import cartesian_to_ij, ij_to_cartesian
-
-from scipy.interpolate import splev, splprep
-import numpy as np
-import math, sys
+from navigation.trajectory import Trajectory
 
 
 def smoothing(trajectory: Trajectory, context: Context, should_relax: bool, should_interpolate: bool) -> Trajectory:
@@ -253,7 +255,7 @@ class SplineInterpolation:
         # Attempts to generate the spline
         try:
             spline, u = splprep([trajectory.coordinates[:, 0], trajectory.coordinates[:, 1]], s=0, k=2)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             ctx.node.get_logger().error(f"{e} - spline could not be generated, returning original trajectory")
             return trajectory
 

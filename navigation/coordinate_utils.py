@@ -1,10 +1,7 @@
 import numpy as np
+
 from navigation.context import Context
-from rclpy.duration import Duration
-from rclpy.time import Time
-from std_msgs.msg import Header
 from navigation.trajectory import Trajectory
-from lie import SE3
 
 
 def cartesian_to_ij(context: Context, cart_coord: np.ndarray) -> np.ndarray:
@@ -90,12 +87,11 @@ def segment_path(context: Context, dest: np.ndarray, seg_len: float = 2.0):
 
     # If there is more than one segment, create the segments
     if num_segments > 0:
-
         # Calculate the direction vector from the rover to the waypoint
         direction = (dest - rover_translation) / num_segments
 
         # Create the segments by adding the direction vector to the rover's position
-        traj_path = np.array([rover_translation + i * direction for i in range(0, num_segments + 1)])
+        traj_path = np.array([rover_translation + i * direction for i in range(num_segments + 1)])
 
     # Create a Trajectory object from the segmented path
     segmented_trajectory = Trajectory(np.hstack((traj_path, np.zeros((traj_path.shape[0], 1))))[1:])

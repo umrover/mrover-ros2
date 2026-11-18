@@ -1,9 +1,11 @@
 import asyncio
-from backend.ws.base_ws import WebSocketHandler
+import contextlib
+
 from backend.managers.ros import get_logger
-from rclpy.action import ActionClient
+from backend.ws.base_ws import WebSocketHandler
 from mrover.action import TypingCode
 from mrover.msg import KeyboardYaw
+from rclpy.action import ActionClient
 
 
 class AutonHandler(WebSocketHandler):
@@ -65,10 +67,9 @@ class AutonHandler(WebSocketHandler):
 
     async def cleanup(self):
         if self.current_goal_handle:
-            try:
+            with contextlib.suppress(Exception):
                 await asyncio.to_thread(self.current_goal_handle.cancel_goal_async)
-            except Exception:
-                pass
+
         if hasattr(self, "action_client"):
             self.action_client.destroy()
         await super().cleanup()

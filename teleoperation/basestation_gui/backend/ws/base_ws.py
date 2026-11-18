@@ -3,14 +3,15 @@ import math
 import numbers
 import threading
 import time
+
 import msgpack
+from backend.managers.ros import get_logger, get_node
 from fastapi import WebSocket
 from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_sensor_data
 from rclpy.subscription import Subscription
 from rclpy.timer import Timer
 from rosidl_runtime_py.convert import message_to_ordereddict
-from backend.managers.ros import get_node, get_logger
 
 
 def sanitize_floats(obj):
@@ -46,7 +47,7 @@ class WebSocketHandler:
         try:
             packed = msgpack.packb(sanitize_floats(data), use_bin_type=True)
             await self.websocket.send_bytes(packed)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             get_logger().debug(f"Send failed on {self.endpoint}: {exc}")
 
     def schedule_send(self, data):

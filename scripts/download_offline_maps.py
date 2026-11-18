@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 
-import sys
-import math
-import time
-import shutil
-import logging
 import argparse
-from pathlib import Path
-from typing import NamedTuple, Generator
+import logging
+import math
+import shutil
+import sys
+import time
+from collections.abc import Generator
 from concurrent.futures import ThreadPoolExecutor
-from urllib.request import Request, urlopen
+from pathlib import Path
+from typing import NamedTuple
 from urllib.error import URLError
+from urllib.request import Request, urlopen
 
 logging.basicConfig(level=logging.WARNING, format="%(levelname)s: %(message)s")
 log = logging.getLogger(__name__)
@@ -87,7 +88,7 @@ def count(lat: float, lon: float, high_zoom_radius: float | None = None) -> int:
 
 
 class Progress:
-    __slots__ = ("done", "dl", "skip", "err", "total", "t0")
+    __slots__ = ("dl", "done", "err", "skip", "t0", "total")
 
     def __init__(self, total: int) -> None:
         self.done = 0

@@ -1,13 +1,13 @@
-from fastapi import APIRouter, HTTPException
 from backend.database import get_db_connection
 from backend.models_pydantic import (
+    AutonWaypointList,
     BasicWaypoint,
     BasicWaypointList,
-    AutonWaypointList,
     CreateAutonWaypoint,
     UpdateAutonWaypoint,
     UpdateBasicWaypoint,
 )
+from fastapi import APIRouter, HTTPException
 
 router = APIRouter(prefix="/api/waypoints", tags=["waypoints"])
 
@@ -102,7 +102,7 @@ def update_basic_waypoint(waypoint_id: int, data: UpdateBasicWaypoint):
             values.append(val)
 
         values.append(waypoint_id)
-        conn.execute(f'UPDATE basic_waypoints SET {", ".join(set_clauses)} WHERE id = ?', values)
+        conn.execute(f"UPDATE basic_waypoints SET {', '.join(set_clauses)} WHERE id = ?", values)
         conn.commit()
 
         updated = conn.execute("SELECT * FROM basic_waypoints WHERE id = ?", (waypoint_id,)).fetchone()
@@ -233,7 +233,7 @@ def update_store(waypoint_id: int, data: UpdateAutonWaypoint):
             values.append(val)
 
         values.append(waypoint_id)
-        conn.execute(f'UPDATE auton_waypoints SET {", ".join(set_clauses)} WHERE id = ?', values)
+        conn.execute(f"UPDATE auton_waypoints SET {', '.join(set_clauses)} WHERE id = ?", values)
         conn.commit()
 
         return {"status": "success", "waypoint": fetch_store_row(conn, waypoint_id)}

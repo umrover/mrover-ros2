@@ -1,12 +1,13 @@
 import numpy as np
+from coordinate_utils import is_high_cost_point
+from geometry_msgs.msg import Twist
 
 from lie import SO2
 from state_machine.state import State
+
 from . import stuck_recovery
 from .approach_target import ApproachTargetState
 from .context import Context
-from coordinate_utils import is_high_cost_point
-from geometry_msgs.msg import Twist
 
 
 class LongRangeState(ApproachTargetState):
@@ -62,7 +63,7 @@ class LongRangeState(ApproachTargetState):
             and is_high_cost_point(point=tag_position, context=context)
         ):
             tag_position += direction_to_tag * distance
-        context.node.get_logger().info(f"Long range target: {str(tag_position)}")
+        context.node.get_logger().info(f"Long range target: {tag_position!s}")
         return tag_position
 
     def next_state(self, context: Context, is_finished: bool) -> State:

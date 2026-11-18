@@ -1,15 +1,15 @@
 import asyncio
+import contextlib
 import traceback
 
+from backend.managers.led import set_teleop_enabled
+from backend.managers.ros import get_node, get_service_client
+from backend.models_pydantic import AutonEnableRequest, DriveBackRequest, TeleopEnableRequest
+from backend.utils.ros_service import call_service_async
 from fastapi import APIRouter, HTTPException
 from geometry_msgs.msg import Twist, Vector3
-
-from backend.managers.ros import get_node, get_service_client
-from backend.models_pydantic import AutonEnableRequest, TeleopEnableRequest, DriveBackRequest
-from backend.managers.led import set_teleop_enabled
-from backend.utils.ros_service import call_service_async
-from mrover.srv import EnableAuton
 from mrover.msg import GPSWaypoint, WaypointType
+from mrover.srv import EnableAuton
 from std_srvs.srv import SetBool
 
 router = APIRouter(prefix="/api", tags=["auton"])
@@ -57,13 +57,12 @@ async def enable_auton(data: AutonEnableRequest):
 
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         error_details = traceback.format_exc()
-        try:
+        with contextlib.suppress(Exception):
             node = get_node()
-            node.get_logger().error(f"Error in enable_auton: {str(e)}\n{error_details}")
-        except:
-            pass
+            node.get_logger().error(f"Error in enable_auton: {e!s}\n{error_details}")
+
         raise HTTPException(status_code=500, detail=str(e))
 
 

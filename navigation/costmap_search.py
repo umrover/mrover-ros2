@@ -1,22 +1,17 @@
-from typing import Optional
 import numpy as np
-
-import rclpy
+from geometry_msgs.msg import Twist
+from rclpy.duration import Duration
 from rclpy.publisher import Publisher
 from rclpy.time import Time
 from rclpy.timer import Timer
-from rclpy.duration import Duration
-import time
-from navigation import approach_target, stuck_recovery, waypoint, state
-from navigation.astar import AStar, SpiralEnd, NoPath, OutOfBounds
-from navigation.coordinate_utils import d_calc, is_high_cost_point, cartesian_to_ij
+
+from navigation import state, stuck_recovery, waypoint
+from navigation.astar import AStar
 from navigation.context import Context
-from navigation.trajectory import Trajectory, SearchTrajectory
-from visualization_msgs.msg import Marker
-from geometry_msgs.msg import Twist
-from state_machine.state import State
-from rclpy.publisher import Publisher
+from navigation.coordinate_utils import cartesian_to_ij, is_high_cost_point
 from navigation.smoothing import smoothing
+from navigation.trajectory import SearchTrajectory, Trajectory
+from state_machine.state import State
 
 
 # REFERENCE: https://docs.google.com/document/d/18GjDWxIu5f5-N5t5UgbrZGdEyaDj9ZMEUuXex8-NKrA/edit
@@ -33,7 +28,7 @@ class CostmapSearchState(State):
 
     spiral_traj: SearchTrajectory
     astar_traj: Trajectory  # returned by astar
-    prev_target_pos_in_map: Optional[np.ndarray] = None
+    prev_target_pos_in_map: np.ndarray | None = None
     is_recovering: bool = False
     path_pub: Publisher
     astar: AStar
@@ -111,16 +106,16 @@ class CostmapSearchState(State):
         try:
             self.astar_traj = self.astar.generate_trajectory(self.spiral_traj.get_current_point())
             self.astar_traj = smoothing(self.astar_traj, context, self.USE_RELAXATION, self.USE_INTERPOLATION)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             context.node.get_logger().info(str(e))
             return self
         # If a spiral point is unreachable, then skip it and generate a new trajectory
         if self.astar_traj.empty():
-            context.node.get_logger().info(f"Skipping unreachable spiral point")
+            context.node.get_logger().info("Skipping unreachable spiral point")
             self.spiral_traj.increment_point()
             context.course.last_spiral_point = self.spiral_traj.cur_pt
             if self.spiral_traj.done():
-                context.node.get_logger().info(f"Reached end of search spiral")
+                context.node.get_logger().info("Reached end of search spiral")
                 return
             return
 
@@ -152,7 +147,7 @@ class CostmapSearchState(State):
 
         # Skip spiral points until we find one that is not high cost
         while is_high_cost_point(context=context, point=self.spiral_traj.get_current_point()):
-            context.node.get_logger().info(f"Skipping high cost spiral point")
+            context.node.get_logger().info("Skipping high cost spiral point")
             self.spiral_traj.increment_point()
             if context.course is None:
                 return self
@@ -161,7 +156,7 @@ class CostmapSearchState(State):
             # If we reach the end of the spiral trajectory via skipping high cost points, go back into the waypoint state
             if self.spiral_traj.done():
                 self.spiral_traj.clear()
-                context.node.get_logger().info(f"Reached end of search spiral")
+                context.node.get_logger().info("Reached end of search spiral")
                 return waypoint.WaypointState()
 
             spiral_point_ij = cartesian_to_ij(context, self.spiral_traj.get_current_point())
@@ -192,7 +187,7 @@ class CostmapSearchState(State):
             self.update_astar_traj(context)
             if self.spiral_traj.done():
                 self.spiral_traj.clear()
-                context.node.get_logger().info(f"Reached end of search spiral")
+                context.node.get_logger().info("Reached end of search spiral")
                 return waypoint.WaypointState()
             return self
 
@@ -218,7 +213,7 @@ class CostmapSearchState(State):
                     return self
                 context.course.last_spiral_point = self.spiral_traj.cur_pt
                 if self.spiral_traj.done():
-                    context.node.get_logger().info(f"Reached end of search spiral")
+                    context.node.get_logger().info("Reached end of search spiral")
                     return waypoint.WaypointState()
 
         return self
@@ -259,7 +254,7 @@ class CostmapSearchState(State):
     def on_loop(self, context: Context) -> State:
         # Wait until the costmap is ready
         if not hasattr(context.env.cost_map, "data") and context.node.get_parameter("costmap.use_costmap").value:
-            context.node.get_logger().warn(f"No costmap found, waiting...")
+            context.node.get_logger().warn("No costmap found, waiting...")
             return self
 
         if context.course is None:

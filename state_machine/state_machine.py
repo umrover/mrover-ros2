@@ -2,10 +2,12 @@ __author__ = "Ankith Udupa"
 
 import time
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import DefaultDict, Callable, TypeVar, Generic
+from typing import Generic, TypeVar
 
 from rclpy.impl.rcutils_logger import RcutilsLogger
+
 from state_machine.state import State
 
 
@@ -21,7 +23,7 @@ ContextType = TypeVar("ContextType")
 
 class StateMachine(Generic[ContextType]):
     current_state: State
-    state_transitions: DefaultDict[type[State], set[type[State]]]
+    state_transitions: defaultdict[type[State], set[type[State]]]
     transition_log: list[TransitionRecord]
     context: ContextType
     name: str
@@ -48,7 +50,7 @@ class StateMachine(Generic[ContextType]):
 
     def update(self):
         current_state = self.current_state
-        self.logger.debug(f"{self.name} state machine, current state: {str(current_state)}")
+        self.logger.debug(f"{self.name} state machine, current state: {current_state!s}")
         if self.off_lambda is not None and self.off_lambda(self.context) and self.off_state is not None:
             next_state = self.off_state
         else:
@@ -56,17 +58,17 @@ class StateMachine(Generic[ContextType]):
             next_state = current_state.on_loop(self.context)
 
         if type(next_state) not in self.state_transitions[type(current_state)]:
-            raise Exception(f"Invalid transition from {current_state} to {next_state}")
+            raise Exception(f"Invalid transition from {current_state} to {next_state}")  # noqa: TRY002
         if type(next_state) is not type(current_state):
             # TODO: Make sure no exceptions
             try:
-                self.logger.debug(f"{self.name} state machine, transitioning to {str(next_state)}")
+                self.logger.debug(f"{self.name} state machine, transitioning to {next_state!s}")
                 current_state.on_exit(self.context)
                 self.transition_log.append(TransitionRecord(time.time(), str(current_state), str(next_state)))
                 self.current_state = next_state
                 self.current_state.on_enter(self.context)
-            except Exception as e:
-                self.logger.warn(f"Error in {str(current_state)}: {e}")
+            except Exception as e:  # noqa: BLE001
+                self.logger.warning(f"Error in {current_state!s}: {e}")
 
     def add_transition(self, state_from: State, state_to: State) -> None:
         self.state_transitions[type(state_from)].add(type(state_to))
@@ -80,9 +82,9 @@ class StateMachine(Generic[ContextType]):
 
     def configure_off_switch(self, off_state: State, off_lambda: Callable[[ContextType], bool]):
         if type(off_state) not in self.state_transitions:
-            raise Exception("Attempted to configure an off state that does not exist")
+            raise Exception("Attempted to configure an off state that does not exist")  # noqa: TRY002
 
         self.off_state = off_state
         self.off_lambda = off_lambda
-        for _, to_states in self.state_transitions.items():
+        for to_states in self.state_transitions.values():
             to_states.add(type(off_state))

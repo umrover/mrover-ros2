@@ -1,10 +1,10 @@
 from enum import Enum
 
+from mrover.msg import Throttle
 from rclpy.publisher import Publisher
 
-from backend.input import filter_input, simulated_axis, safe_index, DeviceInputs
+from backend.input import DeviceInputs, filter_input, safe_index, simulated_axis
 from backend.mappings import ControllerButton
-from mrover.msg import Throttle
 
 
 class Joint(Enum):

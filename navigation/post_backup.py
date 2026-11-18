@@ -3,11 +3,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
-from shapely.geometry import Point, LineString
+from shapely.geometry import LineString, Point
 
 from lie import SE3, perpendicular_2d
 from state_machine.state import State
-from . import waypoint, recovery
+
+from . import recovery, waypoint
 from .context import Context
 from .trajectory import Trajectory
 

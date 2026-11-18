@@ -1,13 +1,14 @@
 import rclpy.time
 import tf2_ros
-from tf2_ros import LookupException, ConnectivityException, ExtrapolationException
-from lie import SE3
-from backend.ws.base_ws import WebSocketHandler
-from backend.managers.ros import get_logger
 from backend.managers.led import set_nav_state
-from mrover.msg import StateMachineStateUpdate, CalibrationStatus
-from sensor_msgs.msg import NavSatFix
+from backend.managers.ros import get_logger
+from backend.ws.base_ws import WebSocketHandler
 from geometry_msgs.msg import Twist
+from mrover.msg import CalibrationStatus, StateMachineStateUpdate
+from sensor_msgs.msg import NavSatFix
+from tf2_ros import ConnectivityException, ExtrapolationException, LookupException
+
+from lie import SE3
 
 
 class NavHandler(WebSocketHandler):
@@ -56,7 +57,7 @@ class NavHandler(WebSocketHandler):
             self.schedule_send(data_to_send)
         except (LookupException, ConnectivityException, ExtrapolationException):
             pass
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             get_logger().error(f"NavHandler localization error: {e}")
 
     def nav_state_callback(self, msg):

@@ -1,25 +1,23 @@
 #!/usr/bin/env python3
 
 from __future__ import annotations
+
 import signal
+import sys
+from dataclasses import dataclass
+from threading import Lock
+
 import graphviz  # type: ignore
-import time
-from PyQt5.QtWidgets import *  # type: ignore
+import rclpy
+import rclpy.logging
+import rclpy.time
+from mrover.msg import StateMachineStateUpdate, StateMachineStructure
 from PyQt5.QtCore import *  # type: ignore
 from PyQt5.QtGui import QPainter  # type: ignore
 from PyQt5.QtSvg import QSvgRenderer  # type: ignore
-
-import rclpy
-import rclpy.time
-import rclpy.logging
-from rclpy.node import Node
+from PyQt5.QtWidgets import *  # type: ignore
 from rclpy.executors import ExternalShutdownException
-import sys
-from mrover.msg import StateMachineStructure, StateMachineStateUpdate
-from threading import Lock
-from dataclasses import dataclass
-from typing import Optional, List, Dict
-import threading
+from rclpy.node import Node
 
 STRUCTURE_TOPIC = "nav_structure"
 STATUS_TOPIC = "nav_state"
@@ -28,13 +26,13 @@ STATUS_TOPIC = "nav_state"
 @dataclass
 class State:
     name: str
-    children: List[State]
+    children: list[State]
 
 
 class StateMachine:
     def __init__(self):
-        self.states: Dict[str, State] = {}
-        self.structure: Optional[StateMachineStructure] = None
+        self.states: dict[str, State] = {}
+        self.structure: StateMachineStructure | None = None
         self.mutex: Lock = Lock()
         self.cur_active: str = ""
         self.previous_state: str = ""
@@ -51,7 +49,7 @@ class StateMachine:
                 self.needs_redraw = True
                 now = rclpy.time.Time()
                 rclpy.logging.get_logger("Visualizer").info(
-                    f"Current time: {now} Previous state: {self.previous_state} Current State: { self.cur_active}"
+                    f"Current time: {now} Previous state: {self.previous_state} Current State: {self.cur_active}"
                 )
 
     def _rebuild(self, structure: StateMachineStructure):
@@ -91,7 +89,7 @@ class GUI(QWidget):  # type: ignore
         self.renderer: QSvgRenderer = QSvgRenderer()
         self.timer.timeout.connect(self.update)
         self.timer.start(1)
-        self.graph: Optional[graphviz.Digraph] = None
+        self.graph: graphviz.Digraph | None = None
         self.img = None
         self.state_machine: StateMachine = state_machine_instance
         self.viz = Node("Visualizer")
@@ -116,7 +114,7 @@ class GUI(QWidget):  # type: ignore
         with self.state_machine.mutex:
             if self.graph is None or self.state_machine.needs_redraw:
                 self.graph = graphviz.Digraph(comment="State Machine Diagram", format="svg")
-                for state_name in self.state_machine.states.keys():
+                for state_name in self.state_machine.states:
                     color = "red" if self.state_machine.cur_active == state_name else "black"
                     self.graph.node(state_name, color=color)
 

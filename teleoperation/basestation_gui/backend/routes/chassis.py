@@ -1,14 +1,13 @@
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException
-import numpy as np
 import cv2
-
+import numpy as np
+from backend.database import BASE_DIR
 from backend.managers.ros import get_node, get_service_client
 from backend.models_pydantic import GimbalAdjustRequest, ServoPositionRequest
 from backend.utils.ros_service import call_service_async
-from backend.database import BASE_DIR
-from mrover.srv import PanoramaStart, PanoramaEnd, ServoPosition
+from fastapi import APIRouter, HTTPException
+from mrover.srv import PanoramaEnd, PanoramaStart, ServoPosition
 
 router = APIRouter(prefix="/api/chassis", tags=["chassis"])
 
@@ -27,7 +26,7 @@ async def panorama_start():
 
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -61,7 +60,7 @@ async def panorama_stop():
 
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -92,7 +91,7 @@ async def gimbal_adjust(data: GimbalAdjustRequest):
 
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -117,5 +116,5 @@ async def sp_funnel_servo(data: ServoPositionRequest):
 
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=str(e))

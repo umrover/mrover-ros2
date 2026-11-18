@@ -1,20 +1,16 @@
 import numpy as np
 
-from lie import SO2
-from rclpy.duration import Duration
-from rclpy.time import Time
 from state_machine.state import State
+
 from .context import Context
-from .trajectory import Trajectory
 from .coordinate_utils import is_high_cost_point
+from .trajectory import Trajectory
 
 
 class PathHistoryExhausted(Exception):
     """
     Raised when the rover has run out of points in its path history to backtrack on
     """
-
-    pass
 
 
 class HighCostRecoveryState(State):
