@@ -4,6 +4,7 @@ from py_trees.trees import BehaviourTree
 from rclpy.node import Node
 from navigation.context import Context
 import py_trees_ros
+from collections.abc import Callable
  
 class BehaviorTree:
     node: Node
@@ -44,13 +45,40 @@ class Leaf(py_trees.behaviour.Behaviour):
     node: Node
     ctx: Context
 
-    def __init__(
-        self,
-        node: Node,
-        ctx: Context,
-        name: str,
-    ) -> None:
+    def __init__(self, name: str) -> None:
         super().__init__(name=name)
-        self.node = node
-        self.ctx = ctx
 
+    def setup(self, **kwargs) -> None:
+        self.node = kwargs['node']
+        self.ctx = kwargs['ctx']
+
+
+class ConditionalNode(Leaf):
+    cond: Callable[..., bool]
+    val: bool
+
+
+    def __init__(self, name: str, cond: Callable[..., bool], val: bool = True) -> None:
+        super().__init__(name=name)
+        self.cond = cond
+        self.val = val
+
+    def initialise(self) -> None:
+        # Can't think of anything to reset for a conditional node
+        return super().initialise()
+
+    def update(self) -> Status:
+        if (self.cond() == self.val):
+            return Status.SUCCESS
+        else:
+            return Status.FAILURE
+
+
+
+class ActionNode(Leaf):
+
+    def __init__(self, node: Node, ctx: Context, name: str) -> None:
+        super().__init__(node, ctx, name)
+
+
+action = ActionNode();
