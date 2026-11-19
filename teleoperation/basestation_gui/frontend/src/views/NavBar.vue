@@ -53,7 +53,6 @@
           </div>
         </div>
       </div>
-      <!-- <a class="logo" href="/"><img src="/mrover.png" alt="MRover" width="200" /></a> -->
       <div class="flex items-stretch gap-2">
         <div class="border-2 border-theme rounded px-2 flex flex-col justify-center font-mono text-sm"
           :class="{ 'jetson-high-latency': jetsonLatencyReceived && jetsonLatencyMs !== null && jetsonLatencyMs > 100 }">

@@ -34,11 +34,11 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 import { useControllerMessage } from '@/composables/useControllerState'
-import type { ControllerStateMessage } from '@/types/websocket'
+// import type { ControllerStateMessage } from '@/types/websocket'
 import { useModal } from '@/composables/useModal'
 import IndicatorDot from '@/components/IndicatorDot.vue'
 import ArmDataTable from '@/components/ControllerDataTable/ArmDataTable.vue'
-import onMessage from '@useWebsocketStore.vue'
+// import onMessage from '@useWebsocketStore.vue'
 
 const modal = useModal()
 
@@ -50,5 +50,7 @@ const { data } = useControllerMessage({
 const allArmed = computed(() =>
   data.value.states.length > 0 && data.value.states.every((s) => s === 'ARMED')
 )
+
+// TODO: Create websocket (remember starter project)
 
 </script>

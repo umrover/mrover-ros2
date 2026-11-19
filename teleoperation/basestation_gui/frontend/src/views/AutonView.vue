@@ -22,8 +22,9 @@
         <div class="drive_status island p-2 rounded h-full mt-2">
           <PayloadStatusIndicator />
         </div>
+        <!-- Replace with custom vue component -->
         <div class="drive_status island p-2 rounded h-full mt-2">
-          <DriveStatusIndicator />
+          <AstronautStream />
         </div>
       </div>
       <div class="flex flex-col" v-else>
@@ -93,6 +94,7 @@ import { useAutonomyStore } from '@/stores/autonomy'
 import { storeToRefs } from 'pinia'
 import { ledAPI } from '@/utils/ledAPI'
 import PayloadStatusIndicator from '@/components/PayloadStatusIndicator.vue'
+import AstronautStream from '@/components/AstronautStream.vue'
 
 onMounted(() => ledAPI.setMission('auton'))
 onUnmounted(() => ledAPI.setMission('home'))
