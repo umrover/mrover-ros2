@@ -10,12 +10,18 @@
     >
       <l-control-scale :imperial="false" />
       <l-tile-layer
-        :key="online ? 'online' : 'offline'"
-        ref="tileLayer"
         :url="online ? onlineUrl : offlineUrl"
         :attribution="attribution"
         :options="online ? onlineTileOptions : offlineTileOptions"
       />
+      <template v-if="heatmap">
+      <l-image-overlay
+        v-for="overlay in overlays"
+        :key="overlay.url"
+        :url="overlay.url"
+        :bounds="overlay.bounds"
+      />
+    </template>
       <l-marker ref="roverRef" :lat-lng="odomLatLng" :icon="locationIcon" />
       <l-marker
         ref="basestationRef"
@@ -43,6 +49,9 @@
     </l-map>
 
     <div class="overlay-toolbar right-0">
+      <button class="overlay-toolbar-btn" @click="heatmap = !heatmap">
+        Heatmap <i :class="heatmap ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
+      </button>
       <button class="overlay-toolbar-btn" @click="online = !online">
         Online <i :class="online ? 'bi bi-check-square-fill' : 'bi bi-square'"></i>
       </button>
@@ -82,6 +91,7 @@
 import {
   LMap,
   LTileLayer,
+  LImageOverlay,
   LMarker,
   LPolyline,
   LTooltip,
@@ -126,6 +136,8 @@ const {
   zoomLevels,
   setZoom,
   getMap,
+  overlays,
+  heatmap
 } = useRoverMap({
   maxOdomCount: 100000000,
   drawFrequency: 1,
