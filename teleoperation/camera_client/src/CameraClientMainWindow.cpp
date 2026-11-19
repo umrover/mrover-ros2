@@ -1,6 +1,7 @@
 #include "CameraClientMainWindow.hpp"
 #include "CameraClientNode.hpp"
 #include "CameraConfigWidget.hpp"
+#include "CameraScreenshotAllWidget.hpp"
 
 namespace mrover {
 
@@ -30,9 +31,15 @@ namespace mrover {
         mCentralScrollArea->setWidgetResizable(true);
         setCentralWidget(mCentralScrollArea);
 
+        mScreenshotAllDock = new QDockWidget("Screenshot All", this);
+        mScreenshotAllWidget = new CameraScreenshotAllWidget();
+        mScreenshotAllDock->setWidget(mScreenshotAllWidget);
+        QObject::connect(mScreenshotAllWidget, &CameraScreenshotAllWidget::screenshotAllRequested, this, &CameraClientMainWindow::screenshotAllRequested);
+
         addDockWidget(Qt::LeftDockWidgetArea, mCameraSelectorDock);
         splitDockWidget(mCameraSelectorDock, mGstRtpVideoCreatorDock, Qt::Vertical);
         splitDockWidget(mCameraSelectorDock, mCameraConfigDock, Qt::Vertical);
+        splitDockWidget(mCameraConfigDock, mScreenshotAllDock, Qt::Vertical);
 
         connect(mGstRtpVideoCreatorWidget, &GstRtpVideoCreatorWidget::createRequested,
                 this, [this](std::string const& name, std::string const& pipeline) {
