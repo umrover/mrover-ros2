@@ -30,3 +30,18 @@
     name: "{{ ansible_facts['user_id'] }}"
     groups: "mrover"
     append: true
+
+- name: Sync all udev Rules
+  become: true
+  ansible.posix.synchronize:
+    src: files/rules/
+    dest: /etc/udev/rules.d
+    recursive: true
+
+- name: Udev Reload Rules
+  become: true
+  ansible.builtin.command: udevadm control --reload-rules
+
+- name: Udev TTY Trigger
+  become: true
+  ansible.builtin.command: udevadm trigger --subsystem-match=tty
