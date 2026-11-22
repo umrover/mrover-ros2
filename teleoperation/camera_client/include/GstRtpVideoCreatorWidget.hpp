@@ -1,6 +1,8 @@
 #pragma once
 
 #include "pch.hpp"
+#include <qglobal.h>
+#include <string>
 
 namespace mrover {
 
@@ -9,14 +11,27 @@ namespace mrover {
     }
 
     inline auto createRtpToRawSrc(std::uint16_t port, gst::video::Codec codec, std::chrono::milliseconds rtpJitter = DEFAULT_RTP_JITTER) -> std::string {
-        std::string parser;
-        if (codec == gst::video::Codec::H265) {
-            parser = "! h265parse";
-        } else if (codec == gst::video::Codec::H264) {
-            parser = "! h264parse";
+        std::string encoding;
+
+        // TODO test AV1 and handle all codecs
+        switch (codec) {
+            case gst::video::Codec::H265:
+                encoding = "H265";
+                break;
+            case gst::video::Codec::H264:
+                encoding = "H264";
+                break;
+            case gst::video::Codec::AV1:
+                encoding = "AV1";
+                break;
+            default:
+                qWarning() << "Could not create rtp for unsupported codec";
+                return "";
         }
 
-        return std::format("udpsrc port={} ! application/x-rtp,media=video ! rtpjitterbuffer latency={} ! {} {} ! decodebin", port, rtpJitter.count(), getRtpDepayloader(codec), parser);
+        std::string caps = std::format("application/x-rtp,media=video,encoding-name={},payload=96,clock-rate=90000", encoding);
+
+        return std::format("udpsrc port={} ! {} ! rtpjitterbuffer latency={} ! {} ! decodebin3", port, caps, rtpJitter.count(), getRtpDepayloader(codec));
     }
 
     /**

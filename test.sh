@@ -40,6 +40,7 @@ export GTEST_COLOR=1
 
 if [[ "$run_coverage" = true ]] ; then
 	export PYTEST_ADDOPTS="--cov=$PWD/src/mrover --cov-report=html:$PWD/build/$build_profile/mrover/pytest_cov/"
+	find "build/$build_profile/mrover" -type f -name "*.profraw" -delete
 fi
 
 # invoke colcon
