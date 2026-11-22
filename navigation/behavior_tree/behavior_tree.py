@@ -3,7 +3,6 @@ from py_trees.common import Status
 from py_trees.trees import BehaviourTree
 from rclpy.node import Node
 from navigation.context import Context
-from collections.abc import Callable
  
 class BehaviorTree:
     node: Node
