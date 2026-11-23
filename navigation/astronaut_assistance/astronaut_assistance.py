@@ -7,7 +7,7 @@ from py_trees.common import Status
 from py_trees.trees import BehaviourTree
 from rclpy.node import Node
 from navigation.context import Context
-from enum import enum
+from enum import Enum
 
 class Command(Enum):
     FOLLOW = 1,
