@@ -51,7 +51,7 @@ jobs:
         with:
           path: src/mrover
       - name: Compiler Cache
-        uses: hendrikmuhs/ccache-action@v1.2.24
+        uses: hendrikmuhs/ccache-action@v1.2.26
       - name: Dawn Cache
         uses: actions/cache@v6
         with:
