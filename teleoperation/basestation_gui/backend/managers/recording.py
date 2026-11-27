@@ -30,7 +30,7 @@ class RecordingManager:
         )
 
         self.drone_gps_sub: Subscription | None = self.node.create_subscription(
-            NavSatFix, "/drone_odom", self.handle_drone_gps, qos_profile=qos_profile_sensor_data
+            NavSatFix, "/drone_pos", self.handle_drone_gps, qos_profile=qos_profile_sensor_data
         )
 
     def shutdown(self):
