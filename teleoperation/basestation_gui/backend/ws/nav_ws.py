@@ -24,7 +24,7 @@ class NavHandler(WebSocketHandler):
 
         self.forward_ros_topic("/gps/fix", NavSatFix, "gps_fix")
         self.forward_ros_topic("basestation/position", NavSatFix, "basestation_position")
-        self.forward_ros_topic("/drone_odom", NavSatFix, "drone_waypoint")
+        self.forward_ros_topic("/drone_pos", NavSatFix, "drone_waypoint")
         self.forward_ros_topic("/calibration", CalibrationStatus, "calibration")
         self.forward_ros_topic("/cmd_vel", Twist, "cmd_vel")
 
