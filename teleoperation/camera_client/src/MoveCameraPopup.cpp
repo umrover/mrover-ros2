@@ -3,6 +3,7 @@
 #include <format>
 #include <qapplication.h>
 #include <qboxlayout.h>
+#include <qdebug.h>
 #include <qdialog.h>
 #include <qglobal.h>
 #include <qlabel.h>
@@ -47,6 +48,14 @@ MoveCameraPopup::MoveCameraPopup(std::string const& cameraName, std::string cons
         connect(current_button, &MoveToWindowButton::createRequested, window, &CameraClientMainWindow::fullCreateCamera);
     }
 
+    auto * new_window_button = new MoveToWindowButton("New Window (+)", cameraName, pipeline, this, true);
+    connect(new_window_button, &MoveToWindowButton::pressed, this, [this, cameraName](){
+        createNewWindow("Bingy bongy doodle dabber");
+        sendPressed(cameraName);
+        accept();
+        deleteLater();
+    });
+
     layout->addStretch();
     setLayout(layout);
 }
@@ -54,4 +63,15 @@ MoveCameraPopup::MoveCameraPopup(std::string const& cameraName, std::string cons
 void MoveCameraPopup::sendPressed(std::string name){
     qDebug() << "MoveCameraPopup Sent pressed";
     emit pressed(std::move(name));
+}
+
+// TODO check that i don't make a memory leak with this
+auto MoveCameraPopup::createNewWindow(QString const& name) -> CameraClientMainWindow*{
+    auto new_window = new CameraClientMainWindow();
+    new_window->setWindowTitle(name);
+    new_window->setMinimumSize(1280, 720);
+    new_window->setAttribute(Qt::WA_DeleteOnClose);
+    new_window->show();
+    qDebug() << "Opened new window '" << name << "'";
+    return new_window;
 }
